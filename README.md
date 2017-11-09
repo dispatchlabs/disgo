@@ -1,0 +1,2 @@
+# disgo
+Go Dispatch client
