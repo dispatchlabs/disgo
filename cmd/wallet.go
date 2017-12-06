@@ -16,7 +16,6 @@ package cmd
 import (
 	"fmt"
 	"io"
-	//"io/ioutil"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -50,33 +49,43 @@ Cobra wallets when I tell it to.`,
 		fmt.Println(hex.EncodeToString(public_key[:]))
 		fmt.Println()
 
+		//This is making the JSON file and storing the keys (note that this should be put 
+		//into its own function instead of out in the functionality of the command)
+		//JSON structure
 type Keys struct {
     		Private string `json:"private_key"`
     		Public  string  `json:"public_key"`
     	}
 
+    	//making global route directory
     	usr, _ := user.Current()
 		var dir = usr.HomeDir
+    	
+		//making obj to be put into JSON
     	keys := Keys{
     		Private: hex.EncodeToString(private_key[:]),
     		Public: hex.EncodeToString(public_key[:]),
     	}
+
+    	//Creating Json file
+    	fmt.Println("Creating JSON File")
     	jsonFile, err := os.Create(dir + "/disgoTest/do_not_touch.json")
    		if err != nil {
+   			//Erroring out
       	fmt.Println("Error creating JSON file:", err)
       	return
    	}
+
+   		//Writing JSON data to JSON file
+   		fmt.Println("writing to file")
     	jsonWriter := io.Writer(jsonFile)
    		encoder := json.NewEncoder(jsonWriter)
    		err = encoder.Encode(&keys)
    		if err != nil {
+      		//Erroring out
       		fmt.Println("Error encoding JSON to file:", err)
       		return
    		}
-
-    	// fmt.Println(rankingsJson)
-    	// ioutil.WriteFile(dir + "/disgoTest/do_not_touch.json", rankingsJson, 0644)
-    	// fmt.Printf("%+v", rankings)
 	
 		fmt.Println("==> done writing to file")
 	},
@@ -103,27 +112,6 @@ func genPPKeys(random io.Reader) (private_key_bytes, public_key_bytes []byte) {
     	fmt.Println()
     	fmt.Println("creating file to hold keys")
     	fmt.Println()
-    	
-  //   	fmt.Println(dir)
-		// fmt.Println("/disgoTest/do_not_touch.json")
-  //   	var _, err = os.Stat(dir + "/disgoTest/do_not_touch.json")
-  //   	fmt.Println("after os.Stat")
-		// // create file if not exists
-		// if os.IsNotExist(err) {
-			
-		// 	file, err := os.Create(dir + "/disgoTest/do_not_touch.json")
-		// 	fmt.Println(err)
-
-		// 	fmt.Println("after os.create")
-		// 	if isError(err) { return }
-		// 	fmt.Println("after if isError")
-		// 	defer file.Close()
-		// }
-		// fmt.Println("==> done creating file", dir + "/disgoTest/do_not_touch.json")
-
-
-
-		
 	}
 		
 
@@ -144,6 +132,7 @@ func init() {
 	// is called directly, e.g.:
 	// walletCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
+
 
 func isError(err error) bool {
 	if err != nil {
