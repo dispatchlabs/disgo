@@ -48,23 +48,66 @@ Cobra wallets when I tell it to.`,
 		fmt.Print("public key: 0x")
 		fmt.Println(hex.EncodeToString(public_key[:]))
 		fmt.Println()
+		storing(hex.EncodeToString(private_key[:]),hex.EncodeToString(public_key[:]))
 
-		//This is making the JSON file and storing the keys (note that this should be put 
+		
+	},
+}
+
+
+func genPPKeys(random io.Reader) (private_key_bytes, public_key_bytes []byte) {
+	private_key, _ := ecdsa.GenerateKey(elliptic.P224(), random)
+	private_key_bytes, _ = x509.MarshalECPrivateKey(private_key)
+	public_key_bytes, _ = x509.MarshalPKIXPublicKey(&private_key.PublicKey)
+	
+		
+
+	return private_key_bytes, public_key_bytes
+}
+
+func init() {
+	RootCmd.AddCommand(walletCmd)
+	fmt.Println("wallet init")
+
+	// Here you will define your flags and configuration settings.
+
+	// Cobra supports Persistent Flags which will work for this command
+	// and all subcommands, e.g.:
+	// walletCmd.PersistentFlags().String("foo", "", "A help for foo")
+
+	// Cobra supports local flags which will only run when this command
+	// is called directly, e.g.:
+	// walletCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+func storing(private_key, public_key string) {
+	fmt.Println("Checking if there's a dispatch folder")
+	fmt.Println()
+	//Checks if there is a Dispatch folder in the users Home. If not, it creates one.
+	usr, _ := user.Current()
+	var dir = usr.HomeDir
+
+	if _, err := os.Stat(dir + "/disgoTest"); os.IsNotExist(err) {
+
+		//find user current directory and make the disgo folder inside it
+    	os.Mkdir(dir + "/disgoTest", os.ModePerm)
+
+    	fmt.Println("creating dispatch folder")
+    	fmt.Println()
+	
+
+	//This is making the JSON file and storing the keys (note that this should be put 
 		//into its own function instead of out in the functionality of the command)
 		//JSON structure
 type Keys struct {
     		Private string `json:"private_key"`
     		Public  string  `json:"public_key"`
     	}
-
-    	//making global route directory
-    	usr, _ := user.Current()
-		var dir = usr.HomeDir
     	
 		//making obj to be put into JSON
     	keys := Keys{
-    		Private: hex.EncodeToString(private_key[:]),
-    		Public: hex.EncodeToString(public_key[:]),
+    		Private: private_key,
+    		Public: public_key,
     	}
 
     	//Creating Json file
@@ -88,51 +131,8 @@ type Keys struct {
    		}
 	
 		fmt.Println("==> done writing to file")
-	},
-}
-
-
-func genPPKeys(random io.Reader) (private_key_bytes, public_key_bytes []byte) {
-	private_key, _ := ecdsa.GenerateKey(elliptic.P224(), random)
-	private_key_bytes, _ = x509.MarshalECPrivateKey(private_key)
-	public_key_bytes, _ = x509.MarshalPKIXPublicKey(&private_key.PublicKey)
-	fmt.Println("Checking if there's a dispatch folder")
-	fmt.Println()
-	//Checks if there is a Dispatch folder in the users Home. If not, it creates one.
-	usr, _ := user.Current()
-	var dir = usr.HomeDir
-
-	if _, err := os.Stat(dir + "/disgoTest"); os.IsNotExist(err) {
-		fmt.Println(os.ModePerm)
-
-		//find user current directory and make the disgo folder inside it
-    	os.Mkdir(dir + "/disgoTest", os.ModePerm)
-
-    	fmt.Println("creating dispatch folder")
-    	fmt.Println()
-    	fmt.Println("creating file to hold keys")
-    	fmt.Println()
 	}
-		
-
-	return private_key_bytes, public_key_bytes
 }
-
-func init() {
-	RootCmd.AddCommand(walletCmd)
-	fmt.Println("wallet init")
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// walletCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// walletCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-}
-
 
 func isError(err error) bool {
 	if err != nil {
