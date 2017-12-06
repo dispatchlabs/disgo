@@ -22,7 +22,7 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/hex"
-	//"encoding/json"
+	"encoding/json"
 	"os"
 	"os/user"
 	"github.com/spf13/cobra"
@@ -49,14 +49,39 @@ Cobra wallets when I tell it to.`,
 		fmt.Print("public key: 0x")
 		fmt.Println(hex.EncodeToString(public_key[:]))
 		fmt.Println()
+
+type Keys struct {
+    		Private string `json:"private_key"`
+    		Public  string  `json:"public_key"`
+    	}
+
+    	usr, _ := user.Current()
+		var dir = usr.HomeDir
+    	keys := Keys{
+    		Private: hex.EncodeToString(private_key[:]),
+    		Public: hex.EncodeToString(public_key[:]),
+    	}
+    	jsonFile, err := os.Create(dir + "/disgoTest/do_not_touch.json")
+   		if err != nil {
+      	fmt.Println("Error creating JSON file:", err)
+      	return
+   	}
+    	jsonWriter := io.Writer(jsonFile)
+   		encoder := json.NewEncoder(jsonWriter)
+   		err = encoder.Encode(&keys)
+   		if err != nil {
+      		fmt.Println("Error encoding JSON to file:", err)
+      		return
+   		}
+
+    	// fmt.Println(rankingsJson)
+    	// ioutil.WriteFile(dir + "/disgoTest/do_not_touch.json", rankingsJson, 0644)
+    	// fmt.Printf("%+v", rankings)
+	
+		fmt.Println("==> done writing to file")
 	},
 }
 
-type Rankings struct {
-    		private_key  string `json:"private_key"`
-    		private_key_bytes string `json:"private_key_bytes"`
-    		public_key_bytes string `json:"public_key_bytes"`
-    	}
 
 func genPPKeys(random io.Reader) (private_key_bytes, public_key_bytes []byte) {
 	private_key, _ := ecdsa.GenerateKey(elliptic.P224(), random)
@@ -68,52 +93,39 @@ func genPPKeys(random io.Reader) (private_key_bytes, public_key_bytes []byte) {
 	usr, _ := user.Current()
 	var dir = usr.HomeDir
 
-	if _, err := os.Stat(dir + "/disgo"); os.IsNotExist(err) {
+	if _, err := os.Stat(dir + "/disgoTest"); os.IsNotExist(err) {
 		fmt.Println(os.ModePerm)
 
 		//find user current directory and make the disgo folder inside it
-    	os.Mkdir(dir + "/disgo", os.ModePerm)
+    	os.Mkdir(dir + "/disgoTest", os.ModePerm)
 
     	fmt.Println("creating dispatch folder")
     	fmt.Println()
     	fmt.Println("creating file to hold keys")
     	fmt.Println()
     	
-    	fmt.Println(dir)
-		fmt.Println("/disgo/do_not_touch.json")
-    	var _, err = os.Stat(dir + "/disgo/do_not_touch.json")
-    	fmt.Println("after os.Stat")
-		// create file if not exists
-		if os.IsNotExist(err) {
+  //   	fmt.Println(dir)
+		// fmt.Println("/disgoTest/do_not_touch.json")
+  //   	var _, err = os.Stat(dir + "/disgoTest/do_not_touch.json")
+  //   	fmt.Println("after os.Stat")
+		// // create file if not exists
+		// if os.IsNotExist(err) {
 			
-			file, err := os.Create(dir + "/disgo/do_not_touch.json")
-			fmt.Println(err)
+		// 	file, err := os.Create(dir + "/disgoTest/do_not_touch.json")
+		// 	fmt.Println(err)
 
-			fmt.Println("after os.create")
-			if isError(err) { return }
-			fmt.Println("after if isError")
-			defer file.Close()
-		}
-		fmt.Println("==> done creating file", dir + "/disgo/do_not_touch.json")
-
-		//fmt.Println(hex.EncodeToString(private_key[:]))
+		// 	fmt.Println("after os.create")
+		// 	if isError(err) { return }
+		// 	fmt.Println("after if isError")
+		// 	defer file.Close()
+		// }
+		// fmt.Println("==> done creating file", dir + "/disgoTest/do_not_touch.json")
 
 
-		//var jsonBlob = []byte(`
-        //{"private_key":"`+hex.EncodeToString(private_key)+`", "private_key_bytes":"`+hex.EncodeToString(private_key_bytes[:])+`","public_key_bytes":"`+hex.EncodeToString(public_key_bytes[:])+`"}`)
-		// // open file using READ & WRITE permission
-		// rankings := Rankings{}
-  //  		err = json.Unmarshal(jsonBlob, &rankings)
-  //   	if err != nil {
-  //      		 //nozzle.printError("opening config file", err.Error())
-  //  		 }
 
-  //   	rankingsJson, _ := json.Marshal(rankings)
-  //   	err = ioutil.WriteFile("~/dispatch/do_not_touch.json", rankingsJson, 0644)
-  //   	fmt.Printf("%+v", rankings)
-	
-		// fmt.Println("==> done writing to file")
+		
 	}
+		
 
 	return private_key_bytes, public_key_bytes
 }
