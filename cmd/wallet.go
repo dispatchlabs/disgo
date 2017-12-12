@@ -21,7 +21,9 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/hex"
-
+	"encoding/json"
+	"os"
+	"os/user"
 	"github.com/spf13/cobra"
 )
 
@@ -32,11 +34,13 @@ var walletCmd = &cobra.Command{
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
+
 Cobra wallets when I tell it to.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("wallet called")
 		fmt.Println()
 
+		fmt.Println("creating keys")
 		private_key, public_key := genPPKeys(rand.Reader)
 		fmt.Print("private key: 0x")
 		fmt.Println(hex.EncodeToString(private_key[:]))
@@ -44,8 +48,10 @@ Cobra wallets when I tell it to.`,
 		fmt.Print("public key: 0x")
 		fmt.Println(hex.EncodeToString(public_key[:]))
 		fmt.Println()
+		storing(hex.EncodeToString(private_key[:]),hex.EncodeToString(public_key[:]))
 	},
 }
+
 
 func genPPKeys(random io.Reader) (private_key_bytes, public_key_bytes []byte) {
 	private_key, _ := ecdsa.GenerateKey(elliptic.P224(), random)
@@ -67,4 +73,66 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// walletCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+func storing(private_key, public_key string) {
+	fmt.Println("Checking if there's a dispatch folder")
+	fmt.Println()
+	//Checks if there is a Dispatch folder in the users Home. If not, it creates one.
+	usr, _ := user.Current()
+	var dir = usr.HomeDir
+
+	if _, err := os.Stat(dir + "/disgoTest"); os.IsNotExist(err) {
+
+		//find user current directory and make the disgo folder inside it
+    	os.Mkdir(dir + "/disgoTest", os.ModePerm)
+
+    	fmt.Println("creating dispatch folder")
+    	fmt.Println()
+	
+
+	//This is making the JSON file and storing the keys (note that this should be put 
+		//into its own function instead of out in the functionality of the command)
+		//JSON structure
+		type Keys struct {
+    		Private string `json:"private_key"`
+    		Public  string  `json:"public_key"`
+    	}
+    	
+		//making obj to be put into JSON
+    	keys := Keys{
+    		Private: private_key,
+    		Public: public_key,
+    	}
+
+    	//Creating Json file
+    	fmt.Println("Creating JSON File")
+    	jsonFile, err := os.Create(dir + "/disgoTest/do_not_touch.json")
+   		if err != nil {
+   			//Erroring out
+      		fmt.Println("Error creating JSON file:", err)
+      		return
+   		}
+
+   		//Writing JSON data to JSON file
+   		fmt.Println("writing to file")
+    	jsonWriter := io.Writer(jsonFile)
+   		encoder := json.NewEncoder(jsonWriter)
+   		err = encoder.Encode(&keys)
+   		if err != nil {
+      		//Erroring out
+      		fmt.Println("Error encoding JSON to file:", err)
+      		return
+   		}
+	
+		fmt.Println("==> done writing to file")
+	}
+}
+
+func isError(err error) bool {
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	return (err != nil)
 }
