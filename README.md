@@ -4,11 +4,10 @@ The Go implementation of the Dispatch protocol
 
 ## To install
 
-1. install go
-2. navigate to your $GOPATH/src folder
-3. git clone this project
-4. ```cd disgo```
-5. ```go get``` (kinda like npm install)
+1. Install [Go](https://golang.org/)
+2. `go get github.com/DispatchLabs/disgo`
+3. `cd $GOPATH/src/github.com/DispatchLabs/disgo`
+4. `go get`
 
 ## To run
 
