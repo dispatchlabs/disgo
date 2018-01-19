@@ -23,21 +23,12 @@ func NewGrpcClient(address string) *GrpcClient {
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
-	defer conn.Close()
+	//defer conn.Close()
 
 	grpcClient.connection = protocolBuffer.NewDisgoGrpcClient(conn)
-
 	log.WithFields(log.Fields{
 		"method": "NewGrpcClient",
 	}).Info("connected to " + addressString)
-
-	/*
-	response, error := gprcClient.connection.Send(context.Background(), &protocolBuffer.GetRequest{Json: "FOO"})
-	if error != nil {
-		log.Fatalf("could not greet: %v", error)
-	}
-	log.Info(response)
-	*/
 
 	return grpcClient;
 }

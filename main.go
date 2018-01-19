@@ -3,10 +3,10 @@ package main
 import (
 	"os"
 	log "github.com/sirupsen/logrus"
-	"github.com/dispatchlabs/disgo/grpc"
 	"io/ioutil"
 	"encoding/json"
 	"github.com/dispatchlabs/disgo/configurations"
+	"github.com/dispatchlabs/disgo/server"
 )
 
 func main() {
@@ -28,10 +28,6 @@ func main() {
 	}
 	json.Unmarshal(file, &configurations.Configuration)
 
-	client := grpc.NewGrpcClient("10.0.1.2")
-
-	s := client.Send("FOO BAR")
-
-	log.Info(s)
-
+	server := &server.Server{}
+	server.Start()
 }
