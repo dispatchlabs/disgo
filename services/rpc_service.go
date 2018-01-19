@@ -19,7 +19,7 @@ type RpcService struct {
 
 func NewRpcService() *RpcService {
 
-	rpcService := RpcService{configurations.Configuration.RpcPort, false}
+	rpcService := RpcService{configurations.Configuration.GrpcPort, false}
 
 	return &rpcService
 }
@@ -32,28 +32,28 @@ func (rpcService *RpcService) IsRunning() bool {
 	return rpcService.running
 }
 
-type server struct{}
+type GrpcServer struct{}
 
-func (s *server) Send(ctx context.Context, in *protocolBuffer.GetRequest) (*protocolBuffer.SendResponse, error) {
+func (s *GrpcServer) Send(ctx context.Context, in *protocolBuffer.GetRequest) (*protocolBuffer.SendResponse, error) {
 	return &protocolBuffer.SendResponse{Json: "Hello " + in.Json}, nil
 }
 
 func (rpcService *RpcService) Go(waitGroup *sync.WaitGroup) {
 
 	rpcService.running = true
-	lis, err := net.Listen("tcp", ":" + strconv.Itoa(rpcService.Port))
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+	listen, error := net.Listen("tcp", ":" + strconv.Itoa(rpcService.Port))
+	if error != nil {
+		log.Fatalf("failed to listen: %v", error)
 	}
 
-	s := grpc.NewServer()
-	protocolBuffer.RegisterDisgoGrpcServer(s, &server{})
-	reflection.Register(s)
-
+	server := grpc.NewServer()
+	protocolBuffer.RegisterDisgoGrpcServer(server, &GrpcServer{})
+	reflection.Register(server)
 	log.WithFields(log.Fields{
 		"method": rpcService.Name() + ".Go",
 	}).Info("listening on " + strconv.Itoa(rpcService.Port))
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+	if error := server.Serve(listen); error != nil {
+		log.Fatalf("failed to serve: %v", error)
+		rpcService.running = false
 	}
 }

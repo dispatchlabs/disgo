@@ -17,15 +17,6 @@ type Server struct {
 func NewServer() *Server {
 
 	server := &Server{}
-	filePath := "." + string(os.PathSeparator) + "configurations" + string(os.PathSeparator) + "disgo_config.json"
-
-	// Read configuration JSON file.
-	file, error := ioutil.ReadFile(filePath)
-	if error != nil {
-		log.Error("unable to load " + filePath)
-		os.Exit(1)
-	}
-	json.Unmarshal(file, &configurations.Configuration)
 
 	return server
 }
