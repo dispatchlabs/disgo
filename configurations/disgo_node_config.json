@@ -1,0 +1,6 @@
+{
+  "httpPort" : 3100,
+  "httpHostIp" : "localhost",
+  "rpcPort" : 3200,
+  "trustedIps" : ["", "", ""]
+}
