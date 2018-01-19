@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
-	"github.com/dispatchlabs/disgo_node/configurations"
+	"github.com/dispatchlabs/disgo/configurations"
 )
 
 type HttpService struct {
@@ -36,8 +36,7 @@ func (httpService *HttpService) Go(waitGroup *sync.WaitGroup) {
 	httpService.running = true
 	listen := httpService.HostIp + ":" + strconv.Itoa(httpService.Port)
 	log.WithFields(log.Fields{
-		"struct": httpService.Name(),
-		"method": "Go",
+		"method": httpService.Name() + ".Go",
 	}).Info("listening on http://" + listen)
 	log.Fatal(http.ListenAndServe(listen, nil))
 }

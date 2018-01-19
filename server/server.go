@@ -1,13 +1,13 @@
 package server
 
 import (
-	"github.com/dispatchlabs/disgo_node/services"
+	"github.com/dispatchlabs/disgo/services"
 	log "github.com/sirupsen/logrus"
 	"encoding/json"
 	"io/ioutil"
 	"os"
 	"sync"
-	"github.com/dispatchlabs/disgo_node/configurations"
+	"github.com/dispatchlabs/disgo/configurations"
 )
 
 type Server struct {
@@ -17,7 +17,7 @@ type Server struct {
 func NewServer() *Server {
 
 	server := &Server{}
-	filePath := "." + string(os.PathSeparator) + "configurations" + string(os.PathSeparator) + "disgo_node_config.json"
+	filePath := "." + string(os.PathSeparator) + "configurations" + string(os.PathSeparator) + "disgo_config.json"
 
 	// Read configuration JSON file.
 	file, error := ioutil.ReadFile(filePath)

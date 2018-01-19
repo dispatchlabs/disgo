@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package services;
+
+service DisgoGrpc {
+  rpc Send (GetRequest) returns (SendResponse) {}
+}
+
+message GetRequest {
+  string json = 1;
+}
+
+message SendResponse {
+  string json = 1;
+}

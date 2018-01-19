@@ -1,10 +1,10 @@
 package configurations
 
 var (
-	Configuration *DisgoNodeConfig
+	Configuration *DisgoConfig
 )
 
-type DisgoNodeConfig struct {
+type DisgoConfig struct {
 	HttpPort int
 	HttpHostIp string
 	RpcPort int
