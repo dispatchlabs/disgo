@@ -28,7 +28,7 @@ func main() {
 	}
 	json.Unmarshal(file, &configurations.Configuration)
 
-	client := grpc.NewGrpcClient("localhost")
+	client := grpc.NewGrpcClient("10.0.1.2")
 
 	s := client.Send("FOO BAR")
 

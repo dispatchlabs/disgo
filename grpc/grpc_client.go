@@ -16,7 +16,7 @@ type GrpcClient struct {
 
 func NewGrpcClient(address string) *GrpcClient {
 
-	gprcClient := &GrpcClient{}
+	grpcClient := &GrpcClient{}
 	grpc.ConnectionTimeout(time.Second * 10)
 	addressString := address + ":" + strconv.Itoa(configurations.Configuration.GrpcPort)
 	conn, err := grpc.Dial(addressString, grpc.WithInsecure())
@@ -25,24 +25,26 @@ func NewGrpcClient(address string) *GrpcClient {
 	}
 	defer conn.Close()
 
-	gprcClient.connection = protocolBuffer.NewDisgoGrpcClient(conn)
+	grpcClient.connection = protocolBuffer.NewDisgoGrpcClient(conn)
 
 	log.WithFields(log.Fields{
 		"method": "NewGrpcClient",
 	}).Info("connected to " + addressString)
 
+	/*
 	response, error := gprcClient.connection.Send(context.Background(), &protocolBuffer.GetRequest{Json: "FOO"})
 	if error != nil {
 		log.Fatalf("could not greet: %v", error)
 	}
 	log.Info(response)
+	*/
 
-	return gprcClient;
+	return grpcClient;
 }
 
 func (grpcClient *GrpcClient) Send(json string) string {
 
-	response, error := grpcClient.connection.Send(context.Background(), &protocolBuffer.GetRequest{Json: "FOO"})
+	response, error := grpcClient.connection.Send(context.Background(), &protocolBuffer.GetRequest{Json: json})
 	if error != nil {
 		log.Fatalf("could not greet: %v", error)
 	}

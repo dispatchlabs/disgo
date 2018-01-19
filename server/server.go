@@ -3,11 +3,7 @@ package server
 import (
 	"github.com/dispatchlabs/disgo/services"
 	log "github.com/sirupsen/logrus"
-	"encoding/json"
-	"io/ioutil"
-	"os"
 	"sync"
-	"github.com/dispatchlabs/disgo/configurations"
 )
 
 type Server struct {
