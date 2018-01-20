@@ -1,0 +1,7 @@
+{
+  "httpPort" : 3100,
+  "httpHostIp" : "localhost",
+  "grpcPort" : 1975,
+  "grpcTimeout" : 5,
+  "trustedIps" : ["", "", ""]
+}

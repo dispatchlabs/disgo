@@ -6,7 +6,7 @@ import (
 	"net"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"github.com/dispatchlabs/disgo/configurations"
+	"github.com/dispatchlabs/disgo/configs"
 	protocolBuffer "github.com/dispatchlabs/disgo/grpc/proto"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/reflection"
@@ -19,7 +19,7 @@ type RpcService struct {
 
 func NewRpcService() *RpcService {
 
-	rpcService := RpcService{configurations.Configuration.GrpcPort, false}
+	rpcService := RpcService{configs.Config.GrpcPort, false}
 
 	return &rpcService
 }

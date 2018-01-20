@@ -1,6 +1,0 @@
-{
-  "httpPort" : 3100,
-  "httpHostIp" : "localhost",
-  "grpcPort" : 1975,
-  "trustedIps" : ["", "", ""]
-}
