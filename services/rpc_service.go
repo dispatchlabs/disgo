@@ -18,10 +18,7 @@ type RpcService struct {
 }
 
 func NewRpcService() *RpcService {
-
-	rpcService := RpcService{configs.Config.GrpcPort, false}
-
-	return &rpcService
+	return &RpcService{configs.Config.GrpcPort, false}
 }
 
 func (rpcService *RpcService) Name() string {

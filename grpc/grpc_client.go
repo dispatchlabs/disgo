@@ -34,7 +34,7 @@ func NewGrpcClient(address string) *GrpcClient {
 func (grpcClient *GrpcClient) Send(json string) string {
 	response, error := grpcClient.Client.Send(context.Background(), &protocolBuffer.GetRequest{Json: json})
 	if error != nil {
-		log.Fatalf("could not greet: %v", error)
+		log.Fatalf("unable to send RPC message: %v", error)
 	}
 	return response.Json
 }

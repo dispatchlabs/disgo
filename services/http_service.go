@@ -16,11 +16,8 @@ type HttpService struct {
 }
 
 func NewHttpService() *HttpService {
-
 	httpService := HttpService{configs.Config.HttpHostIp, configs.Config.HttpPort, false}
-
 	http.HandleFunc("/", httpService.HandleIndex)
-
 	return &httpService
 }
 
