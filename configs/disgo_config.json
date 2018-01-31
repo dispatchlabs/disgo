@@ -3,5 +3,6 @@
   "httpHostIp" : "localhost",
   "grpcPort" : 1975,
   "grpcTimeout" : 5,
-  "trustedIps" : ["", "", ""]
+  "trustedIps" : ["", "", ""],
+  "useQuantumEntropy": true
 }

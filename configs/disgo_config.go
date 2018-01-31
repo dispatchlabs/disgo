@@ -5,8 +5,9 @@ var (
 )
 
 type DisgoConfig struct {
-	HttpPort int
-	HttpHostIp string
-	GrpcPort int
-	GrpcTimeout int
+	HttpPort          int
+	HttpHostIp        string
+	GrpcPort          int
+	GrpcTimeout       int
+	UseQuantumEntropy bool
 }

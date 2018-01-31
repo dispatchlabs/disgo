@@ -1,7 +1,7 @@
 package main
 
 import (
-"github.com/dispatchlabs/disgo/server"
+	"github.com/dispatchlabs/disgo/server"
 )
 
 func main() {

@@ -1,17 +1,18 @@
 package server
 
 import (
+	"encoding/json"
+	"io/ioutil"
+	"os"
+	"sync"
+
+	"github.com/dispatchlabs/disgo/configs"
 	"github.com/dispatchlabs/disgo/services"
 	log "github.com/sirupsen/logrus"
-	"sync"
-	"os"
-	"io/ioutil"
-	"encoding/json"
-	"github.com/dispatchlabs/disgo/configs"
 )
 
 type Server struct {
-	services [] services.IService
+	services []services.IService
 }
 
 func NewServer() *Server {
@@ -32,6 +33,11 @@ func NewServer() *Server {
 		os.Exit(1)
 	}
 	json.Unmarshal(file, &configs.Config)
+
+	// Load Keys
+	if _, _, err := loadKeys(); err != nil {
+		log.Error("unable to keys: " + err.Error())
+	}
 
 	server := &Server{}
 
