@@ -4,5 +4,5 @@
   "grpcPort" : 1975,
   "grpcTimeout" : 5,
   "trustedIps" : ["", "", ""],
-  "useQuantumEntropy": true
+  "useQuantumEntropy": false
 }
