@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/disgo.iml" filepath="$PROJECT_DIR$/disgo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../disgover/disgover.iml" filepath="$PROJECT_DIR$/../disgover/disgover.iml" />
     </modules>
   </component>
 </project>

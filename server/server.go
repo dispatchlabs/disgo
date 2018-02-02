@@ -22,6 +22,7 @@ func NewServer() *Server {
 	// Setup log.
 	formatter := &log.TextFormatter{
 		FullTimestamp: true,
+		ForceColors: false,
 	}
 	log.SetFormatter(formatter)
 	log.SetOutput(os.Stdout)

@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"github.com/dispatchlabs/disgo/properties"
+	"github.com/dispatchlabs/disgo/party"
 	"github.com/dispatchlabs/disgover"
 )
 
@@ -36,12 +37,18 @@ func (grpcService *GrpcService) Go(waitGroup *sync.WaitGroup) {
 	if error != nil {
 		log.Fatalf("failed to listen: %v", error)
 	}
+	grpcServer := grpc.NewServer()
+
+	// Register disgoGrpc.
+	log.WithFields(log.Fields{
+		"method": grpcService.Name() + ".Go",
+	}).Info("registering Disgover...")
+	party.RegisterPartyServer(grpcServer, party.NewParty())
 
 	// Register Disgover.
 	log.WithFields(log.Fields{
 		"method": grpcService.Name() + ".Go",
 	}).Info("registering Disgover...")
-	grpcServer := grpc.NewServer()
 	disgover.RegisterDisgoverRPCServer(grpcServer, grpcService.Disgover)
 
 	// Serve.

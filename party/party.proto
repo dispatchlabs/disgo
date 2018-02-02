@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package party;
+
+message Version {
+  string version = 1;
+}
+
+message Empty {}
+
+service Party {
+  rpc GetVersion (Empty) returns (Version) {}
+}
