@@ -6,12 +6,13 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/dispatchlabs/disgover"
-	party2 "dispatchlabs/disgo/party"
 	"context"
+
+	party2 "github.com/dispatchlabs/disgo/party"
+	"github.com/dispatchlabs/disgover"
 )
 
-func main() {
+func main2() {
 
 	var seedNodeIP = os.Getenv("SEED_NODE_IP") // Needed when run from Kubernetes
 	if len(seedNodeIP) == 0 {
@@ -43,10 +44,10 @@ func main() {
 	}
 
 	party := party2.NewParty()
-	val, _:= party.GetVersion(context.Background(), &party2.Empty{})
+	val, _ := party.GetVersion(context.Background(), &party2.Empty{})
 	fmt.Printf("Party version %s\n", val)
-	rslt := party2.Join(dsg.ThisContact)
-	fmt.Printf("%s\n", rslt)
+	// rslt := party.Join(dsg.ThisContact)
+	// fmt.Printf("%s\n", rslt)
 
 	sigs := make(chan os.Signal, 1)
 	done := make(chan bool, 1)

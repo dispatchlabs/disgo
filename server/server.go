@@ -5,12 +5,12 @@ import (
 	"io/ioutil"
 	"os"
 	"sync"
-	"github.com/dispatchlabs/disgo/services"
-	log "github.com/sirupsen/logrus"
-	"github.com/dispatchlabs/disgo/properties"
-	"github.com/dispatchlabs/disgover"
-)
 
+	"github.com/dispatchlabs/disgo/properties"
+	"github.com/dispatchlabs/disgo/services"
+	"github.com/dispatchlabs/disgover"
+	log "github.com/sirupsen/logrus"
+)
 
 type Server struct {
 	Disgover *disgover.Disgover
@@ -18,11 +18,10 @@ type Server struct {
 }
 
 func NewServer() *Server {
-
 	// Setup log.
 	formatter := &log.TextFormatter{
 		FullTimestamp: true,
-		ForceColors: false,
+		ForceColors:   false,
 	}
 	log.SetFormatter(formatter)
 	log.SetOutput(os.Stdout)
@@ -47,16 +46,40 @@ func NewServer() *Server {
 
 func (server *Server) Start() {
 
-	// Create Disgover.
+	// Kubernetes - Intervention Start
+	var seedNodeIP = os.Getenv("SEED_NODE_IP") // Needed when run from Kubernetes
+	var rootNodeId = "NODE-1"
+
+	seedNodes := []*disgover.Contact{}
+	if len(seedNodeIP) != 0 {
+		seedNodes = append(seedNodes,
+			&disgover.Contact{
+				Id: rootNodeId,
+				Endpoint: &disgover.Endpoint{
+					Host: seedNodeIP,
+					Port: 1975,
+				},
+			},
+		)
+	}
 	server.Disgover = disgover.NewDisgover(
 		disgover.NewContact(),
-		[]*disgover.Contact{},
+		seedNodes,
 	)
+	disgover.DisgoverSingleton = server.Disgover
 
+	if len(seedNodeIP) == 0 {
+		server.Disgover.ThisContact.Id = rootNodeId
+	}
+	server.Disgover.ThisContact.Endpoint.Port = int64(properties.Properties.GrpcPort)
+	// Kubernetes - Intervention End
+
+	// Run
 	var waitGroup sync.WaitGroup
 	server.services = append(server.services, services.NewHttpService())
 	server.services = append(server.services, services.NewGrpcService(server.Disgover))
 	server.services = append(server.services, services.NewDisgoverService(server.Disgover))
+	server.services = append(server.services, services.NewHelloService())
 
 	for _, service := range server.services {
 		log.Info("starting " + service.Name() + "...")
