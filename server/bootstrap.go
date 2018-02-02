@@ -15,8 +15,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/dispatchlabs/disgo/configs"
 	log "github.com/sirupsen/logrus"
+	"github.com/dispatchlabs/disgo/properties"
 )
 
 // Keys Helpers
@@ -72,14 +72,14 @@ func checkError(err error) {
 func loadKeys() ([]byte, []byte, error) {
 	log.Info("loadKeys()...")
 
-	privateKeyFile := "." + string(os.PathSeparator) + "configs" + string(os.PathSeparator) + "disgo.key"
-	publicKeyFile := "." + string(os.PathSeparator) + "configs" + string(os.PathSeparator) + "disgo.pub"
+	privateKeyFile := "." + string(os.PathSeparator) + "properties" + string(os.PathSeparator) + "disgo.key"
+	publicKeyFile := "." + string(os.PathSeparator) + "properties" + string(os.PathSeparator) + "disgo.pub"
 
 	if _, err := os.Stat(privateKeyFile); os.IsNotExist(err) {
 		log.Info("...")
 
 		reader := rand.Reader
-		if configs.Config.UseQuantumEntropy {
+		if properties.Properties.UseQuantumEntropy {
 			log.Info("generating keys using Quantum Entropy...")
 			reader = NewQuantumEntropyReader()
 		} else {

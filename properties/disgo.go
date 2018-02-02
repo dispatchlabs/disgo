@@ -1,10 +1,10 @@
-package configs
+package properties
 
 var (
-	Config *DisgoConfig
+	Properties *DisgoProperties
 )
 
-type DisgoConfig struct {
+type DisgoProperties struct {
 	HttpPort          int
 	HttpHostIp        string
 	GrpcPort          int

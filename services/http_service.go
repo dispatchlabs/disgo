@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
-	"github.com/dispatchlabs/disgo/configs"
+	"github.com/dispatchlabs/disgo/properties"
 )
 
 type HttpService struct {
@@ -16,7 +16,7 @@ type HttpService struct {
 }
 
 func NewHttpService() *HttpService {
-	httpService := HttpService{configs.Config.HttpHostIp, configs.Config.HttpPort, false}
+	httpService := HttpService{properties.Properties.HttpHostIp, properties.Properties.HttpPort, false}
 	http.HandleFunc("/", httpService.HandleIndex)
 	return &httpService
 }
