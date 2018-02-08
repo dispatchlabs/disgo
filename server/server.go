@@ -18,6 +18,7 @@ type Server struct {
 }
 
 func NewServer() *Server {
+
 	// Setup log.
 	formatter := &log.TextFormatter{
 		FullTimestamp: true,
