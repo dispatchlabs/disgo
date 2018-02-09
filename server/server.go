@@ -45,11 +45,44 @@ func NewServer() *Server {
 	return &Server{}
 }
 
+type CmdParams struct {
+	IsSeed   bool
+	NodeName string
+}
+
 func (server *Server) Start() {
+	log.Info("Args: " + strings.Join(os.Args, " "))
+
+	var cmdParams = CmdParams{}
+
+	for _, arg := range os.Args {
+		if arg == "-seed" {
+			cmdParams.IsSeed = true
+		}
+		if strings.Index(os.Args[1], "-nodeId=") == 0 {
+			cmdParams.NodeName = strings.Replace(os.Args[1], "-nodeId=", "", -1)
+		}
+	}
 
 	seedNodes := []*disgover.Contact{}
 
-	if len(os.Args) > 1 && os.Args[1] == "-seed" {
+	var thisContact = disgover.NewContact()
+	thisContact.Endpoint.Port = int64(properties.Properties.GrpcPort)
+
+	if len(cmdParams.NodeName) > 0 {
+		thisContact.Id = cmdParams.NodeName
+	}
+
+	if cmdParams.IsSeed {
+		thisContact.Id = "NODE-Seed-001"
+
+		disgover.SetInstance(
+			disgover.NewDisgover(
+				thisContact,
+				seedNodes,
+			),
+		)
+	} else {
 		seedNodes = append(seedNodes,
 			&disgover.Contact{
 				Id: "NODE-Seed-001",
@@ -58,15 +91,14 @@ func (server *Server) Start() {
 				},
 			},
 		)
-	}
 
-	disgover.SetInstance(
-		disgover.NewDisgover(
-			disgover.NewContact(),
-			seedNodes,
-		),
-	)
-	disgover.GetInstance().ThisContact.Endpoint.Port = int64(properties.Properties.GrpcPort)
+		disgover.SetInstance(
+			disgover.NewDisgover(
+				disgover.NewContact(),
+				seedNodes,
+			),
+		)
+	}
 
 	if (len(os.Args) > 1) && (strings.Index(os.Args[1], "-nodeId=") == 0) {
 		var nodeID = strings.Replace(os.Args[1], "-nodeId=", "", -1)
