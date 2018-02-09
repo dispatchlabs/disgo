@@ -2,16 +2,16 @@ package services
 
 import (
 	"sync"
+
 	"github.com/dispatchlabs/disgover"
 )
 
 type DisgoverService struct {
-	Disgover *disgover.Disgover
 	running bool
 }
 
-func NewDisgoverService(disgover *disgover.Disgover) *DisgoverService {
-	disgoverService := DisgoverService{disgover,false}
+func NewDisgoverService() *DisgoverService {
+	disgoverService := DisgoverService{false}
 	return &disgoverService
 }
 
@@ -25,5 +25,5 @@ func (disgoverService *DisgoverService) IsRunning() bool {
 
 func (disgoverService *DisgoverService) Go(waitGroup *sync.WaitGroup) {
 	disgoverService.running = true
-	disgoverService.Disgover.Go()
+	disgover.GetInstance().Go()
 }

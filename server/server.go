@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/dispatchlabs/disgo/properties"
@@ -13,7 +14,6 @@ import (
 )
 
 type Server struct {
-	Disgover *disgover.Disgover
 	services []services.IService
 }
 
@@ -47,39 +47,37 @@ func NewServer() *Server {
 
 func (server *Server) Start() {
 
-	// Kubernetes - Intervention Start
-	var seedNodeIP = os.Getenv("SEED_NODE_IP") // Needed when run from Kubernetes
-	var rootNodeId = "NODE-1"
-
 	seedNodes := []*disgover.Contact{}
-	if len(seedNodeIP) != 0 {
+
+	if len(os.Args) > 1 && os.Args[1] == "-seed" {
 		seedNodes = append(seedNodes,
 			&disgover.Contact{
-				Id: rootNodeId,
+				Id: "NODE-Seed-001",
 				Endpoint: &disgover.Endpoint{
-					Host: seedNodeIP,
-					Port: 1975,
+					Port: int64(properties.Properties.GrpcPort),
 				},
 			},
 		)
 	}
-	server.Disgover = disgover.NewDisgover(
-		disgover.NewContact(),
-		seedNodes,
-	)
-	disgover.DisgoverSingleton = server.Disgover
 
-	if len(seedNodeIP) == 0 {
-		server.Disgover.ThisContact.Id = rootNodeId
+	disgover.SetInstance(
+		disgover.NewDisgover(
+			disgover.NewContact(),
+			seedNodes,
+		),
+	)
+	disgover.GetInstance().ThisContact.Endpoint.Port = int64(properties.Properties.GrpcPort)
+
+	if (len(os.Args) > 1) && (strings.Index(os.Args[1], "-nodeId=") == 0) {
+		var nodeID = strings.Replace(os.Args[1], "-nodeId=", "", -1)
+		disgover.GetInstance().ThisContact.Id = nodeID
 	}
-	server.Disgover.ThisContact.Endpoint.Port = int64(properties.Properties.GrpcPort)
-	// Kubernetes - Intervention End
 
 	// Run
 	var waitGroup sync.WaitGroup
 	server.services = append(server.services, services.NewHttpService())
-	server.services = append(server.services, services.NewGrpcService(server.Disgover))
-	server.services = append(server.services, services.NewDisgoverService(server.Disgover))
+	server.services = append(server.services, services.NewGrpcService())
+	server.services = append(server.services, services.NewDisgoverService())
 	server.services = append(server.services, services.NewHelloService())
 
 	for _, service := range server.services {
