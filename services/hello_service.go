@@ -1,15 +1,7 @@
 package services
 
 import (
-	"context"
-	"fmt"
 	"sync"
-	"time"
-
-	"github.com/dispatchlabs/disgo/party"
-	"github.com/dispatchlabs/disgover"
-	log "github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
 )
 
 type HelloService struct {
@@ -33,20 +25,20 @@ func (helloService *HelloService) IsRunning() bool {
 func (helloService *HelloService) Go(waitGroup *sync.WaitGroup) {
 	helloService.running = true
 
-	if disgover.GetInstance().ThisContact.Id != "NODE-1" {
-		time.Sleep(time.Second * 5)
+	// if disgover.GetInstance().ThisContact.Id != "NODE-1" {
+	// 	time.Sleep(time.Second * 5)
 
-		node1, _ := disgover.GetInstance().Find("Bob-Node", disgover.GetInstance().ThisContact)
+	// 	node1, _ := disgover.GetInstance().Find("Bob-Node", disgover.GetInstance().ThisContact)
 
-		if node1 != nil {
-			conn, err := grpc.Dial(fmt.Sprintf("%s:%d", node1.Endpoint.Host, node1.Endpoint.Port), grpc.WithInsecure())
-			if err != nil {
-				log.Fatalf("cannot dial server: %v", err)
-			}
+	// 	if node1 != nil {
+	// 		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", node1.Endpoint.Host, node1.Endpoint.Port), grpc.WithInsecure())
+	// 		if err != nil {
+	// 			log.Fatalf("cannot dial server: %v", err)
+	// 		}
 
-			p := party.NewPartyClient(conn)
-			val, _ := p.GetVersion(context.Background(), &party.Empty{})
-			fmt.Printf("Party version %s\n", val)
-		}
-	}
+	// 		p := party.NewPartyClient(conn)
+	// 		val, _ := p.GetVersion(context.Background(), &party.Empty{})
+	// 		fmt.Printf("Party version %s\n", val)
+	// 	}
+	// }
 }
