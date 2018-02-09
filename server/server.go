@@ -64,44 +64,42 @@ func (server *Server) Start() {
 		}
 	}
 
-	var seedNode = &disgover.Contact{
+	var seedContact = &disgover.Contact{
 		Id: "NODE-Seed-001",
 		Endpoint: &disgover.Endpoint{
 			Host: "50.79.211.249",
 			Port: int64(properties.Properties.GrpcPort),
 		},
 	}
+	var thisContact = disgover.NewContact()
+	thisContact.Endpoint.Port = int64(properties.Properties.GrpcPort)
+
+	if len(cmdParams.NodeName) > 0 {
+		thisContact.Id = cmdParams.NodeName
+	}
 
 	if cmdParams.IsSeed {
 		disgover.SetInstance(
 			disgover.NewDisgover(
-				seedNode,
+				seedContact,
 				[]*disgover.Contact{},
 			),
 		)
 	} else {
 		disgover.SetInstance(
 			disgover.NewDisgover(
-				disgover.NewContact(),
+				thisContact,
 				[]*disgover.Contact{
-					seedNode,
+					seedContact,
 				},
 			),
 		)
 
-		if len(cmdParams.NodeName) > 0 {
-			disgover.GetInstance().ThisContact.Id = cmdParams.NodeName
-		}
-	}
-
-	if (len(os.Args) > 1) && (strings.Index(os.Args[1], "-nodeId=") == 0) {
-		var nodeID = strings.Replace(os.Args[1], "-nodeId=", "", -1)
-		disgover.GetInstance().ThisContact.Id = nodeID
 	}
 
 	// Run
 	var waitGroup sync.WaitGroup
-	server.services = append(server.services, services.NewHttpService())
+	// server.services = append(server.services, services.NewHttpService())
 	server.services = append(server.services, services.NewGrpcService())
 	server.services = append(server.services, services.NewDisgoverService())
 	server.services = append(server.services, services.NewHelloService())
