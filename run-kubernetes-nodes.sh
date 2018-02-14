@@ -9,7 +9,6 @@ echo Delete PODs
 echo ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~
 kubectl delete deployment --all
 kubectl delete pods --all
-sleep 1m
 
 echo
 echo
@@ -23,10 +22,10 @@ rm docker-output
 docker tag $imageId localhost:5000/disgo:$imageTag
 docker push localhost:5000/disgo:$imageTag
 kubectl run disgo-$imageTag --image=localhost:5000/disgo:$imageTag --port=1975 --image-pull-policy=Never
-sleep 30s
-seedNodeIP=$(kubectl describe pod disgo-node1 | grep -e IP | sed "s/IP://g" | sed 's/ //g')
-echo SeedNodeIP is $seedNodeIP
-read -p "CHECK Line above and [Enter] if looks ok..."
+#sleep 30s
+#seedNodeIP=$(kubectl describe pod disgo-node1 | grep -e IP | sed "s/IP://g" | sed 's/ //g')
+#echo SeedNodeIP is $seedNodeIP
+#read -p "CHECK Line above and [Enter] if looks ok..."
 
 echo
 echo
@@ -39,7 +38,20 @@ imageId=$(cat docker-output | grep 'Successfully built ' | sed "s/Successfully b
 rm docker-output
 docker tag $imageId localhost:5000/disgo:$imageTag
 docker push localhost:5000/disgo:$imageTag
-kubectl run disgo-$imageTag --image=localhost:5000/disgo:$imageTag --port=1975 --image-pull-policy=Never --env="SEED_NODE_IP=$seedNodeIP"
+kubectl run disgo-$imageTag --image=localhost:5000/disgo:$imageTag --port=1975 --image-pull-policy=Never
+
+echo
+echo
+echo ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~
+echo Build NODE-3
+echo ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~  ~~~~
+imageTag=node3
+docker build -t disgo:$imageTag . | tee docker-output
+imageId=$(cat docker-output | grep 'Successfully built ' | sed "s/Successfully built //g")
+rm docker-output
+docker tag $imageId localhost:5000/disgo:$imageTag
+docker push localhost:5000/disgo:$imageTag
+kubectl run disgo-$imageTag --image=localhost:5000/disgo:$imageTag --port=1975 --image-pull-policy=Never
 
 echo
 echo

@@ -9,4 +9,4 @@ WORKDIR /go/src
 RUN go get github.com/dispatchlabs/disgo
 RUN cd github.com/dispatchlabs/disgo && go get ./...
 
-ENTRYPOINT go run main.go
+ENTRYPOINT go run main.go -seedList=35.227.162.40
