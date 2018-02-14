@@ -70,12 +70,13 @@ func (server *Server) Start() {
 
 	// Set THIS Contact/Node on the network
 	var thisContact = disgover.NewContact()
-	thisContact.Endpoint.Host = cmdParams.ThisIp
-	thisContact.Endpoint.Port = int64(properties.Properties.GrpcPort)
-
 	if len(cmdParams.NodeId) > 0 {
 		thisContact.Id = cmdParams.NodeId
 	}
+	if len(cmdParams.ThisIp) > 0 {
+		thisContact.Endpoint.Host = cmdParams.ThisIp
+	}
+	thisContact.Endpoint.Port = int64(properties.Properties.GrpcPort)
 
 	// Check if we have a seed list
 	var seedList = []*disgover.Contact{}
