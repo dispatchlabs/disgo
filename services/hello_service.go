@@ -28,17 +28,19 @@ func (helloService *HelloService) Go(waitGroup *sync.WaitGroup) {
 	// if disgover.GetInstance().ThisContact.Id != "NODE-1" {
 	// 	time.Sleep(time.Second * 5)
 
-	// 	node1, _ := disgover.GetInstance().Find("Bob-Node", disgover.GetInstance().ThisContact)
+	// 	theNode, _ := disgover.GetInstance().Find("NODE-Ubuntu", disgover.GetInstance().ThisContact)
 
-	// 	if node1 != nil {
-	// 		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", node1.Endpoint.Host, node1.Endpoint.Port), grpc.WithInsecure())
+	// 	if theNode != nil {
+	// 		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", "172.18.13.22", theNode.Endpoint.Port), grpc.WithInsecure())
 	// 		if err != nil {
-	// 			log.Fatalf("cannot dial server: %v", err)
+	// 			log.Fatalf("HelloService -> cannot dial server: %v", err)
+	// 		} else {
+	// 			log.Info(fmt.Sprintf("HelloService -> connected to %s @ [%s : %d]", theNode.Id, theNode.Endpoint.Host, theNode.Endpoint.Port))
 	// 		}
 
 	// 		p := party.NewPartyClient(conn)
 	// 		val, _ := p.GetVersion(context.Background(), &party.Empty{})
-	// 		fmt.Printf("Party version %s\n", val)
+	// 		fmt.Printf("HelloService -> Remote Node Version %s\n", val)
 	// 	}
 	// }
 }
