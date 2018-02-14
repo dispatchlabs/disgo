@@ -15,7 +15,7 @@ __Run this code to be part of the best business enabling, open-source chain on t
 - `cd $GOPATH/src/github.com/dispatchlabs/disgo`
 - `go build`
 - `sudo mkdir /go-binaries`
-- `sudo mv $GOPATH/bin/disgo /go-binaries/`
+- `sudo mv ./disgo /go-binaries/`
 - `sudo cp -r ./properties /go-binaries/`
 - `sudo nano /etc/systemd/system/dispatch-disgo-node.service`
 ```shell
@@ -25,7 +25,7 @@ After=network.target
 
 [Service]
 WorkingDirectory=/go-binaries
-ExecStart=/go-binaries/disgo -seed -nodeId=NODE-Seed-001
+ExecStart=/go-binaries/disgo -asSeed -nodeId=NODE-Seed-001 -thisIp=35.227.162.40
 Restart=on-failure
 
 User=dispatch-services

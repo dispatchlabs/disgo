@@ -46,7 +46,6 @@ func NewServer() *Server {
 }
 
 type CmdParams struct {
-	IsSeed   bool
 	NodeId   string
 	ThisIp   string
 	SeedList []string
@@ -57,10 +56,9 @@ func (server *Server) Start() {
 
 	var cmdParams = CmdParams{}
 
+	// Parse CMD Args
 	for _, arg := range os.Args {
-		if arg == "-asSeed" {
-			cmdParams.IsSeed = true
-		} else if strings.Index(arg, "-nodeId=") == 0 {
+		if strings.Index(arg, "-nodeId=") == 0 {
 			cmdParams.NodeId = strings.Replace(arg, "-nodeId=", "", -1)
 		} else if strings.Index(arg, "-thisIp=") == 0 {
 			cmdParams.ThisIp = strings.Replace(arg, "-thisIp=", "", -1)
@@ -70,37 +68,28 @@ func (server *Server) Start() {
 		}
 	}
 
-	if cmdParams.IsSeed {
-		var thisContact = disgover.NewContact()
-		thisContact.Endpoint.Host = cmdParams.ThisIp
-		thisContact.Endpoint.Port = int64(properties.Properties.GrpcPort)
+	// Set THIS Contact/Node on the network
+	var thisContact = disgover.NewContact()
+	thisContact.Endpoint.Host = cmdParams.ThisIp
+	thisContact.Endpoint.Port = int64(properties.Properties.GrpcPort)
 
-		if len(cmdParams.NodeId) > 0 {
-			thisContact.Id = cmdParams.NodeId
-		}
-
-		disgover.SetInstance(disgover.NewDisgover(thisContact, []*disgover.Contact{}))
-	} else {
-		var thisContact = disgover.NewContact()
-		thisContact.Endpoint.Host = cmdParams.ThisIp
-		thisContact.Endpoint.Port = int64(properties.Properties.GrpcPort)
-
-		if len(cmdParams.NodeId) > 0 {
-			thisContact.Id = cmdParams.NodeId
-		}
-
-		var seedList = []*disgover.Contact{}
-		for _, seedIP := range cmdParams.SeedList {
-			seedList = append(seedList, &disgover.Contact{
-				Endpoint: &disgover.Endpoint{
-					Host: seedIP,
-					Port: int64(properties.Properties.GrpcPort),
-				},
-			})
-		}
-
-		disgover.SetInstance(disgover.NewDisgover(thisContact, seedList))
+	if len(cmdParams.NodeId) > 0 {
+		thisContact.Id = cmdParams.NodeId
 	}
+
+	// Check if we have a seed list
+	var seedList = []*disgover.Contact{}
+	for _, seedIP := range cmdParams.SeedList {
+		seedList = append(seedList, &disgover.Contact{
+			Endpoint: &disgover.Endpoint{
+				Host: seedIP,
+				Port: int64(properties.Properties.GrpcPort),
+			},
+		})
+	}
+
+	// Instantiate the node
+	disgover.SetInstance(disgover.NewDisgover(thisContact, seedList))
 
 	// Run
 	var waitGroup sync.WaitGroup
