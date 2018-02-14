@@ -59,15 +59,15 @@ func (server *Server) Start() {
 		if arg == "-seed" {
 			cmdParams.IsSeed = true
 		}
-		if strings.Index(os.Args[1], "-nodeId=") == 0 {
-			cmdParams.NodeName = strings.Replace(os.Args[1], "-nodeId=", "", -1)
+		if strings.Index(arg, "-nodeId=") == 0 {
+			cmdParams.NodeName = strings.Replace(arg, "-nodeId=", "", -1)
 		}
 	}
 
 	var seedContact = &disgover.Contact{
-		Id: "NODE-Seed-001",
+		Id: cmdParams.NodeName,
 		Endpoint: &disgover.Endpoint{
-			Host: "50.79.211.249",
+			Host: "35.227.162.40",
 			Port: int64(properties.Properties.GrpcPort),
 		},
 	}
