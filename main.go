@@ -1,10 +1,10 @@
 package main
 
 import (
-	"github.com/dispatchlabs/disgo/server"
+	"github.com/dispatchlabs/disgo/core"
 )
 
 func main() {
-	server := server.NewServer()
+	server := core.NewServer()
 	server.Start()
 }
