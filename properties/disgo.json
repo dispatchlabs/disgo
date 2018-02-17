@@ -1,5 +1,5 @@
 {
-  "httpPort" : 3100,
+  "httpPort" : 1973,
   "httpHostIp" : "localhost",
   "grpcPort" : 1975,
   "grpcTimeout" : 5,

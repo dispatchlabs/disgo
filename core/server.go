@@ -15,11 +15,20 @@ import (
 	"strconv"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc"
+	"github.com/dispatchlabs/disgo/services"
+	"github.com/gorilla/mux"
+	"net/http"
+	"reflect"
+)
+
+const (
+	Version = "1.0.0"
 )
 
 // Server
 type Server struct {
 	services []types.IService
+	router   *mux.Router
 }
 
 // NewServer
@@ -48,14 +57,21 @@ func NewServer() *Server {
 		log.Error("unable to keys: " + err.Error())
 	}
 
-	return &Server{}
+	// Setup router and handlers.
+	server := &Server{}
+	server.router = mux.NewRouter()
+	server.router.HandleFunc("/v1/transactions", server.createTransactionHandler).Methods("POST")
+
+	return server
 }
 
 // Start
 func (server *Server) Start() {
+	log.Info("booting Disgo v" + Version)
 	log.Info("args  [" + strings.Join(os.Args, " ") + "]")
 
 	// Add services.
+	server.services = append(server.services, services.NewHttpService(server.router))
 	server.services = append(server.services, dapos.NewDAPoSService())
 	server.services = append(server.services, disgover.NewDisGoverService())
 
@@ -88,4 +104,32 @@ func (server *Server) Start() {
 		waitGroup.Add(1)
 	}
 	waitGroup.Wait()
+}
+
+// handler
+func (server *Server) createTransactionHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	body, error := ioutil.ReadAll(request.Body)
+	if error != nil {
+		log.WithFields(log.Fields{
+			"method": "Server.createTransactionHandler",
+		}).Info("error reading HTTP body of request ", error)
+		http.Error(responseWriter, "error reading HTTP body of request", http.StatusBadRequest)
+		return
+	}
+
+	log.Info(body)
+
+	//server.getService(&dapos.DAPoSService{}).(*dapos.DAPoSService).CreateTransaction()
+
+	responseWriter.Write([]byte("Disgo 1975!\n"))
+}
+
+// getService
+func (server *Server) getService(serviceInterface interface{}) types.IService {
+	for _, service := range server.services {
+		if reflect.TypeOf(service) == reflect.TypeOf(serviceInterface) {
+			return service
+		}
+	}
+	return nil
 }
