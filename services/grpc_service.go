@@ -27,7 +27,7 @@ func NewGrpcService(grpcServer *grpc.Server) *GrpcService {
 func (grpcService *GrpcService) Init() {
 	log.WithFields(log.Fields{
 		"method": grpcService.Name() + ".Init",
-	}).Info("init...")
+	}).Info("initializing...")
 }
 
 // Name

@@ -31,7 +31,7 @@ func NewHttpService(router *mux.Router) *HttpService {
 func (httpService *HttpService) Init() {
 	log.WithFields(log.Fields{
 		"method": "HttpService.Init",
-	}).Info("init...")
+	}).Info("initializing...")
 }
 
 // Name

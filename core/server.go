@@ -110,7 +110,16 @@ func (server *Server) createTransactionHandler(responseWriter http.ResponseWrite
 		return
 	}
 
-	server.getService(&dapos.DAPoSService{}).(*dapos.DAPoSService).CreateTransaction(transaction, nil)
+	transaction, error = server.getService(&dapos.DAPoSService{}).(*dapos.DAPoSService).CreateTransaction(transaction, nil)
+	if error != nil {
+		log.WithFields(log.Fields{
+			"method": "Server.createTransactionHandler",
+		}).Error("JSON_PARSE_ERROR ", error) // TODO: Should return JSON!!!
+		http.Error(responseWriter, "error reading HTTP body of request", http.StatusBadRequest)
+		return
+	}
+
+	http.Error(responseWriter, "foobar", http.StatusOK)
 }
 
 // getService
