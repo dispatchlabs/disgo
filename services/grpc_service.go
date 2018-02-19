@@ -47,7 +47,7 @@ func (grpcService *GrpcService) RegisterGrpc(grpcServer *grpc.Server) {
 // Go
 func (grpcService *GrpcService) Go(waitGroup *sync.WaitGroup) {
 
-	// Create TCP listener/GRPC grpcServer.
+	// Create TCP listener/GRPC server.
 	listener, error := net.Listen("tcp", ":"+strconv.Itoa(properties.Properties.GrpcPort))
 	if error != nil {
 		log.Fatalf("failed to listen: %v", error)

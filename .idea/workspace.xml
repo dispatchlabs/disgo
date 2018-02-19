@@ -2,11 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1b0d555b-f095-4657-b089-2fb65ce40427" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/core/server.go" afterPath="$PROJECT_DIR$/core/server.go" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/curls/create_transaction.sh" afterPath="$PROJECT_DIR$/curls/create_transaction.sh" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/services/grpc_service.go" afterPath="$PROJECT_DIR$/services/grpc_service.go" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/services/http_service.go" afterPath="$PROJECT_DIR$/services/http_service.go" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../disgo_commons/types/wallet_account.go" afterPath="$PROJECT_DIR$/../disgo_commons/types/wallet_account.go" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../disgo_commons/types/wallet_address.go" afterPath="$PROJECT_DIR$/../disgo_commons/types/wallet_address.go" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -17,68 +15,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="FileEditorManager">
-    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="server.go" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/core/server.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="140">
-              <caret line="94" column="0" lean-forward="false" selection-start-line="94" selection-start-column="0" selection-end-line="94" selection-end-column="0" />
-              <folding>
-                <element signature="e#14#415#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="create_transaction.sh" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/curls/create_transaction.sh">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="30">
-              <caret line="2" column="87" lean-forward="true" selection-start-line="2" selection-start-column="87" selection-end-line="2" selection-end-column="87" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="transaction.go" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/../disgo_commons/types/transaction.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="960">
-              <caret line="64" column="26" lean-forward="false" selection-start-line="64" selection-start-column="26" selection-end-line="64" selection-end-column="26" />
-              <folding>
-                <element signature="e#15#166#0" expanded="true" />
-                <marker date="1519081144000" expanded="true" signature="22:32" ph="..." />
-                <marker date="1519081144000" expanded="true" signature="1532:1534" ph="{...}" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="grpc_service.go" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/services/grpc_service.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="113">
-              <caret line="29" column="25" lean-forward="false" selection-start-line="29" selection-start-column="13" selection-end-line="29" selection-end-column="25" />
-              <folding>
-                <element signature="e#18#195#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="http_service.go" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/services/http_service.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-38">
-              <caret line="33" column="25" lean-forward="false" selection-start-line="33" selection-start-column="25" selection-end-line="33" selection-end-column="25" />
-              <folding>
-                <element signature="e#18#189#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-    </leaf>
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -153,7 +90,6 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/configs/disgo_config.go" />
         <option value="$PROJECT_DIR$/grpc/proto/disgo.pb.go" />
         <option value="$PROJECT_DIR$/properties/disgo.go" />
         <option value="$PROJECT_DIR$/server/bootstrap.go" />
@@ -198,12 +134,13 @@
         <option value="$PROJECT_DIR$/../dapos/core/dapos_service.go" />
         <option value="$PROJECT_DIR$/core/server.go" />
         <option value="$PROJECT_DIR$/../disgo_commons/crypto/hash.go" />
-        <option value="$PROJECT_DIR$/../disgo_commons/types/wallet_address.go" />
         <option value="$PROJECT_DIR$/../disgo_commons/types/node.go" />
-        <option value="$PROJECT_DIR$/services/grpc_service.go" />
         <option value="$PROJECT_DIR$/services/http_service.go" />
         <option value="$PROJECT_DIR$/curls/create_transaction.sh" />
         <option value="$PROJECT_DIR$/../disgo_commons/types/transaction.go" />
+        <option value="$PROJECT_DIR$/services/grpc_service.go" />
+        <option value="$PROJECT_DIR$/../disgo_commons/types/wallet_address.go" />
+        <option value="$PROJECT_DIR$/../disgo_commons/types/wallet_account.go" />
       </list>
     </option>
   </component>
@@ -288,15 +225,6 @@
               <item name="disgo_commons" type="462c0819:PsiDirectoryNode" />
               <item name="utils" type="462c0819:PsiDirectoryNode" />
             </path>
-            <path>
-              <item name="disgo" type="b2602c69:ProjectViewProjectNode" />
-              <item name="disgover" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="disgo" type="b2602c69:ProjectViewProjectNode" />
-              <item name="disgover" type="462c0819:PsiDirectoryNode" />
-              <item name="core" type="462c0819:PsiDirectoryNode" />
-            </path>
           </expand>
           <select />
         </subPane>
@@ -339,7 +267,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Bash.create_transaction.sh">
+  <component name="RunManager" selected="Go Application.go build main.go (disgo)">
     <configuration default="true" type="Applet" factoryName="Applet">
       <option name="WIDTH" value="400" />
       <option name="HEIGHT" value="300" />
@@ -472,8 +400,8 @@
     </list>
     <recent_temporary>
       <list size="2">
-        <item index="0" class="java.lang.String" itemvalue="Bash.create_transaction.sh" />
-        <item index="1" class="java.lang.String" itemvalue="Go Application.go build main.go (disgo)" />
+        <item index="0" class="java.lang.String" itemvalue="Go Application.go build main.go (disgo)" />
+        <item index="1" class="java.lang.String" itemvalue="Bash.create_transaction.sh" />
       </list>
     </recent_temporary>
   </component>
@@ -514,12 +442,12 @@
       <workItem from="1518800592453" duration="1756000" />
       <workItem from="1518815099002" duration="208000" />
       <workItem from="1518829407079" duration="17750000" />
-      <workItem from="1519065865719" duration="8162000" />
+      <workItem from="1519065865719" duration="8294000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="83962000" />
+    <option name="totallyTimeSpent" value="84094000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -532,7 +460,6 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="3" y="23" width="1440" height="797" extended-state="6" />
-    <editor active="true" />
     <layout>
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32907802" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
@@ -546,7 +473,7 @@
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.2731668" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Capture Tool" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.24821173" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.24821173" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3267974" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
@@ -710,13 +637,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../disgo_commons/types/i_service.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="180">
-          <caret line="15" column="0" lean-forward="false" selection-start-line="15" selection-start-column="0" selection-end-line="15" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../disgover/core/disgover_service.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="300">
@@ -736,16 +656,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="398">
           <caret line="158" column="42" lean-forward="false" selection-start-line="158" selection-start-column="37" selection-end-line="158" selection-end-column="42" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../disgo_commons/types/i_consensus.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="60">
-          <caret line="4" column="4" lean-forward="true" selection-start-line="4" selection-start-column="4" selection-end-line="4" selection-end-column="97" />
-          <folding>
-            <marker date="1519065735000" expanded="true" signature="55:153" ph="{...}" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -811,59 +721,11 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../disgo_commons/types/wallet_address.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="315">
-          <caret line="21" column="30" lean-forward="false" selection-start-line="21" selection-start-column="30" selection-end-line="21" selection-end-column="30" />
-          <folding>
-            <element signature="e#15#140#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../disgo_commons/types/node.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="60">
-          <caret line="4" column="7" lean-forward="false" selection-start-line="4" selection-start-column="7" selection-end-line="4" selection-end-column="7" />
-          <folding>
-            <element signature="e#15#71#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../disgo_commons/types/wallet_account.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="135">
-          <caret line="9" column="0" lean-forward="true" selection-start-line="9" selection-start-column="0" selection-end-line="9" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../disgo_commons/utils/utils.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/services/http_service.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-38">
-          <caret line="33" column="25" lean-forward="false" selection-start-line="33" selection-start-column="25" selection-end-line="33" selection-end-column="25" />
-          <folding>
-            <element signature="e#18#189#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/services/grpc_service.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="113">
-          <caret line="29" column="25" lean-forward="false" selection-start-line="29" selection-start-column="13" selection-end-line="29" selection-end-column="25" />
-          <folding>
-            <element signature="e#18#195#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -883,21 +745,21 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/core/server.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="140">
-          <caret line="94" column="0" lean-forward="false" selection-start-line="94" selection-start-column="0" selection-end-line="94" selection-end-column="0" />
-          <folding>
-            <element signature="e#14#415#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../../gorilla/mux/context_native.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="285">
           <caret line="22" column="0" lean-forward="false" selection-start-line="22" selection-start-column="0" selection-end-line="22" selection-end-column="0" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/services/grpc_service.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="735">
+          <caret line="49" column="38" lean-forward="false" selection-start-line="49" selection-start-column="38" selection-end-line="49" selection-end-column="38" />
+          <folding>
+            <element signature="e#18#195#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -909,15 +771,79 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/services/http_service.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="15">
+          <caret line="33" column="25" lean-forward="false" selection-start-line="33" selection-start-column="25" selection-end-line="33" selection-end-column="25" />
+          <folding>
+            <element signature="e#18#189#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/core/server.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="468">
+          <caret line="94" column="0" lean-forward="false" selection-start-line="94" selection-start-column="0" selection-end-line="94" selection-end-column="0" />
+          <folding>
+            <element signature="e#14#415#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../disgo_commons/types/wallet_address.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="180">
+          <caret line="12" column="19" lean-forward="false" selection-start-line="12" selection-start-column="19" selection-end-line="12" selection-end-column="19" />
+          <folding>
+            <element signature="e#15#140#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../disgo_commons/types/wallet_account.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="30">
+          <caret line="2" column="16" lean-forward="false" selection-start-line="2" selection-start-column="16" selection-end-line="2" selection-end-column="16" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/../disgo_commons/types/transaction.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="960">
-          <caret line="64" column="26" lean-forward="false" selection-start-line="64" selection-start-column="26" selection-end-line="64" selection-end-column="26" />
+        <state relative-caret-position="270">
+          <caret line="18" column="27" lean-forward="true" selection-start-line="18" selection-start-column="27" selection-end-line="18" selection-end-column="27" />
           <folding>
             <element signature="e#15#166#0" expanded="true" />
             <marker date="1519081144000" expanded="true" signature="22:32" ph="..." />
             <marker date="1519081144000" expanded="true" signature="1532:1534" ph="{...}" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../disgo_commons/types/node.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="60">
+          <caret line="4" column="7" lean-forward="false" selection-start-line="4" selection-start-column="7" selection-end-line="4" selection-end-column="7" />
+          <folding>
+            <element signature="e#15#71#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../disgo_commons/types/i_service.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="180">
+          <caret line="15" column="0" lean-forward="false" selection-start-line="15" selection-start-column="0" selection-end-line="15" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../disgo_commons/types/i_consensus.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="60">
+          <caret line="4" column="4" lean-forward="true" selection-start-line="4" selection-start-column="4" selection-end-line="4" selection-end-column="97" />
+          <folding />
         </state>
       </provider>
     </entry>
