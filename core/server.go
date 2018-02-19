@@ -6,14 +6,11 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"net"
 	"github.com/dispatchlabs/disgo/properties"
 	"github.com/dispatchlabs/disgo_commons/types"
 	log "github.com/sirupsen/logrus"
 	dapos "github.com/dispatchlabs/dapos/core"
 	disgover "github.com/dispatchlabs/disgover/core"
-	"strconv"
-	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc"
 	"github.com/dispatchlabs/disgo/services"
 	"github.com/gorilla/mux"
@@ -27,8 +24,9 @@ const (
 
 // Server
 type Server struct {
-	services []types.IService
-	router   *mux.Router
+	services   []types.IService
+	router     *mux.Router
+	grpcServer *grpc.Server
 }
 
 // NewServer
@@ -57,71 +55,62 @@ func NewServer() *Server {
 		log.Error("unable to keys: " + err.Error())
 	}
 
-	// Setup router and handlers.
-	server := &Server{}
-	server.router = mux.NewRouter()
-	server.router.HandleFunc("/v1/transactions", server.createTransactionHandler).Methods("POST")
-
-	return server
+	return &Server{}
 }
 
 // Start
 func (server *Server) Start() {
-	log.Info("booting Disgo v" + Version)
+	log.Info("booting Disgo v" + Version + "...")
 	log.Info("args  [" + strings.Join(os.Args, " ") + "]")
 
+	// Create router and handlers.
+	server.router = mux.NewRouter()
+	server.router.HandleFunc("/v1/transactions", server.createTransactionHandler).Methods("POST")
+
+	// Create grpcServer.
+	server.grpcServer = grpc.NewServer()
+
 	// Add services.
-	server.services = append(server.services, services.NewHttpService(server.router))
 	server.services = append(server.services, dapos.NewDAPoSService())
 	server.services = append(server.services, disgover.NewDisGoverService())
+	server.services = append(server.services, services.NewHttpService(server.router))
+	server.services = append(server.services, services.NewGrpcService(server.grpcServer))
 
-	// Create TCP listener/GRPC server.
-	listener, error := net.Listen("tcp", ":"+strconv.Itoa(properties.Properties.GrpcPort))
-	if error != nil {
-		log.Fatalf("failed to listen: %v", error)
-	}
-	grpcServer := grpc.NewServer()
-
-	// Initialize and run services.
+	// Run services.
 	var waitGroup sync.WaitGroup
 	for _, service := range server.services {
-		log.Info("starting " + service.Name() + "...")
+		log.WithFields(log.Fields{
+			"method": "Server.Start",
+		}).Info("starting " + service.Name() + "...")
 		service.Init()
-		service.RegisterGrpc(grpcServer)
+		service.RegisterGrpc(server.grpcServer)
 		go service.Go(&waitGroup)
-	}
-
-	// Serve.
-	reflection.Register(grpcServer)
-	log.WithFields(log.Fields{
-		"method": "Server.Start",
-	}).Info("listening on " + strconv.Itoa(properties.Properties.GrpcPort))
-	if error := grpcServer.Serve(listener); error != nil {
-		log.Fatalf("failed to serve: %v", error)
-	}
-
-	for i := 0; i < len(server.services); i++ {
 		waitGroup.Add(1)
 	}
 	waitGroup.Wait()
 }
 
-// handler
+// createTransactionHandler
 func (server *Server) createTransactionHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	body, error := ioutil.ReadAll(request.Body)
 	if error != nil {
 		log.WithFields(log.Fields{
 			"method": "Server.createTransactionHandler",
-		}).Info("error reading HTTP body of request ", error)
+		}).Error("unable to read HTTP body of request ", error)
 		http.Error(responseWriter, "error reading HTTP body of request", http.StatusBadRequest)
 		return
 	}
 
-	log.Info(body)
+	transaction, error := types.NewTransactionFromJson(body)
+	if error != nil {
+		log.WithFields(log.Fields{
+			"method": "Server.createTransactionHandler",
+		}).Error("JSON_PARSE_ERROR ", error) // TODO: Should return JSON!!!
+		http.Error(responseWriter, "error reading HTTP body of request", http.StatusBadRequest)
+		return
+	}
 
-	//server.getService(&dapos.DAPoSService{}).(*dapos.DAPoSService).CreateTransaction()
-
-	responseWriter.Write([]byte("Disgo 1975!\n"))
+	server.getService(&dapos.DAPoSService{}).(*dapos.DAPoSService).CreateTransaction(transaction, nil)
 }
 
 // getService
