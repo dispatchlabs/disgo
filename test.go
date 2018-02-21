@@ -6,13 +6,12 @@ import (
 	"os/signal"
 	"syscall"
 
-	"context"
 
-	party2 "github.com/dispatchlabs/disgo/party"
 	"github.com/dispatchlabs/disgover"
 )
 
 func main2() {
+
 
 	var seedNodeIP = os.Getenv("SEED_NODE_IP") // Needed when run from Kubernetes
 	if len(seedNodeIP) == 0 {
@@ -43,9 +42,9 @@ func main2() {
 		fmt.Println(fmt.Sprintf("DISGOVER: Find() -> %s on [%s : %d]", node2.Id, node2.Endpoint.Host, node2.Endpoint.Port))
 	}
 
-	party := party2.NewParty()
-	val, _ := party.GetVersion(context.Background(), &party2.Empty{})
-	fmt.Printf("Party version %s\n", val)
+	// party := party2.NewParty()
+	// val, _ := party.GetVersion(context.Background(), &party2.Empty{})
+	// fmt.Printf("Party version %s\n", val)
 	// rslt := party.Join(dsg.ThisContact)
 	// fmt.Printf("%s\n", rslt)
 

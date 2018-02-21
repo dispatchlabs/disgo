@@ -6,5 +6,5 @@ import (
 
 func main() {
 	server := core.NewServer()
-	server.Start()
+	server.Go()
 }

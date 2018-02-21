@@ -11,10 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	dapos "github.com/dispatchlabs/dapos/core"
 	disgover "github.com/dispatchlabs/disgover/core"
-	"google.golang.org/grpc"
-	"github.com/dispatchlabs/disgo/services"
-	"github.com/gorilla/mux"
-	"net/http"
+	"github.com/dispatchlabs/disgo_commons/services"
 	"reflect"
 )
 
@@ -25,8 +22,6 @@ const (
 // Server
 type Server struct {
 	services   []types.IService
-	router     *mux.Router
-	grpcServer *grpc.Server
 }
 
 // NewServer
@@ -58,39 +53,30 @@ func NewServer() *Server {
 	return &Server{}
 }
 
-// Start
-func (server *Server) Start() {
+// Go
+func (server *Server) Go() {
 	log.Info("booting Disgo v" + Version + "...")
 	log.Info("args  [" + strings.Join(os.Args, " ") + "]")
-
-	// Create router and handlers.
-	server.router = mux.NewRouter()
-	server.router.HandleFunc("/v1/transactions", server.createTransactionHandler).Methods("POST")
-
-	// Create grpcServer.
-	server.grpcServer = grpc.NewServer()
 
 	// Add services.
 	server.services = append(server.services, dapos.NewDAPoSService())
 	server.services = append(server.services, disgover.NewDisGoverService())
-	server.services = append(server.services, services.NewHttpService(server.router))
-	server.services = append(server.services, services.NewGrpcService(server.grpcServer))
+	server.services = append(server.services, services.NewHttpService())
+	server.services = append(server.services, services.NewGrpcService())
 
 	// Run services.
 	var waitGroup sync.WaitGroup
 	for _, service := range server.services {
 		log.WithFields(log.Fields{
-			"method": "Server.Start",
+			"method": "Server.Go",
 		}).Info("starting " + service.Name() + "...")
-		service.Init()
-		service.RegisterGrpc(server.grpcServer)
 		go service.Go(&waitGroup)
 		waitGroup.Add(1)
 	}
 	waitGroup.Wait()
 }
 
-// createTransactionHandler
+/*
 func (server *Server) createTransactionHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	body, error := ioutil.ReadAll(request.Body)
 	if error != nil {
@@ -121,6 +107,7 @@ func (server *Server) createTransactionHandler(responseWriter http.ResponseWrite
 
 	http.Error(responseWriter, "foobar", http.StatusOK)
 }
+*/
 
 // getService
 func (server *Server) getService(serviceInterface interface{}) types.IService {
