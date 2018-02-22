@@ -1,5 +1,8 @@
 FROM golang:alpine as builder
 
+apk update
+apk add git
+
 ENV GOPATH /go:$GOPATH
 ENV PATH /go/bin:$PATH
 
