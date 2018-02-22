@@ -9,7 +9,7 @@ ADD . /go/src
 WORKDIR /go/src
 
 RUN go get github.com/dispatchlabs/disgo
-RUN cd $GOPATH/src/github.com/dispatchlabs/disgo
+RUN cd /go/src/github.com/dispatchlabs/disgo
 RUN go build && mv ./disgo /go-binaries
 
 # -----------------------
