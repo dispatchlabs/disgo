@@ -1,0 +1,18 @@
+FROM golang:alpine as builder
+
+ENV GOPATH /go:$GOPATH
+ENV PATH /go/bin:$PATH
+
+ADD . /go/src
+WORKDIR /go/src
+
+RUN go get github.com/dispatchlabs/disgo
+RUN cd $GOPATH/src/github.com/dispatchlabs/disgo
+RUN go build && mv ./disgo /go-binaries
+
+# -----------------------
+FROM alpine:latest
+
+COPY --from=builder /go-binaries/disgo /go-binaries/disgo
+
+ENTRYPOINT ["/go-binaries/disgo"]
