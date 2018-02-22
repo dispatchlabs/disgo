@@ -5,4 +5,6 @@ services:
       container_name: disgo-service
       command:        -asSeed -nodeId=NODE-Seed-001 -thisIp=35.227.162.40
       restart:        unless-stopped
-     
+      ports:
+        - "1973:1973"
+        - "1975:1975"
