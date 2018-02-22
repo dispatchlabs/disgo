@@ -9,8 +9,10 @@ ADD . /go/src
 WORKDIR /go/src
 
 RUN go get github.com/dispatchlabs/disgo
-RUN cd /go/src/github.com/dispatchlabs/disgo
-RUN go build && mv ./disgo /go-binaries
+RUN cd /go/src/github.com/dispatchlabs/disgo \
+  && echo $(pwd)  \
+  && go build \
+  && mv ./disgo /go-binaries
 
 # -----------------------
 FROM alpine:latest
