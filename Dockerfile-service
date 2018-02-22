@@ -14,4 +14,6 @@ RUN ["mkdir", "-p", "/go-binaries"]
 COPY --from=builder /go/src/github.com/dispatchlabs/disgo/disgo /go-binaries/disgo
 ADD properties /go-binaries/properties
 
+WORKDIR /go-binaries
+
 ENTRYPOINT ["/go-binaries/disgo"]
