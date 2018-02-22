@@ -9,6 +9,6 @@ RUN cd /go/src/github.com/dispatchlabs/disgo \
 # -----------------------
 FROM alpine:latest
 
-COPY --from=builder /go/src/github.com/dispatchlabs/disgo/disgo /go-binaries/disgo
+COPY --from=builder /go/src/github.com/dispatchlabs/disgo/disgo /usr/bin/disgo
 
 ENTRYPOINT ["/go-binaries/disgo"]
