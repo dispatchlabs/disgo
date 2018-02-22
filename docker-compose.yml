@@ -1,10 +1,12 @@
-version:              "3"
+version:            "3"
 services:
   disgo:
-      build:          ./service-docker
-      container_name: disgo-service
-      command:        -asSeed -nodeId=NODE-Seed-001 -thisIp=35.227.162.40
-      restart:        unless-stopped
-      ports:
-        - "1973:1973"
-        - "1975:1975"
+    build:
+      context:      .
+      dockerfile:   Dockerfile-service
+    container_name: disgo-service
+    command:        -asSeed -nodeId=NODE-Seed-001 -thisIp=35.227.162.40
+    restart:        unless-stopped
+    ports:
+      - "1973:1973"
+      - "1975:1975"
