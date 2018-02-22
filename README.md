@@ -10,6 +10,12 @@ __Run this code to be part of the best business enabling, open-source chain on t
 - `cd ~/go/src/dispatchlabs/disgo`
 - `go run main.go`
 
+##### As Service with Docker
+```
+$ docker-compose build
+$ docker-compose up -d
+```
+
 ##### As Service
 - `go get github.com/dispatchlabs/disgo`
 - `cd $GOPATH/src/github.com/dispatchlabs/disgo`
