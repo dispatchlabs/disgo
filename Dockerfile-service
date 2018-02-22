@@ -12,6 +12,6 @@ FROM alpine:latest
 RUN ["mkdir", "-p", "/go-binaries"]
 
 COPY --from=builder /go/src/github.com/dispatchlabs/disgo/disgo /go-binaries/disgo
-COPY properties /go-binaries/
+ADD properties /go-binaries/properties
 
 ENTRYPOINT ["/go-binaries/disgo"]
