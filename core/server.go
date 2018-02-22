@@ -12,7 +12,6 @@ import (
 	dapos "github.com/dispatchlabs/dapos/core"
 	disgover "github.com/dispatchlabs/disgover/core"
 	"github.com/dispatchlabs/disgo_commons/services"
-	"reflect"
 )
 
 const (
@@ -22,6 +21,7 @@ const (
 // Server
 type Server struct {
 	services   []types.IService
+	api        *Api
 }
 
 // NewServer
@@ -64,6 +64,9 @@ func (server *Server) Go() {
 	server.services = append(server.services, services.NewHttpService())
 	server.services = append(server.services, services.NewGrpcService())
 
+	// Create api.
+	server.api = NewApi(server.services)
+
 	// Run services.
 	var waitGroup sync.WaitGroup
 	for _, service := range server.services {
@@ -76,45 +79,3 @@ func (server *Server) Go() {
 	waitGroup.Wait()
 }
 
-/*
-func (server *Server) createTransactionHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	body, error := ioutil.ReadAll(request.Body)
-	if error != nil {
-		log.WithFields(log.Fields{
-			"method": "Server.createTransactionHandler",
-		}).Error("unable to read HTTP body of request ", error)
-		http.Error(responseWriter, "error reading HTTP body of request", http.StatusBadRequest)
-		return
-	}
-
-	transaction, error := types.NewTransactionFromJson(body)
-	if error != nil {
-		log.WithFields(log.Fields{
-			"method": "Server.createTransactionHandler",
-		}).Error("JSON_PARSE_ERROR ", error) // TODO: Should return JSON!!!
-		http.Error(responseWriter, "error reading HTTP body of request", http.StatusBadRequest)
-		return
-	}
-
-	transaction, error = server.getService(&dapos.DAPoSService{}).(*dapos.DAPoSService).CreateTransaction(transaction, nil)
-	if error != nil {
-		log.WithFields(log.Fields{
-			"method": "Server.createTransactionHandler",
-		}).Error("JSON_PARSE_ERROR ", error) // TODO: Should return JSON!!!
-		http.Error(responseWriter, "error reading HTTP body of request", http.StatusBadRequest)
-		return
-	}
-
-	http.Error(responseWriter, "foobar", http.StatusOK)
-}
-*/
-
-// getService
-func (server *Server) getService(serviceInterface interface{}) types.IService {
-	for _, service := range server.services {
-		if reflect.TypeOf(service) == reflect.TypeOf(serviceInterface) {
-			return service
-		}
-	}
-	return nil
-}
