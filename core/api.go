@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	log "github.com/sirupsen/logrus"
-	dapos "github.com/dispatchlabs/dapos/core"
+	"encoding/json"
 )
 
 // Api
@@ -61,7 +61,8 @@ func (api *Api) createTransactionHandler(responseWriter http.ResponseWriter, req
 		return
 	}
 
-	transaction, error := types.NewTransactionFromJson(body)
+	transaction := &types.Transaction{}
+	error = json.Unmarshal(body, transaction)
 	if error != nil {
 		log.WithFields(log.Fields{
 			"method": "Server.createTransactionHandler",
@@ -70,7 +71,9 @@ func (api *Api) createTransactionHandler(responseWriter http.ResponseWriter, req
 		return
 	}
 
-	transaction, error = api.getService(&dapos.DAPoSService{}).(*dapos.DAPoSService).CreateTransaction(transaction, nil)
+	/*
+	TODO: Fix this! MAO!
+	t, error = api.getService(&dapos.DAPoSService{}).(*dapos.DAPoSService).CreateTransaction(transaction, nil)
 	if error != nil {
 		log.WithFields(log.Fields{
 			"method": "Server.createTransactionHandler",
@@ -81,6 +84,7 @@ func (api *Api) createTransactionHandler(responseWriter http.ResponseWriter, req
 
 	http.Error(responseWriter, "foobar", http.StatusOK)
 	log.Info("create transaction")
+	*/
 }
 
 // retrieveTransactionHandler
@@ -91,8 +95,8 @@ func (api *Api) retrieveTransactionHandler(responseWriter http.ResponseWriter, r
 }
 
 // getService
-func (api *Api) getService(serviceInterface interface{}) types.IService {
-	for _, service := range api.services {
+func (this *Api) getService(serviceInterface interface{}) types.IService {
+	for _, service := range this.services {
 		if reflect.TypeOf(service) == reflect.TypeOf(serviceInterface) {
 			return service
 		}
