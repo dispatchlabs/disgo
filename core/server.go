@@ -58,12 +58,6 @@ func (server *Server) Go() {
 	log.Info("booting Disgo v" + Version + "...")
 	log.Info("args  [" + strings.Join(os.Args, " ") + "]")
 
-	/*
-	transaction := types.NewTransaction()
-	transaction.From, _ = crypto.NewWalletAddress()
-	log.Info(transaction.String())
-	*/
-
 	// Add services.
 	server.services = append(server.services, dapos.NewDAPoSService())
 	server.services = append(server.services, disgover.NewDisGoverService())
