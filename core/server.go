@@ -59,8 +59,8 @@ func (server *Server) Go() {
 	log.Info("args  [" + strings.Join(os.Args, " ") + "]")
 
 	// Add services.
-	server.services = append(server.services, dapos.NewDAPoSService())
-	server.services = append(server.services, disgover.NewDisGoverService())
+	server.services = append(server.services, dapos.NewDAPoSService().WithGrpc())
+	server.services = append(server.services, disgover.NewDisGoverService().WithGrpc())
 	server.services = append(server.services, services.NewHttpService())
 	server.services = append(server.services, services.NewGrpcService())
 
