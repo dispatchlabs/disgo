@@ -1,1 +1,23 @@
 debug
+
+# Cache
+.cache/
+
+# Environment specific
+env/
+.env
+db.sqlite3
+
+# Security
+*.key
+*.key.pub
+*.pem
+
+# IDE
+.idea
+.vscode
+tsconfig.json
+
+# OS
+.DS_Store
+
