@@ -8,10 +8,10 @@ import (
 	"sync"
 	"github.com/dispatchlabs/disgo/properties"
 	"github.com/dispatchlabs/disgo_commons/types"
-	log "github.com/sirupsen/logrus"
-	dapos "github.com/dispatchlabs/dapos/core"
-	disgover "github.com/dispatchlabs/disgover/core"
+	"github.com/dispatchlabs/disgover"
 	"github.com/dispatchlabs/disgo_commons/services"
+	log "github.com/sirupsen/logrus"
+	dapos "github.com/dispatchlabs/dapos"
 )
 
 const (
