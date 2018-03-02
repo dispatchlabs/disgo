@@ -9,9 +9,9 @@ import (
 	"github.com/dispatchlabs/disgo/properties"
 	"github.com/dispatchlabs/disgo_commons/types"
 	log "github.com/sirupsen/logrus"
-	dapos "github.com/dispatchlabs/dapos/core"
-	disgover "github.com/dispatchlabs/disgover/core"
 	"github.com/dispatchlabs/disgo_commons/services"
+	"github.com/dispatchlabs/disgover"
+	"github.com/dispatchlabs/dapos"
 )
 
 const (
@@ -20,8 +20,8 @@ const (
 
 // Server
 type Server struct {
-	services   []types.IService
-	api        *Api
+	services []types.IService
+	api      *Api
 }
 
 // NewServer
@@ -59,8 +59,8 @@ func (server *Server) Go() {
 	log.Info("args  [" + strings.Join(os.Args, " ") + "]")
 
 	// Add services.
-	server.services = append(server.services, dapos.NewDAPoSService())
-	server.services = append(server.services, disgover.NewDisGoverService())
+	server.services = append(server.services, dapos.NewDAPoSService().WithGrpc())
+	server.services = append(server.services, disgover.NewDisGoverService().WithGrpc())
 	server.services = append(server.services, services.NewHttpService())
 	server.services = append(server.services, services.NewGrpcService())
 
@@ -78,4 +78,3 @@ func (server *Server) Go() {
 	}
 	waitGroup.Wait()
 }
-
