@@ -9,9 +9,10 @@ import (
 	"github.com/dispatchlabs/disgo/properties"
 	"github.com/dispatchlabs/disgo_commons/types"
 	"github.com/dispatchlabs/disgover"
-	"github.com/dispatchlabs/disgo_commons/services"
 	log "github.com/sirupsen/logrus"
-	dapos "github.com/dispatchlabs/dapos"
+	"github.com/dispatchlabs/disgo_commons/services"
+	"github.com/dispatchlabs/disgover"
+	"github.com/dispatchlabs/dapos"
 )
 
 const (
@@ -20,8 +21,8 @@ const (
 
 // Server
 type Server struct {
-	services   []types.IService
-	api        *Api
+	services []types.IService
+	api      *Api
 }
 
 // NewServer
@@ -78,4 +79,3 @@ func (server *Server) Go() {
 	}
 	waitGroup.Wait()
 }
-

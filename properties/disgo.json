@@ -1,8 +1,12 @@
 {
-  "httpPort" : 1973,
-  "httpHostIp" : "localhost",
-  "grpcPort" : 1975,
-  "grpcTimeout" : 5,
-  "trustedIps" : ["", "", ""],
+  "httpPort": 1975,
+  "httpHostIp": "localhost",
+  "grpcPort": 1973,
+  "grpcTimeout": 5,
+  "trustedIps": [
+    "",
+    "",
+    ""
+  ],
   "useQuantumEntropy": false
 }

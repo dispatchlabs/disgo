@@ -14,84 +14,66 @@ import (
 // Api
 type Api struct {
 	services []types.IService
-	router *mux.Router
+	router   *mux.Router
 }
 
 // NewApi
 func NewApi(services []types.IService) *Api {
-	api := Api{services, httpService.GetHttpRouter()}
-	api.router.HandleFunc("/v1/wallet", api.createWalletHandler).Methods("POST")
-	api.router.HandleFunc("/v1/wallet/{wallet_address}", api.retrieveWalletHandler).Methods("GET")
-	api.router.HandleFunc("/v1/transactions", api.createTransactionHandler).Methods("POST")
-	api.router.HandleFunc("/v1/transactions/{wallet_address}", api.retrieveTransactionHandler).Methods("GET")
-	return &api
+	this := Api{services, httpService.GetHttpRouter()}
+	this.router.HandleFunc("/v1/wallet/{wallet_address}", this.retrieveBalanceHandler).Methods("GET")
+	this.router.HandleFunc("/v1/transactions/{wallet_address}", this.retrieveTransactionsHandler).Methods("GET")
+	this.router.HandleFunc("/v1/transactions", this.createTransactionHandler).Methods("POST")
+	return &this
 
 }
 
-// createWalletHandler
-func (api *Api) createWalletHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	/*
-	body, error := ioutil.ReadAll(request.Body)
-	if error != nil {
-		log.WithFields(log.Fields{
-			"method": "Server.createTransactionHandler",
-		}).Error("unable to read HTTP body of request ", error)
-		http.Error(responseWriter, "error reading HTTP body of request", http.StatusBadRequest)
-		return
-	}
-	*/
-	log.Info("create wallet")
-}
-
-// retrieveWalletHandler
-func (api *Api) retrieveWalletHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	vars := mux.Vars(request)
-	responseWriter.WriteHeader(http.StatusOK)
-	log.Info("retrieve wallet [address=" + vars["wallet_address"] + "]")
+// retrieveBalanceHandler
+func (this *Api) retrieveBalanceHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	//vars := mux.Vars(request)
 }
 
 // createTransactionHandler
-func (api *Api) createTransactionHandler(responseWriter http.ResponseWriter, request *http.Request) {
+func (this *Api) createTransactionHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	body, error := ioutil.ReadAll(request.Body)
 	if error != nil {
 		log.WithFields(log.Fields{
-			"method": "Server.createTransactionHandler",
-		}).Error("unable to read HTTP body of request ", error)
-		http.Error(responseWriter, "error reading HTTP body of request", http.StatusBadRequest)
+			"method": "Api.createTransactionHandler",
+		}).Error("unable to read HTTP body of request [error=" + error.Error() + "]")
+		http.Error(responseWriter, `{"status":"INTERNAL_SERVER_ERROR"}`, http.StatusInternalServerError)
 		return
 	}
 
+	// Unmarshal transaction?
 	transaction := &types.Transaction{}
 	error = json.Unmarshal(body, transaction)
 	if error != nil {
 		log.WithFields(log.Fields{
-			"method": "Server.createTransactionHandler",
-		}).Error("JSON_PARSE_ERROR ", error) // TODO: Should return JSON!!!
-		http.Error(responseWriter, "error reading HTTP body of request", http.StatusBadRequest)
+			"method": "Api.createTransactionHandler",
+		}).Error("JSON parse error [error=" + error.Error() + "]")
+		http.Error(responseWriter, `{"status":"JSON_PARSE_ERROR"}`, http.StatusBadRequest)
 		return
 	}
 
-	/*
-	TODO: Fix this! MAO!
-	t, error = api.getService(&dapos.DAPoSService{}).(*dapos.DAPoSService).CreateTransaction(transaction, nil)
-	if error != nil {
+	// Verify?
+	if !transaction.Verify() {
 		log.WithFields(log.Fields{
-			"method": "Server.createTransactionHandler",
-		}).Error("JSON_PARSE_ERROR ", error) // TODO: Should return JSON!!!
-		http.Error(responseWriter, "error reading HTTP body of request", http.StatusBadRequest)
+			"method": "Api.createTransactionHandler",
+		}).Error("invalid transaction")
+		http.Error(responseWriter, `{"status":"INVALID_TRANSACTION"}`, http.StatusBadRequest)
 		return
 	}
 
-	http.Error(responseWriter, "foobar", http.StatusOK)
-	log.Info("create transaction")
-	*/
+	// TODO: Remove (just for flushing out API).
+	//_, error = this.getService(&dapos.DAPoSService{}).(*dapos.DAPoSService).CreateTransaction(transaction, nil)
+	log.WithFields(log.Fields{
+		"method": "Api.createTransactionHandler",
+	}).Info("valid transaction")
+	responseWriter.Write([]byte(`{"status":"OK"}`))
 }
 
-// retrieveTransactionHandler
-func (api *Api) retrieveTransactionHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	vars := mux.Vars(request)
-	responseWriter.WriteHeader(http.StatusOK)
-	log.Info("retrieve transactions [address=" + vars["wallet_address"] + "]")
+// retrieveTransactionsHandler
+func (this *Api) retrieveTransactionsHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	//vars := mux.Vars(request)
 }
 
 // getService
@@ -103,6 +85,3 @@ func (this *Api) getService(serviceInterface interface{}) types.IService {
 	}
 	return nil
 }
-
-
-
