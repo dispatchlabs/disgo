@@ -11,7 +11,6 @@ import (
 	"github.com/dispatchlabs/disgover"
 	log "github.com/sirupsen/logrus"
 	"github.com/dispatchlabs/disgo_commons/services"
-	"github.com/dispatchlabs/disgover"
 	"github.com/dispatchlabs/dapos"
 )
 
