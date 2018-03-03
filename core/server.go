@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
-	"strings"
 	"sync"
 	"github.com/dispatchlabs/disgo/properties"
 	"github.com/dispatchlabs/disgo_commons/types"
@@ -37,10 +36,10 @@ func NewServer() *Server {
 	log.SetLevel(log.InfoLevel)
 
 	// Read configuration JSON file.
-	filePath := "." + string(os.PathSeparator) + "properties" + string(os.PathSeparator) + "disgo.json"
-	file, error := ioutil.ReadFile(filePath)
+	fileName := "." + string(os.PathSeparator) + "properties" + string(os.PathSeparator) + "disgo.json"
+	file, error := ioutil.ReadFile(fileName)
 	if error != nil {
-		log.Error("unable to load " + filePath)
+		log.Error("unable to load " + fileName + "[error=" + error.Error() + "]")
 		os.Exit(1)
 	}
 	json.Unmarshal(file, &properties.Properties)
@@ -56,7 +55,6 @@ func NewServer() *Server {
 // Go
 func (server *Server) Go() {
 	log.Info("booting Disgo v" + Version + "...")
-	log.Info("args  [" + strings.Join(os.Args, " ") + "]")
 
 	// Add services.
 	server.services = append(server.services, dapos.NewDAPoSService().WithGrpc())
