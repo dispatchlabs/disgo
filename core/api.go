@@ -2,12 +2,14 @@ package core
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"reflect"
 
 	httpService "github.com/dispatchlabs/disgo_commons/services"
 	"github.com/dispatchlabs/disgo_commons/types"
+	"github.com/dispatchlabs/disgover"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
@@ -21,6 +23,7 @@ type Api struct {
 // NewApi
 func NewApi(services []types.IService) *Api {
 	this := Api{services, httpService.GetHttpRouter()}
+	this.router.HandleFunc("/v1/ping", this.pingPongHandler).Methods("POST")
 	this.router.HandleFunc("/v1/wallet/{wallet_address}", this.retrieveBalanceHandler).Methods("GET")
 	this.router.HandleFunc("/v1/transactions/{wallet_address}", this.retrieveTransactionsHandler).Methods("GET")
 	this.router.HandleFunc("/v1/transactions", this.createTransactionHandler).Methods("POST")
@@ -85,4 +88,17 @@ func (this *Api) getService(serviceInterface interface{}) types.IService {
 		}
 	}
 	return nil
+}
+
+func (this *Api) pingPongHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	body, _ := ioutil.ReadAll(request.Body)
+
+	fmt.Println(string(body))
+
+	responseWriter.Write([]byte(fmt.Sprintf(
+		"PONG: %s @ %s:%d",
+		disgover.GetDisgover().ThisContact.Address,
+		disgover.GetDisgover().ThisContact.Endpoint.Host,
+		disgover.GetDisgover().ThisContact.Endpoint.Port,
+	)))
 }

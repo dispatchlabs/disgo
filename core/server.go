@@ -5,12 +5,14 @@ import (
 	"io/ioutil"
 	"os"
 	"sync"
+
+	"github.com/dispatchlabs/dapos"
 	"github.com/dispatchlabs/disgo/properties"
+	"github.com/dispatchlabs/disgo_commons/services"
 	"github.com/dispatchlabs/disgo_commons/types"
+	commonUtils "github.com/dispatchlabs/disgo_commons/utils"
 	"github.com/dispatchlabs/disgover"
 	log "github.com/sirupsen/logrus"
-	"github.com/dispatchlabs/disgo_commons/services"
-	"github.com/dispatchlabs/dapos"
 )
 
 const (
@@ -57,8 +59,11 @@ func (server *Server) Go() {
 	log.Info("booting Disgo v" + Version + "...")
 
 	// Add services.
+	if !commonUtils.GetCmdParams().AsSeed {
+		server.services = append(server.services, NewPingPongService())
+	}
 	server.services = append(server.services, dapos.NewDAPoSService().WithGrpc())
-	server.services = append(server.services, disgover.NewDisGoverService().WithGrpc())
+	server.services = append(server.services, disgover.NewDisGoverService().WithGrpc(properties.Properties.GrpcPort))
 	server.services = append(server.services, services.NewStoreService())
 	server.services = append(server.services, services.NewHttpService())
 	server.services = append(server.services, services.NewGrpcService())

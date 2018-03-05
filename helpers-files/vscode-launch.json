@@ -15,8 +15,9 @@
             "program": "${workspaceFolder}/main.go",
             "env": {},
 			"args": [
+                // "-asSeed"
 				"-nodeId=NODE-Nicolae",
-				"-thisIp=192.168.43.23", 
+				"-thisIp=192.168.7.104", 
 				"-seedList=35.227.162.40"
 			],
             "showLog": true
