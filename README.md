@@ -26,7 +26,7 @@ $ docker logs --tail=400 disgo-service
 - `go build`
 - `sudo mkdir /go-binaries`
 - `sudo mv ./disgo /go-binaries/`
-- `sudo cp -r ./properties /go-binaries/`
+- `sudo cp -r ./config /go-binaries/`
 - `sudo nano /etc/systemd/system/dispatch-disgo-node.service`
 ```shell
 [Unit]

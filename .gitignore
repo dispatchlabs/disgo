@@ -6,7 +6,7 @@
 debug
 disgo
 
-properties/disgo.key
-properties/disgo.key.pem
-properties/disgo.pub
-properties/disgo.pub.pem
+config/disgo.key
+config/disgo.key.pem
+config/disgo.pub
+config/disgo.pub.pem

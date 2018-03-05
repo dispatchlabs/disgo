@@ -6,6 +6,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"reflect"
+	"time"
+
+	"github.com/dispatchlabs/dapos"
+	daposCore "github.com/dispatchlabs/dapos/core"
 
 	httpService "github.com/dispatchlabs/disgo_commons/services"
 	"github.com/dispatchlabs/disgo_commons/types"
@@ -26,12 +30,11 @@ func NewApi(services []types.IService) *Api {
 	this.router.HandleFunc("/v1/ping", this.pingPongHandler).Methods("POST")
 	this.router.HandleFunc("/v1/wallet/{wallet_address}", this.retrieveBalanceHandler).Methods("GET")
 	this.router.HandleFunc("/v1/transactions/{wallet_address}", this.retrieveTransactionsHandler).Methods("GET")
-	this.router.HandleFunc("/v1/transactions", this.createTransactionHandler).Methods("POST")
+	this.router.HandleFunc("/v1/transactions/new", this.createTransactionHandler).Methods("POST")
 	return &this
 
 }
 
-// retrieveBalanceHandler
 func (this *Api) retrieveBalanceHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	//vars := mux.Vars(request)
 }
@@ -58,14 +61,26 @@ func (this *Api) createTransactionHandler(responseWriter http.ResponseWriter, re
 		return
 	}
 
-	// Verify?
-	if !transaction.Verify() {
-		log.WithFields(log.Fields{
-			"method": "Api.createTransactionHandler",
-		}).Error("invalid transaction")
-		http.Error(responseWriter, `{"status":"INVALID_TRANSACTION"}`, http.StatusBadRequest)
-		return
+	// Temporarily Comment This - Need to run TXes in DAPoS
+	// // Verify?
+	// if !transaction.Verify() {
+	// 	log.WithFields(log.Fields{
+	// 		"method": "Api.createTransactionHandler",
+	// 	}).Error("invalid transaction")
+	// 	http.Error(responseWriter, `{"status":"INVALID_TRANSACTION"}`, http.StatusBadRequest)
+	// 	return
+	// }
+
+	// Pass TX to DAPoS
+	var daposTx = &daposCore.Transaction{
+		Hash:  transaction.Hash,
+		From:  transaction.From,
+		To:    transaction.To,
+		Value: transaction.Value,
+		Time:  time.Now(),
 	}
+
+	dapos.GetDAPoS().ProcessTx(daposTx)
 
 	// TODO: Remove (just for flushing out API).
 	// _, error = this.getService(&dapos.DAPoSService{}).(*dapos.DAPoSService).CreateTransaction(transaction, nil)
@@ -75,12 +90,10 @@ func (this *Api) createTransactionHandler(responseWriter http.ResponseWriter, re
 	responseWriter.Write([]byte(`{"status":"OK"}`))
 }
 
-// retrieveTransactionsHandler
 func (this *Api) retrieveTransactionsHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	//vars := mux.Vars(request)
 }
 
-// getService
 func (this *Api) getService(serviceInterface interface{}) types.IService {
 	for _, service := range this.services {
 		if reflect.TypeOf(service) == reflect.TypeOf(serviceInterface) {

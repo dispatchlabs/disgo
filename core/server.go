@@ -7,10 +7,9 @@ import (
 	"sync"
 
 	"github.com/dispatchlabs/dapos"
-	"github.com/dispatchlabs/disgo/properties"
+	"github.com/dispatchlabs/disgo_commons/config"
 	"github.com/dispatchlabs/disgo_commons/services"
 	"github.com/dispatchlabs/disgo_commons/types"
-	commonUtils "github.com/dispatchlabs/disgo_commons/utils"
 	"github.com/dispatchlabs/disgover"
 	log "github.com/sirupsen/logrus"
 )
@@ -38,13 +37,13 @@ func NewServer() *Server {
 	log.SetLevel(log.InfoLevel)
 
 	// Read configuration JSON file.
-	fileName := "." + string(os.PathSeparator) + "properties" + string(os.PathSeparator) + "disgo.json"
+	fileName := "." + string(os.PathSeparator) + "config" + string(os.PathSeparator) + "disgo.json"
 	file, error := ioutil.ReadFile(fileName)
 	if error != nil {
 		log.Error("unable to load " + fileName + "[error=" + error.Error() + "]")
 		os.Exit(1)
 	}
-	json.Unmarshal(file, &properties.Properties)
+	json.Unmarshal(file, &config.Properties)
 
 	// Load Keys
 	if _, _, err := loadKeys(); err != nil {
@@ -59,11 +58,11 @@ func (server *Server) Go() {
 	log.Info("booting Disgo v" + Version + "...")
 
 	// Add services.
-	if !commonUtils.GetCmdParams().AsSeed {
+	if !config.Properties.IsSeed {
 		server.services = append(server.services, NewPingPongService())
 	}
 	server.services = append(server.services, dapos.NewDAPoSService().WithGrpc())
-	server.services = append(server.services, disgover.NewDisGoverService().WithGrpc(properties.Properties.GrpcPort))
+	server.services = append(server.services, disgover.NewDisGoverService().WithGrpc())
 	server.services = append(server.services, services.NewStoreService())
 	server.services = append(server.services, services.NewHttpService())
 	server.services = append(server.services, services.NewGrpcService())

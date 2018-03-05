@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dispatchlabs/disgo/properties"
+	"github.com/dispatchlabs/disgo_commons/config"
 	commonTypes "github.com/dispatchlabs/disgo_commons/types"
 	"github.com/dispatchlabs/disgover"
 )
@@ -38,7 +38,7 @@ func (this *PingPongService) Go(waitGroup *sync.WaitGroup) {
 
 	go func() {
 		for {
-			time.Sleep(time.Second * 5)
+			time.Sleep(time.Minute)
 
 			var contacts = disgover.GetDisgover().GetContactList()
 
@@ -51,7 +51,7 @@ func (this *PingPongService) Go(waitGroup *sync.WaitGroup) {
 				var randomIndex = r1.Intn(len(contacts))
 				var contact *commonTypes.Contact = contacts[randomIndex]
 
-				var contactUrl = fmt.Sprintf("http://%s:%d/v1/ping", contact.Endpoint.Host, properties.Properties.HttpPort) // contact.Endpoint.Port)
+				var contactUrl = fmt.Sprintf("http://%s:%d/v1/ping", contact.Endpoint.Host, config.Properties.HttpPort) // contact.Endpoint.Port)
 				var data = fmt.Sprintf(
 					"PING-From: %s @ %s:%d",
 					disgover.GetDisgover().ThisContact.Address,

@@ -12,7 +12,7 @@ FROM alpine:latest
 RUN ["mkdir", "-p", "/go-binaries"]
 
 COPY --from=builder /go/src/github.com/dispatchlabs/disgo/disgo /go-binaries/disgo
-ADD properties /go-binaries/properties
+ADD config /go-binaries/config
 
 WORKDIR /go-binaries
 
