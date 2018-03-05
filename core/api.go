@@ -96,7 +96,7 @@ func (this *Api) pingPongHandler(responseWriter http.ResponseWriter, request *ht
 	fmt.Println(string(body))
 
 	responseWriter.Write([]byte(fmt.Sprintf(
-		"PONG: %s @ %s:%d",
+		"PONG-From: %s @ %s:%d",
 		disgover.GetDisgover().ThisContact.Address,
 		disgover.GetDisgover().ThisContact.Endpoint.Host,
 		disgover.GetDisgover().ThisContact.Endpoint.Port,

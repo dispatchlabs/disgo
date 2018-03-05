@@ -4,6 +4,7 @@
 
 .DS_Store
 debug
+disgo
 
 properties/disgo.key
 properties/disgo.key.pem
