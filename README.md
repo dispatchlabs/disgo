@@ -57,3 +57,8 @@ WantedBy=multi-user.target
 - Install `protoc-gen-go plugin`: `go get -u github.com/golang/protobuf/protoc-gen-go`
 - Build Go bindings from `.proto` file. `protoc --go_out=plugins=grpc:. party/party.proto
 - Use [GoLand](https://github.com/dispatchlabs/samples/tree/master/docker-debug-go-goland) or [VSCode](https://github.com/dispatchlabs/samples/tree/master/docker-debug-go-vscode)
+
+
+VS Code
+- `mkdir .vscode`
+- `cp helpers-files/vscode-launch.json .vscode/launch.json`

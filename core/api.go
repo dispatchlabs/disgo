@@ -1,14 +1,15 @@
 package core
 
 import (
-	"github.com/dispatchlabs/disgo_commons/types"
-	"github.com/gorilla/mux"
-	"reflect"
-	httpService "github.com/dispatchlabs/disgo_commons/services"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"reflect"
+
+	httpService "github.com/dispatchlabs/disgo_commons/services"
+	"github.com/dispatchlabs/disgo_commons/types"
+	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-	"encoding/json"
 )
 
 // Api
@@ -64,7 +65,7 @@ func (this *Api) createTransactionHandler(responseWriter http.ResponseWriter, re
 	}
 
 	// TODO: Remove (just for flushing out API).
-	//_, error = this.getService(&dapos.DAPoSService{}).(*dapos.DAPoSService).CreateTransaction(transaction, nil)
+	// _, error = this.getService(&dapos.DAPoSService{}).(*dapos.DAPoSService).CreateTransaction(transaction, nil)
 	log.WithFields(log.Fields{
 		"method": "Api.createTransactionHandler",
 	}).Info("valid transaction")

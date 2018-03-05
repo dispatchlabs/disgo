@@ -1,19 +1,11 @@
-# See http://help.github.com/ignore-files/ for more about ignoring files.
 
-# compiled output
-.editorconfig
-/dist
-/logs
-/tmp
-*/.svn/*
+.idea
+.vscode
 
-# dependencies
-/node_modules
-/bower_components
-
-# IDEs and editors
-/.idea
-
-#System Files
 .DS_Store
-Thumbs.db
+debug
+
+properties/disgo.key
+properties/disgo.key.pem
+properties/disgo.pub
+properties/disgo.pub.pem

@@ -1,6 +1,6 @@
 {
   "httpPort": 1975,
-  "httpHostIp": "localhost",
+  "httpHostIp": "0.0.0.0",
   "grpcPort": 1973,
   "grpcTimeout": 5,
   "trustedIps": [
