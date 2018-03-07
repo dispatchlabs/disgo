@@ -1,4 +1,3 @@
-
 .idea
 .vscode
 
@@ -10,3 +9,5 @@ config/disgo.key
 config/disgo.key.pem
 config/disgo.pub
 config/disgo.pub.pem
+
+*.iml
