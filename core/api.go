@@ -82,11 +82,9 @@ func (this *Api) createTransactionHandler(responseWriter http.ResponseWriter, re
 
 	dapos.GetDAPoS().ProcessTx(daposTx)
 
-	// TODO: Remove (just for flushing out API).
+	// TODO: Commented out (just for flushing out API).
 	// _, error = this.getService(&dapos.DAPoSService{}).(*dapos.DAPoSService).CreateTransaction(transaction, nil)
-	log.WithFields(log.Fields{
-		"method": "Api.createTransactionHandler",
-	}).Info("valid transaction")
+
 	responseWriter.Write([]byte(`{"status":"OK"}`))
 }
 
