@@ -91,8 +91,8 @@ func (server *Server) Go() {
 	var waitGroup sync.WaitGroup
 	for _, service := range server.services {
 		log.WithFields(log.Fields{
-			"method": utils.CallPath(),
-		}).Info("starting " + utils.StructName(service) + "...")
+			"method": utils.GetCallingFuncName(),
+		}).Info("starting " + utils.GetStructName(service) + "...")
 		go service.Go(&waitGroup)
 		waitGroup.Add(1)
 	}

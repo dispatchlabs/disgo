@@ -33,7 +33,7 @@ func (this *PingPongService) Go(waitGroup *sync.WaitGroup) {
 	this.running = true
 
 	log.WithFields(log.Fields{
-		"method": utils.CallPath(),
+		"method": utils.GetCallingFuncName(),
 	}).Info("running")
 
 	go func() {
