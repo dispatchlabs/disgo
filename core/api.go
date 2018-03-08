@@ -51,7 +51,7 @@ func (this *Api) createTransactionHandler(responseWriter http.ResponseWriter, re
 	}
 
 	// Unmarshal transaction?
-	transaction := &types.Transaction{}
+	transaction := &daposCore.Transaction{}
 	error = json.Unmarshal(body, transaction)
 	if error != nil {
 		log.WithFields(log.Fields{
