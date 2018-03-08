@@ -10,7 +10,9 @@ import (
 	"time"
 
 	"github.com/dispatchlabs/disgo_commons/config"
+	"github.com/dispatchlabs/disgo_commons/utils"
 	"github.com/dispatchlabs/disgover"
+	log "github.com/sirupsen/logrus"
 )
 
 type PingPongService struct {
@@ -21,11 +23,6 @@ func NewPingPongService() *PingPongService {
 	return &PingPongService{false}
 }
 
-// Name
-func (this *PingPongService) Name() string {
-	return "PingPongService"
-}
-
 // IsRunning
 func (this *PingPongService) IsRunning() bool {
 	return this.running
@@ -34,6 +31,10 @@ func (this *PingPongService) IsRunning() bool {
 // Go
 func (this *PingPongService) Go(waitGroup *sync.WaitGroup) {
 	this.running = true
+
+	log.WithFields(log.Fields{
+		"method": utils.CallPath(),
+	}).Info("running")
 
 	go func() {
 		for {

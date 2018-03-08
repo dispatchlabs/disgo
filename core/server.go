@@ -19,7 +19,7 @@ const (
 	Version = "1.0.0"
 )
 
-// Server
+// Server -
 type Server struct {
 	services []types.IService
 	api      *Api
@@ -91,8 +91,8 @@ func (server *Server) Go() {
 	var waitGroup sync.WaitGroup
 	for _, service := range server.services {
 		log.WithFields(log.Fields{
-			"method": "Server.Go",
-		}).Info("starting " + service.Name() + "...")
+			"method": utils.CallPath(),
+		}).Info("starting " + utils.StructName(service) + "...")
 		go service.Go(&waitGroup)
 		waitGroup.Add(1)
 	}
