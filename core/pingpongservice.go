@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/dispatchlabs/disgo_commons/config"
-	commonTypes "github.com/dispatchlabs/disgo_commons/types"
 	"github.com/dispatchlabs/disgover"
 )
 
@@ -49,7 +48,7 @@ func (this *PingPongService) Go(waitGroup *sync.WaitGroup) {
 
 				// pick a random node
 				var randomIndex = r1.Intn(len(contacts))
-				var contact *commonTypes.Contact = contacts[randomIndex]
+				var contact *disgover.Contact = contacts[randomIndex]
 
 				var contactUrl = fmt.Sprintf("http://%s:%d/v1/ping", contact.Endpoint.Host, config.Properties.HttpPort) // contact.Endpoint.Port)
 				var data = fmt.Sprintf(
