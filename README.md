@@ -1,64 +1,66 @@
-# ![](https://storage.googleapis.com/material-icons/external-assets/v4/icons/svg/ic_info_outline_black_24px.svg) This is the Dispatch Node
-__Run this code to be part of the best business enabling, open-source chain on the planet. Period.__
+<img src="https://www.dispatchlabs.io/images/svg/dispatch_logo_b.svg" width="250">
+ 
+&nbsp;
 
-# ![](https://storage.googleapis.com/material-icons/external-assets/v4/icons/svg/ic_directions_run_black_24px.svg) Run
+![Go Version 1.9.2](http://b.repl.ca/v1/Go_Version-1.9.2-brightgreen.png)
 
-- Install `Go` for your platform. The 1-2-3 steps are [here](https://github.com/dispatchlabs/samples/tree/master/golang-setup)
+<a name="overview"></a>
+### Overview
 
-##### Dev Box
-- `go get github.com/dispatchlabs/disgo`
-- `cd ~/go/src/dispatchlabs/disgo`
-- `go run main.go`
+Disgo is the main client / node for the Dispatch platform. It initializes all of the services. The services are from the other packages in this repository.  The approach is to have several smaller "building block" modules that are usable components of common blockchain architectures. Our intention is to facilitate a buildable blockchain so that can be used individually so that other projects don't have to start from scratch.
 
-##### As Service with Docker
+### Download
+
+`go get github.com/dispatchlabs/disgo`  
+or  
+`git clone http://github.com/dispatchlabs/disgo`
+
+
+<a name="wiki"></a>
+### Wiki Documentation
+For more technical details on how disgo works, please visit the [Wiki](https://github.com/dispatchlabs/disgo/wiki) page for detailed descriptions of all of the code in each package.
+
+*Add some "how to do "this" bullet points with links to topic in wiki"*
+
+<a name="dependencies"></a>
+### Dependencies
+uses all of the packages in the repo.
+
+ - [commons](https://github.com/dispatchlabs/disgo_commons) for common types domain types.
+ - [disgover](https://github.com/dispatchlabs/disgover) for node discovery.
+ - [dapos](https://github.com/dispatchlabs/dapos) for consensus.
+
+<a name="configuration"></a>
+### Configuration
+The disgo package relies on the configuration loaded by [commons](https://github.com/dispatchlabs/disgo_commons) 
+
+<a name="protobuf"></a>
+##### protobuf ([see common install instructions](https://github.com/dispatchlabs/disgo#-develop))
+
+<a name="usage"></a>
+### How to run the disgo package
+
+Disgo is a full node, so you should be able to run it right out of the box:
+
 ```
-$ docker-compose build
-$ docker-compose up -d
-```
-View log output:
-```
-$ docker logs --tail=400 disgo-service
+cd ~/go/src/dispatchlabs/disgo
+go run main.go
 ```
 
-##### As Service
-- `go get github.com/dispatchlabs/disgo`
-- `cd $GOPATH/src/github.com/dispatchlabs/disgo`
-- `go build`
-- `sudo mkdir /go-binaries`
-- `sudo mv ./disgo /go-binaries/`
-- `sudo cp -r ./config /go-binaries/`
-- `sudo nano /etc/systemd/system/dispatch-disgo-node.service`
-```shell
-[Unit]
-Description=Dispatch Disgo Node
-After=network.target
+For instructions on running Disgo in Docker, please visit the [Wiki Page](https://github.com/dispatchlabs/disgo/wiki#as-service-with-docker)
 
-[Service]
-WorkingDirectory=/go-binaries
-ExecStart=/go-binaries/disgo -asSeed -nodeId=NODE-Seed-001 -thisIp=35.227.162.40
-Restart=on-failure
+<a name="tests"></a>
+### Tests
+*Tests to be added*
 
-User=dispatch-services
-Group=dispatch-services
+<a name="acknowledgments"></a>
+### Acknowledgments
+*Add lists of contributors*
 
-[Install]
-WantedBy=multi-user.target
-```
-- `sudo useradd dispatch-services -s /sbin/nologin -M`
-- `sudo systemctl enable dispatch-disgo-node`
-- `sudo systemctl start dispatch-disgo-node`
-- `sudo journalctl -f -u dispatch-disgo-node`
-- `sudo systemctl daemon-reload` if you change the service
+<a name="contributing"></a>
+### Contributing
+*Add link to common CONRIBUTING.md file*
 
-
-
-# ![](https://storage.googleapis.com/material-icons/external-assets/v4/icons/svg/ic_code_black_24px.svg) Develop
-- Install [protoc](https://github.com/google/protobuf/releases) compiler manually or by homebrew `$ brew install protobuf`
-- Install `protoc-gen-go plugin`: `go get -u github.com/golang/protobuf/protoc-gen-go`
-- Build Go bindings from `.proto` file. `protoc --go_out=plugins=grpc:. party/party.proto
-- Use [GoLand](https://github.com/dispatchlabs/samples/tree/master/docker-debug-go-goland) or [VSCode](https://github.com/dispatchlabs/samples/tree/master/docker-debug-go-vscode)
-
-
-VS Code
-- `mkdir .vscode`
-- `cp helpers-files/vscode-launch.json .vscode/launch.json`
+<a name="license"></a>
+### License
+*Add License data*
