@@ -10,6 +10,7 @@ import (
 	"github.com/dispatchlabs/disgo_commons/config"
 	"github.com/dispatchlabs/disgo_commons/services"
 	"github.com/dispatchlabs/disgo_commons/types"
+	"github.com/dispatchlabs/disgo_commons/utils"
 	"github.com/dispatchlabs/disgover"
 	log "github.com/sirupsen/logrus"
 )
@@ -24,7 +25,7 @@ type Server struct {
 	api      *Api
 }
 
-// NewServer
+// NewServer -
 func NewServer() *Server {
 
 	// Setup log.
@@ -36,14 +37,30 @@ func NewServer() *Server {
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.InfoLevel)
 
-	// Read configuration JSON file.
-	fileName := "." + string(os.PathSeparator) + "config" + string(os.PathSeparator) + "disgo.json"
-	file, error := ioutil.ReadFile(fileName)
-	if error != nil {
-		log.Error("unable to load " + fileName + "[error=" + error.Error() + "]")
-		os.Exit(1)
+	// Read configuration JSON file and override default values
+	config.Properties = &config.DisgoProperties{
+		HttpPort:          1975,
+		HttpHostIp:        "0.0.0.0",
+		GrpcPort:          1973,
+		GrpcTimeout:       5,
+		UseQuantumEntropy: false,
+		IsSeed:            false,
+		IsDelegate:        false,
+		SeedList:          []string{},
+		DaposDelegates:    []string{},
+		NodeId:            "",
+		ThisIp:            "",
 	}
-	json.Unmarshal(file, &config.Properties)
+
+	var configFile = utils.GetDisgoDir() + string(os.PathSeparator) + "config.json"
+	if utils.Exists(configFile) {
+		file, error := ioutil.ReadFile(configFile)
+		if error != nil {
+			log.Error("unable to load " + configFile + "[error=" + error.Error() + "]")
+			os.Exit(1)
+		}
+		json.Unmarshal(file, &config.Properties)
+	}
 
 	// Load Keys
 	if _, _, err := loadKeys(); err != nil {

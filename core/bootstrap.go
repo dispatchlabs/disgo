@@ -16,6 +16,7 @@ import (
 	"os"
 
 	"github.com/dispatchlabs/disgo_commons/config"
+	"github.com/dispatchlabs/disgo_commons/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -72,8 +73,8 @@ func checkError(err error) {
 func loadKeys() ([]byte, []byte, error) {
 	log.Info("loadKeys()...")
 
-	privateKeyFile := "." + string(os.PathSeparator) + "config" + string(os.PathSeparator) + "disgo.key"
-	publicKeyFile := "." + string(os.PathSeparator) + "config" + string(os.PathSeparator) + "disgo.pub"
+	privateKeyFile := utils.GetDisgoDir() + string(os.PathSeparator) + "disgo.key"
+	publicKeyFile := utils.GetDisgoDir() + string(os.PathSeparator) + "disgo.pub"
 
 	if _, err := os.Stat(privateKeyFile); os.IsNotExist(err) {
 		log.Info("...")
