@@ -78,8 +78,8 @@ func (server *Server) Go() {
 	if !config.Properties.IsSeed {
 		server.services = append(server.services, NewPingPongService())
 	}
-	server.services = append(server.services, dapos.NewDAPoSService().WithGrpc())
 	server.services = append(server.services, disgover.NewDisGoverService().WithGrpc())
+	server.services = append(server.services, dapos.NewDAPoSService().WithGrpc())
 	server.services = append(server.services, services.NewStoreService())
 	server.services = append(server.services, services.NewHttpService())
 	server.services = append(server.services, services.NewGrpcService())
