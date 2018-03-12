@@ -15,8 +15,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/dispatchlabs/disgo_commons/config"
-	"github.com/dispatchlabs/disgo_commons/utils"
+	"github.com/dispatchlabs/commons/config"
+	"github.com/dispatchlabs/commons/utils"
 	log "github.com/sirupsen/logrus"
 )
 

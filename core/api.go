@@ -11,8 +11,8 @@ import (
 	"github.com/dispatchlabs/dapos"
 	daposCore "github.com/dispatchlabs/dapos/core"
 
-	httpService "github.com/dispatchlabs/disgo_commons/services"
-	"github.com/dispatchlabs/disgo_commons/types"
+	httpService "github.com/dispatchlabs/commons/services"
+	"github.com/dispatchlabs/commons/types"
 	"github.com/dispatchlabs/disgover"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
