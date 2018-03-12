@@ -60,9 +60,11 @@ func (this *Api) createTransactionHandler(responseWriter http.ResponseWriter, re
 		return
 	}
 
-	dapos.GetDAPoS().ProcessTx(transaction)
-
-	responseWriter.Write([]byte(`{"status":"OK"}`))
+	if dapos.GetDAPoS().ProcessTxSync(transaction) {
+		responseWriter.Write([]byte(`{"status":"OK"}`))
+	} else {
+		responseWriter.Write([]byte(`{"status":"INVALID_TRANSACTION"}`))
+	}
 }
 
 func (this *Api) retrieveTransactionsHandler(responseWriter http.ResponseWriter, request *http.Request) {
