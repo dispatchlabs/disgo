@@ -6,13 +6,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"reflect"
-	"time"
 
 	"github.com/dispatchlabs/dapos"
 	daposCore "github.com/dispatchlabs/dapos/core"
 
-	httpService "github.com/dispatchlabs/disgo_commons/services"
-	"github.com/dispatchlabs/disgo_commons/types"
+	httpService "github.com/dispatchlabs/commons/services"
+	"github.com/dispatchlabs/commons/types"
 	"github.com/dispatchlabs/disgover"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -30,7 +29,7 @@ func NewApi(services []types.IService) *Api {
 	this.router.HandleFunc("/v1/ping", this.pingPongHandler).Methods("POST")
 	this.router.HandleFunc("/v1/wallet/{wallet_address}", this.retrieveBalanceHandler).Methods("GET")
 	this.router.HandleFunc("/v1/transactions/{wallet_address}", this.retrieveTransactionsHandler).Methods("GET")
-	this.router.HandleFunc("/v1/transactions/new", this.createTransactionHandler).Methods("POST")
+	this.router.HandleFunc("/v1/transactions", this.createTransactionHandler).Methods("POST")
 	return &this
 
 }
@@ -61,31 +60,11 @@ func (this *Api) createTransactionHandler(responseWriter http.ResponseWriter, re
 		return
 	}
 
-	// Temporarily Comment This - Need to run TXes in DAPoS
-	// // Verify?
-	// if !transaction.Verify() {
-	// 	log.WithFields(log.Fields{
-	// 		"method": "Api.createTransactionHandler",
-	// 	}).Error("invalid transaction")
-	// 	http.Error(responseWriter, `{"status":"INVALID_TRANSACTION"}`, http.StatusBadRequest)
-	// 	return
-	// }
-
-	// Pass TX to DAPoS
-	var daposTx = &daposCore.Transaction{
-		Hash:  transaction.Hash,
-		From:  transaction.From,
-		To:    transaction.To,
-		Value: transaction.Value,
-		Time:  time.Now(),
+	if dapos.GetDAPoS().ProcessTxSync(transaction) {
+		responseWriter.Write([]byte(`{"status":"OK"}`))
+	} else {
+		responseWriter.Write([]byte(`{"status":"INVALID_TRANSACTION"}`))
 	}
-
-	dapos.GetDAPoS().ProcessTx(daposTx)
-
-	// TODO: Commented out (just for flushing out API).
-	// _, error = this.getService(&dapos.DAPoSService{}).(*dapos.DAPoSService).CreateTransaction(transaction, nil)
-
-	responseWriter.Write([]byte(`{"status":"OK"}`))
 }
 
 func (this *Api) retrieveTransactionsHandler(responseWriter http.ResponseWriter, request *http.Request) {

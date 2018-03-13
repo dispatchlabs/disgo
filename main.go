@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/dispatchlabs/disgo/core"
-	"github.com/dispatchlabs/disgo_commons/utils"
+	"github.com/dispatchlabs/commons/utils"
 )
 
 func main() {

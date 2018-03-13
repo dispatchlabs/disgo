@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dispatchlabs/disgo_commons/config"
-	"github.com/dispatchlabs/disgo_commons/utils"
+	"github.com/dispatchlabs/commons/config"
+	"github.com/dispatchlabs/commons/utils"
 	"github.com/dispatchlabs/disgover"
 	log "github.com/sirupsen/logrus"
 )

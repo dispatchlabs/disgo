@@ -7,10 +7,10 @@ import (
 	"sync"
 
 	"github.com/dispatchlabs/dapos"
-	"github.com/dispatchlabs/disgo_commons/config"
-	"github.com/dispatchlabs/disgo_commons/services"
-	"github.com/dispatchlabs/disgo_commons/types"
-	"github.com/dispatchlabs/disgo_commons/utils"
+	"github.com/dispatchlabs/commons/config"
+	"github.com/dispatchlabs/commons/services"
+	"github.com/dispatchlabs/commons/types"
+	"github.com/dispatchlabs/commons/utils"
 	"github.com/dispatchlabs/disgover"
 	log "github.com/sirupsen/logrus"
 )
