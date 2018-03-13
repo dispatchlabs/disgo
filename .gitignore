@@ -4,6 +4,7 @@
 .DS_Store
 debug
 disgo
+store
 
 config/disgo.key
 config/disgo.key.pem
