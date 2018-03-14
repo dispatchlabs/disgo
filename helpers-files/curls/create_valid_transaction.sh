@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-curl -X POST -d '{"hash":"153abd30bbae632dcd8ce47c482a0f5ac7c7fff0e9aec8407f8937bd16f2ae47","from":"428273ddce244807d8dcb135b1657b81fa18e7f5","to":"428273ddce244807d8dcb135b1657b81fa18e7f5","value":10,"time":"2018-03-12T09:05:33.273633-07:00","signature":"f55ef22b42033ac9ca84e68d5decfa9d81f677e059b08cc08e8afb2e516163247fc4d1eed4bdf4735c170725bb982f58cd7219f5a114925cded687d3f9ea0b5b00"}' 'http://localhost:1975/v1/transactions'
+curl -X POST -d '{"hash":"fb585ef5f78ea05b50e3a2dd4a0a8c9214e1f23d291cb3db0b9fdee7d08b0dd9","from":"9d6fa5845833c42e1aa4b768f944c5e09fe968b0","to":"c296220327589dc04e6ee01bf16563f0f53895bb","value":100,"time":"2018-03-13T14:54:02.378452-07:00","signature":"d4ae31aefc2659f9a48ba3b96a7b63a0d864de920581f464950699b7f8cbd7eb2a073bb291317dec45dfb25f2467618fe687aa01fbee8a1a51950dd0f65276e100"}' 'http://localhost:1975/v1/transactions'

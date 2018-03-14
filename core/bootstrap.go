@@ -71,20 +71,21 @@ func checkError(err error) {
 }
 
 func loadKeys() ([]byte, []byte, error) {
-	log.Info("loadKeys()...")
-
-	privateKeyFile := utils.GetDisgoDir() + string(os.PathSeparator) + "disgo.key"
-	publicKeyFile := utils.GetDisgoDir() + string(os.PathSeparator) + "disgo.pub"
+	privateKeyFile := utils.GetDisgoDir() + string(os.PathSeparator) + "key"
+	publicKeyFile := utils.GetDisgoDir() + string(os.PathSeparator) + "key.pub"
 
 	if _, err := os.Stat(privateKeyFile); os.IsNotExist(err) {
-		log.Info("...")
-
 		reader := rand.Reader
 		if config.Properties.UseQuantumEntropy {
-			log.Info("generating keys using Quantum Entropy...")
+			log.WithFields(log.Fields{
+				"method": utils.GetCallingFuncName(),
+			}).Info("generating keys using Quantum Entropy")
+
 			reader = NewQuantumEntropyReader()
 		} else {
-			log.Info("generating keys...")
+			log.WithFields(log.Fields{
+				"method": utils.GetCallingFuncName(),
+			}).Info("generating keys")
 		}
 
 		bitSize := 2048
@@ -101,6 +102,10 @@ func loadKeys() ([]byte, []byte, error) {
 
 		saveGobKey(publicKeyFile, publicKey)
 		savePublicPEMKey(publicKeyFile+".pem", publicKey)
+	} else {
+		log.WithFields(log.Fields{
+			"method": utils.GetCallingFuncName(),
+		}).Info("loadKeys")
 	}
 
 	privateKey, error1 := ioutil.ReadFile(privateKeyFile)
