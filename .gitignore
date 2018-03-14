@@ -4,11 +4,9 @@
 .DS_Store
 debug
 disgo
-store
 
-config/disgo.key
-config/disgo.key.pem
-config/disgo.pub
-config/disgo.pub.pem
+
+config/
+test1/
 
 *.iml

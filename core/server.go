@@ -2,15 +2,16 @@ package core
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"sync"
 
-	"github.com/dispatchlabs/dapos"
 	"github.com/dispatchlabs/commons/config"
 	"github.com/dispatchlabs/commons/services"
 	"github.com/dispatchlabs/commons/types"
 	"github.com/dispatchlabs/commons/utils"
+	"github.com/dispatchlabs/dapos"
 	"github.com/dispatchlabs/disgover"
 	log "github.com/sirupsen/logrus"
 )
@@ -52,6 +53,10 @@ func NewServer() *Server {
 		ThisIp:            "",
 	}
 
+	log.WithFields(log.Fields{
+		"method": utils.GetCallingFuncName() + fmt.Sprintf(" -> %s", utils.GetDisgoDir()),
+	}).Info("config folder")
+
 	var configFile = utils.GetDisgoDir() + string(os.PathSeparator) + "config.json"
 	if utils.Exists(configFile) {
 		file, error := ioutil.ReadFile(configFile)
@@ -72,7 +77,9 @@ func NewServer() *Server {
 
 // Go
 func (server *Server) Go() {
-	log.Info("booting Disgo v" + Version + "...")
+	log.WithFields(log.Fields{
+		"method": utils.GetCallingFuncName(),
+	}).Info("booting Disgo v" + Version + "...")
 
 	// Add services.
 	if !config.Properties.IsSeed {
