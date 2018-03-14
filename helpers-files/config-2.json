@@ -1,17 +1,16 @@
 {
-	"httpPort": 1975,
+	"httpPort": 1985,
 	"httpHostIp": "0.0.0.0",
-	"grpcPort": 1973,
+	"grpcPort": 1983,
 	"grpcTimeout": 5,
 	"useQuantumEntropy": false,
 	"isSeed": false,
-	"isDelegate": false,
+	"isDelegate": true,
 	"seedList": [
-		"104.196.223.222"
+		"104.196.223.222:1973"
 	],
 	"daposDelegates": [
-		"NODE-Nicolae"
 	],
-	"nodeId": "NODE-Nicolae",
+	"nodeId": "NODE-Test2",
 	"thisIp": "192.168.7.104"
 }
