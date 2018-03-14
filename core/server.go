@@ -13,6 +13,8 @@ import (
 	"github.com/dispatchlabs/commons/utils"
 	"github.com/dispatchlabs/disgover"
 	log "github.com/sirupsen/logrus"
+	"github.com/dispatchlabs/commons/crypto"
+	"encoding/hex"
 )
 
 const (
@@ -73,6 +75,15 @@ func NewServer() *Server {
 // Go
 func (server *Server) Go() {
 	log.Info("booting Disgo v" + Version + "...")
+
+
+	hash := crypto.NewHash([]byte("FOOK ME"))
+	privateKey, _ := hex.DecodeString("2093fde230170efc92b2c122b8b831b30f916dd5568b50a427caa76e13e7effd")
+
+	signature := crypto.NewSignature(privateKey, hash[:])
+
+	log.Info(signature)
+
 
 	// Add services.
 	if !config.Properties.IsSeed {
