@@ -69,14 +69,20 @@ func (this *PingPongService) Go(waitGroup *sync.WaitGroup) {
 				// Send PING
 				client := &http.Client{}
 				resp, err := client.Do(req)
-				if err != nil {
-					panic(err)
-				}
-				defer resp.Body.Close()
 
-				// Got PONG
-				body, _ := ioutil.ReadAll(resp.Body)
-				fmt.Println(string(body))
+				if err != nil {
+					log.WithFields(log.Fields{
+						"method": utils.GetCallingFuncName() + fmt.Sprintf(" -> %s", contact.Address),
+					}).Info("can't send PING")
+
+					resp.Body.Close()
+				} else {
+					defer resp.Body.Close()
+
+					// Got PONG
+					body, _ := ioutil.ReadAll(resp.Body)
+					fmt.Println(string(body))
+				}
 			}
 		}
 	}()
