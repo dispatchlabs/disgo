@@ -28,15 +28,15 @@ type Api struct {
 func NewApi(services []types.IService) *Api {
 	this := Api{services, httpService.GetHttpRouter()}
 	this.router.HandleFunc("/v1/ping", this.pingPongHandler).Methods("POST")
-	this.router.HandleFunc("/v1/state/{address}", this.retrieveStateHandler).Methods("GET")
-	this.router.HandleFunc("/v1/transactions/{address}", this.retrieveTransactionsHandler).Methods("GET")
+	this.router.HandleFunc("/v1/balance/{address}", this.retrieveBalanceHandler).Methods("GET")
+	//this.router.HandleFunc("/v1/transactions/{address}", this.retrieveTransactionsHandler).Methods("GET")
 	this.router.HandleFunc("/v1/transactions", this.createTransactionHandler).Methods("POST")
 	return &this
 
 }
 
-// retrieveStateHandler
-func (this *Api) retrieveStateHandler(responseWriter http.ResponseWriter, request *http.Request) {
+// retrieveBalanceHandler
+func (this *Api) retrieveBalanceHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
 	state := dapos.GetDAPoS().GetState(vars["address"])
 	if state == nil {
