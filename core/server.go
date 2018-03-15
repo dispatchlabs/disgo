@@ -57,14 +57,31 @@ func NewServer() *Server {
 		"method": utils.GetCallingFuncName() + fmt.Sprintf(" -> %s", utils.GetDisgoDir()),
 	}).Info("config folder")
 
-	var configFile = utils.GetDisgoDir() + string(os.PathSeparator) + "config.json"
-	if utils.Exists(configFile) {
-		file, error := ioutil.ReadFile(configFile)
+	var configFileName = utils.GetDisgoDir() + string(os.PathSeparator) + "config.json"
+	if utils.Exists(configFileName) {
+		file, error := ioutil.ReadFile(configFileName)
 		if error != nil {
-			log.Error("unable to load " + configFile + "[error=" + error.Error() + "]")
+			log.Error("unable to load " + configFileName + "[error=" + error.Error() + "]")
 			os.Exit(1)
 		}
 		json.Unmarshal(file, &config.Properties)
+	} else {
+		file, error := os.Create(configFileName)
+		defer file.Close()
+		if error != nil {
+			log.WithFields(log.Fields{
+				"method": utils.GetCallingFuncName(),
+			}).Fatal("unable to create " + configFileName + " [error=" + error.Error() + "]")
+			panic(error)
+		}
+		bytes, error := json.Marshal(&config.Properties)
+		if error != nil {
+			log.WithFields(log.Fields{
+				"method": utils.GetCallingFuncName(),
+			}).Fatal("unable to Marshal Properties [error=" + error.Error() + "]")
+			panic(error)
+		}
+		fmt.Fprintf(file, string(bytes))
 	}
 
 	// Load Keys
@@ -82,9 +99,9 @@ func (server *Server) Go() {
 	}).Info("booting Disgo v" + Version + "...")
 
 	// Add services.
-	if !config.Properties.IsSeed {
-		server.services = append(server.services, NewPingPongService())
-	}
+	// if !config.Properties.IsSeed {
+	// 	server.services = append(server.services, NewPingPongService())
+	// }
 	server.services = append(server.services, disgover.NewDisGoverService().WithGrpc())
 	server.services = append(server.services, dapos.NewDAPoSService().WithGrpc())
 	server.services = append(server.services, services.NewHttpService())
