@@ -40,17 +40,17 @@ func NewApi(services []types.IService) *Api {
 // retrieveBalanceHandler
 func (this *Api) retrieveBalanceHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
-	state := dapos.GetDAPoS().GetState(vars["address"])
-	if state == nil {
-		responseWriter.Write([]byte(`{"status":"STATE_NOT_FOUND"}`))
+	balance, error := dapos.GetDAPoS().GetBalance(vars["address"])
+	if error != nil {
+		responseWriter.Write([]byte(`{"status":"INTERNAL_SERVER_ERROR"}`))
 		return
 	}
 	bytes, error := json.Marshal(struct {
 		Status string           `json:"status,omitempty"`
-		State  *daposCore.State `json:"state,omitempty"`
+		Balance  int64 `json:"balance,omitempty"`
 	}{
 		Status: "OK",
-		State:  state,
+		Balance:  balance,
 	})
 	if error != nil {
 		log.WithFields(log.Fields{
