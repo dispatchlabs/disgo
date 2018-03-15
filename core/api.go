@@ -29,10 +29,10 @@ func NewApi(services []types.IService) *Api {
 	this := Api{services, httpService.GetHttpRouter()}
 	this.router.HandleFunc("/v1/ping", this.pingPongHandler).Methods("POST")
 	this.router.HandleFunc("/v1/balance/{address}", this.retrieveBalanceHandler).Methods("GET")
-	//this.router.HandleFunc("/v1/transactions/{address}", this.retrieveTransactionsHandler).Methods("GET")
+	this.router.HandleFunc("/v1/sync_transactions", this.syncTransactionsHandler).Methods("GET")
+	this.router.HandleFunc("/v1/transactions/{address}", this.retrieveTransactionsHandler).Methods("GET")
 	this.router.HandleFunc("/v1/transactions", this.createTransactionHandler).Methods("POST")
 	return &this
-
 }
 
 // retrieveBalanceHandler
@@ -82,15 +82,16 @@ func (this *Api) createTransactionHandler(responseWriter http.ResponseWriter, re
 		return
 	}
 
-	if dapos.GetDAPoS().ProcessTxSync(transaction) {
-		responseWriter.Write([]byte(`{"status":"OK"}`))
-	} else {
-		responseWriter.Write([]byte(`{"status":"INVALID_TRANSACTION"}`))
-	}
+	dapos.GetDAPoS().ProcessTx(transaction)
+	responseWriter.Write([]byte(`{"status":"OK"}`))
+}
+
+func (this *Api) syncTransactionsHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	dapos.GetDAPoS().SynchronizeTransactions()
 }
 
 func (this *Api) retrieveTransactionsHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	//vars := mux.Vars(request)
+	//this will call code that iterates through the chain and pulls tx for a particular address
 }
 
 func (this *Api) getService(serviceInterface interface{}) types.IService {
