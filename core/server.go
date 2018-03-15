@@ -78,7 +78,7 @@ func NewServer() *Server {
 		if error != nil {
 			log.WithFields(log.Fields{
 				"method": utils.GetCallingFuncName(),
-			}).Fatal("unable to Marshal States [error=" + error.Error() + "]")
+			}).Fatal("unable to Marshal Properties [error=" + error.Error() + "]")
 			panic(error)
 		}
 		fmt.Fprintf(file, string(bytes))
