@@ -108,7 +108,7 @@ func (server *Server) Go() {
 	server.services = append(server.services, services.NewGrpcService())
 
 	// Create api.
-	server.api = NewApi(server.services)
+	server.api = NewApi()
 
 	// Run services.
 	var waitGroup sync.WaitGroup
