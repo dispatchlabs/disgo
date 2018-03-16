@@ -19,7 +19,7 @@ import (
 
 // Api
 type Api struct {
-	router   *mux.Router
+	router *mux.Router
 }
 
 // NewApi
@@ -43,11 +43,11 @@ func (this *Api) retrieveBalanceHandler(responseWriter http.ResponseWriter, requ
 		return
 	}
 	bytes, error := json.Marshal(struct {
-		Status string           `json:"status,omitempty"`
-		Balance  int64 `json:"balance,omitempty"`
+		Status  string `json:"status,omitempty"`
+		Balance int64  `json:"balance,omitempty"`
 	}{
-		Status: "OK",
-		Balance:  balance,
+		Status:  "OK",
+		Balance: balance,
 	})
 	if error != nil {
 		log.WithFields(log.Fields{
@@ -87,7 +87,6 @@ func (this *Api) createTransactionHandler(responseWriter http.ResponseWriter, re
 
 // createTransactionHandler
 func (this *Api) createTestTransactionHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	this.setHeaders(responseWriter, request)
 	body, error := ioutil.ReadAll(request.Body)
 	if error != nil {
 		log.WithFields(log.Fields{
@@ -120,13 +119,29 @@ func (this *Api) createTestTransactionHandler(responseWriter http.ResponseWriter
 	responseWriter.Write([]byte(`{"status":"OK"}`))
 }
 
-
 func (this *Api) syncTransactionsHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	dapos.GetDAPoS().SynchronizeTransactions()
 }
 
+// retrieveTransactionsHandler
 func (this *Api) retrieveTransactionsHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	//this will call code that iterates through the chain and pulls tx for a particular address
+	vars := mux.Vars(request)
+	transactions := dapos.GetDAPoS().GetTransactions(vars["address"])
+	bytes, error := json.Marshal(struct {
+		Status       string                  `json:"status,omitempty"`
+		Transactions []daposCore.Transaction `json:"transactions,omitempty"`
+	}{
+		Status:       "OK",
+		Transactions: transactions,
+	})
+	if error != nil {
+		log.WithFields(log.Fields{
+			"method": utils.GetCallingFuncName(),
+		}).Error("JSON parse error [error=" + error.Error() + "]")
+		http.Error(responseWriter, `{"status":"JSON_PARSE_ERROR"}`, http.StatusBadRequest)
+		return
+	}
+	responseWriter.Write(bytes)
 }
 
 func (this *Api) pingPongHandler(responseWriter http.ResponseWriter, request *http.Request) {
@@ -140,14 +155,4 @@ func (this *Api) pingPongHandler(responseWriter http.ResponseWriter, request *ht
 		disgover.GetDisgover().ThisContact.Endpoint.Host,
 		disgover.GetDisgover().ThisContact.Endpoint.Port,
 	)))
-}
-
-// setHeaders
-func (this *Api) setHeaders(responseWriter http.ResponseWriter, request *http.Request) {
-	responseWriter.Header().Set("Content-Type", "application/json")
-	responseWriter.Header().Set("Access-Control-Allow-Origin", request.Header.Get("Origin"))
-	responseWriter.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-	responseWriter.Header().Set("Access-Control-Allow-Headers", "Accept, Accept-Encoding, X-CSRF-Token, Authorization")
-
-
 }
