@@ -50,9 +50,14 @@ func NewServer() *Server {
 		SeedList: []string{
 			"35.230.30.125",
 		},
-		DaposDelegates: []string{},
-		NodeId:         "",
-		ThisIp:         "",
+		DaposDelegates: []string{
+			"test-net-delegate-1",
+			"test-net-delegate-2",
+			"test-net-delegate-3",
+			"test-net-delegate-4",
+		},
+		NodeId: "",
+		ThisIp: "",
 	}
 
 	log.WithFields(log.Fields{
