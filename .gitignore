@@ -1,4 +1,15 @@
+.idea
+.vscode
+
+.DS_Store
 debug
+disgo
+
+config/
+test1/
+
+*.iml
+
 
 # Cache
 .cache/
@@ -12,12 +23,3 @@ db.sqlite3
 *.key
 *.key.pub
 *.pem
-
-# IDE
-.idea
-.vscode
-tsconfig.json
-
-# OS
-.DS_Store
-
