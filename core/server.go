@@ -47,10 +47,12 @@ func NewServer() *Server {
 		UseQuantumEntropy: false,
 		IsSeed:            false,
 		IsDelegate:        false,
-		SeedList:          []string{},
-		DaposDelegates:    []string{},
-		NodeId:            "",
-		ThisIp:            "",
+		SeedList: []string{
+			"35.230.30.125",
+		},
+		DaposDelegates: []string{},
+		NodeId:         "",
+		ThisIp:         "",
 	}
 
 	log.WithFields(log.Fields{
