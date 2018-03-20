@@ -1,0 +1,10 @@
+echo
+curl 'http://35.199.173.199:1975/v1/balance/7777f2b40aacbef5a5127f65418dc5f951280833'
+echo
+curl 'http://35.227.16.102:1975/v1/balance/7777f2b40aacbef5a5127f65418dc5f951280833'
+echo
+curl 'http://35.230.76.164:1975/v1/balance/7777f2b40aacbef5a5127f65418dc5f951280833'
+echo
+curl 'http://35.230.101.49:1975/v1/balance/7777f2b40aacbef5a5127f65418dc5f951280833'
+echo
+echo

@@ -3,7 +3,7 @@ services:
   disgo:
     build:
       context:      .
-      dockerfile:   Dockerfile-service
+      dockerfile:   Dockerfile
     container_name: disgo-service
     command:        -asSeed -nodeId=NODE-Seed-001 -thisIp=35.227.162.40
     restart:        unless-stopped
