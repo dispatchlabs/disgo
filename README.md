@@ -18,9 +18,12 @@ or
 
 <a name="wiki"></a>
 ### Wiki Documentation
-For more technical details on how disgo works, please visit the [Wiki](https://github.com/dispatchlabs/disgo/wiki) page for detailed descriptions of all of the code in each package.
+For more technical details on how disgo works, please visit the [Wiki](https://github.com/dispatchlabs/disgo/wiki). 
 
-*Add some "how to do "this" bullet points with links to topic in wiki"*
+ - [Development](https://github.com/dispatchlabs/disgo/wiki#development)
+ - [Design Approach](https://github.com/dispatchlabs/disgo/wiki#design-approach) 
+ - [Getting Started With Disgo](https://github.com/dispatchlabs/disgo/wiki#getting-started-with-disgo)
+ - [Packages](https://github.com/dispatchlabs/disgo/wiki#packages)
 
 <a name="dependencies"></a>
 ### Dependencies
@@ -47,7 +50,7 @@ cd ~/go/src/dispatchlabs/disgo
 go run main.go
 ```
 
-For instructions on running Disgo in Docker, please visit the [Wiki Page](https://github.com/dispatchlabs/disgo/wiki#as-service-with-docker)
+For instructions on running Disgo in Docker, please visit the [Wiki Page](https://github.com/dispatchlabs/disgo/wiki#docker)
 
 <a name="tests"></a>
 ### Tests
