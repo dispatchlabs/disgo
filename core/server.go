@@ -23,7 +23,6 @@ const (
 // Server -
 type Server struct {
 	services []types.IService
-	api      *Api
 }
 
 // NewServer -
@@ -114,8 +113,8 @@ func (server *Server) Go() {
 	server.services = append(server.services, services.NewHttpService())
 	server.services = append(server.services, services.NewGrpcService())
 
-	// Create api.
-	server.api = NewApi()
+	// Register handlers.
+	registerHttpHandlers()
 
 	// Run services.
 	var waitGroup sync.WaitGroup
