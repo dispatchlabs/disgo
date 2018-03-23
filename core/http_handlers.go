@@ -86,7 +86,7 @@ func syncTransactionsHandler(responseWriter http.ResponseWriter, request *http.R
 // retrieveTransactionsHandler
 func retrieveTransactionsHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
-	transactions := dapos.GetDAPoS().GetTransactions(vars["address"])
+	transactions, error := dapos.GetDAPoS().GetTransactions(vars["address"])
 	bytes, error := json.Marshal(struct {
 		Status       string                  `json:"status,omitempty"`
 		Transactions []daposCore.Transaction `json:"transactions,omitempty"`
