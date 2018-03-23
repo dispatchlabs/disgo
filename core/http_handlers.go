@@ -78,7 +78,7 @@ func createTransactionHandler(responseWriter http.ResponseWriter, request *http.
 	responseWriter.Write([]byte(`{"status":"OK"}`))
 }
 
-//
+// syncTransactionsHandler
 func syncTransactionsHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	dapos.GetDAPoS().SynchronizeTransactions()
 }
