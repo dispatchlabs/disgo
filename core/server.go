@@ -11,7 +11,7 @@ import (
 	"github.com/dispatchlabs/commons/services"
 	"github.com/dispatchlabs/commons/types"
 	"github.com/dispatchlabs/commons/utils"
-	"github.com/dispatchlabs/dapos"
+	"github.com/dispatchlabs/consensus"
 	"github.com/dispatchlabs/disgover"
 	log "github.com/sirupsen/logrus"
 )
@@ -108,13 +108,10 @@ func (server *Server) Go() {
 	// if !config.Properties.IsSeed {
 	// 	server.services = append(server.services, NewPingPongService())
 	// }
-	server.services = append(server.services, disgover.NewDisGoverService().WithGrpc())
-	server.services = append(server.services, dapos.NewDAPoSService().WithGrpc())
+	server.services = append(server.services, disgover.NewDisGoverService().WithGrpc().WithHttp())
+	server.services = append(server.services, consensus.NewDAPoSService().WithGrpc().WithHttp())
 	server.services = append(server.services, services.NewHttpService())
 	server.services = append(server.services, services.NewGrpcService())
-
-	// Register handlers.
-	registerHttpHandlers()
 
 	// Run services.
 	var waitGroup sync.WaitGroup
