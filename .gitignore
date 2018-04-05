@@ -3,7 +3,8 @@
 
 .DS_Store
 debug
-disgo
+disgo\
+db
 
 config/
 test1/
