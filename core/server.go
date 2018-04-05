@@ -75,16 +75,12 @@ func NewServer() *Server {
 		file, error := os.Create(configFileName)
 		defer file.Close()
 		if error != nil {
-			log.WithFields(log.Fields{
-				"method": utils.GetCallingFuncName(),
-			}).Fatal("unable to create " + configFileName + " [error=" + error.Error() + "]")
+			utils.Error("unable to create " + configFileName + " [error=" + error.Error() + "]")
 			panic(error)
 		}
 		bytes, error := json.Marshal(&config.Properties)
 		if error != nil {
-			log.WithFields(log.Fields{
-				"method": utils.GetCallingFuncName(),
-			}).Fatal("unable to Marshal Properties [error=" + error.Error() + "]")
+			utils.Error("unable to Marshal Properties [error=" + error.Error() + "]")
 			panic(error)
 		}
 		fmt.Fprintf(file, string(bytes))
@@ -100,25 +96,22 @@ func NewServer() *Server {
 
 // Go
 func (server *Server) Go() {
-	log.WithFields(log.Fields{
-		"method": utils.GetCallingFuncName(),
-	}).Info("booting Disgo v" + Version + "...")
+	utils.Info("booting Disgo v" + Version + "...")
 
 	// Add services.
 	// if !config.Properties.IsSeed {
 	// 	server.services = append(server.services, NewPingPongService())
 	// }
-	server.services = append(server.services, disgover.NewDisGoverService().WithGrpc().WithHttp())
-	server.services = append(server.services, dapos.NewDAPoSService().WithGrpc().WithHttp())
-	server.services = append(server.services, services.NewHttpService())
-	server.services = append(server.services, services.NewGrpcService())
+	server.services = append(server.services, disgover.GetDisGoverService().WithGrpc().WithHttp())
+	server.services = append(server.services, dapos.GetDAPoSService().WithGrpc().WithHttp())
+	server.services = append(server.services, services.GetHttpService())
+	server.services = append(server.services, services.GetGrpcService())
+	server.services = append(server.services, services.GetDbService())
 
 	// Run services.
 	var waitGroup sync.WaitGroup
 	for _, service := range server.services {
-		log.WithFields(log.Fields{
-			"method": utils.GetCallingFuncName(),
-		}).Info("starting " + utils.GetStructName(service) + "...")
+		utils.Info("starting " + utils.GetStructName(service) + "...")
 		go service.Go(&waitGroup)
 		waitGroup.Add(1)
 	}
