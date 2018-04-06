@@ -102,11 +102,11 @@ func (server *Server) Go() {
 	// if !config.Properties.IsSeed {
 	// 	server.services = append(server.services, NewPingPongService())
 	// }
+	server.services = append(server.services, services.GetDbService())
 	server.services = append(server.services, disgover.GetDisGoverService().WithGrpc().WithHttp())
 	server.services = append(server.services, dapos.GetDAPoSService().WithGrpc().WithHttp())
 	server.services = append(server.services, services.GetHttpService())
 	server.services = append(server.services, services.GetGrpcService())
-	server.services = append(server.services, services.GetDbService())
 
 	// Run services.
 	var waitGroup sync.WaitGroup
