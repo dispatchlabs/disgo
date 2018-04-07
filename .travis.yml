@@ -1,0 +1,13 @@
+language: go
+
+go:
+ - 1.9
+ - master
+
+install: true
+
+notifications:
+  email: true
+
+script:
+  go build
