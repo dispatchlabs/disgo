@@ -65,23 +65,23 @@ func NewServer() *Server {
 
 	var configFileName = utils.GetDisgoDir() + string(os.PathSeparator) + "config.json"
 	if utils.Exists(configFileName) {
-		file, error := ioutil.ReadFile(configFileName)
-		if error != nil {
-			log.Error("unable to load " + configFileName + "[error=" + error.Error() + "]")
+		file, err := ioutil.ReadFile(configFileName)
+		if err != nil {
+			log.Error("unable to load " + configFileName + "[error=" + err.Error() + "]")
 			os.Exit(1)
 		}
 		json.Unmarshal(file, &config.Properties)
 	} else {
-		file, error := os.Create(configFileName)
+		file, err := os.Create(configFileName)
 		defer file.Close()
-		if error != nil {
-			utils.Error("unable to create " + configFileName + " [error=" + error.Error() + "]")
-			panic(error)
+		if err != nil {
+			utils.Error("unable to create " + configFileName + " [error=" + err.Error() + "]")
+			panic(err)
 		}
-		bytes, error := json.Marshal(&config.Properties)
-		if error != nil {
-			utils.Error("unable to Marshal Properties [error=" + error.Error() + "]")
-			panic(error)
+		bytes, err := json.Marshal(&config.Properties)
+		if err != nil {
+			utils.Error("unable to Marshal Properties [error=" + err.Error() + "]")
+			panic(err)
 		}
 		fmt.Fprintf(file, string(bytes))
 	}
