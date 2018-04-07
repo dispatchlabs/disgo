@@ -15,9 +15,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/dispatchlabs/commons/config"
 	"github.com/dispatchlabs/commons/utils"
 	log "github.com/sirupsen/logrus"
+	"github.com/dispatchlabs/commons/types"
 )
 
 // Keys Helpers
@@ -76,7 +76,7 @@ func loadKeys() ([]byte, []byte, error) {
 
 	if _, err := os.Stat(privateKeyFile); os.IsNotExist(err) {
 		reader := rand.Reader
-		if config.Properties.UseQuantumEntropy {
+		if types.GetConfig().UseQuantumEntropy {
 			log.WithFields(log.Fields{
 				"method": utils.GetCallingFuncName(),
 			}).Info("generating keys using Quantum Entropy")

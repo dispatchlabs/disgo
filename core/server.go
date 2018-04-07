@@ -1,13 +1,8 @@
 package core
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"os"
 	"sync"
 
-	"github.com/dispatchlabs/commons/config"
 	"github.com/dispatchlabs/commons/services"
 	"github.com/dispatchlabs/commons/types"
 	"github.com/dispatchlabs/commons/utils"
@@ -27,64 +22,7 @@ type Server struct {
 
 // NewServer -
 func NewServer() *Server {
-
-	// Setup log.
-	formatter := &log.TextFormatter{
-		FullTimestamp: true,
-		ForceColors:   false,
-	}
-	log.SetFormatter(formatter)
-	log.SetOutput(os.Stdout)
-	log.SetLevel(log.InfoLevel)
-
-	// Read configuration JSON file and override default values
-	config.Properties = &config.DisgoProperties{
-		HttpPort:          1975,
-		HttpHostIp:        "0.0.0.0",
-		GrpcPort:          1973,
-		GrpcTimeout:       5,
-		UseQuantumEntropy: false,
-		IsSeed:            false,
-		IsDelegate:        false,
-		SeedList: []string{
-			"35.230.30.125",
-		},
-		DaposDelegates: []string{
-			"test-net-delegate-1",
-			"test-net-delegate-2",
-			"test-net-delegate-3",
-			"test-net-delegate-4",
-		},
-		NodeId: "",
-		ThisIp: "",
-	}
-
-	log.WithFields(log.Fields{
-		"method": utils.GetCallingFuncName() + fmt.Sprintf(" -> %s", utils.GetDisgoDir()),
-	}).Info("config folder")
-
-	var configFileName = utils.GetDisgoDir() + string(os.PathSeparator) + "config.json"
-	if utils.Exists(configFileName) {
-		file, error := ioutil.ReadFile(configFileName)
-		if error != nil {
-			log.Error("unable to load " + configFileName + "[error=" + error.Error() + "]")
-			os.Exit(1)
-		}
-		json.Unmarshal(file, &config.Properties)
-	} else {
-		file, error := os.Create(configFileName)
-		defer file.Close()
-		if error != nil {
-			utils.Error("unable to create " + configFileName + " [error=" + error.Error() + "]")
-			panic(error)
-		}
-		bytes, error := json.Marshal(&config.Properties)
-		if error != nil {
-			utils.Error("unable to Marshal Properties [error=" + error.Error() + "]")
-			panic(error)
-		}
-		fmt.Fprintf(file, string(bytes))
-	}
+	utils.InitializeLogger()
 
 	// Load Keys
 	if _, _, err := loadKeys(); err != nil {
