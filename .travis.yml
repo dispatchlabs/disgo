@@ -4,9 +4,6 @@ go:
   - "1.9"
   - master
 
-before_script:
-  - go get ./...
-
 notifications:
   email: true
 
