@@ -6,6 +6,7 @@ go:
 
 notifications:
   email: true
-
+    - muhammad@dispatchlabs.io
+    - nicolae@dispatchlabs.io
 script:
   - go build
