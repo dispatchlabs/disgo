@@ -1,13 +1,14 @@
 language: go
 
 go:
- - 1.9
- - master
+  - "1.9"
+  - master
 
-install: true
+before_script:
+  - go get ./...
 
 notifications:
   email: true
 
 script:
-  go build
+  - go build
