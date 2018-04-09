@@ -1,13 +1,15 @@
 language: go
 
 go:
- - 1.9
- - master
-
-install: true
+  - "1.9"
+  - master
 
 notifications:
-  email: true
-
+  email:
+    recipients:
+      - muhammad@dispatchlabs.io
+      - nicolae@dispatchlabs.io
+    on_success: always
+    on_failure: always
 script:
-  go build
+  - go build
