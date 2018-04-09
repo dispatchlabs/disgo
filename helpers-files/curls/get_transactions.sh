@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-curl 'http://localhost:1975/v1/transactions'
+curl 'http://35.185.254.83:1975/v1/transactions'
