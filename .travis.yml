@@ -6,7 +6,7 @@ go:
 
 notifications:
   email:
-    recepients:
+    recipients:
       - muhammad@dispatchlabs.io
       - nicolae@dispatchlabs.io
     on_success: always
