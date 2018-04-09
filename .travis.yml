@@ -6,7 +6,10 @@ go:
 
 notifications:
   email:
+    recepients:
     - muhammad@dispatchlabs.io
     - nicolae@dispatchlabs.io
+    on_success: always
+    on_failure: always
 script:
   - go build
