@@ -5,7 +5,7 @@ go:
   - master
 
 notifications:
-  email: true
+  email:
     - muhammad@dispatchlabs.io
     - nicolae@dispatchlabs.io
 script:
