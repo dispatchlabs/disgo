@@ -8,7 +8,6 @@ import (
 	"github.com/dispatchlabs/commons/utils"
 	"github.com/dispatchlabs/dapos"
 	"github.com/dispatchlabs/disgover"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -26,7 +25,7 @@ func NewServer() *Server {
 
 	// Load Keys
 	if _, _, err := loadKeys(); err != nil {
-		log.Error("unable to keys: " + err.Error())
+		utils.Error("unable to keys: " + err.Error())
 	}
 
 	return &Server{}
