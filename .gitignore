@@ -10,3 +10,17 @@ config/
 test1/
 
 *.iml
+
+
+# Cache
+.cache/
+
+# Environment specific
+env/
+.env
+db.sqlite3
+
+# Security
+*.key
+*.key.pub
+*.pem
