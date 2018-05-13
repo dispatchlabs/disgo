@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/dispatchlabs/disgo/core"
 	"github.com/dispatchlabs/commons/utils"
+	"github.com/dispatchlabs/disgo/core"
 )
 
 func main() {

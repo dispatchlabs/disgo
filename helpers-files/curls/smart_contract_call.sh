@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+curl -X POST http://localhost:1975/v1/transactions/contracts/raw -d '{"from":"e6098cc0d5c20c6c31c4d69f0201a02975264e94","to":"6d768e54a91eea686cee68aa7ca067754f15a64b", "method":"test", "value":10, "code":"[{\"type\":\"function\",\"name\":\"test\",\"constant\":true,\"inputs\":[{\"name\":\"i\",\"type\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"testAsync\",\"constant\":false,\"inputs\":[{\"name\":\"i\",\"type\":\"uint256\"}],\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"LocalChange\",\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"\",\"type\":\"uint256\"}]}]"}'
