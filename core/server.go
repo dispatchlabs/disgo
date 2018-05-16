@@ -24,6 +24,7 @@ import (
 	"github.com/dispatchlabs/commons/utils"
 	"github.com/dispatchlabs/dapos"
 	"github.com/dispatchlabs/disgover"
+	"time"
 )
 
 const (
@@ -50,6 +51,17 @@ func NewServer() *Server {
 // Go
 func (server *Server) Go() {
 	utils.Info("booting Disgo v" + Version + "...")
+
+	//privateKey []byte, tipe byte, from, to string, value, hertz, theTime int64
+
+
+	t, err := types.NewTransaction("0f86ea981203b26b5b8244c8f661e30e5104555068a4bd168d3e3015db9bb25a", 0, "3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c", "d70613f93152c84050e7826c4e2b0cc02c1c3b99", 999, 0, utils.ToMilliSeconds(time.Now()))
+	if err != nil {
+		utils.Error(err)
+	}
+
+	utils.Info(t.Verify())
+	utils.Info(t.String())
 
 	// Add services.
 	// if !config.Properties.IsSeed {
