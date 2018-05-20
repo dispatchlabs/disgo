@@ -76,7 +76,7 @@ func test1_AllServicesInitFinished() {
 		ReceiptId:   fakeReceipt.Id,
 		Transaction: *tx,
 	}
-	dapos.GetDAPoSService().ProcessTransaction(fakeGossip)
+	dapos.GetDAPoSService().Temp_ProcessTransaction(fakeGossip)
 
 	test2_AllServicesInitFinished()
 }
