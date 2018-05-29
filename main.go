@@ -1,4 +1,4 @@
-/*	
+/*
  *    This file is part of Disgo library.
  *
  *    The Disgo library is free software: you can redistribute it and/or modify
@@ -13,17 +13,16 @@
  *
  *    You should have received a copy of the GNU General Public License
  *    along with the Disgo library.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 package main
 
 import (
 	"github.com/dispatchlabs/disgo/commons/utils"
-	"github.com/dispatchlabs/disgo/core"
 )
 
 func main() {
 	utils.InitMainPackagePath()
 
-	server := core.NewServer()
+	server := NewServer()
 	server.Go()
 }
