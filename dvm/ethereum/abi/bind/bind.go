@@ -28,7 +28,7 @@ import (
 	"text/template"
 	"unicode"
 
-	"github.com/dispatchlabs/dvm/ethereum/abi"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
 	"golang.org/x/tools/imports"
 )
 

@@ -22,7 +22,7 @@ import (
 	"math/big"
 	"reflect"
 
-	"github.com/dispatchlabs/dvm/ethereum/abi"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
 	"github.com/dispatchlabs/dvm/ethereum/common"
 	"github.com/dispatchlabs/dvm/ethereum/crypto"
 )

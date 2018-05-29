@@ -16,7 +16,7 @@
 
 package bind
 
-import "github.com/dispatchlabs/dvm/ethereum/abi"
+import "github.com/dispatchlabs/disgo/dvm/ethereum/abi"
 
 // tmplData is the data structure required to fill the binding template.
 type tmplData struct {

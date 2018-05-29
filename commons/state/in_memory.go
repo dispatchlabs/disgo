@@ -3,7 +3,7 @@ package state
 import (
 	"fmt"
 	"github.com/dispatchlabs/dvm/ethereum/log"
-	"github.com/dispatchlabs/commons/tree"
+	"github.com/dispatchlabs/disgo/commons/tree"
 )
 
 func NewMerkleTree(content []tree.MerkleTreeContent) *tree.MerkleTree {

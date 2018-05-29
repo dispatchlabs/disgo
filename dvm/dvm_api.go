@@ -27,7 +27,7 @@ import (
 	commonTypes "github.com/dispatchlabs/commons/types"
 	"github.com/dispatchlabs/commons/utils"
 	"github.com/dispatchlabs/dvm/ethereum"
-	"github.com/dispatchlabs/dvm/ethereum/abi"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
 	dvmCrypto "github.com/dispatchlabs/dvm/ethereum/crypto"
 	"github.com/dispatchlabs/dvm/ethereum/params"
 	"github.com/dispatchlabs/dvm/ethereum/rlp"
