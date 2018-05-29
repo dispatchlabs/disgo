@@ -20,10 +20,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dispatchlabs/dvm/ethereum/common"
-	"github.com/dispatchlabs/dvm/ethereum/log"
-	"github.com/dispatchlabs/dvm/ethereum/ethdb"
-	"github.com/dispatchlabs/commons/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/log"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/ethdb"
+	"github.com/dispatchlabs/disgo/commons/crypto"
 )
 
 // secureKeyPrefix is the database key prefix used to store trie node preimages.

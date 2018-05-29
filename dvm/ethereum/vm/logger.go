@@ -23,11 +23,11 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/dispatchlabs/dvm/ethereum/common"
-	"github.com/dispatchlabs/dvm/ethereum/common/hexutil"
-	"github.com/dispatchlabs/dvm/ethereum/common/math"
-	"github.com/dispatchlabs/dvm/ethereum/types"
-	"github.com/dispatchlabs/commons/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common/hexutil"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common/math"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/types"
+	"github.com/dispatchlabs/disgo/commons/crypto"
 )
 
 type Storage map[common.Hash]common.Hash

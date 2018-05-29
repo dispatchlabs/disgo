@@ -23,8 +23,8 @@ import (
 	"reflect"
 
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
-	"github.com/dispatchlabs/dvm/ethereum/common"
-	"github.com/dispatchlabs/dvm/ethereum/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/crypto"
 )
 
 // makeTopics converts a filter query argument list into a filter topic set.

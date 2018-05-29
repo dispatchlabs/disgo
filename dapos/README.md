@@ -15,37 +15,37 @@ For more details on DAPoS, please refer to [Introduction to DAPoS document](http
 
 ### Download
 
-`go get github.com/dispatchlabs/dapos`  
+`go get github.com/dispatchlabs/disgo/dapos`  
 or  
-`git clone http://github.com/dispatchlabs/dapos`
+`git clone http://github.com/dispatchlabs/disgo/dapos`
 
 
 <a name="wiki"></a>
 ### Wiki Documentation
-For more technical details on how dapos works, please visit the [Wiki](https://github.com/dispatchlabs/dapos/wiki)
+For more technical details on how dapos works, please visit the [Wiki](https://github.com/dispatchlabs/disgo/dapos/wiki)
 
- - [Concepts in DAPoS](https://github.com/dispatchlabs/dapos/wiki#genesis)
- - [Design Approach](https://github.com/dispatchlabs/dapos/wiki#design)
- - [Getting Started Sample](https://github.com/dispatchlabs/dapos/wiki#sample)
- - [Packages](https://github.com/dispatchlabs/dapos/wiki#packages)
+ - [Concepts in DAPoS](https://github.com/dispatchlabs/disgo/dapos/wiki#genesis)
+ - [Design Approach](https://github.com/dispatchlabs/disgo/dapos/wiki#design)
+ - [Getting Started Sample](https://github.com/dispatchlabs/disgo/dapos/wiki#sample)
+ - [Packages](https://github.com/dispatchlabs/disgo/dapos/wiki#packages)
 
 
 <a name="dependencies"></a>
 ### Dependencies
-Because dapos relies on sending transactions to other delegates, it is necessary to also have the [disgover](https://github.com/dispatchlabs/disgover) package for network discovery.
-[commons](https://github.com/dispatchlabs/commons) for common types domain types.
+Because dapos relies on sending transactions to other delegates, it is necessary to also have the [disgover](https://github.com/dispatchlabs/disgo/disgover) package for network discovery.
+[commons](https://github.com/dispatchlabs/disgo/commons) for common types domain types.
 NOTE: if you `go get ./..` then dependencies are getting pulled automatically
 
 <a name="configuration"></a>
 ### Configuration
-The dapos package only relies on the configuration loaded by [commons](https://github.com/dispatchlabs/commons) 
+The dapos package only relies on the configuration loaded by [commons](https://github.com/dispatchlabs/disgo/commons) 
 
 <a name="protobuf"></a>
 ##### protobuf ([see common install instructions](https://github.com/dispatchlabs/disgo/wiki#protoc))
 
 <a name="usage"></a>
 ### How to use the dapos package
-See the [wiki page](https://github.com/dispatchlabs/dapos/wiki#getting-started-sample) for links to full examples on running bare-bones dapos
+See the [wiki page](https://github.com/dispatchlabs/disgo/dapos/wiki#getting-started-sample) for links to full examples on running bare-bones dapos
 
 <a name="tests"></a>
 ### Tests

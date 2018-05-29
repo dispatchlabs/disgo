@@ -30,7 +30,7 @@ import (
 	"crypto/aes"
 	"encoding/hex"
 	"encoding/json"
-	"github.com/dispatchlabs/commons/math"
+	"github.com/dispatchlabs/disgo/commons/math"
 
 	"golang.org/x/crypto/scrypt"
 )

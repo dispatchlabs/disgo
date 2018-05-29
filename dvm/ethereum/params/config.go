@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/dispatchlabs/dvm/ethereum/common"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
 )
 
 var (

@@ -23,12 +23,12 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/dispatchlabs/commons/crypto"
-	"github.com/dispatchlabs/dvm/ethereum/common"
-	"github.com/dispatchlabs/dvm/ethereum/log"
-	"github.com/dispatchlabs/dvm/ethereum/rlp"
-	"github.com/dispatchlabs/dvm/ethereum/trie"
-	"github.com/dispatchlabs/dvm/ethereum/types"
+	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/log"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/trie"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/types"
 )
 
 type revision struct {

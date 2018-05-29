@@ -21,10 +21,10 @@ import (
 	"hash"
 	"sync"
 
-	"github.com/dispatchlabs/commons/crypto"
-	"github.com/dispatchlabs/dvm/ethereum/common"
-	ethCrypto "github.com/dispatchlabs/dvm/ethereum/crypto"
-	"github.com/dispatchlabs/dvm/ethereum/rlp"
+	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+	ethCrypto "github.com/dispatchlabs/disgo/dvm/ethereum/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"
 )
 
 type hasher struct {

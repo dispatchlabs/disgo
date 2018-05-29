@@ -31,9 +31,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/dispatchlabs/commons/utils"
+	"github.com/dispatchlabs/disgo/commons/utils"
 	log "github.com/sirupsen/logrus"
-	"github.com/dispatchlabs/commons/types"
+	"github.com/dispatchlabs/disgo/commons/types"
 )
 
 // Keys Helpers

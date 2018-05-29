@@ -2,7 +2,7 @@ package state
 
 import (
 	"fmt"
-	"github.com/dispatchlabs/dvm/ethereum/log"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/log"
 	"github.com/dispatchlabs/disgo/commons/tree"
 )
 

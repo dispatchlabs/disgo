@@ -23,7 +23,7 @@ import (
 	"crypto/elliptic"
 	"fmt"
 
-	"github.com/dispatchlabs/commons/crypto/secp256k1"
+	"github.com/dispatchlabs/disgo/commons/crypto/secp256k1"
 )
 
 // Ecrecover returns the uncompressed public key that created the given signature.

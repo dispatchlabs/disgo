@@ -5,8 +5,8 @@ package types
 import (
 	"encoding/json"
 	"errors"
-	"github.com/dispatchlabs/commons/crypto"
-	"github.com/dispatchlabs/dvm/ethereum/common/hexutil"
+	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common/hexutil"
 	"math/big"
 )
 

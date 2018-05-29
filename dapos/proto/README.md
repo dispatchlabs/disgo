@@ -12,7 +12,7 @@ The  current transport protocol on Dispatch is GRPC. However, we are allowing to
 
 To see the interfaces, refer to:
 
-[DAPoS.proto](https://github.com/dispatchlabs/dapos/blob/master/proto/dapos.proto) 
+[DAPoS.proto](https://github.com/dispatchlabs/disgo/dapos/blob/master/proto/dapos.proto) 
 
 
 

@@ -3,9 +3,9 @@ package dvm
 import (
 	"encoding/json"
 
-	"github.com/dispatchlabs/commons/crypto"
-	"github.com/dispatchlabs/commons/utils"
-	"github.com/dispatchlabs/dvm/ethereum/types"
+	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/types"
 )
 
 type DVMResult struct {

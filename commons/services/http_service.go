@@ -22,8 +22,8 @@ import (
 
 	"fmt"
 
-	"github.com/dispatchlabs/commons/types"
-	"github.com/dispatchlabs/commons/utils"
+	"github.com/dispatchlabs/disgo/commons/types"
+	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 )

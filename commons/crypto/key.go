@@ -22,7 +22,7 @@ import (
 	"encoding/json"
 	"github.com/pborman/uuid"
 	"io"
-	"github.com/dispatchlabs/commons/math"
+	"github.com/dispatchlabs/disgo/commons/math"
 )
 
 // Version 4 "random" for unique id not derived from key data

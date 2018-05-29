@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/dgraph-io/badger"
-	"github.com/dispatchlabs/commons/utils"
+	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
 // Gossip

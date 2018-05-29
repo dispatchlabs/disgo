@@ -21,11 +21,11 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/dispatchlabs/dvm/ethereum/log"
-	//oldCrypto "github.com/dispatchlabs/dvm/ethereum/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/log"
+	//oldCrypto "github.com/dispatchlabs/disgo/dvm/ethereum/crypto"
 
-	"github.com/dispatchlabs/commons/crypto"
-	"github.com/dispatchlabs/commons/utils"
+	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
 var (

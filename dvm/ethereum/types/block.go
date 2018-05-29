@@ -27,13 +27,13 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/dispatchlabs/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/crypto"
 
-	"github.com/dispatchlabs/dvm/ethereum/common"
-	"github.com/dispatchlabs/dvm/ethereum/common/hexutil"
-	ethCrypto "github.com/dispatchlabs/dvm/ethereum/crypto"
-	"github.com/dispatchlabs/dvm/ethereum/rlp"
-	"github.com/dispatchlabs/dvm/ethereum/trie"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common/hexutil"
+	ethCrypto "github.com/dispatchlabs/disgo/dvm/ethereum/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/trie"
 )
 
 var (

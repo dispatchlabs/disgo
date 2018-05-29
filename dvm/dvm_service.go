@@ -19,10 +19,10 @@ package dvm
 import (
 	"sync"
 
-	"github.com/dispatchlabs/commons/crypto"
-	"github.com/dispatchlabs/commons/utils"
-	"github.com/dispatchlabs/dvm/ethereum/ethdb"
-	ethState "github.com/dispatchlabs/dvm/ethereum/state"
+	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/ethdb"
+	ethState "github.com/dispatchlabs/disgo/dvm/ethereum/state"
 )
 
 var dvmServiceInstance *DVMService

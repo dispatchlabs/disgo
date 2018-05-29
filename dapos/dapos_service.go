@@ -20,14 +20,14 @@ import (
 	"sync"
 
 	"github.com/dgraph-io/badger"
-	"github.com/dispatchlabs/commons/services"
+	"github.com/dispatchlabs/disgo/commons/services"
 
 	"os"
 	"time"
 
-	"github.com/dispatchlabs/commons/types"
-	"github.com/dispatchlabs/commons/utils"
-	"github.com/dispatchlabs/disgover"
+	"github.com/dispatchlabs/disgo/commons/types"
+	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/dispatchlabs/disgo/disgover"
 )
 
 var daposServiceInstance *DAPoSService

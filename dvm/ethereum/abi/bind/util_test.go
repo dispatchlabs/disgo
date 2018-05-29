@@ -22,12 +22,12 @@ package bind_test
 // 	"testing"
 // 	"time"
 
-// 	"github.com/dispatchlabs/dvm/ethereum/accounts/abi/bind"
-// 	"github.com/dispatchlabs/dvm/ethereum/accounts/abi/bind/backends"
-// 	"github.com/dispatchlabs/dvm/ethereum/common"
-// 	"github.com/dispatchlabs/dvm/ethereum/core"
-// 	"github.com/dispatchlabs/dvm/ethereum/core/types"
-// 	"github.com/dispatchlabs/dvm/ethereum/crypto"
+// 	"github.com/dispatchlabs/disgo/dvm/ethereum/accounts/abi/bind"
+// 	"github.com/dispatchlabs/disgo/dvm/ethereum/accounts/abi/bind/backends"
+// 	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+// 	"github.com/dispatchlabs/disgo/dvm/ethereum/core"
+// 	"github.com/dispatchlabs/disgo/dvm/ethereum/core/types"
+// 	"github.com/dispatchlabs/disgo/dvm/ethereum/crypto"
 // )
 
 // var testKey, _ = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")

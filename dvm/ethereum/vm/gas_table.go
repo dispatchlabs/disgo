@@ -17,10 +17,10 @@
 package vm
 
 import (
-	"github.com/dispatchlabs/dvm/ethereum/common"
-	"github.com/dispatchlabs/dvm/ethereum/common/math"
-	"github.com/dispatchlabs/dvm/ethereum/params"
-	"github.com/dispatchlabs/commons/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common/math"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
+	"github.com/dispatchlabs/disgo/commons/crypto"
 )
 
 // memoryGasCosts calculates the quadratic gas for memory expansion. It does so

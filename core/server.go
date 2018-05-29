@@ -19,13 +19,13 @@ package core
 import (
 	"sync"
 
-	"github.com/dispatchlabs/dvm"
+	"github.com/dispatchlabs/disgo/dvm"
 
-	"github.com/dispatchlabs/commons/services"
-	"github.com/dispatchlabs/commons/types"
-	"github.com/dispatchlabs/commons/utils"
-	"github.com/dispatchlabs/dapos"
-	"github.com/dispatchlabs/disgover"
+	"github.com/dispatchlabs/disgo/commons/services"
+	"github.com/dispatchlabs/disgo/commons/types"
+	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/dispatchlabs/disgo/dapos"
+	"github.com/dispatchlabs/disgo/disgover"
 )
 
 const (

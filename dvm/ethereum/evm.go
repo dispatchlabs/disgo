@@ -3,8 +3,8 @@ package ethereum
 import (
 	"math/big"
 
-	"github.com/dispatchlabs/dvm/ethereum/vm"
-	"github.com/dispatchlabs/commons/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/vm"
+	"github.com/dispatchlabs/disgo/commons/crypto"
 )
 
 // CanTransfer checks wether there are enough funds in the address' account to make a transfer.

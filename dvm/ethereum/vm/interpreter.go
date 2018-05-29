@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/dispatchlabs/dvm/ethereum/params"
-	"github.com/dispatchlabs/dvm/ethereum/common/math"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common/math"
 )
 
 // Config are the configuration options for the Interpreter

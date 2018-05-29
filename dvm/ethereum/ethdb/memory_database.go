@@ -19,7 +19,7 @@ package ethdb
 import (
 	"errors"
 	"sync"
-	"github.com/dispatchlabs/dvm/ethereum/common"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
 )
 
 /*

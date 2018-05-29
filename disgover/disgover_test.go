@@ -2,7 +2,7 @@ package disgover
 
 import (
 	"testing"
-	"github.com/dispatchlabs/commons/types"
+	"github.com/dispatchlabs/disgo/commons/types"
 )
 
 func recoverMe(t *testing.T) {

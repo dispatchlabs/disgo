@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"hash"
 
-	dvmCrypto "github.com/dispatchlabs/commons/crypto"
-	"github.com/dispatchlabs/commons/crypto/secp256k1"
-	"github.com/dispatchlabs/dvm/ethereum/common"
-	"github.com/dispatchlabs/dvm/ethereum/common/math"
-	"github.com/dispatchlabs/dvm/ethereum/rlp"
+	dvmCrypto "github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/crypto/secp256k1"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common/math"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"
 	"github.com/ethereum/go-ethereum/crypto/sha3"
-	"github.com/dispatchlabs/commons/utils"
+	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
 // Creates an ethereum address given the bytes and the nonce

@@ -26,8 +26,8 @@ import (
 	"fmt"
 
 	"github.com/dgraph-io/badger"
-	"github.com/dispatchlabs/commons/crypto"
-	"github.com/dispatchlabs/commons/utils"
+	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
 // Types

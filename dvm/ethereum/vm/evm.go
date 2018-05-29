@@ -21,11 +21,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	legacyCrypto "github.com/dispatchlabs/dvm/ethereum/crypto"
-	"github.com/dispatchlabs/dvm/ethereum/params"
+	legacyCrypto "github.com/dispatchlabs/disgo/dvm/ethereum/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
 
-	"github.com/dispatchlabs/commons/crypto"
-	"github.com/dispatchlabs/dvm/ethereum/log"
+	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/log"
 	"fmt"
 )
 

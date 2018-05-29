@@ -18,8 +18,8 @@ package vm
 
 import (
 	"math/big"
-	"github.com/dispatchlabs/dvm/ethereum/common"
-	"github.com/dispatchlabs/dvm/ethereum/common/math"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common/math"
 )
 
 // calculates the memory size required for a step

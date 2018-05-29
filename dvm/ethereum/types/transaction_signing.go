@@ -22,12 +22,12 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/dispatchlabs/commons/crypto"
-	"github.com/dispatchlabs/dvm/ethereum/common"
-	ethCrypto "github.com/dispatchlabs/dvm/ethereum/crypto"
-	"github.com/dispatchlabs/dvm/ethereum/params"
+	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+	ethCrypto "github.com/dispatchlabs/disgo/dvm/ethereum/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
 
-	dispatchCrypto "github.com/dispatchlabs/commons/crypto"
+	dispatchCrypto "github.com/dispatchlabs/disgo/commons/crypto"
 )
 
 var (

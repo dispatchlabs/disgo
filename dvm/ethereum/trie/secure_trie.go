@@ -19,9 +19,9 @@ package trie
 import (
 	"fmt"
 
-	"github.com/dispatchlabs/dvm/ethereum/common"
-	"github.com/dispatchlabs/dvm/ethereum/log"
-	"github.com/dispatchlabs/commons/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/log"
+	"github.com/dispatchlabs/disgo/commons/crypto"
 )
 
 // SecureTrie wraps a trie with key hashing. In a secure trie, all

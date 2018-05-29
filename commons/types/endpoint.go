@@ -2,7 +2,7 @@ package types
 
 import (
 	"encoding/json"
-	"github.com/dispatchlabs/commons/utils"
+	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
 // Endpoint - Is the DisGover's notion of where a node can be contacted

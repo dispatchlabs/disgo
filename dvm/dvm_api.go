@@ -23,16 +23,16 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/dispatchlabs/commons/crypto"
-	commonTypes "github.com/dispatchlabs/commons/types"
-	"github.com/dispatchlabs/commons/utils"
-	"github.com/dispatchlabs/dvm/ethereum"
+	"github.com/dispatchlabs/disgo/commons/crypto"
+	commonTypes "github.com/dispatchlabs/disgo/commons/types"
+	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/dispatchlabs/disgo/dvm/ethereum"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
-	dvmCrypto "github.com/dispatchlabs/dvm/ethereum/crypto"
-	"github.com/dispatchlabs/dvm/ethereum/params"
-	"github.com/dispatchlabs/dvm/ethereum/rlp"
-	ethTypes "github.com/dispatchlabs/dvm/ethereum/types"
-	"github.com/dispatchlabs/dvm/ethereum/vm"
+	dvmCrypto "github.com/dispatchlabs/disgo/dvm/ethereum/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"
+	ethTypes "github.com/dispatchlabs/disgo/dvm/ethereum/types"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/vm"
 )
 
 var (

@@ -2,10 +2,10 @@ package common
 
 import (
 	"math/big"
-	"github.com/dispatchlabs/dvm/ethereum/common/hexutil"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common/hexutil"
 	"encoding/hex"
-	"github.com/dispatchlabs/commons/utils"
-	"github.com/dispatchlabs/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/dispatchlabs/disgo/commons/crypto"
 )
 
 const (

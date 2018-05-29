@@ -18,7 +18,7 @@ package disgover
 
 import (
 	"fmt"
-	"github.com/dispatchlabs/commons/services"
+	"github.com/dispatchlabs/disgo/commons/services"
 	"io/ioutil"
 	"net/http"
 )

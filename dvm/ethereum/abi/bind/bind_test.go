@@ -26,7 +26,7 @@ package bind
 // 	"strings"
 // 	"testing"
 
-// 	"github.com/dispatchlabs/dvm/ethereum/common"
+// 	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
 // 	"golang.org/x/tools/imports"
 // )
 

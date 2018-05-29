@@ -21,13 +21,13 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/dispatchlabs/commons/crypto"
-	"github.com/dispatchlabs/commons/crypto/secp256k1"
+	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/crypto/secp256k1"
 
-	"github.com/dispatchlabs/dvm/ethereum/common"
-	"github.com/dispatchlabs/dvm/ethereum/common/math"
-	"github.com/dispatchlabs/dvm/ethereum/crypto/bn256"
-	"github.com/dispatchlabs/dvm/ethereum/params"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common/math"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/crypto/bn256"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
 	"golang.org/x/crypto/ripemd160"
 )
 

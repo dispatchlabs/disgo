@@ -11,7 +11,7 @@ The  current transport protocol on Dispatch is GRPC. However, we are allowing to
 
 To see the interfaces, refer to:
 
-[disgover.proto](https://github.com/dispatchlabs/disgover/blob/master/proto/disgover.proto) 
+[disgover.proto](https://github.com/dispatchlabs/disgo/disgover/blob/master/proto/disgover.proto) 
 
 
 

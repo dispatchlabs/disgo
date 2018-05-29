@@ -18,9 +18,9 @@ package types
 
 import (
 	"io"
-	"github.com/dispatchlabs/commons/crypto"
-	"github.com/dispatchlabs/dvm/ethereum/common/hexutil"
-	"github.com/dispatchlabs/dvm/ethereum/rlp"
+	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common/hexutil"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"
 )
 
 //go:generate gencodec -type Log -field-override logMarshaling -out gen_log_json.go

@@ -21,9 +21,9 @@ package bind
 // 	"fmt"
 // 	"time"
 
-// 	"github.com/dispatchlabs/dvm/ethereum/common"
-// 	"github.com/dispatchlabs/dvm/ethereum/log"
-// 	"github.com/dispatchlabs/dvm/ethereum/types"
+// 	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+// 	"github.com/dispatchlabs/disgo/dvm/ethereum/log"
+// 	"github.com/dispatchlabs/disgo/dvm/ethereum/types"
 // )
 
 // // WaitMined waits for tx to be mined on the blockchain.

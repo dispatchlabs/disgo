@@ -6,11 +6,11 @@ import (
 	"math"
 	"math/big"
 
-	"github.com/dispatchlabs/commons/crypto"
-	"github.com/dispatchlabs/commons/utils"
-	"github.com/dispatchlabs/dvm/ethereum/log"
-	"github.com/dispatchlabs/dvm/ethereum/params"
-	"github.com/dispatchlabs/dvm/ethereum/vm"
+	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/log"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/vm"
 )
 
 var (

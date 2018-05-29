@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dispatchlabs/dvm/ethereum/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/crypto"
 )
 
 // Method represents a callable given a `Name` and whether the method is a constant.

@@ -22,9 +22,9 @@ import (
 	"math/big"
 
 	"crypto/elliptic"
-	"github.com/dispatchlabs/commons/crypto/secp256k1"
-	"github.com/dispatchlabs/commons/math"
-	"github.com/dispatchlabs/commons/utils"
+	"github.com/dispatchlabs/disgo/commons/crypto/secp256k1"
+	"github.com/dispatchlabs/disgo/commons/math"
+	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/ebfe/keccak"
 )
 

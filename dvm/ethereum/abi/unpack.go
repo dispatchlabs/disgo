@@ -22,7 +22,7 @@ import (
 	"math/big"
 	"reflect"
 
-	"github.com/dispatchlabs/dvm/ethereum/common"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
 )
 
 // reads the integer based on its kind

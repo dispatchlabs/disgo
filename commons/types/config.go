@@ -25,7 +25,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/dispatchlabs/commons/utils"
+	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
 var configInstance *Config

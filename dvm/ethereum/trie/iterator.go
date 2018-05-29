@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"container/heap"
 	"errors"
-	"github.com/dispatchlabs/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/crypto"
 )
 
 // Iterator is a key-value trie iterator that traverses a Trie.

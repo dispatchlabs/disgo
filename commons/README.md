@@ -13,18 +13,18 @@ commons contains the common code that multiple components depend on.   All proje
 
 ### Download
 
-`go get github.com/dispatchlabs/commons`  
+`go get github.com/dispatchlabs/disgo/commons`  
 or  
-`git clone http://github.com/dispatchlabs/commons`
+`git clone http://github.com/dispatchlabs/disgo/commons`
 
 
 <a name="wiki"></a>
 ### Wiki Documentation
 Technical details for commons is available on the [Wiki](https://github.com/dispatchlabs/disgo_commons/wiki) page. Here is a shortcut list of interesting topics:
 
- - [How to use the common config structure](https://github.com/dispatchlabs/commons/wiki#configuration)
- - [What is the IService interface](https://github.com/dispatchlabs/commons/wiki#iservice-interface)
- - [Details of the crypo package](https://github.com/dispatchlabs/commons/wiki#crypto)
+ - [How to use the common config structure](https://github.com/dispatchlabs/disgo/commons/wiki#configuration)
+ - [What is the IService interface](https://github.com/dispatchlabs/disgo/commons/wiki#iservice-interface)
+ - [Details of the crypo package](https://github.com/dispatchlabs/disgo/commons/wiki#crypto)
 
 <a name="dependencies"></a>
 ### Dependencies
@@ -37,7 +37,7 @@ commons contains the configuration struct that a client using the system needs f
 
 Any custom node bootstrap implementation should load the appropriate properties into this structure for the components that are used.  For a concrete example, see how it is done in our [disgo node]()
 
-The details of the configuration setup can be view [here in the wiki](https://github.com/dispatchlabs/commons/wiki#configuration)
+The details of the configuration setup can be view [here in the wiki](https://github.com/dispatchlabs/disgo/commons/wiki#configuration)
 
 <a name="protobuf"></a>
 ##### protobuf ([see common install instructions](https://github.com/dispatchlabs/disgo/wiki#protoc)

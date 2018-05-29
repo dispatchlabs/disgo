@@ -18,8 +18,8 @@ package state
 
 import (
 	"math/big"
-	"github.com/dispatchlabs/dvm/ethereum/common"
-	"github.com/dispatchlabs/commons/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+	"github.com/dispatchlabs/disgo/commons/crypto"
 )
 
 // journalEntry is a modification entry in the state change journal that can be

@@ -35,7 +35,7 @@ import (
 
 	"bytes"
 	"crypto/ecdsa"
-	"github.com/dispatchlabs/commons/crypto/secp256k1"
+	"github.com/dispatchlabs/disgo/commons/crypto/secp256k1"
 	"github.com/pborman/uuid"
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/crypto/scrypt"

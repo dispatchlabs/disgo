@@ -22,7 +22,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dispatchlabs/dvm/ethereum/log"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"

@@ -21,8 +21,8 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/dispatchlabs/commons/types"
-	"github.com/dispatchlabs/commons/utils"
+	"github.com/dispatchlabs/disgo/commons/types"
+	"github.com/dispatchlabs/disgo/commons/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )

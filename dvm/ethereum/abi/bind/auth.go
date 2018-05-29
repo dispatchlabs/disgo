@@ -22,9 +22,9 @@ package bind
 // 	"io"
 // 	"io/ioutil"
 
-// 	"github.com/dispatchlabs/dvm/ethereum/common"
-// 	"github.com/dispatchlabs/dvm/ethereum/crypto"
-// 	"github.com/dispatchlabs/dvm/ethereum/types"
+// 	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+// 	"github.com/dispatchlabs/disgo/dvm/ethereum/crypto"
+// 	"github.com/dispatchlabs/disgo/dvm/ethereum/types"
 // )
 
 // // NewTransactor is a utility method to easily create a transaction signer from

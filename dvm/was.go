@@ -20,14 +20,14 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/dispatchlabs/commons/crypto"
-	"github.com/dispatchlabs/commons/types"
-	"github.com/dispatchlabs/commons/utils"
-	"github.com/dispatchlabs/dvm/ethereum"
-	"github.com/dispatchlabs/dvm/ethereum/ethdb"
-	"github.com/dispatchlabs/dvm/ethereum/rlp"
-	ethState "github.com/dispatchlabs/dvm/ethereum/state"
-	ethTypes "github.com/dispatchlabs/dvm/ethereum/types"
+	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/types"
+	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/dispatchlabs/disgo/dvm/ethereum"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/ethdb"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"
+	ethState "github.com/dispatchlabs/disgo/dvm/ethereum/state"
+	ethTypes "github.com/dispatchlabs/disgo/dvm/ethereum/types"
 )
 
 // write ahead state, updated with each AppendTx and reset on Commit

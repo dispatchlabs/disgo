@@ -23,8 +23,8 @@ import (
 
 	"github.com/dgraph-io/badger"
 	badgerOptions "github.com/dgraph-io/badger/options"
-	"github.com/dispatchlabs/commons/types"
-	"github.com/dispatchlabs/commons/utils"
+	"github.com/dispatchlabs/disgo/commons/types"
+	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/patrickmn/go-cache"
 )
 

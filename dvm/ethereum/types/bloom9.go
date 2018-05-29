@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/dispatchlabs/dvm/ethereum/common/hexutil"
-	"github.com/dispatchlabs/dvm/ethereum/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common/hexutil"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/crypto"
 )
 
 type bytesBacked interface {

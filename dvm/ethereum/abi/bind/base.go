@@ -22,12 +22,12 @@ package bind
 // 	"fmt"
 // 	"math/big"
 
-// 	"github.com/dispatchlabs/dvm/ethereum"
-// 	"github.com/dispatchlabs/dvm/ethereum/abi"
-// 	"github.com/dispatchlabs/dvm/ethereum/common"
-// 	"github.com/dispatchlabs/dvm/ethereum/crypto"
-// 	"github.com/dispatchlabs/dvm/ethereum/event"
-// 	"github.com/dispatchlabs/dvm/ethereum/types"
+// 	"github.com/dispatchlabs/disgo/dvm/ethereum"
+// 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
+// 	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+// 	"github.com/dispatchlabs/disgo/dvm/ethereum/crypto"
+// 	"github.com/dispatchlabs/disgo/dvm/ethereum/event"
+// 	"github.com/dispatchlabs/disgo/dvm/ethereum/types"
 // )
 
 // // SignerFn is a signer function callback when a contract requires a method to

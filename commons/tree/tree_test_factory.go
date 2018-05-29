@@ -1,9 +1,9 @@
 package tree
 
 import (
-	"github.com/dispatchlabs/commons/utils"
-	"github.com/dispatchlabs/commons/crypto"
-	"github.com/dispatchlabs/commons/types"
+	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/types"
 	merkleTree "github.com/keybase/go-merkle-tree"
 	"crypto/rand"
 	"time"

@@ -23,13 +23,13 @@ import (
 	"math/big"
 	"sync/atomic"
 
-	"github.com/dispatchlabs/dvm/ethereum/common"
-	"github.com/dispatchlabs/dvm/ethereum/common/hexutil"
-	"github.com/dispatchlabs/dvm/ethereum/rlp"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common/hexutil"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"
 
-	//"github.com/dispatchlabs/commons/crypto"
-	"github.com/dispatchlabs/commons/crypto"
-	"github.com/dispatchlabs/commons/types"
+	//"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/types"
 )
 
 //go:generate gencodec -type txdata -field-override txdataMarshaling -out gen_tx_json.go

@@ -18,7 +18,7 @@ package vm
 
 import (
 	"fmt"
-	"github.com/dispatchlabs/dvm/ethereum/params"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
 )
 
 func makeStackFunc(pop, push int) stackValidationFunc {

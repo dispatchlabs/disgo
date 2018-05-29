@@ -20,9 +20,9 @@ package vm
 // 	"math/big"
 // 	"testing"
 
-// 	"github.com/dispatchlabs/dvm/ethereum/common"
-// 	"github.com/dispatchlabs/dvm/ethereum/params"
-// 	"github.com/dispatchlabs/dvm/ethereum/types"
+// 	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+// 	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
+// 	"github.com/dispatchlabs/disgo/dvm/ethereum/types"
 // )
 
 // type dummyContractRef struct {

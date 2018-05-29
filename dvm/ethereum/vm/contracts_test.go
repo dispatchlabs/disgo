@@ -21,7 +21,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/dispatchlabs/dvm/ethereum/common"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
 )
 
 // precompiledTest defines the input/output pairs for precompiled contract tests.

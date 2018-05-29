@@ -20,11 +20,11 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/dispatchlabs/dvm/ethereum/common"
-	"github.com/dispatchlabs/dvm/ethereum/crypto"
-	"github.com/dispatchlabs/dvm/ethereum/rlp"
-	"github.com/dispatchlabs/dvm/ethereum/ethdb"
-	"github.com/dispatchlabs/dvm/ethereum/log"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/ethdb"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/log"
 
 )
 

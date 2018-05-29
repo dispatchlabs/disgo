@@ -5,8 +5,8 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/dispatchlabs/dvm/ethereum/common"
-	"github.com/dispatchlabs/dvm/ethereum/types"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/types"
 )
 
 // NotFound is returned by API methods if the requested item does not exist.

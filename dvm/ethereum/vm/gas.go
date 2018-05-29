@@ -19,7 +19,7 @@ package vm
 import (
 	"math/big"
 
-	"github.com/dispatchlabs/dvm/ethereum/params"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
 )
 
 const (

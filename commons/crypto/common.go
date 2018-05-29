@@ -24,9 +24,9 @@ import (
 	"encoding/hex"
 	"math/big"
 
-	"github.com/dispatchlabs/commons/crypto/secp256k1"
-	"github.com/dispatchlabs/commons/math"
-	"github.com/dispatchlabs/commons/utils"
+	"github.com/dispatchlabs/disgo/commons/crypto/secp256k1"
+	"github.com/dispatchlabs/disgo/commons/math"
+	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
 type AddressBytes [AddressLength]byte

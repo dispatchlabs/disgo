@@ -20,8 +20,8 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/dispatchlabs/dvm/ethereum/params"
-	"github.com/dispatchlabs/dvm/ethereum/common"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
 )
 
 type twoOperandTest struct {

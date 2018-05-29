@@ -20,11 +20,11 @@ import (
 	"fmt"
 
 	"github.com/dgraph-io/badger"
-	"github.com/dispatchlabs/dvm/ethereum/common"
-	// "github.com/dispatchlabs/dvm/ethereum/ethdb"
-	disgoServices "github.com/dispatchlabs/commons/services"
-	"github.com/dispatchlabs/commons/utils"
-	ethdbInterfaces "github.com/dispatchlabs/dvm/ethereum/ethdb"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+	// "github.com/dispatchlabs/disgo/dvm/ethereum/ethdb"
+	disgoServices "github.com/dispatchlabs/disgo/commons/services"
+	"github.com/dispatchlabs/disgo/commons/utils"
+	ethdbInterfaces "github.com/dispatchlabs/disgo/dvm/ethereum/ethdb"
 )
 
 type BadgerDatabase struct {

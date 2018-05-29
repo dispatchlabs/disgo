@@ -24,10 +24,10 @@ import (
 
 	"time"
 
-	"github.com/dispatchlabs/commons/services"
-	"github.com/dispatchlabs/commons/types"
-	"github.com/dispatchlabs/commons/utils"
-	proto "github.com/dispatchlabs/disgover/proto"
+	"github.com/dispatchlabs/disgo/commons/services"
+	"github.com/dispatchlabs/disgo/commons/types"
+	"github.com/dispatchlabs/disgo/commons/utils"
+	proto "github.com/dispatchlabs/disgo/disgover/proto"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )

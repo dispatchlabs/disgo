@@ -26,7 +26,7 @@ package abi
 // 	"strings"
 // 	"testing"
 
-// 	"github.com/dispatchlabs/dvm/ethereum/common"
+// 	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
 // 	"github.com/stretchr/testify/require"
 // )
 

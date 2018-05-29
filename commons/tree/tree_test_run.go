@@ -6,7 +6,7 @@ import (
 
 	merkleTree "github.com/keybase/go-merkle-tree"
 	"fmt"
-	"github.com/dispatchlabs/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/crypto"
 )
 
 func Build() {

@@ -18,7 +18,7 @@ package vm
 
 import (
 	"math/big"
-	"github.com/dispatchlabs/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/crypto"
 )
 
 // destinations stores one map per contract (keyed by hash of code).
