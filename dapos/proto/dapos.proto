@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package proto;
+
+ message Empty {
+ }
+
+ message Request {
+     string type = 1;
+     string payload = 2;
+ }
+
+ message Response {
+     string payload = 1;
+ }
+
+ message Item {
+     string key = 1;
+     string value = 2;
+ }
+
+ message SynchronizeResponse {
+     repeated Item Items = 1;
+ }
+
+ service DAPoSGrpc {
+     rpc SynchronizeGrpc(Empty) returns (SynchronizeResponse) {}
+     rpc ExecuteGrpc(Request) returns (Response) {}
+     rpc GossipGrpc(Request) returns (Response) {}
+ }
