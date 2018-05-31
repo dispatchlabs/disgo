@@ -17,9 +17,9 @@
 package types
 
 import (
-	"reflect"
-	"testing"
-	"time"
+	//"reflect"
+	//"testing"
+	//"time"
 )
 
 //var testBlockByte = []byte("{\"id\":123,\"hash\":\"abc123\",\"numberOfTransactions\":1,\"updated\":\"2018-05-09T15:04:05Z\",\"created\":\"2018-05-09T15:04:05Z\"}")

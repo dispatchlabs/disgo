@@ -53,6 +53,284 @@ type Transaction struct {
 	ToName    string // Transient
 }
 
+// Key
+func (this Transaction) Key() string {
+	return fmt.Sprintf("table-transaction-%s", this.Hash)
+}
+
+// TypeKey
+func (this Transaction) TypeKey() string {
+	return fmt.Sprintf("key-transaction-type-%d-%d-%s", this.Type, this.Time, this.Hash)
+}
+
+// TimeKey
+func (this Transaction) TimeKey() string {
+	return fmt.Sprintf("key-transaction-time-%d-%s", this.Time, this.Hash)
+}
+
+// FromKey
+func (this Transaction) FromKey() string {
+	return fmt.Sprintf("key-transaction-from-%s-%d", this.From, this.Time)
+}
+
+// ToKey
+func (this Transaction) ToKey() string {
+	return fmt.Sprintf("key-transaction-to-%s-%d", this.To, this.Time)
+}
+
+// Set
+func (this *Transaction) Set(txn *badger.Txn) error {
+	err := txn.Set([]byte(this.Key()), []byte(this.String()))
+	if err != nil {
+		return err
+	}
+	err = txn.Set([]byte(this.TypeKey()), []byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	err = txn.Set([]byte(this.TimeKey()), []byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	err = txn.Set([]byte(this.FromKey()), []byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	err = txn.Set([]byte(this.ToKey()), []byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UnmarshalJSON
+func (this *Transaction) UnmarshalJSON(bytes []byte) error {
+	var jsonMap map[string]interface{}
+	error := json.Unmarshal(bytes, &jsonMap)
+	if error != nil {
+		return error
+	}
+	if jsonMap["hash"] != nil {
+		this.Hash = jsonMap["hash"].(string)
+	}
+	if jsonMap["type"] != nil {
+		this.Type = byte(jsonMap["type"].(float64))
+	}
+	if jsonMap["from"] != nil {
+		this.From = jsonMap["from"].(string)
+	}
+	if jsonMap["to"] != nil {
+		this.To = jsonMap["to"].(string)
+	}
+	if jsonMap["value"] != nil {
+		this.Value = int64(jsonMap["value"].(float64))
+	}
+	if jsonMap["time"] != nil {
+		this.Time = int64(jsonMap["time"].(float64))
+	}
+	if jsonMap["signature"] != nil {
+		this.Signature = jsonMap["signature"].(string)
+	}
+	if jsonMap["hertz"] != nil {
+		this.Hertz = int64(jsonMap["hertz"].(float64))
+	}
+	if jsonMap["fromName"] != nil {
+		this.FromName = jsonMap["fromName"].(string)
+	}
+	if jsonMap["toName"] != nil {
+		this.ToName = jsonMap["toName"].(string)
+	}
+
+	if jsonMap["code"] != nil {
+		this.Code = jsonMap["code"].(string)
+	}
+	if jsonMap["method"] != nil {
+		this.Method = jsonMap["method"].(string)
+	}
+
+	return nil
+}
+
+// MarshalJSON
+func (this Transaction) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Hash      string `json:"hash"`
+		Type      byte   `json:"type"`
+		From      string `json:"from"`
+		To        string `json:"to"`
+		Value     int64  `json:"value"`
+		Code      string `json:"code"`
+		Method    string `json:"method"`
+		Time      int64  `json:"time"`
+		Signature string `json:"signature"`
+		Hertz     int64  `json:"hertz"`
+		FromName  string `json:"fromName"`
+		ToName    string `json:"toName"`
+	}{
+		Hash:      this.Hash,
+		Type:      this.Type,
+		From:      this.From,
+		To:        this.To,
+		Value:     this.Value,
+		Code:      this.Code,
+		Method:    this.Method,
+		Time:      this.Time,
+		Signature: this.Signature,
+		Hertz:     this.Hertz,
+		FromName:  this.FromName,
+		ToName:    this.ToName,
+	})
+}
+
+// String
+func (this Transaction) String() string {
+	bytes, err := json.Marshal(this)
+	if err != nil {
+		utils.Error("unable to marshal transaction", err)
+		return ""
+	}
+	return string(bytes)
+}
+
+// GetHashBytes
+func (this Transaction) GetHashBytes() crypto.HashBytes {
+	return crypto.GetHashBytes(this.Hash)
+}
+
+// NewHash
+func (this Transaction) NewHash() string {
+	fromBytes, err := hex.DecodeString(this.From)
+	if err != nil {
+		utils.Error("unable toBytes decode from", err)
+		return ""
+	}
+	toBytes, err := hex.DecodeString(this.To)
+	if err != nil {
+		utils.Error("unable toBytes decode to", err)
+		return ""
+	}
+	codeBytes, err := hex.DecodeString(this.Code)
+	if err != nil {
+		utils.Error("unable toBytes decode data", err)
+		return ""
+	}
+	var values = []interface{}{
+		this.Type,
+		fromBytes,
+		toBytes,
+		this.Value,
+		codeBytes,
+		this.Time,
+	}
+	buffer := new(bytes.Buffer)
+	for _, value := range values {
+		err := binary.Write(buffer, binary.LittleEndian, value)
+		if err != nil {
+			utils.Fatal("unable to write transaction bytes to buffer", err)
+			return ""
+		}
+	}
+	hash := crypto.NewHash(buffer.Bytes())
+	return hex.EncodeToString(hash[:])
+}
+
+// Verify
+func (this Transaction) Verify() bool {
+	if len(this.Hash) != crypto.HashLength*2 {
+		utils.Debug("Invalid Hash")
+		return false
+	}
+	if len(this.From) != crypto.AddressLength*2 {
+		utils.Debug("Invalid From Address")
+		return false
+	}
+	if this.To != "" && len(this.To) != crypto.AddressLength*2 {
+		utils.Debug("Invalid To Address")
+		return false
+	}
+	if this.To != "" && this.Value < 0 {
+		return false
+	}
+	if len(this.Signature) != crypto.SignatureLength*2 {
+		utils.Debug("Invalid Signature")
+		return false
+	}
+
+	// Hash ok?
+	if this.Hash != this.NewHash() {
+		return false
+	}
+	hashBytes, err := hex.DecodeString(this.Hash)
+	if err != nil {
+		utils.Error("unable to decode hash", err)
+		return false
+	}
+	signatureBytes, err := hex.DecodeString(this.Signature)
+	if err != nil {
+		utils.Error("unable to decode signature", err)
+		return false
+	}
+	publicKeyBytes, err := crypto.ToPublicKey(hashBytes, signatureBytes)
+	if err != nil {
+		return false
+	}
+
+	// Derived address from publicKeyBytes match from?
+	address := hex.EncodeToString(crypto.ToAddress(publicKeyBytes))
+	if address != this.From {
+		return false
+	}
+	return crypto.VerifySignature(publicKeyBytes, hashBytes, signatureBytes)
+}
+
+// ToTime
+func (this Transaction) ToTime() time.Time {
+	return time.Unix(0, this.Time*int64(time.Millisecond))
+}
+
+// CalculateHash (MerkleTree)
+func (this Transaction) CalculateHash() []byte {
+	from, err := hex.DecodeString(this.From)
+	if err != nil {
+		utils.Fatal("unable to decode from", err)
+		panic(err)
+	}
+	to, err := hex.DecodeString(this.To)
+	if err != nil {
+		utils.Fatal("unable to decode to", err)
+		panic(err)
+	}
+	signature, err := hex.DecodeString(this.Signature)
+	if err != nil {
+		utils.Fatal("unable to decode signature", err)
+		panic(err)
+	}
+	var values = []interface{}{
+		this.Type,
+		from,
+		to,
+		this.Value,
+		this.Time,
+		signature,
+	}
+	buffer := new(bytes.Buffer)
+	for _, value := range values {
+		err := binary.Write(buffer, binary.BigEndian, value)
+		if err != nil {
+			utils.Fatal("unable to write transaction bytes to buffer", err)
+			panic(err)
+		}
+	}
+	hash := crypto.NewHash(buffer.Bytes())
+	return hash[:]
+}
+
+// Equals
+func (this Transaction) Equals(other string) bool {
+	return this.Hash == other
+}
+
+
 // ToTransactionFromJson -
 func ToTransactionFromJson(payload []byte) (*Transaction, error) {
 	transaction := &Transaction{}
@@ -264,279 +542,3 @@ func setTxHashAndSignature(tx *Transaction, privateKey string) (*Transaction, er
 	return tx, nil
 }
 
-// GetHashBytes
-func (this Transaction) GetHashBytes() crypto.HashBytes {
-	return crypto.GetHashBytes(this.Hash)
-}
-
-// NewHash
-func (this Transaction) NewHash() string {
-	fromBytes, err := hex.DecodeString(this.From)
-	if err != nil {
-		utils.Error("unable toBytes decode from", err)
-		return ""
-	}
-	toBytes, err := hex.DecodeString(this.To)
-	if err != nil {
-		utils.Error("unable toBytes decode to", err)
-		return ""
-	}
-	codeBytes, err := hex.DecodeString(this.Code)
-	if err != nil {
-		utils.Error("unable toBytes decode data", err)
-		return ""
-	}
-	var values = []interface{}{
-		this.Type,
-		fromBytes,
-		toBytes,
-		this.Value,
-		codeBytes,
-		this.Time,
-	}
-	buffer := new(bytes.Buffer)
-	for _, value := range values {
-		err := binary.Write(buffer, binary.LittleEndian, value)
-		if err != nil {
-			utils.Fatal("unable to write transaction bytes to buffer", err)
-			return ""
-		}
-	}
-	hash := crypto.NewHash(buffer.Bytes())
-	return hex.EncodeToString(hash[:])
-}
-
-// Verify
-func (this Transaction) Verify() bool {
-	if len(this.Hash) != crypto.HashLength*2 {
-		utils.Debug("Invalid Hash")
-		return false
-	}
-	if len(this.From) != crypto.AddressLength*2 {
-		utils.Debug("Invalid From Address")
-		return false
-	}
-	if this.To != "" && len(this.To) != crypto.AddressLength*2 {
-		utils.Debug("Invalid To Address")
-		return false
-	}
-	if this.To != "" && this.Value < 0 {
-		return false
-	}
-	if len(this.Signature) != crypto.SignatureLength*2 {
-		utils.Debug("Invalid Signature")
-		return false
-	}
-
-	// Hash ok?
-	if this.Hash != this.NewHash() {
-		return false
-	}
-	hashBytes, err := hex.DecodeString(this.Hash)
-	if err != nil {
-		utils.Error("unable to decode hash", err)
-		return false
-	}
-	signatureBytes, err := hex.DecodeString(this.Signature)
-	if err != nil {
-		utils.Error("unable to decode signature", err)
-		return false
-	}
-	publicKeyBytes, err := crypto.ToPublicKey(hashBytes, signatureBytes)
-	if err != nil {
-		return false
-	}
-
-	// Derived address from publicKeyBytes match from?
-	address := hex.EncodeToString(crypto.ToAddress(publicKeyBytes))
-	if address != this.From {
-		return false
-	}
-	return crypto.VerifySignature(publicKeyBytes, hashBytes, signatureBytes)
-}
-
-// ToTime
-func (this Transaction) ToTime() time.Time {
-	return time.Unix(0, this.Time*int64(time.Millisecond))
-}
-
-// Key
-func (this Transaction) Key() string {
-	return fmt.Sprintf("table-transaction-%s", this.Hash)
-}
-
-// TypeKey
-func (this Transaction) TypeKey() string {
-	return fmt.Sprintf("key-transaction-type-%d-%d-%s", this.Type, this.Time, this.Hash)
-}
-
-// TimeKey
-func (this Transaction) TimeKey() string {
-	return fmt.Sprintf("key-transaction-time-%d-%s", this.Time, this.Hash)
-}
-
-// FromKey
-func (this Transaction) FromKey() string {
-	return fmt.Sprintf("key-transaction-from-%s-%d", this.From, this.Time)
-}
-
-// ToKey
-func (this Transaction) ToKey() string {
-	return fmt.Sprintf("key-transaction-to-%s-%d", this.To, this.Time)
-}
-
-// Set
-func (this *Transaction) Set(txn *badger.Txn) error {
-	err := txn.Set([]byte(this.Key()), []byte(this.String()))
-	if err != nil {
-		return err
-	}
-	err = txn.Set([]byte(this.TypeKey()), []byte(this.Key()))
-	if err != nil {
-		return err
-	}
-	err = txn.Set([]byte(this.TimeKey()), []byte(this.Key()))
-	if err != nil {
-		return err
-	}
-	err = txn.Set([]byte(this.FromKey()), []byte(this.Key()))
-	if err != nil {
-		return err
-	}
-	err = txn.Set([]byte(this.ToKey()), []byte(this.Key()))
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// String
-func (this Transaction) String() string {
-	bytes, err := json.Marshal(this)
-	if err != nil {
-		utils.Error("unable to marshal transaction", err)
-		return ""
-	}
-	return string(bytes)
-}
-
-// UnmarshalJSON
-func (this *Transaction) UnmarshalJSON(bytes []byte) error {
-	var jsonMap map[string]interface{}
-	error := json.Unmarshal(bytes, &jsonMap)
-	if error != nil {
-		return error
-	}
-	if jsonMap["hash"] != nil {
-		this.Hash = jsonMap["hash"].(string)
-	}
-	if jsonMap["type"] != nil {
-		this.Type = byte(jsonMap["type"].(float64))
-	}
-	if jsonMap["from"] != nil {
-		this.From = jsonMap["from"].(string)
-	}
-	if jsonMap["to"] != nil {
-		this.To = jsonMap["to"].(string)
-	}
-	if jsonMap["value"] != nil {
-		this.Value = int64(jsonMap["value"].(float64))
-	}
-	if jsonMap["time"] != nil {
-		this.Time = int64(jsonMap["time"].(float64))
-	}
-	if jsonMap["signature"] != nil {
-		this.Signature = jsonMap["signature"].(string)
-	}
-	if jsonMap["hertz"] != nil {
-		this.Hertz = int64(jsonMap["hertz"].(float64))
-	}
-	if jsonMap["fromName"] != nil {
-		this.FromName = jsonMap["fromName"].(string)
-	}
-	if jsonMap["toName"] != nil {
-		this.ToName = jsonMap["toName"].(string)
-	}
-
-	if jsonMap["code"] != nil {
-		this.Code = jsonMap["code"].(string)
-	}
-	if jsonMap["method"] != nil {
-		this.Method = jsonMap["method"].(string)
-	}
-
-	return nil
-}
-
-// MarshalJSON
-func (this Transaction) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Hash      string `json:"hash"`
-		Type      byte   `json:"type"`
-		From      string `json:"from"`
-		To        string `json:"to"`
-		Value     int64  `json:"value"`
-		Code      string `json:"code"`
-		Method    string `json:"method"`
-		Time      int64  `json:"time"`
-		Signature string `json:"signature"`
-		Hertz     int64  `json:"hertz"`
-		FromName  string `json:"fromName"`
-		ToName    string `json:"toName"`
-	}{
-		Hash:      this.Hash,
-		Type:      this.Type,
-		From:      this.From,
-		To:        this.To,
-		Value:     this.Value,
-		Code:      this.Code,
-		Method:    this.Method,
-		Time:      this.Time,
-		Signature: this.Signature,
-		Hertz:     this.Hertz,
-		FromName:  this.FromName,
-		ToName:    this.ToName,
-	})
-}
-
-// CalculateHash (MerkleTree)
-func (this Transaction) CalculateHash() []byte {
-	from, err := hex.DecodeString(this.From)
-	if err != nil {
-		utils.Fatal("unable to decode from", err)
-		panic(err)
-	}
-	to, err := hex.DecodeString(this.To)
-	if err != nil {
-		utils.Fatal("unable to decode to", err)
-		panic(err)
-	}
-	signature, err := hex.DecodeString(this.Signature)
-	if err != nil {
-		utils.Fatal("unable to decode signature", err)
-		panic(err)
-	}
-	var values = []interface{}{
-		this.Type,
-		from,
-		to,
-		this.Value,
-		this.Time,
-		signature,
-	}
-	buffer := new(bytes.Buffer)
-	for _, value := range values {
-		err := binary.Write(buffer, binary.BigEndian, value)
-		if err != nil {
-			utils.Fatal("unable to write transaction bytes to buffer", err)
-			panic(err)
-		}
-	}
-	hash := crypto.NewHash(buffer.Bytes())
-	return hash[:]
-}
-
-// Equals
-func (this Transaction) Equals(other string) bool {
-	return this.Hash == other
-}

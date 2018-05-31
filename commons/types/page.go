@@ -34,33 +34,6 @@ type Page struct {
 
 //TODO: link transactions to pages... maybe transaction Page key.
 
-func ToPageFromJson(payload []byte) (*Page, error) {
-	page := &Page{}
-	err := json.Unmarshal(payload, page)
-	if err != nil {
-		return nil, err
-	}
-	return page, nil
-}
-
-
-func ToPageByKey(txn *badger.Txn, key []byte) (*Page, error) {
-	item, err := txn.Get(key)
-	if err != nil {
-		return nil, err
-	}
-	value, err := item.Value()
-	if err != nil {
-		return nil, err
-	}
-	node, err := ToPageFromJson(value)
-	if err != nil {
-		return nil, err
-	}
-	return node, err
-}
-
-
 // Key
 func (this Page) Key() string {
 	return fmt.Sprintf("Page-%d", this.Number)
@@ -69,6 +42,14 @@ func (this Page) Key() string {
 // Set
 func (this *Page) Set(txn *badger.Txn) error {
 	err := txn.Set([]byte(this.Key()), []byte(this.String()))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (this *Page) Delete(txn *badger.Txn) error {
+	err := txn.Delete([]byte(this.Key()))
 	if err != nil {
 		return err
 	}
@@ -129,10 +110,29 @@ func (this Page) String() string {
 	return string(bytes)
 }
 
-func (this *Page) Delete(txn *badger.Txn) error {
-	err := txn.Delete([]byte(this.Key()))
+
+
+func ToPageFromJson(payload []byte) (*Page, error) {
+	page := &Page{}
+	err := json.Unmarshal(payload, page)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return page, nil
+}
+
+func ToPageByKey(txn *badger.Txn, key []byte) (*Page, error) {
+	item, err := txn.Get(key)
+	if err != nil {
+		return nil, err
+	}
+	value, err := item.Value()
+	if err != nil {
+		return nil, err
+	}
+	node, err := ToPageFromJson(value)
+	if err != nil {
+		return nil, err
+	}
+	return node, err
 }

@@ -30,6 +30,68 @@ type Gossip struct {
 	Rumors      []Rumor
 }
 
+// Key
+func (this Gossip) Key() string {
+	return fmt.Sprintf("table-gossip-%s", this.Transaction.Hash)
+}
+
+// Set
+func (this *Gossip) Set(txn *badger.Txn) error {
+	return txn.SetWithTTL([]byte(this.Key()), []byte(this.String()), GossipTTL)
+}
+
+func (this Gossip) String() string {
+	bytes, err := json.Marshal(this)
+	if err != nil {
+		utils.Error("unable to marshal gossip", err)
+		return ""
+	}
+	return string(bytes)
+}
+
+// ContainsRumor
+func (this Gossip) ContainsRumor(address string) bool {
+	for _, persistedRumor := range this.Rumors {
+		if persistedRumor.Address == address {
+			return true
+		}
+	}
+	return false
+}
+
+// ValidRumors
+func (this Gossip) ValidRumors() int {
+	validRumors := 0
+	for _, rumor := range this.Rumors {
+		if !rumor.Verify() {
+			continue
+		}
+		validRumors++
+	}
+	return validRumors
+}
+
+// Refresh
+func (this *Gossip) Refresh(txn *badger.Txn) error {
+	item, err := txn.Get([]byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	value, err := item.Value()
+	if err != nil {
+		return err
+	}
+	gossip, err := ToGossipFromJson(value)
+	if err != nil {
+		return err
+	}
+	this = gossip
+	return nil
+}
+
+// String
+
+
 // NewGossip -
 func NewGossip(transaction Transaction, receipt Receipt) *Gossip {
 	gossip := &Gossip{}
@@ -135,64 +197,4 @@ func ToOldGossips(txn *badger.Txn) ([]*Gossip, error) {
 		gossips = append(gossips, gossip)
 	}
 	return gossips, nil
-}
-
-// ContainsRumor
-func (this Gossip) ContainsRumor(address string) bool {
-	for _, persistedRumor := range this.Rumors {
-		if persistedRumor.Address == address {
-			return true
-		}
-	}
-	return false
-}
-
-// ValidRumors
-func (this Gossip) ValidRumors() int {
-	validRumors := 0
-	for _, rumor := range this.Rumors {
-		if !rumor.Verify() {
-			continue
-		}
-		validRumors++
-	}
-	return validRumors
-}
-
-// Key
-func (this Gossip) Key() string {
-	return fmt.Sprintf("table-gossip-%s", this.Transaction.Hash)
-}
-
-// Set
-func (this *Gossip) Set(txn *badger.Txn) error {
-	return txn.SetWithTTL([]byte(this.Key()), []byte(this.String()), GossipTTL)
-}
-
-// Refresh
-func (this *Gossip) Refresh(txn *badger.Txn) error {
-	item, err := txn.Get([]byte(this.Key()))
-	if err != nil {
-		return err
-	}
-	value, err := item.Value()
-	if err != nil {
-		return err
-	}
-	gossip, err := ToGossipFromJson(value)
-	if err != nil {
-		return err
-	}
-	this = gossip
-	return nil
-}
-
-// String
-func (this Gossip) String() string {
-	bytes, err := json.Marshal(this)
-	if err != nil {
-		utils.Error("unable to marshal gossip", err)
-		return ""
-	}
-	return string(bytes)
 }

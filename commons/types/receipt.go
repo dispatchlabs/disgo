@@ -35,6 +35,115 @@ type Receipt struct {
 	Created             time.Time
 }
 
+
+// Key
+func (this Receipt) Key() string {
+	return fmt.Sprintf("table-receipt-%s", this.Id)
+}
+
+// Set
+func (this *Receipt) Set(txn *badger.Txn) error {
+	err := txn.SetWithTTL([]byte(this.Key()), []byte(this.String()), ReceiptTTL)
+	if err != nil {
+		utils.Error(err)
+		return err
+	}
+	return nil
+}
+
+// UnmarshalJSON
+func (this *Receipt) UnmarshalJSON(bytes []byte) error {
+	var jsonMap map[string]interface{}
+	error := json.Unmarshal(bytes, &jsonMap)
+	if error != nil {
+		return error
+	}
+	if jsonMap["id"] != nil {
+		this.Id = jsonMap["id"].(string)
+	}
+	if jsonMap["type"] != nil {
+		this.Type = jsonMap["type"].(string)
+	}
+	if jsonMap["status"] != nil {
+		this.Status = jsonMap["status"].(string)
+	}
+	if jsonMap["humanReadableStatus"] != nil {
+		this.HumanReadableStatus = jsonMap["humanReadableStatus"].(string)
+	}
+	if jsonMap["data"] != nil {
+		this.Data = jsonMap["data"]
+	}
+	if jsonMap["created"] != nil {
+		created, err := time.Parse(time.RFC3339, jsonMap["created"].(string))
+		if err != nil {
+			return err
+		}
+		this.Created = created
+	}
+	return nil
+}
+
+// MarshalJSON
+func (this Receipt) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Id                  string      `json:"id"`
+		Type                string      `json:"type"`
+		Status              string      `json:"status"`
+		HumanReadableStatus string      `json:"humanReadableStatus,omitempty"`
+		Data                interface{} `json:"data,omitempty"`
+		Created             time.Time   `json:"created"`
+	}{
+		Id:                  this.Id,
+		Type:                this.Type,
+		Status:              this.Status,
+		HumanReadableStatus: this.HumanReadableStatus,
+		Data:                this.Data,
+		Created:             this.Created,
+	})
+}
+
+// String
+func (this Receipt) String() string {
+	bytes, err := json.Marshal(this)
+	if err != nil {
+		utils.Error("unable to marshal receipt", err)
+		return ""
+	}
+	return string(bytes)
+}
+
+// SetInternalErrorWithNewTransaction
+func (this *Receipt) SetInternalErrorWithNewTransaction(db *badger.DB, err error) {
+	txn := db.NewTransaction(true)
+	defer txn.Discard()
+	this.Status = StatusInternalError
+	this.HumanReadableStatus = err.Error()
+	err = txn.SetWithTTL([]byte(this.Key()), []byte(this.String()), ReceiptTTL)
+	if err != nil {
+		utils.Error(err)
+	}
+	err = txn.Commit(nil)
+	if err != nil {
+		utils.Error(err)
+	}
+}
+
+// SetStatusWithNewTransaction
+func (this *Receipt) SetStatusWithNewTransaction(db *badger.DB, status string) {
+	txn := db.NewTransaction(true)
+	defer txn.Discard()
+	this.Status = status
+	err := txn.SetWithTTL([]byte(this.Key()), []byte(this.String()), ReceiptTTL)
+	if err != nil {
+		utils.Error(err)
+	}
+	err = txn.Commit(nil)
+	if err != nil {
+		utils.Error(err)
+	}
+}
+
+
 // NewReceipt
 func NewReceipt(tipe string) *Receipt {
 	return &Receipt{Id: uuid.New().String(), Type: tipe, Status: StatusPending, Created: time.Now()}
@@ -75,112 +184,4 @@ func ToReceiptFromId(txn *badger.Txn, id string) (*Receipt, error) {
 		return nil, err
 	}
 	return receipt, err
-}
-
-// Key
-func (this Receipt) Key() string {
-	return fmt.Sprintf("table-receipt-%s", this.Id)
-}
-
-// Set
-func (this *Receipt) Set(txn *badger.Txn) error {
-	err := txn.SetWithTTL([]byte(this.Key()), []byte(this.String()), ReceiptTTL)
-	if err != nil {
-		utils.Error(err)
-		return err
-	}
-	return nil
-}
-
-// SetInternalErrorWithNewTransaction
-func (this *Receipt) SetInternalErrorWithNewTransaction(db *badger.DB, err error) {
-	txn := db.NewTransaction(true)
-	defer txn.Discard()
-	this.Status = StatusInternalError
-	this.HumanReadableStatus = err.Error()
-	err = txn.SetWithTTL([]byte(this.Key()), []byte(this.String()), ReceiptTTL)
-	if err != nil {
-		utils.Error(err)
-	}
-	err = txn.Commit(nil)
-	if err != nil {
-		utils.Error(err)
-	}
-}
-
-// SetStatusWithNewTransaction
-func (this *Receipt) SetStatusWithNewTransaction(db *badger.DB, status string) {
-	txn := db.NewTransaction(true)
-	defer txn.Discard()
-	this.Status = status
-	err := txn.SetWithTTL([]byte(this.Key()), []byte(this.String()), ReceiptTTL)
-	if err != nil {
-		utils.Error(err)
-	}
-	err = txn.Commit(nil)
-	if err != nil {
-		utils.Error(err)
-	}
-}
-
-// UnmarshalJSON
-func (this *Receipt) UnmarshalJSON(bytes []byte) error {
-	var jsonMap map[string]interface{}
-	error := json.Unmarshal(bytes, &jsonMap)
-	if error != nil {
-		return error
-	}
-	if jsonMap["id"] != nil {
-		this.Id = jsonMap["id"].(string)
-	}
-	if jsonMap["type"] != nil {
-		this.Type = jsonMap["type"].(string)
-	}
-	if jsonMap["status"] != nil {
-		this.Status = jsonMap["status"].(string)
-	}
-	if jsonMap["humanReadableStatus"] != nil {
-		this.HumanReadableStatus = jsonMap["humanReadableStatus"].(string)
-	}
-	if jsonMap["data"] != nil {
-		this.Data = jsonMap["data"]
-	}
-	if jsonMap["created"] != nil {
-		created, err := time.Parse(time.RFC3339, jsonMap["created"].(string))
-		if err != nil {
-			return err
-		}
-		this.Created = created
-	}
-
-	return nil
-}
-
-// MarshalJSON
-func (this Receipt) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Id                  string      `json:"id"`
-		Type                string      `json:"type"`
-		Status              string      `json:"status"`
-		HumanReadableStatus string      `json:"humanReadableStatus,omitempty"`
-		Data                interface{} `json:"data,omitempty"`
-		Created             time.Time   `json:"created"`
-	}{
-		Id:                  this.Id,
-		Type:                this.Type,
-		Status:              this.Status,
-		HumanReadableStatus: this.HumanReadableStatus,
-		Data:                this.Data,
-		Created:             this.Created,
-	})
-}
-
-// String
-func (this Receipt) String() string {
-	bytes, err := json.Marshal(this)
-	if err != nil {
-		utils.Error("unable to marshal receipt", err)
-		return ""
-	}
-	return string(bytes)
 }

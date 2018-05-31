@@ -30,6 +30,79 @@ type Node struct {
 	Type     string    `json:"type"`
 }
 
+// Key
+func (this Node) Key() string {
+	return fmt.Sprintf("table-node-%s", this.Address)
+}
+
+// TypeKey
+func (this Node) TypeKey() string {
+	return fmt.Sprintf("key-node-type-%s-%s", this.Type, this.Address)
+}
+
+// Set
+func (this *Node) Set(txn *badger.Txn) error {
+	err := txn.Set([]byte(this.Key()), []byte(this.String()))
+	if err != nil {
+		return err
+	}
+	err = txn.Set([]byte(this.TypeKey()), []byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Set
+func (this *Node) Delete(txn *badger.Txn) error {
+	err := txn.Delete([]byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+//func (this *Node) UnmarshalJSON(bytes []byte) error {
+//	var jsonMap map[string]interface{}
+//	err := json.Unmarshal(bytes, &jsonMap)
+//	if err != nil {
+//		return err
+//	}
+//	if jsonMap["address"] != nil {
+//		this.Address = jsonMap["address"].(string)
+//	}
+//	if jsonMap["transaction"] != nil {
+//		this.Transaction = jsonMap["transaction"].(Transaction)
+//	}
+//	if jsonMap["rumor"] != nil {
+//		this.Rumors = jsonMap["rumor"].([]Rumor)
+//	}
+//	return nil
+//}
+//
+//// MarshalJSON
+//func (this Node) MarshalJSON() ([]byte, error) {
+//	return json.Marshal(struct {
+//		ReceiptId    string    		`json:"receiptId"`
+//		Transaction  Transaction    `json:"transaction"`
+//		Rumors       []Rumor    	`json:"rumor"`
+//	}{
+//		ReceiptId:    	this.ReceiptId,
+//		Transaction:	this.Transaction,
+//		Rumors:       	this.Rumors,
+//	})
+//}
+
+// String
+func (this Node) String() string {
+	bytes, err := json.Marshal(this)
+	if err != nil {
+		utils.Error("unable to marshal node", err)
+		return ""
+	}
+	return string(bytes)
+}
+
 // ToTransactionFromJson -
 func ToNodeFromJson(payload []byte) (*Node, error) {
 	node := &Node{}
@@ -95,46 +168,4 @@ func ToNodesByType(txn *badger.Txn, tipe string) ([]*Node, error) {
 		nodes = append(nodes, node)
 	}
 	return nodes, nil
-}
-
-// String
-func (this Node) String() string {
-	bytes, err := json.Marshal(this)
-	if err != nil {
-		utils.Error("unable to marshal node", err)
-		return ""
-	}
-	return string(bytes)
-}
-
-// Key
-func (this Node) Key() string {
-	return fmt.Sprintf("table-node-%s", this.Address)
-}
-
-// TypeKey
-func (this Node) TypeKey() string {
-	return fmt.Sprintf("key-node-type-%s-%s", this.Type, this.Address)
-}
-
-// Set
-func (this *Node) Set(txn *badger.Txn) error {
-	err := txn.Set([]byte(this.Key()), []byte(this.String()))
-	if err != nil {
-		return err
-	}
-	err = txn.Set([]byte(this.TypeKey()), []byte(this.Key()))
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// Set
-func (this *Node) Delete(txn *badger.Txn) error {
-	err := txn.Delete([]byte(this.Key()))
-	if err != nil {
-		return err
-	}
-	return nil
 }

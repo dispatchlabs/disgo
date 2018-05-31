@@ -37,51 +37,56 @@ type Rumor struct {
 	Signature       string
 }
 
-// ToRumorFromJson -
-func ToRumorFromJson(payload []byte) (*Rumor, error) {
-	rumor := &Rumor{}
-	err := json.Unmarshal(payload, rumor)
-	if err != nil {
-		return nil, err
+// UnmarshalJSON
+func (this *Rumor) UnmarshalJSON(bytes []byte) error {
+	var jsonMap map[string]interface{}
+	error := json.Unmarshal(bytes, &jsonMap)
+	if error != nil {
+		return error
 	}
-	return rumor, nil
+	if jsonMap["hash"] != nil {
+		this.Hash = jsonMap["hash"].(string)
+	}
+	if jsonMap["address"] != nil {
+		this.Address = jsonMap["address"].(string)
+	}
+	if jsonMap["transactionHash"] != nil {
+		this.TransactionHash = jsonMap["transactionHash"].(string)
+	}
+	if jsonMap["time"] != nil {
+		this.Time = int64(jsonMap["time"].(float64))
+	}
+	if jsonMap["signature"] != nil {
+		this.Signature = jsonMap["signature"].(string)
+	}
+	return nil
 }
 
-// ToRumorsFromJson -
-func ToRumorsFromJson(payload []byte) ([]*Rumor, error) {
-	var rumors = make([]*Rumor, 0)
-	err := json.Unmarshal(payload, &rumors)
-	if err != nil {
-		return nil, err
-	}
-	return rumors, nil
+// MarshalJSON
+func (this Rumor) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Hash            string `json:"hash"`
+		Address         string `json:"address"`
+		TransactionHash string `json:"transactionHash"`
+		Time            int64  `json:"time"`
+		Signature       string `json:"signature"`
+	}{
+		Hash:            this.Hash,
+		Address:         this.Address,
+		TransactionHash: this.TransactionHash,
+		Time:            this.Time,
+		Signature:       this.Signature,
+	})
 }
 
-// NewRumor -
-func NewRumor(privateKey string, address string, transactionHash string) *Rumor {
-	rumor := &Rumor{}
-	rumor.Address = address
-	rumor.TransactionHash = transactionHash
-	rumor.Time = utils.ToMilliSeconds(time.Now())
-	rumor.Hash = rumor.NewHash()
-	privateKeyBytes, err := hex.DecodeString(privateKey)
+// String
+func (this Rumor) String() string {
+	bytes, err := json.Marshal(this)
 	if err != nil {
-		utils.Error("unable to decode privateKey", err)
-		return nil
+		utils.Error("unable to marshal rumor", err)
+		return ""
 	}
-	hashBytes, err := hex.DecodeString(rumor.Hash)
-	if err != nil {
-		utils.Error("unable to decode hash", err)
-		return nil
-	}
-	signature, err := crypto.NewSignature(privateKeyBytes, hashBytes)
-	if err != nil {
-		utils.Error(err.Error())
-		return nil
-	}
-
-	rumor.Signature = hex.EncodeToString(signature)
-	return rumor
+	return string(bytes)
 }
 
 // NewHash
@@ -286,54 +291,49 @@ func ToRumorsByTime(txn *badger.Txn, address string) ([]*Rumor, error) {
 	return rumors, nil
 }
 
-// String
-func (this Rumor) String() string {
-	bytes, err := json.Marshal(this)
+// ToRumorFromJson -
+func ToRumorFromJson(payload []byte) (*Rumor, error) {
+	rumor := &Rumor{}
+	err := json.Unmarshal(payload, rumor)
 	if err != nil {
-		utils.Error("unable to marshal rumor", err)
-		return ""
+		return nil, err
 	}
-	return string(bytes)
+	return rumor, nil
 }
 
-// UnmarshalJSON
-func (this *Rumor) UnmarshalJSON(bytes []byte) error {
-	var jsonMap map[string]interface{}
-	error := json.Unmarshal(bytes, &jsonMap)
-	if error != nil {
-		return error
+// ToRumorsFromJson -
+func ToRumorsFromJson(payload []byte) ([]*Rumor, error) {
+	var rumors = make([]*Rumor, 0)
+	err := json.Unmarshal(payload, &rumors)
+	if err != nil {
+		return nil, err
 	}
-	if jsonMap["hash"] != nil {
-		this.Hash = jsonMap["hash"].(string)
-	}
-	if jsonMap["address"] != nil {
-		this.Address = jsonMap["address"].(string)
-	}
-	if jsonMap["transactionHash"] != nil {
-		this.TransactionHash = jsonMap["transactionHash"].(string)
-	}
-	if jsonMap["time"] != nil {
-		this.Time = int64(jsonMap["time"].(float64))
-	}
-	if jsonMap["signature"] != nil {
-		this.Signature = jsonMap["signature"].(string)
-	}
-	return nil
+	return rumors, nil
 }
 
-// MarshalJSON
-func (this Rumor) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Hash            string `json:"hash"`
-		Address         string `json:"address"`
-		TransactionHash string `json:"transactionHash"`
-		Time            int64  `json:"time"`
-		Signature       string `json:"signature"`
-	}{
-		Hash:            this.Hash,
-		Address:         this.Address,
-		TransactionHash: this.TransactionHash,
-		Time:            this.Time,
-		Signature:       this.Signature,
-	})
+// NewRumor -
+func NewRumor(privateKey string, address string, transactionHash string) *Rumor {
+	rumor := &Rumor{}
+	rumor.Address = address
+	rumor.TransactionHash = transactionHash
+	rumor.Time = utils.ToMilliSeconds(time.Now())
+	rumor.Hash = rumor.NewHash()
+	privateKeyBytes, err := hex.DecodeString(privateKey)
+	if err != nil {
+		utils.Error("unable to decode privateKey", err)
+		return nil
+	}
+	hashBytes, err := hex.DecodeString(rumor.Hash)
+	if err != nil {
+		utils.Error("unable to decode hash", err)
+		return nil
+	}
+	signature, err := crypto.NewSignature(privateKeyBytes, hashBytes)
+	if err != nil {
+		utils.Error(err.Error())
+		return nil
+	}
+
+	rumor.Signature = hex.EncodeToString(signature)
+	return rumor
 }
