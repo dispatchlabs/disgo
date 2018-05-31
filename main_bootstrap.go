@@ -38,7 +38,6 @@ import (
 	"github.com/dispatchlabs/disgo/dapos"
 	"github.com/dispatchlabs/disgo/disgover"
 	"github.com/dispatchlabs/disgo/dvm"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -52,8 +51,6 @@ type Server struct {
 
 // NewServer -
 func NewServer() *Server {
-	utils.InitializeLogger()
-
 	// Load Keys
 	if _, _, err := loadKeys(); err != nil {
 		utils.Error("unable to keys: " + err.Error())
@@ -141,15 +138,11 @@ func loadKeys() ([]byte, []byte, error) {
 	if _, err := os.Stat(privateKeyFile); os.IsNotExist(err) {
 		reader := rand.Reader
 		if types.GetConfig().UseQuantumEntropy {
-			log.WithFields(log.Fields{
-				"method": utils.GetCallingFuncName(),
-			}).Info("generating keys using Quantum Entropy")
+			utils.Info("generating keys using Quantum Entropy")
 
 			reader = NewQuantumEntropyReader()
 		} else {
-			log.WithFields(log.Fields{
-				"method": utils.GetCallingFuncName(),
-			}).Info("generating keys")
+			utils.Info("generating keys")
 		}
 
 		bitSize := 2048
@@ -167,9 +160,7 @@ func loadKeys() ([]byte, []byte, error) {
 		saveGobKey(publicKeyFile, publicKey)
 		savePublicPEMKey(publicKeyFile+".pem", publicKey)
 	} else {
-		log.WithFields(log.Fields{
-			"method": utils.GetCallingFuncName(),
-		}).Info("loadKeys")
+		utils.Info("loadKeys")
 	}
 
 	privateKey, error1 := ioutil.ReadFile(privateKeyFile)
