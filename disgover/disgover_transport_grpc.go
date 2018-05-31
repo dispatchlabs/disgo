@@ -55,8 +55,8 @@ func (this *DisGoverService) PingGrpc(ctx context.Context, node *proto.Node) (*p
 	return convertToProto(this.ThisNode), nil
 }
 
-// doPeerPing
-func (this *DisGoverService) doPeerPing(contactToPing *types.Node, sender *types.Node) (*types.Node, error) {
+// peerPingGrpc
+func (this *DisGoverService) peerPingGrpc(contactToPing *types.Node, sender *types.Node) (*types.Node, error) {
 	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", contactToPing.Endpoint.Host, contactToPing.Endpoint.Port), grpc.WithInsecure())
 	if err != nil {
 		utils.Fatal("cannot dial peer", err)

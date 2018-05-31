@@ -104,6 +104,7 @@ func (this *DisGoverService) FindByType(tipe string) ([]*types.Node, error) {
 	// 	return this.peerFindByTypeGrpc(node, tipe)
 	// }
 
+	// TODO: We should put this in node.go and use table- and key- style keys.
 	var nodes []*types.Node
 	for _, value := range services.GetCache().Items() {
 		if reflect.TypeOf(value.Object) != reflect.TypeOf(&types.Node{}) {

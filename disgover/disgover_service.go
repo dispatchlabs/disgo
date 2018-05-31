@@ -60,7 +60,7 @@ func GetDisGoverService() *DisGoverService {
 
 		// Check if we are a DELEGATE
 		if thisNodeType == types.TypeNode {
-			for _, endpoint := range types.GetConfig().Delegates {
+			for _, endpoint := range types.GetConfig().DelegateEndpoints {
 				var portAndIP1 = fmt.Sprintf("%s:%d", endpoint.Host, endpoint.Port)
 				var portAndIP2 = fmt.Sprintf("%s:%d", types.GetConfig().GrpcEndpoint.Host, types.GetConfig().GrpcEndpoint.Port)
 
@@ -76,7 +76,7 @@ func GetDisGoverService() *DisGoverService {
 			thisNodeType = types.TypeSeed
 		}
 
-		utils.Info("running as " + thisNodeType)
+		utils.Info(fmt.Sprintf("running as %s", thisNodeType))
 
 		// lCache, _ := lru.New(0), // FROM-AVERY
 
@@ -138,7 +138,6 @@ func (this *DisGoverService) pingSeedNodes() {
 		// IF - WE are the seed then do nothing
 		if portAndIP1 == portAndIP2 {
 			seedNode = this.ThisNode
-
 			this.addPeer(*seedNode)
 			continue
 		}
@@ -151,7 +150,7 @@ func (this *DisGoverService) pingSeedNodes() {
 		}
 
 		var err error
-		seedNode, err = this.doPeerPing(seedNode, this.ThisNode)
+		seedNode, err = this.peerPingGrpc(seedNode, this.ThisNode)
 		if err != nil {
 			utils.Error(err)
 			continue
@@ -163,5 +162,4 @@ func (this *DisGoverService) pingSeedNodes() {
 	}
 
 	utils.Events().Raise(Events.DisGoverServiceInitFinished)
-
 }
