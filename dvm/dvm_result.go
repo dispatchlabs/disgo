@@ -9,9 +9,11 @@ import (
 )
 
 type DVMResult struct {
-	From                crypto.AddressBytes
+	From  crypto.AddressBytes
+	To    crypto.AddressBytes
+	Divvy int64
+
 	ContractAddress     crypto.AddressBytes
-	ToList              *[]crypto.AddressBytes
 	Status              uint
 	HertzCost           uint64
 	CumulativeHertzUsed uint64

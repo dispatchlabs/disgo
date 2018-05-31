@@ -48,6 +48,7 @@ var (
 	_defaultGas      = big.NewInt(1000000)
 	_defaultGasPrice = big.NewInt(0)
 	_defaultGasLimit = 1000000000
+	_defaultDivvy    = int64(0)
 )
 
 func (dvm *DVMService) DeploySmartContract(tx *commonTypes.Transaction) (*DVMResult, error) {
@@ -69,8 +70,9 @@ func (dvm *DVMService) DeploySmartContract(tx *commonTypes.Transaction) (*DVMRes
 
 	return &DVMResult{
 		From:                crypto.GetAddressBytes(tx.From),
+		To:                  crypto.AddressBytes{},
+		Divvy:               _defaultDivvy,
 		ContractAddress:     receipt.ContractAddress,
-		ToList:              &[]crypto.AddressBytes{},
 		Status:              receipt.Status,
 		HertzCost:           receipt.GasUsed,
 		CumulativeHertzUsed: receipt.CumulativeGasUsed,
@@ -136,7 +138,7 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 	return &DVMResult{
 		From:            crypto.GetAddressBytes(tx.From),
 		ContractAddress: crypto.GetAddressBytes(tx.To),
-		ToList:          &[]crypto.AddressBytes{},
+		To:              crypto.AddressBytes{},
 		// Status:              receipt.Status,
 		// HertzCost:           receipt.GasUsed,
 		// CumulativeHertzUsed: receipt.CumulativeGasUsed,

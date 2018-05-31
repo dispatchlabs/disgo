@@ -28,9 +28,9 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/disgover"
 	"github.com/dispatchlabs/disgo/dvm"
+	"github.com/patrickmn/go-cache"
 	"github.com/processout/grpc-go-pool"
 	"google.golang.org/grpc"
-	"github.com/patrickmn/go-cache"
 )
 
 // startGossiping
@@ -82,6 +82,13 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 	this.gossipChan <- gossip
 
 	return receipt
+}
+
+// Temp_ProcessTransaction -
+func (this *DAPoSService) Temp_ProcessTransaction(gossip *types.Gossip) {
+	go func(g *types.Gossip) {
+		this.gossipChan <- g
+	}(gossip)
 }
 
 // synchronizeGossip
@@ -144,7 +151,7 @@ func (this *DAPoSService) gossipWorker() {
 						continue
 					}
 					pool, err := grpcpool.New(func() (*grpc.ClientConn, error) {
-						clientConn, err := grpc.Dial( fmt.Sprintf("%s:%d", delegateNode.Endpoint.Host, delegateNode.Endpoint.Port), grpc.WithInsecure())
+						clientConn, err := grpc.Dial(fmt.Sprintf("%s:%d", delegateNode.Endpoint.Host, delegateNode.Endpoint.Port), grpc.WithInsecure())
 						if err != nil {
 							utils.Error(err.Error())
 							return nil, err
@@ -154,10 +161,10 @@ func (this *DAPoSService) gossipWorker() {
 					if err != nil {
 						utils.Error(err.Error())
 					}
-					services.GetCache().Set(fmt.Sprintf("dapos-grpc-pool-%s",  delegateNode.Address), pool, cache.NoExpiration)
+					services.GetCache().Set(fmt.Sprintf("dapos-grpc-pool-%s", delegateNode.Address), pool, cache.NoExpiration)
 				}
 			}
-			if len(gossip.Rumors) >= len(this.delegateNodes) * 2/3 {
+			if len(gossip.Rumors) >= len(this.delegateNodes)*2/3 {
 				this.transactionChan <- gossip
 			}
 
@@ -231,7 +238,7 @@ func (this *DAPoSService) transactionWorker() {
 			value, ok := services.GetCache().Get(gossip.ReceiptId)
 			if !ok {
 				utils.Error(fmt.Sprintf("receipt not found [id=%s]", gossip.ReceiptId))
-				receipt =  types.NewReceipt(types.RequestNewTransaction)
+				receipt = types.NewReceipt(types.RequestNewTransaction)
 				receipt.Status = types.StatusReceiptNotFound
 				services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
 				continue
