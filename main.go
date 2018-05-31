@@ -22,6 +22,7 @@ import (
 
 func main() {
 	utils.InitMainPackagePath()
+	utils.InitializeLogger()
 
 	server := NewServer()
 	server.Go()

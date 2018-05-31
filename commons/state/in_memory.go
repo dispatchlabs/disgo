@@ -1,18 +1,18 @@
 package state
 
 import (
-	"fmt"
-	"github.com/dispatchlabs/disgo/dvm/ethereum/log"
 	"github.com/dispatchlabs/disgo/commons/tree"
+	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
 func NewMerkleTree(content []tree.MerkleTreeContent) *tree.MerkleTree {
 
 	merkleTree, err := tree.NewTree(content)
 	if err != nil {
-		log.Error(err.Error())
+		utils.Error(err.Error())
 	}
-	fmt.Println(merkleTree.String())
+
+	utils.Info(merkleTree.String())
 	return merkleTree
 }
 
@@ -26,4 +26,4 @@ func NewMerkleTree(content []tree.MerkleTreeContent) *tree.MerkleTree {
 	GetKey([]byte) []byte // TODO(fjl): remove this when SecureTrie is removed
 	Prove(key []byte, fromLevel uint, proofDb ethdb.Putter) error
 
- */
+*/

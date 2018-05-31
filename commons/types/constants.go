@@ -54,6 +54,7 @@ const (
 const (
 	TypeSeed     = "Seed"
 	TypeDelegate = "Delegate"
+	TypeNode     = "Node"
 )
 
 // Persistence TTLs
