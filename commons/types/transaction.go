@@ -39,13 +39,17 @@ const (
 
 // Transaction - The transaction info
 type Transaction struct {
-	Hash      string // Hash = (Type + From + To + Value + Code + Method + Time)
-	Type      byte
-	From      string
-	To        string
-	Value     int64
-	Code      string
-	Method    string
+	Hash  string // Hash = (Type + From + To + Value + Code + Method + Time)
+	Type  byte
+	From  string
+	To    string
+	Value int64
+
+	Code   string
+	Abi    string
+	Method string
+	Params []interface{}
+
 	Time      int64 // Milliseconds
 	Signature string
 	Hertz     int64  //our version of Gas
@@ -211,6 +215,7 @@ func NewTransaction(privateKey string, tipe byte, from, to string, value, hertz,
 	transaction.From = from
 	transaction.To = to
 	transaction.Value = value
+
 	transaction.Time = theTime
 
 	return setTxHashAndSignature(transaction, privateKey)
@@ -221,20 +226,22 @@ func NewContractTransaction(privateKey string, from string, code string, timeInM
 	transaction := &Transaction{}
 	transaction.From = from
 	transaction.Code = code
+
 	transaction.Time = timeInMiliseconds
 
 	return setTxHashAndSignature(transaction, privateKey)
 }
 
 // NewContractCallTransaction -
-func NewContractCallTransaction(privateKey string, from string, to string, code string, timeInMiliseconds int64, method string, value int64) (*Transaction, error) {
+func NewContractCallTransaction(privateKey string, from string, to string, abi string, method string, params []interface{}, timeInMiliseconds int64) (*Transaction, error) {
 	transaction := &Transaction{}
 	transaction.From = from
 	transaction.To = to
-	transaction.Code = code
-	transaction.Time = timeInMiliseconds
+	transaction.Abi = abi
 	transaction.Method = method
-	transaction.Value = value
+	transaction.Params = params
+
+	transaction.Time = timeInMiliseconds
 
 	return setTxHashAndSignature(transaction, privateKey)
 }
@@ -286,12 +293,19 @@ func (this Transaction) NewHash() string {
 		utils.Error("unable toBytes decode data", err)
 		return ""
 	}
+	abiBytes, err := hex.DecodeString(this.Abi)
+	if err != nil {
+		utils.Error("unable toBytes decode data", err)
+		return ""
+	}
 	var values = []interface{}{
 		this.Type,
 		fromBytes,
 		toBytes,
 		this.Value,
 		codeBytes,
+		abiBytes,
+		// TODO: add `Params` ?
 		this.Time,
 	}
 	buffer := new(bytes.Buffer)

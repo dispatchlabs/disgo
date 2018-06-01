@@ -82,7 +82,7 @@ func (dvm *DVMService) DeploySmartContract(tx *commonTypes.Transaction) (*DVMRes
 }
 
 func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMResult, error) {
-	var expected = big.NewInt(tx.Value)
+	// var expected = big.NewInt(tx.Params)
 
 	fromHex, _ := hex.DecodeString(tx.Code)
 	codeAsString := string(fromHex)
@@ -93,7 +93,8 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 		return nil, err
 	}
 
-	callData, err := jsonABI.Pack(tx.Method, expected)
+	// callData, err := jsonABI.Pack(tx.Method, expected)
+	callData, err := jsonABI.Pack(tx.Method, tx.Params)
 	if err != nil {
 		return nil, err
 	}
@@ -123,17 +124,17 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 
 	utils.Info(fmt.Sprintf("DEBUG-CONTRACT-CALL res: %v", res))
 
-	var parsedRes *big.Int
-	err = jsonABI.Unpack(&parsedRes, "test", res)
-	if err != nil {
-		utils.Error(err)
-	}
-	utils.Info(fmt.Sprintf("parsed res: %v", parsedRes))
+	// var parsedRes *big.Int
+	// err = jsonABI.Unpack(&parsedRes, "test", res)
+	// if err != nil {
+	// 	utils.Error(err)
+	// }
+	// utils.Info(fmt.Sprintf("parsed res: %v", parsedRes))
 
-	if parsedRes.Cmp(expected) != 0 {
-		utils.Error(fmt.Sprintf("Result should be %v, not %v", expected, parsedRes))
-		return nil, err
-	}
+	// if parsedRes.Cmp(expected) != 0 {
+	// 	utils.Error(fmt.Sprintf("Result should be %v, not %v", expected, parsedRes))
+	// 	return nil, err
+	// }
 
 	return &DVMResult{
 		From:            crypto.GetAddressBytes(tx.From),
