@@ -13,7 +13,7 @@
  *
  *    You should have received a copy of the GNU General Public License
  *    along with the DVM library.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 package dvm
 
 import (
@@ -40,7 +40,7 @@ func NewBadgerDatabase() (*BadgerDatabase, error) {
 // Based on https://github.com/dgraph-io/badger#using-keyvalue-pairs
 // ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~
 func (db *BadgerDatabase) Put(key []byte, value []byte) error {
-	// utils.Info(fmt.Sprintf("K: %s, V: %s", string(key), string(value)))
+	utils.Info(fmt.Sprintf("K: %s, V: %s", string(key), string(value)))
 
 	// var returnE error = nil
 
@@ -63,7 +63,7 @@ func (db *BadgerDatabase) Put(key []byte, value []byte) error {
 }
 
 func (db *BadgerDatabase) Get(key []byte) ([]byte, error) {
-	// utils.Info(fmt.Sprintf("K: %s", string(key)))
+	utils.Info(fmt.Sprintf("K: %s", string(key)))
 
 	// txn := disgoServices.NewTxn(false)
 	// defer txn.Discard()
@@ -97,7 +97,7 @@ func (db *BadgerDatabase) Get(key []byte) ([]byte, error) {
 }
 
 func (db *BadgerDatabase) Has(key []byte) (bool, error) {
-	// utils.Info(fmt.Sprintf("K: %s", string(key)))
+	utils.Info(fmt.Sprintf("K: %s", string(key)))
 
 	item, err := db.Get(key)
 
