@@ -266,7 +266,7 @@ func (this *DAPoSService) transactionWorker() {
 				processDVMResult(dvmResult)
 
 			} else if len(strings.TrimSpace(transaction.To)) != 0 &&
-				len(strings.TrimSpace(transaction.Code)) != 0 &&
+				len(strings.TrimSpace(transaction.Abi)) != 0 &&
 				len(strings.TrimSpace(transaction.Method)) != 0 {
 
 				// EXECUTE
@@ -294,6 +294,8 @@ func TransferTokens(transaction *types.Transaction, txn *badger.Txn, receipt *ty
 	fromAccount, err := types.ToAccountByAddress(txn, transaction.From)
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
+			utils.Error(fmt.Sprintf("txKeyFrom = %s", transaction.From), err)
+
 			fromAccount = &types.Account{Address: transaction.From, Balance: 0, Created: now}
 		} else {
 			utils.Error(err)
@@ -316,6 +318,8 @@ func TransferTokens(transaction *types.Transaction, txn *badger.Txn, receipt *ty
 	toAccount, err = types.ToAccountByAddress(txn, transaction.To)
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
+			utils.Error(fmt.Sprintf("txKeyTo = %s", transaction.To), err)
+
 			toAccount = &types.Account{Address: transaction.To, Balance: 0, Created: now}
 		} else {
 			utils.Error(err)
