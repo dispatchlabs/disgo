@@ -353,6 +353,9 @@ func (self *StateDB) updateStateObject(stateObject *stateObject) {
 	if err != nil {
 		panic(fmt.Errorf("can't encode object at %x: %v", addr[:], err))
 	}
+	if len(stateObject.code) > 0 {
+		fmt.Printf("This is where you want your breakpoint")
+	}
 	self.setError(self.trie.TryUpdate(addr[:], data))
 }
 
