@@ -33,6 +33,7 @@ import (
 	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"
 	ethTypes "github.com/dispatchlabs/disgo/dvm/ethereum/types"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/vm"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/trie"
 )
 
 var (
@@ -67,7 +68,6 @@ func (dvm *DVMService) DeploySmartContract(tx *commonTypes.Transaction) (*DVMRes
 	if err != nil {
 		utils.Fatal(err)
 	}
-
 	return &DVMResult{
 		From:                crypto.GetAddressBytes(tx.From),
 		To:                  crypto.AddressBytes{},
@@ -84,8 +84,9 @@ func (dvm *DVMService) DeploySmartContract(tx *commonTypes.Transaction) (*DVMRes
 func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMResult, error) {
 	// var expected = big.NewInt(tx.Params)
 
-	fromHex, _ := hex.DecodeString(tx.Code)
+	fromHex, _ := hex.DecodeString(tx.Abi)
 	codeAsString := string(fromHex)
+	//jsonABI, err := abi.JSON(strings.NewReader(tx.Abi))
 	jsonABI, err := abi.JSON(strings.NewReader(codeAsString))
 	// jsonABI, err := abi.JSON(strings.NewReader(tx.Code))
 	if err != nil {
@@ -202,6 +203,7 @@ func (self *DVMService) applyTransaction(tx *commonTypes.Transaction) error {
 	// Create a new receipt for the transaction, storing the intermediate root and gas used by the tx
 	// based on the eip phase, we're passing wether the root touch-delete accounts.
 	root := self.was.ethState.IntermediateRoot(true) //this has side effects. It updates StateObjects (SmartContract memory)
+
 	receipt := ethTypes.NewReceipt(root.Bytes(), failed, self.was.totalUsedGas.Uint64())
 	receipt.TxHash = tx.GetHashBytes()
 	receipt.GasUsed = gas
@@ -227,8 +229,71 @@ func (self *DVMService) applyTransaction(tx *commonTypes.Transaction) error {
 		logsAsJSON, _ := json.Marshal(vmLogger.StructLogs())
 		utils.Info(string(logsAsJSON))
 	}
+	self.evaluateContract(crypto.GetAddressBytes(tx.From), receipt.ContractAddress, root)
 
 	return nil
+}
+
+func (self *DVMService) evaluateContract(fromAddress crypto.AddressBytes, contractAddress crypto.AddressBytes, root crypto.HashBytes) {
+	state := self.was.ethState
+	contractStateObject := state.GetOrNewStateObject(contractAddress)
+	contractHash := crypto.NewHash(contractAddress[:])
+	stateHash := state.GetState(contractAddress, contractHash)
+	trie := state.StorageTrie(contractAddress)
+
+	fmt.Printf("Contract state object --> \n\n" +
+		"Address:    %v\n" +
+		"Hash:       %v\n" +
+		"Nonce:      %v\n" +
+		"Code:       %v\n" +
+		"Code Hash:  %v\n" +
+		"Tree Hash:  %v\n" +
+		"Root Hash:  %v\n" +
+		"StateHash:  %v\n\n",
+		contractStateObject.Address(),
+		contractHash,
+		contractStateObject.Nonce(),
+		contractStateObject.Code(state.Database()),
+		contractStateObject.CodeHash(),
+		trie.Hash(),
+		root,
+		stateHash,
+	)
+
+	iterateTrie(trie.NodeIterator(root.Bytes()), true)
+	fmt.Println("\n")
+	//bytes := state.GetState(address, root)
+	//s := state.GetOrNewStateObject(root)
+
+}
+
+func iterateTrie(iterator trie.NodeIterator, isRoot bool) {
+	path := hex.EncodeToString(iterator.Path())
+	if iterator.Leaf() {
+		fmt.Printf("\n" +
+			"Leaf Node:   %v\n" +
+			"With Path:   %v\n"+
+			"With Parent: %v\n"+
+			"Leaf Key:    %v\n"+
+			"Leaf Blob:   %v\n",
+			iterator.Hash(), path, iterator.Parent(), iterator.LeafKey(), iterator.LeafBlob())
+
+	} else {
+		if isRoot {
+			fmt.Printf( "\n" +
+				"Root Hash:   %v\n" +
+				"With Path:   %v\n",
+				iterator.Hash(), path)
+		} else {
+			fmt.Printf( "\n" +
+				"Node Hash:   %v\n" +
+				"With Path:   %v\n" +
+				"With Parent: %v\n",
+				iterator.Hash(), path, iterator.Parent())
+		}
+		iterator.Next(true)
+		iterateTrie(iterator, false)
+	}
 }
 
 func (self *DVMService) call(callMsg ethTypes.Message) ([]byte, error) {

@@ -22,8 +22,6 @@ import (
 	"fmt"
 
 	"github.com/dispatchlabs/disgo/dvm/ethereum/log"
-	//oldCrypto "github.com/dispatchlabs/disgo/dvm/ethereum/crypto"
-
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/utils"
 )
