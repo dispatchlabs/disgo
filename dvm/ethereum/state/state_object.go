@@ -21,7 +21,9 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+
 	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"
 )
 
@@ -59,10 +61,8 @@ func (self Storage) Copy() Storage {
 // Account values can be accessed and modified through the object.
 // Finally, call CommitTrie to write the modified storage trie into a database.
 type stateObject struct {
-	address  crypto.AddressBytes
-	addrHash crypto.HashBytes // hash of ethereum address of the account
-	data     Account
-	db       *StateDB
+	account types.Account
+	db      *StateDB
 
 	// DB error.
 	// State objects are used by the consensus core and VM which are
@@ -88,31 +88,29 @@ type stateObject struct {
 
 // empty returns whether the account is considered empty.
 func (s *stateObject) empty() bool {
-	return s.data.Nonce == 0 && s.data.Balance.Sign() == 0 && bytes.Equal(s.data.CodeHash, emptyCodeHash)
+	return s.account.Nonce == 0 && s.account.Balance.Sign() == 0 && bytes.Equal(s.account.CodeHash, emptyCodeHash)
 }
 
 // Account is the Ethereum consensus representation of accounts.
 // These objects are stored in the main account trie.
-type Account struct {
-	Nonce    uint64
-	Balance  *big.Int
-	Root     crypto.HashBytes // merkle root of the storage trie
-	CodeHash []byte
-}
+// type Account struct {
+// 	Nonce    uint64
+// 	Balance  *big.Int
+// 	Root     crypto.HashBytes // merkle root of the storage trie
+// 	CodeHash []byte
+// }
 
 // newObject creates a state object.
-func newObject(db *StateDB, address crypto.AddressBytes, data Account) *stateObject {
-	if data.Balance == nil {
-		data.Balance = new(big.Int)
-	}
+func newObject(db *StateDB, address crypto.AddressBytes, data types.Account) *stateObject {
+	// if data.Balance == nil {
+	// 	data.Balance = new(big.Int)
+	// }
 	if data.CodeHash == nil {
 		data.CodeHash = emptyCodeHash
 	}
 	result := &stateObject{
 		db:            db,
-		address:       address,
-		addrHash:      crypto.NewHash(address[:]),
-		data:          data,
+		account:       data,
 		cachedStorage: make(Storage),
 		dirtyStorage:  make(Storage),
 	}
@@ -121,7 +119,7 @@ func newObject(db *StateDB, address crypto.AddressBytes, data Account) *stateObj
 
 // EncodeRLP implements rlp.Encoder.
 func (c *stateObject) EncodeRLP(w io.Writer) error {
-	return rlp.Encode(w, c.data)
+	return rlp.Encode(w, c.account)
 }
 
 // setError remembers the first non-nil error it is called with.
@@ -136,22 +134,28 @@ func (self *stateObject) markSuicided() {
 }
 
 func (c *stateObject) touch() {
+	var addressAsBytes = crypto.GetAddressBytes(c.account.Address)
+
 	c.db.journal.append(touchChange{
-		account: &c.address,
+		account: addressAsBytes,
 	})
-	if c.address == ripemd {
+	if addressAsBytes == ripemd {
 		// Explicitly put it in the dirty-cache, which is otherwise generated from
 		// flattened journals.
-		c.db.journal.dirty(c.address)
+		c.db.journal.dirty(addressAsBytes)
 	}
 }
 
 func (c *stateObject) getTrie(db Database) Trie {
 	if c.trie == nil {
 		var err error
-		c.trie, err = db.OpenStorageTrie(c.addrHash, c.data.Root)
+
+		var addressAsBytes = crypto.GetAddressBytes(c.account.Address)
+		var addressHash = crypto.NewHash(addressAsBytes[:])
+
+		c.trie, err = db.OpenStorageTrie(addressHash, c.account.Root)
 		if err != nil {
-			c.trie, _ = db.OpenStorageTrie(c.addrHash, crypto.HashBytes{})
+			c.trie, _ = db.OpenStorageTrie(addressHash, crypto.HashBytes{})
 			c.setError(fmt.Errorf("can't create storage trie: %v", err))
 		}
 	}
@@ -186,9 +190,10 @@ func (self *stateObject) GetState(db Database, key crypto.HashBytes) crypto.Hash
 // SetState updates a value in account storage.
 func (self *stateObject) SetState(db Database, key, value crypto.HashBytes) {
 	fmt.Printf("***** DB SetState: %s\n", crypto.HashBytesToHashString(key))
+	var addressAsBytes = crypto.GetAddressBytes(self.account.Address)
 
 	self.db.journal.append(storageChange{
-		account:  &self.address,
+		account:  addressAsBytes,
 		key:      key,
 		prevalue: self.GetState(db, key),
 	})
@@ -220,7 +225,7 @@ func (self *stateObject) updateTrie(db Database) Trie {
 // UpdateRoot sets the trie root to the current root hash of
 func (self *stateObject) updateRoot(db Database) {
 	self.updateTrie(db)
-	self.data.Root = self.trie.Hash()
+	self.account.Root = self.trie.Hash()
 }
 
 // CommitTrie the storage trie of the object to dwb.
@@ -232,7 +237,7 @@ func (self *stateObject) CommitTrie(db Database) error {
 	}
 	root, err := self.trie.Commit(nil)
 	if err == nil {
-		self.data.Root = root
+		self.account.Root = root
 	}
 	return err
 }
@@ -262,22 +267,26 @@ func (c *stateObject) SubBalance(amount *big.Int) {
 }
 
 func (self *stateObject) SetBalance(amount *big.Int) {
+	var addressAsBytes = crypto.GetAddressBytes(self.account.Address)
+
 	self.db.journal.append(balanceChange{
-		account: &self.address,
-		prev:    new(big.Int).Set(self.data.Balance),
+		account: addressAsBytes,
+		prev:    self.account.Balance,
 	})
 	self.setBalance(amount)
 }
 
 func (self *stateObject) setBalance(amount *big.Int) {
-	self.data.Balance = amount
+	self.account.Balance = amount
 }
 
 // Return the gas back to the origin. Used by the Virtual machine or Closures
 func (c *stateObject) ReturnGas(gas *big.Int) {}
 
 func (self *stateObject) deepCopy(db *StateDB) *stateObject {
-	stateObject := newObject(db, self.address, self.data)
+	var addressAsBytes = crypto.GetAddressBytes(self.account.Address)
+
+	stateObject := newObject(db, addressAsBytes, self.account)
 	if self.trie != nil {
 		stateObject.trie = db.db.CopyTrie(self.trie)
 	}
@@ -296,7 +305,9 @@ func (self *stateObject) deepCopy(db *StateDB) *stateObject {
 
 // Returns the address of the contract/account
 func (c *stateObject) Address() crypto.AddressBytes {
-	return c.address
+	var addressAsBytes = crypto.GetAddressBytes(c.account.Address)
+
+	return addressAsBytes
 }
 
 // Code returns the contract code associated with this object, if any.
@@ -307,7 +318,11 @@ func (self *stateObject) Code(db Database) []byte {
 	if bytes.Equal(self.CodeHash(), emptyCodeHash) {
 		return nil
 	}
-	code, err := db.ContractCode(self.addrHash, crypto.BytesToHash(self.CodeHash()))
+
+	var addressAsBytes = crypto.GetAddressBytes(self.account.Address)
+	var addressHash = crypto.NewHash(addressAsBytes[:])
+
+	code, err := db.ContractCode(addressHash, crypto.BytesToHash(self.CodeHash()))
 	if err != nil {
 		self.setError(fmt.Errorf("can't load code hash %x: %v", self.CodeHash(), err))
 	}
@@ -316,9 +331,11 @@ func (self *stateObject) Code(db Database) []byte {
 }
 
 func (self *stateObject) SetCode(codeHash crypto.HashBytes, code []byte) {
+	var addressAsBytes = crypto.GetAddressBytes(self.account.Address)
+
 	prevcode := self.Code(self.db.db)
 	self.db.journal.append(codeChange{
-		account:  &self.address,
+		account:  addressAsBytes,
 		prevhash: self.CodeHash(),
 		prevcode: prevcode,
 	})
@@ -327,32 +344,34 @@ func (self *stateObject) SetCode(codeHash crypto.HashBytes, code []byte) {
 
 func (self *stateObject) setCode(codeHash crypto.HashBytes, code []byte) {
 	self.code = code
-	self.data.CodeHash = codeHash[:]
+	self.account.CodeHash = codeHash[:]
 	self.dirtyCode = true
 }
 
 func (self *stateObject) SetNonce(nonce uint64) {
+	var addressAsBytes = crypto.GetAddressBytes(self.account.Address)
+
 	self.db.journal.append(nonceChange{
-		account: &self.address,
-		prev:    self.data.Nonce,
+		account: addressAsBytes,
+		prev:    self.account.Nonce,
 	})
 	self.setNonce(nonce)
 }
 
 func (self *stateObject) setNonce(nonce uint64) {
-	self.data.Nonce = nonce
+	self.account.Nonce = nonce
 }
 
 func (self *stateObject) CodeHash() []byte {
-	return self.data.CodeHash
+	return self.account.CodeHash
 }
 
 func (self *stateObject) Balance() *big.Int {
-	return self.data.Balance
+	return self.account.Balance
 }
 
 func (self *stateObject) Nonce() uint64 {
-	return self.data.Nonce
+	return self.account.Nonce
 }
 
 // Never called, but must be present to allow stateObject to be used

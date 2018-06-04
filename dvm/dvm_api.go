@@ -31,9 +31,9 @@ import (
 	dvmCrypto "github.com/dispatchlabs/disgo/dvm/ethereum/crypto"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/trie"
 	ethTypes "github.com/dispatchlabs/disgo/dvm/ethereum/types"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/vm"
-	"github.com/dispatchlabs/disgo/dvm/ethereum/trie"
 )
 
 var (
@@ -66,7 +66,7 @@ func (dvm *DVMService) DeploySmartContract(tx *commonTypes.Transaction) (*DVMRes
 	receipt, err := dvm.getReceipt(bytes)
 
 	if err != nil {
-		utils.Fatal(err)
+		utils.Error(err)
 	}
 	return &DVMResult{
 		From:                crypto.GetAddressBytes(tx.From),
@@ -232,7 +232,7 @@ func (self *DVMService) applyTransaction(tx *commonTypes.Transaction) error {
 		logsAsJSON, _ := json.Marshal(vmLogger.StructLogs())
 		utils.Info(string(logsAsJSON))
 	}
-	self.evaluateContract(crypto.GetAddressBytes(tx.From), receipt.ContractAddress, root)
+	// self.evaluateContract(crypto.GetAddressBytes(tx.From), receipt.ContractAddress, root)
 
 	return nil
 }
@@ -244,14 +244,14 @@ func (self *DVMService) evaluateContract(fromAddress crypto.AddressBytes, contra
 	stateHash := state.GetState(contractAddress, contractHash)
 	trie := state.StorageTrie(contractAddress)
 
-	fmt.Printf("Contract state object --> \n\n" +
-		"Address:    %v\n" +
-		"Hash:       %v\n" +
-		"Nonce:      %v\n" +
-		"Code:       %v\n" +
-		"Code Hash:  %v\n" +
-		"Tree Hash:  %v\n" +
-		"Root Hash:  %v\n" +
+	fmt.Printf("Contract state object --> \n\n"+
+		"Address:    %v\n"+
+		"Hash:       %v\n"+
+		"Nonce:      %v\n"+
+		"Code:       %v\n"+
+		"Code Hash:  %v\n"+
+		"Tree Hash:  %v\n"+
+		"Root Hash:  %v\n"+
 		"StateHash:  %v\n\n",
 		contractStateObject.Address(),
 		contractHash,
@@ -263,8 +263,8 @@ func (self *DVMService) evaluateContract(fromAddress crypto.AddressBytes, contra
 		stateHash,
 	)
 
-	iterateTrie(trie.NodeIterator(root.Bytes()), true)
-	fmt.Println("\n")
+	// iterateTrie(trie.NodeIterator(root.Bytes()), true)
+	// fmt.Println("\n")
 	//bytes := state.GetState(address, root)
 	//s := state.GetOrNewStateObject(root)
 
@@ -273,8 +273,8 @@ func (self *DVMService) evaluateContract(fromAddress crypto.AddressBytes, contra
 func iterateTrie(iterator trie.NodeIterator, isRoot bool) {
 	path := hex.EncodeToString(iterator.Path())
 	if iterator.Leaf() {
-		fmt.Printf("\n" +
-			"Leaf Node:   %v\n" +
+		fmt.Printf("\n"+
+			"Leaf Node:   %v\n"+
 			"With Path:   %v\n"+
 			"With Parent: %v\n"+
 			"Leaf Key:    %v\n"+
@@ -283,14 +283,14 @@ func iterateTrie(iterator trie.NodeIterator, isRoot bool) {
 
 	} else {
 		if isRoot {
-			fmt.Printf( "\n" +
-				"Root Hash:   %v\n" +
+			fmt.Printf("\n"+
+				"Root Hash:   %v\n"+
 				"With Path:   %v\n",
 				iterator.Hash(), path)
 		} else {
-			fmt.Printf( "\n" +
-				"Node Hash:   %v\n" +
-				"With Path:   %v\n" +
+			fmt.Printf("\n"+
+				"Node Hash:   %v\n"+
+				"With Path:   %v\n"+
 				"With Parent: %v\n",
 				iterator.Hash(), path, iterator.Parent())
 		}

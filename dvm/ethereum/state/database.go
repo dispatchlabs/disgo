@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/ethdb"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/trie"
 	lru "github.com/hashicorp/golang-lru"
-	"github.com/dispatchlabs/disgo/commons/crypto"
 )
 
 // Trie cache generation limit after which to evict trie nodes from memory.

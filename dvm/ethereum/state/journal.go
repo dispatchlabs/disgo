@@ -18,8 +18,9 @@ package state
 
 import (
 	"math/big"
-	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+
 	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
 )
 
 // journalEntry is a modification entry in the state change journal that can be
@@ -36,7 +37,7 @@ type journalEntry interface {
 // commit. These are tracked to be able to be reverted in case of an execution
 // exception or revertal request.
 type journal struct {
-	entries []journalEntry         // Current changes tracked by the journal
+	entries []journalEntry              // Current changes tracked by the journal
 	dirties map[crypto.AddressBytes]int // Dirty accounts and the number of changes
 }
 
@@ -87,32 +88,32 @@ func (j *journal) length() int {
 type (
 	// Changes to the account trie.
 	createObjectChange struct {
-		account *crypto.AddressBytes
+		account crypto.AddressBytes
 	}
 	resetObjectChange struct {
 		prev *stateObject
 	}
 	suicideChange struct {
-		account     *crypto.AddressBytes
+		account     crypto.AddressBytes
 		prev        bool // whether account had already suicided
 		prevbalance *big.Int
 	}
 
 	// Changes to individual accounts.
 	balanceChange struct {
-		account *crypto.AddressBytes
+		account crypto.AddressBytes
 		prev    *big.Int
 	}
 	nonceChange struct {
-		account *crypto.AddressBytes
+		account crypto.AddressBytes
 		prev    uint64
 	}
 	storageChange struct {
-		account       *crypto.AddressBytes
+		account       crypto.AddressBytes
 		key, prevalue crypto.HashBytes
 	}
 	codeChange struct {
-		account            *crypto.AddressBytes
+		account            crypto.AddressBytes
 		prevcode, prevhash []byte
 	}
 
@@ -127,19 +128,19 @@ type (
 		hash crypto.HashBytes
 	}
 	touchChange struct {
-		account   *crypto.AddressBytes
+		account   crypto.AddressBytes
 		prev      bool
 		prevDirty bool
 	}
 )
 
 func (ch createObjectChange) revert(s *StateDB) {
-	delete(s.stateObjects, *ch.account)
-	delete(s.stateObjectsDirty, *ch.account)
+	// delete(s.stateObjects, *ch.account)
+	delete(s.stateObjectsDirty, ch.account)
 }
 
 func (ch createObjectChange) dirtied() *crypto.AddressBytes {
-	return ch.account
+	return &ch.account
 }
 
 func (ch resetObjectChange) revert(s *StateDB) {
@@ -151,7 +152,7 @@ func (ch resetObjectChange) dirtied() *crypto.AddressBytes {
 }
 
 func (ch suicideChange) revert(s *StateDB) {
-	obj := s.getStateObject(*ch.account)
+	obj := s.getStateObject(ch.account)
 	if obj != nil {
 		obj.suicided = ch.prev
 		obj.setBalance(ch.prevbalance)
@@ -159,7 +160,7 @@ func (ch suicideChange) revert(s *StateDB) {
 }
 
 func (ch suicideChange) dirtied() *crypto.AddressBytes {
-	return ch.account
+	return &ch.account
 }
 
 var ripemd = common.HexToAddress("0000000000000000000000000000000000000003")
@@ -168,39 +169,39 @@ func (ch touchChange) revert(s *StateDB) {
 }
 
 func (ch touchChange) dirtied() *crypto.AddressBytes {
-	return ch.account
+	return &ch.account
 }
 
 func (ch balanceChange) revert(s *StateDB) {
-	s.getStateObject(*ch.account).setBalance(ch.prev)
+	s.getStateObject(ch.account).setBalance(ch.prev)
 }
 
 func (ch balanceChange) dirtied() *crypto.AddressBytes {
-	return ch.account
+	return &ch.account
 }
 
 func (ch nonceChange) revert(s *StateDB) {
-	s.getStateObject(*ch.account).setNonce(ch.prev)
+	s.getStateObject(ch.account).setNonce(ch.prev)
 }
 
 func (ch nonceChange) dirtied() *crypto.AddressBytes {
-	return ch.account
+	return &ch.account
 }
 
 func (ch codeChange) revert(s *StateDB) {
-	s.getStateObject(*ch.account).setCode(crypto.BytesToHash(ch.prevhash), ch.prevcode)
+	s.getStateObject(ch.account).setCode(crypto.BytesToHash(ch.prevhash), ch.prevcode)
 }
 
 func (ch codeChange) dirtied() *crypto.AddressBytes {
-	return ch.account
+	return &ch.account
 }
 
 func (ch storageChange) revert(s *StateDB) {
-	s.getStateObject(*ch.account).setState(ch.key, ch.prevalue)
+	s.getStateObject(ch.account).setState(ch.key, ch.prevalue)
 }
 
 func (ch storageChange) dirtied() *crypto.AddressBytes {
-	return ch.account
+	return &ch.account
 }
 
 func (ch refundChange) revert(s *StateDB) {

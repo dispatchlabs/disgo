@@ -14,25 +14,38 @@
  *    You should have received a copy of the GNU General Public License
  *    along with the DVM library.  If not, see <http://www.gnu.org/licenses/>.
  */
-package dvm
+package badgerwrapper
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
 	// "github.com/dispatchlabs/disgo/dvm/ethereum/ethdb"
+	"github.com/dispatchlabs/disgo/commons/crypto"
 	disgoServices "github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	ethdbInterfaces "github.com/dispatchlabs/disgo/dvm/ethereum/ethdb"
 )
 
+var badgerDatabaseInstance *BadgerDatabase
+var badgerDatabaseOnce sync.Once
+
 type BadgerDatabase struct {
+}
+
+func GetBadgerDatabase() *BadgerDatabase {
+	badgerDatabaseOnce.Do(func() {
+		badgerDatabaseInstance = &BadgerDatabase{}
+	})
+
+	return badgerDatabaseInstance
 }
 
 func NewBadgerDatabase() (*BadgerDatabase, error) {
 	disgoServices.GetDbService()
-	return &BadgerDatabase{}, nil
+	return GetBadgerDatabase(), nil
 }
 
 // ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~
@@ -40,7 +53,7 @@ func NewBadgerDatabase() (*BadgerDatabase, error) {
 // Based on https://github.com/dgraph-io/badger#using-keyvalue-pairs
 // ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~
 func (db *BadgerDatabase) Put(key []byte, value []byte) error {
-	utils.Info(fmt.Sprintf("K: %s, V: %s", string(key), string(value)))
+	utils.Info(fmt.Sprintf("BadgerDatabase-Key: %s, BadgerDatabase-Value: %s", crypto.Encode(key), crypto.Encode(value)))
 
 	// var returnE error = nil
 
@@ -63,7 +76,7 @@ func (db *BadgerDatabase) Put(key []byte, value []byte) error {
 }
 
 func (db *BadgerDatabase) Get(key []byte) ([]byte, error) {
-	utils.Info(fmt.Sprintf("K: %s", string(key)))
+	utils.Info(fmt.Sprintf("BadgerDatabase-Key: %s", crypto.Encode(key)))
 
 	// txn := disgoServices.NewTxn(false)
 	// defer txn.Discard()
@@ -97,7 +110,7 @@ func (db *BadgerDatabase) Get(key []byte) ([]byte, error) {
 }
 
 func (db *BadgerDatabase) Has(key []byte) (bool, error) {
-	utils.Info(fmt.Sprintf("K: %s", string(key)))
+	utils.Info(fmt.Sprintf("BadgerDatabase-Key: %s", crypto.Encode(key)))
 
 	item, err := db.Get(key)
 
@@ -109,7 +122,7 @@ func (db *BadgerDatabase) Has(key []byte) (bool, error) {
 }
 
 func (db *BadgerDatabase) Delete(key []byte) error {
-	utils.Info(fmt.Sprintf("K: %s", string(key)))
+	utils.Info(fmt.Sprintf("BadgerDatabase-Key: %s", crypto.Encode(key)))
 
 	return nil
 }
@@ -119,6 +132,8 @@ func (db *BadgerDatabase) Close() {
 }
 
 func (db *BadgerDatabase) NewBatch() ethdbInterfaces.Batch {
+	utils.Info("BadgerDatabase/NewBatch")
+
 	return &memBatch{db: db}
 }
 

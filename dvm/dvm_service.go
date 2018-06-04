@@ -21,6 +21,7 @@ import (
 
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/dispatchlabs/disgo/dvm/badgerwrapper"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/ethdb"
 	ethState "github.com/dispatchlabs/disgo/dvm/ethereum/state"
 )
@@ -42,14 +43,17 @@ var (
 // GetDVMService
 func GetDVMService() *DVMService {
 	dvmServiceOnce.Do(func() {
-		db, _ := NewBadgerDatabase()
+		db, _ := badgerwrapper.NewBadgerDatabase()
 
 		dvmServiceInstance = &DVMService{running: false}
 		dvmServiceInstance.db = db
 
 		rootHash := crypto.HashBytes{}
 		var err error
-		dvmServiceInstance.statedb, err = ethState.New(rootHash, ethState.NewDatabase(dvmServiceInstance.db))
+		dvmServiceInstance.statedb, err = ethState.New(
+			rootHash,
+			ethState.NewNonCacheDatabase(dvmServiceInstance.db),
+		)
 		if err != nil {
 			utils.Fatal(err)
 		}

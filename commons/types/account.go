@@ -20,14 +20,16 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/dgraph-io/badger"
-	"github.com/dispatchlabs/disgo/commons/crypto"
-	"github.com/dispatchlabs/disgo/commons/utils"
 	"io/ioutil"
+	"math/big"
 	"os"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/dgraph-io/badger"
+	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
 var accountInstance *Account
@@ -46,9 +48,14 @@ type Account struct {
 	Address    string
 	PrivateKey string
 	Name       string
-	Balance    int64
+	Balance    *big.Int
 	Updated    time.Time
 	Created    time.Time
+
+	// From Ethereum Account
+	Nonce    uint64
+	Root     crypto.HashBytes // merkle root of the storage trie
+	CodeHash []byte
 }
 
 // type Account interface {
@@ -169,7 +176,7 @@ func (this *Account) UnmarshalJSON(bytes []byte) error {
 		this.Name = jsonMap["name"].(string)
 	}
 	if jsonMap["balance"] != nil {
-		this.Balance = int64(jsonMap["balance"].(float64))
+		this.Balance = big.NewInt(int64(jsonMap["balance"].(float64)))
 	}
 	if jsonMap["updated"] != nil {
 		updated, err := time.Parse(time.RFC3339, jsonMap["updated"].(string))
@@ -202,7 +209,7 @@ func (this Account) MarshalJSON() ([]byte, error) {
 		Address:    this.Address,
 		PrivateKey: this.PrivateKey,
 		Name:       this.Name,
-		Balance:    this.Balance,
+		Balance:    this.Balance.Int64(),
 		Updated:    this.Updated,
 		Created:    this.Created,
 	})
@@ -231,7 +238,7 @@ func readAccountFile(name_optional ...string) *Account {
 		account := &Account{}
 		account.Address = hex.EncodeToString(address)
 		account.PrivateKey = hex.EncodeToString(privateKey)
-		account.Balance = 0
+		account.Balance = big.NewInt(0)
 
 		// Write account.
 		var jsonMap map[string]interface{}

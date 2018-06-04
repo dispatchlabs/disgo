@@ -18,6 +18,7 @@ package dapos
 
 import (
 	"fmt"
+	"math/big"
 	"math/rand"
 	"strings"
 	"time"
@@ -296,7 +297,7 @@ func TransferTokens(transaction *types.Transaction, txn *badger.Txn, receipt *ty
 		if err == badger.ErrKeyNotFound {
 			utils.Error(fmt.Sprintf("txKeyFrom = %s", transaction.From), err)
 
-			fromAccount = &types.Account{Address: transaction.From, Balance: 0, Created: now}
+			fromAccount = &types.Account{Address: transaction.From, Balance: big.NewInt(0), Created: now}
 		} else {
 			utils.Error(err)
 			receipt.Status = types.StatusInternalError
@@ -307,7 +308,7 @@ func TransferTokens(transaction *types.Transaction, txn *badger.Txn, receipt *ty
 	}
 
 	// Sufficient tokens?
-	if fromAccount.Balance < transaction.Value {
+	if fromAccount.Balance.Int64() < transaction.Value {
 		utils.Error(fmt.Sprintf("insufficient tokens [hash=%s]", transaction.Hash))
 		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInsufficientTokens)
 		return
@@ -320,7 +321,7 @@ func TransferTokens(transaction *types.Transaction, txn *badger.Txn, receipt *ty
 		if err == badger.ErrKeyNotFound {
 			utils.Error(fmt.Sprintf("txKeyTo = %s", transaction.To), err)
 
-			toAccount = &types.Account{Address: transaction.To, Balance: 0, Created: now}
+			toAccount = &types.Account{Address: transaction.To, Balance: big.NewInt(0), Created: now}
 		} else {
 			utils.Error(err)
 			receipt.SetInternalErrorWithNewTransaction(services.GetDb(), err)
@@ -329,7 +330,7 @@ func TransferTokens(transaction *types.Transaction, txn *badger.Txn, receipt *ty
 	}
 
 	// Save accounts.
-	fromAccount.Balance -= transaction.Value
+	fromAccount.Balance.SetInt64(fromAccount.Balance.Int64() - transaction.Value)
 	fromAccount.Updated = now
 	err = fromAccount.Set(txn)
 	if err != nil {
@@ -339,7 +340,7 @@ func TransferTokens(transaction *types.Transaction, txn *badger.Txn, receipt *ty
 		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
 		return
 	}
-	toAccount.Balance += transaction.Value
+	fromAccount.Balance.SetInt64(fromAccount.Balance.Int64() + transaction.Value)
 	toAccount.Updated = now
 	err = toAccount.Set(txn)
 	if err != nil {

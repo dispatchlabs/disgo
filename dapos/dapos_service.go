@@ -17,6 +17,7 @@
 package dapos
 
 import (
+	"math/big"
 	"sync"
 
 	"github.com/dgraph-io/badger"
@@ -112,7 +113,7 @@ func (this *DAPoSService) createGenesisTransactionAndAccount() error {
 			if err != nil {
 				return err
 			}
-			account := &types.Account{Address: transaction.To, Name: "Dispatch Labs", Balance: transaction.Value, Updated: time.Now(), Created: time.Now()}
+			account := &types.Account{Address: transaction.To, Name: "Dispatch Labs", Balance: big.NewInt(transaction.Value), Updated: time.Now(), Created: time.Now()}
 			err = account.Set(txn)
 			if err != nil {
 				return err
