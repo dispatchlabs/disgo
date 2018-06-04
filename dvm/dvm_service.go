@@ -19,7 +19,6 @@ package dvm
 import (
 	"sync"
 
-	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/dvm/badgerwrapper"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/ethdb"
@@ -48,17 +47,23 @@ func GetDVMService() *DVMService {
 		dvmServiceInstance = &DVMService{running: false}
 		dvmServiceInstance.db = db
 
-		rootHash := crypto.HashBytes{}
+		// rootHash := crypto.HashBytes{} // TODO: load this from DB
+		// var err error
+		// dvmServiceInstance.statedb, err = ethState.New(
+		// 	rootHash,
+		// 	ethState.NewNonCacheDatabase(dvmServiceInstance.db),
+		// )
+		// if err != nil {
+		// 	utils.Fatal(err)
+		// }
+
 		var err error
-		dvmServiceInstance.statedb, err = ethState.New(
-			rootHash,
-			ethState.NewNonCacheDatabase(dvmServiceInstance.db),
-		)
+		dvmServiceInstance.was, err = LoadOrInitNewState(dvmServiceInstance.db)
 		if err != nil {
-			utils.Fatal(err)
+			utils.Error(err)
 		}
 
-		dvmServiceInstance.resetWAS()
+		dvmServiceInstance.ethStateDB = dvmServiceInstance.was.ethStateDB
 	})
 
 	return dvmServiceInstance
@@ -68,9 +73,9 @@ func GetDVMService() *DVMService {
 type DVMService struct {
 	running bool
 
-	db      ethdb.Database    // Storate
-	statedb *ethState.StateDB // Trie aka Merkle
-	was     *WriteAheadState
+	db         ethdb.Database    // Storate
+	ethStateDB *ethState.StateDB // Trie aka Merkle
+	was        *WriteAheadState
 }
 
 // IsRunning -

@@ -167,7 +167,7 @@ func (self *DVMService) applyTransaction(tx *commonTypes.Transaction) error {
 	//Prepare the ethState with transaction Hash so that it can be used in emitted
 	//logs
 	var txIndex = 0
-	self.was.ethState.Prepare(tx.GetHashBytes(), tx.GetHashBytes(), txIndex)
+	self.was.ethStateDB.Prepare(tx.GetHashBytes(), tx.GetHashBytes(), txIndex)
 
 	// The EVM should never be reused and is not thread safe.
 	vmLogger := vm.NewStructLogger(&vm.LogConfig{
@@ -180,7 +180,7 @@ func (self *DVMService) applyTransaction(tx *commonTypes.Transaction) error {
 
 	vmenv := vm.NewEVM(
 		context,
-		self.was.ethState,
+		self.was.ethStateDB,
 		&params.ChainConfig{
 			ChainId: chainID,
 		},
@@ -203,7 +203,7 @@ func (self *DVMService) applyTransaction(tx *commonTypes.Transaction) error {
 
 	// Create a new receipt for the transaction, storing the intermediate root and gas used by the tx
 	// based on the eip phase, we're passing wether the root touch-delete accounts.
-	root := self.was.ethState.IntermediateRoot(true) //this has side effects. It updates StateObjects (SmartContract memory)
+	root := self.was.ethStateDB.IntermediateRoot(true) //this has side effects. It updates StateObjects (SmartContract memory)
 
 	receipt := ethTypes.NewReceipt(root.Bytes(), failed, self.was.totalUsedGas.Uint64())
 	receipt.TxHash = tx.GetHashBytes()
@@ -213,7 +213,7 @@ func (self *DVMService) applyTransaction(tx *commonTypes.Transaction) error {
 		receipt.ContractAddress = dvmCrypto.CreateAddress(vmenv.Context.Origin, 0)
 	}
 	// Set the receipt logs and create a bloom for filtering
-	receipt.Logs = self.was.ethState.GetLogs(tx.GetHashBytes())
+	receipt.Logs = self.was.ethStateDB.GetLogs(tx.GetHashBytes())
 	//receipt.Logs = s.was.state.Logs()
 	receipt.Bloom = ethTypes.CreateBloom(ethTypes.Receipts{receipt})
 
@@ -236,7 +236,7 @@ func (self *DVMService) applyTransaction(tx *commonTypes.Transaction) error {
 }
 
 func (self *DVMService) evaluateContract(fromAddress crypto.AddressBytes, contractAddress crypto.AddressBytes, root crypto.HashBytes) {
-	theEthStateDb := self.was.ethState
+	theEthStateDb := self.was.ethStateDB
 	contractStateObject := theEthStateDb.GetOrNewStateObject(contractAddress)
 	contractHash := crypto.NewHash(contractAddress[:])
 	stateHash := theEthStateDb.GetState(contractAddress, contractHash)
@@ -326,7 +326,7 @@ func (self *DVMService) call(callMsg ethTypes.Message) ([]byte, error) {
 
 	vmenv := vm.NewEVM(
 		context,
-		self.was.ethState.Copy(),
+		self.was.ethStateDB.Copy(),
 		&params.ChainConfig{
 			ChainId: chainID,
 		},
@@ -364,7 +364,7 @@ func (self *DVMService) commit() (crypto.HashBytes, error) {
 
 	// reset the write ahead state for the next block
 	// with the latest eth state
-	self.statedb = self.was.ethState
+	self.ethStateDB = self.was.ethStateDB
 	utils.Info(fmt.Sprintf("root %s Committed", root.Hex()))
 
 	self.resetWAS()
@@ -375,7 +375,7 @@ func (self *DVMService) commit() (crypto.HashBytes, error) {
 func (self *DVMService) resetWAS() {
 	self.was = &WriteAheadState{
 		db:           self.db,
-		ethState:     self.statedb.Copy(),
+		ethStateDB:   self.ethStateDB.Copy(),
 		txIndex:      0,
 		totalUsedGas: big.NewInt(0),
 		gp:           new(ethereum.GasPool).AddGas(gasLimit.Uint64()),
@@ -384,6 +384,7 @@ func (self *DVMService) resetWAS() {
 }
 
 func (self *DVMService) getReceipt(txHash []byte) (*ethTypes.Receipt, error) {
+	utils.Info(fmt.Sprintf("receipts- [%v]", crypto.Encode(receiptsPrefix)))
 	data, err := self.db.Get(append(receiptsPrefix, txHash[:]...))
 	if err != nil {
 		utils.Error(fmt.Sprintf("%s GetReceipt", err))

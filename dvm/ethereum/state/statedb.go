@@ -449,7 +449,7 @@ func (self *StateDB) getStateObject(addr crypto.AddressBytes) (stateObject *stat
 		return nil
 	}
 	// Insert into the live set.
-	obj := newObject(self, addr, data)
+	obj := newStateObject(self, addr, data)
 	self.setStateObject(obj)
 	return obj
 }
@@ -494,11 +494,14 @@ func (self *StateDB) createObject(addr crypto.AddressBytes) (newobj, prev *state
 		a, err := dispatTypes.ToAccountByAddress(txn, crypto.Encode(addr[:]))
 		if err == nil {
 			account = *a
+		} else {
+			account.Address = crypto.EncodeNo0x(addr.Bytes())
 		}
+	} else {
+		account.Address = crypto.EncodeNo0x(addr.Bytes())
 	}
 
-	newobj = newObject(self, addr, account)
-	newobj.account.Nonce = 0 // sets the object to dirty
+	newobj = newStateObject(self, addr, account)
 
 	if prev == nil {
 		self.journal.append(createObjectChange{account: addr})
@@ -716,7 +719,7 @@ func (s *StateDB) clearJournalAndRefund() {
 
 // Commit writes the state to the underlying in-memory trie database.
 func (s *StateDB) Commit(deleteEmptyObjects bool) (root crypto.HashBytes, err error) {
-	utils.Info(fmt.Sprintf("StateDB-deleteEmptyObjects:"))
+	utils.Info(fmt.Sprintf("StateDB-Commit:"))
 
 	defer s.clearJournalAndRefund()
 

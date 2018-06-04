@@ -52,6 +52,12 @@ func Encode(b []byte) string {
 	return string(enc)
 }
 
+func EncodeNo0x(b []byte) string {
+	enc := make([]byte, len(b)*2)
+	hex.Encode(enc, b)
+	return string(enc)
+}
+
 func (h *HashBytes) SetBytes(b []byte) {
 	if len(b) > len(h) {
 		b = b[len(b)-HashLength:]

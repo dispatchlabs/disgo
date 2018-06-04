@@ -100,20 +100,24 @@ func (s *stateObject) empty() bool {
 // 	CodeHash []byte
 // }
 
-// newObject creates a state object.
-func newObject(db *StateDB, address crypto.AddressBytes, data types.Account) *stateObject {
+// newStateObject creates a state object.
+func newStateObject(db *StateDB, address crypto.AddressBytes, data types.Account) *stateObject {
 	if data.Balance == nil {
 		data.Balance = new(big.Int)
 	}
 	if data.CodeHash == nil {
 		data.CodeHash = emptyCodeHash
 	}
+
+	data.Nonce = 0 // sets the object to dirty
+
 	result := &stateObject{
 		db:            db,
 		account:       data,
 		cachedStorage: make(Storage),
 		dirtyStorage:  make(Storage),
 	}
+
 	return result
 }
 
@@ -286,7 +290,7 @@ func (c *stateObject) ReturnGas(gas *big.Int) {}
 func (self *stateObject) deepCopy(db *StateDB) *stateObject {
 	var addressAsBytes = crypto.GetAddressBytes(self.account.Address)
 
-	stateObject := newObject(db, addressAsBytes, self.account)
+	stateObject := newStateObject(db, addressAsBytes, self.account)
 	if self.trie != nil {
 		stateObject.trie = db.db.CopyTrie(self.trie)
 	}

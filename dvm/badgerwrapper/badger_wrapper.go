@@ -53,19 +53,8 @@ func NewBadgerDatabase() (*BadgerDatabase, error) {
 // Based on https://github.com/dgraph-io/badger#using-keyvalue-pairs
 // ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~
 func (db *BadgerDatabase) Put(key []byte, value []byte) error {
-	utils.Info(fmt.Sprintf("BadgerDatabase-Key: %s, BadgerDatabase-Value: %s", crypto.Encode(key), crypto.Encode(value)))
-
-	// var returnE error = nil
-
-	// txn := disgoServices.NewTxn(true)
-	// defer txn.Discard()
-
-	// txn.Set(key, value)
-	// txn.Commit(func(e error) {
-	// 	returnE = e
-	// })
-
-	// return returnE
+	utils.Info(fmt.Sprintf("BadgerDatabase-PUT-Key: %s", crypto.Encode(key)))
+	utils.Info(fmt.Sprintf("BadgerDatabase-PUT-Val: %s", crypto.Encode(value)))
 
 	err := disgoServices.GetDb().Update(func(txn *badger.Txn) error {
 		err := txn.Set(key, value)
@@ -76,17 +65,7 @@ func (db *BadgerDatabase) Put(key []byte, value []byte) error {
 }
 
 func (db *BadgerDatabase) Get(key []byte) ([]byte, error) {
-	utils.Info(fmt.Sprintf("BadgerDatabase-Key: %s", crypto.Encode(key)))
-
-	// txn := disgoServices.NewTxn(false)
-	// defer txn.Discard()
-
-	// item, err := txn.Get(key)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// return item.Value()
+	utils.Info(fmt.Sprintf("BadgerDatabase-GET-Key: %s", crypto.Encode(key)))
 
 	var value []byte
 	err := disgoServices.GetDb().View(func(txn *badger.Txn) error {
@@ -102,15 +81,15 @@ func (db *BadgerDatabase) Get(key []byte) ([]byte, error) {
 		value = make([]byte, len(val))
 		copy(value, val[:])
 
-		// fmt.Printf("The answer is: %s\n", val)
 		return nil
 	})
 
+	utils.Info(fmt.Sprintf("BadgerDatabase-GET-Val: %s", crypto.Encode(value)))
 	return value, err
 }
 
 func (db *BadgerDatabase) Has(key []byte) (bool, error) {
-	utils.Info(fmt.Sprintf("BadgerDatabase-Key: %s", crypto.Encode(key)))
+	utils.Info(fmt.Sprintf("BadgerDatabase-HAS-Key: %s", crypto.Encode(key)))
 
 	item, err := db.Get(key)
 
@@ -122,18 +101,17 @@ func (db *BadgerDatabase) Has(key []byte) (bool, error) {
 }
 
 func (db *BadgerDatabase) Delete(key []byte) error {
-	utils.Info(fmt.Sprintf("BadgerDatabase-Key: %s", crypto.Encode(key)))
+	utils.Info(fmt.Sprintf("BadgerDatabase-DELETE-Key: %s", crypto.Encode(key)))
 
 	return nil
 }
 
 func (db *BadgerDatabase) Close() {
-	utils.Info("BadgerDatabase/Close")
+	utils.Info(fmt.Sprintf("BadgerDatabase-Close:"))
 }
 
 func (db *BadgerDatabase) NewBatch() ethdbInterfaces.Batch {
-	utils.Info("BadgerDatabase/NewBatch")
-
+	utils.Info(fmt.Sprintf("BadgerDatabase-NewBatch:"))
 	return &memBatch{db: db}
 }
 
