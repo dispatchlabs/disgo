@@ -95,7 +95,7 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 	}
 
 	// callData, err := jsonABI.Pack(tx.Method, expected)
-	callData, err := jsonABI.Pack(tx.Method, tx.Params)
+	callData, err := jsonABI.Pack(tx.Method, tx.Params...)
 	if err != nil {
 		return nil, err
 	}
@@ -122,15 +122,17 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 		utils.Error(err)
 		return nil, err
 	}
+	var parsedRes string
+	err = jsonABI.Unpack(&parsedRes, "getVar5", res)
 
-	utils.Info(fmt.Sprintf("DEBUG-CONTRACT-CALL res: %v", res))
+	utils.Info(fmt.Sprintf("DEBUG-CONTRACT-CALL res: %s", parsedRes))
 
 	// var parsedRes *big.Int
 	// err = jsonABI.Unpack(&parsedRes, "test", res)
-	// if err != nil {
-	// 	utils.Error(err)
-	// }
-	// utils.Info(fmt.Sprintf("parsed res: %v", parsedRes))
+	if err != nil {
+		utils.Error(err)
+	}
+	//utils.Info(fmt.Sprintf("parsed res: %v", parsedRes))
 
 	// if parsedRes.Cmp(expected) != 0 {
 	// 	utils.Error(fmt.Sprintf("Result should be %v, not %v", expected, parsedRes))
@@ -147,6 +149,7 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 		// Bloom:               receipt.Bloom,
 		// Logs:                receipt.Logs,
 	}, nil
+
 }
 
 func (self *DVMService) applyTransaction(tx *commonTypes.Transaction) error {
