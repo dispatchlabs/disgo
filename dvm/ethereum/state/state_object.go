@@ -102,9 +102,9 @@ func (s *stateObject) empty() bool {
 
 // newObject creates a state object.
 func newObject(db *StateDB, address crypto.AddressBytes, data types.Account) *stateObject {
-	// if data.Balance == nil {
-	// 	data.Balance = new(big.Int)
-	// }
+	if data.Balance == nil {
+		data.Balance = new(big.Int)
+	}
 	if data.CodeHash == nil {
 		data.CodeHash = emptyCodeHash
 	}
