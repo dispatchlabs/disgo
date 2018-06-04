@@ -388,13 +388,11 @@ func (self *DVMService) getReceipt(txHash []byte) (*ethTypes.Receipt, error) {
 	data, err := self.db.Get(append(receiptsPrefix, txHash[:]...))
 	if err != nil {
 		utils.Error(fmt.Sprintf("%s GetReceipt", err))
-
 		return nil, err
 	}
 	var receipt ethTypes.ReceiptForStorage
 	if err := rlp.DecodeBytes(data, &receipt); err != nil {
 		utils.Error(fmt.Sprintf("%s Decoding Receipt", err))
-
 		return nil, err
 	}
 

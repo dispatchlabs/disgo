@@ -60,7 +60,7 @@ func GetDVMService() *DVMService {
 		var err error
 		dvmServiceInstance.was, err = LoadOrInitNewState(dvmServiceInstance.db)
 		if err != nil {
-			utils.Error(err)
+			utils.Fatal(err)
 		}
 
 		dvmServiceInstance.ethStateDB = dvmServiceInstance.was.ethStateDB

@@ -17,6 +17,7 @@
 package services
 
 import (
+	"fmt"
 	"net"
 	"strconv"
 	"sync"
@@ -55,7 +56,7 @@ func (this *GrpcService) Go(waitGroup *sync.WaitGroup) {
 	this.running = true
 	listener, error := net.Listen("tcp", ":"+strconv.Itoa(this.Port))
 	if error != nil {
-		utils.Fatal("failed to listen: %v", error)
+		utils.Fatal(fmt.Sprintf("failed to listen: %v", error))
 		this.running = false
 		return
 	}

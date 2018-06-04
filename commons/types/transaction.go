@@ -515,39 +515,43 @@ func (this Transaction) MarshalJSON() ([]byte, error) {
 
 // CalculateHash (MerkleTree)
 func (this Transaction) CalculateHash() []byte {
-	from, err := hex.DecodeString(this.From)
-	if err != nil {
-		utils.Fatal("unable to decode from", err)
-		panic(err)
-	}
-	to, err := hex.DecodeString(this.To)
-	if err != nil {
-		utils.Fatal("unable to decode to", err)
-		panic(err)
-	}
-	signature, err := hex.DecodeString(this.Signature)
-	if err != nil {
-		utils.Fatal("unable to decode signature", err)
-		panic(err)
-	}
-	var values = []interface{}{
-		this.Type,
-		from,
-		to,
-		this.Value,
-		this.Time,
-		signature,
-	}
-	buffer := new(bytes.Buffer)
-	for _, value := range values {
-		err := binary.Write(buffer, binary.BigEndian, value)
-		if err != nil {
-			utils.Fatal("unable to write transaction bytes to buffer", err)
-			panic(err)
-		}
-	}
-	hash := crypto.NewHash(buffer.Bytes())
-	return hash[:]
+
+	bytes := this.GetHashBytes()
+	return bytes[:]
+
+	// from, err := hex.DecodeString(this.From)
+	// if err != nil {
+	// 	utils.Fatal("unable to decode from", err)
+	// 	panic(err)
+	// }
+	// to, err := hex.DecodeString(this.To)
+	// if err != nil {
+	// 	utils.Fatal("unable to decode to", err)
+	// 	panic(err)
+	// }
+	// signature, err := hex.DecodeString(this.Signature)
+	// if err != nil {
+	// 	utils.Fatal("unable to decode signature", err)
+	// 	panic(err)
+	// }
+	// var values = []interface{}{
+	// 	this.Type,
+	// 	from,
+	// 	to,
+	// 	this.Value,
+	// 	this.Time,
+	// 	signature,
+	// }
+	// buffer := new(bytes.Buffer)
+	// for _, value := range values {
+	// 	err := binary.Write(buffer, binary.BigEndian, value)
+	// 	if err != nil {
+	// 		utils.Fatal("unable to write transaction bytes to buffer", err)
+	// 		panic(err)
+	// 	}
+	// }
+	// hash := crypto.NewHash(buffer.Bytes())
+	// return hash[:]
 }
 
 // Equals

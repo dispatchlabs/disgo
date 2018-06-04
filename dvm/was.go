@@ -77,7 +77,7 @@ func (was *WriteAheadState) writeHead() error {
 		head = was.transactions[len(was.transactions)-1]
 	}
 
-	utils.Info(fmt.Sprintf("WAS-writeHead: 'LastTx' == '%v' + %v", crypto.Encode(headTxKey), head.CalculateHash()))
+	utils.Info(fmt.Sprintf("WAS-writeHead: 'LastTx' == '%v' + %v", crypto.Encode(headTxKey), crypto.Encode(head.CalculateHash())))
 	return was.db.Put(headTxKey, head.CalculateHash())
 }
 
@@ -192,9 +192,8 @@ func (was *WriteAheadState) getReceipt2(txHash []byte) (*ethTypes.Receipt, error
 }
 
 func (s *WriteAheadState) getReceipt(txHash crypto.HashBytes) (*ethTypes.Receipt, error) {
-	// utils.Info(fmt.Sprintf("receipts- [%v]", crypto.Encode(receiptsPrefix)))
-	// data, err := s.db.Get(append(receiptsPrefix, txHash[:]...))
-	data, err := s.db.Get(txHash[:])
+	utils.Info(fmt.Sprintf("receipts- [%v]", crypto.Encode(receiptsPrefix)))
+	data, err := s.db.Get(append(receiptsPrefix, txHash[:]...))
 	if err != nil {
 		utils.Error(err)
 		return nil, err
