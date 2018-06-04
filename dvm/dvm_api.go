@@ -83,18 +83,15 @@ func (dvm *DVMService) DeploySmartContract(tx *commonTypes.Transaction) (*DVMRes
 
 func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMResult, error) {
 	// var expected = big.NewInt(tx.Params)
-
+	fmt.Printf("\n***************** Contract Address = %v\n\n", tx.To)
 	fromHex, _ := hex.DecodeString(tx.Abi)
 	codeAsString := string(fromHex)
-	//jsonABI, err := abi.JSON(strings.NewReader(tx.Abi))
 	jsonABI, err := abi.JSON(strings.NewReader(codeAsString))
-	// jsonABI, err := abi.JSON(strings.NewReader(tx.Code))
 	if err != nil {
 		utils.Error(err)
 		return nil, err
 	}
 
-	// callData, err := jsonABI.Pack(tx.Method, expected)
 	callData, err := jsonABI.Pack(tx.Method, tx.Params...)
 	if err != nil {
 		return nil, err
@@ -122,6 +119,7 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 		utils.Error(err)
 		return nil, err
 	}
+	_, err = dvm.commit() // hash
 	var parsedRes string
 	err = jsonABI.Unpack(&parsedRes, "getVar5", res)
 
@@ -244,17 +242,25 @@ func (self *DVMService) evaluateContract(fromAddress crypto.AddressBytes, contra
 	stateHash := state.GetState(contractAddress, contractHash)
 	trie := state.StorageTrie(contractAddress)
 
-	fmt.Printf("Contract state object --> \n\n"+
-		"Address:    %v\n"+
-		"Hash:       %v\n"+
-		"Nonce:      %v\n"+
-		"Code:       %v\n"+
-		"Code Hash:  %v\n"+
-		"Tree Hash:  %v\n"+
-		"Root Hash:  %v\n"+
-		"StateHash:  %v\n\n",
+	fmt.Printf("Contract state object --> \n\n" +
+		"From Address:  %v\n" +
+		"From Address:  %v\n" +
+		"Address:       %v\n" +
+		"Address:       %v\n" +
+		"Hash:          %v\n" +
+		"Hash:          %v\n" +
+		"Nonce:         %v\n" +
+		"Code:          %v\n" +
+		"Code Hash:     %v\n" +
+		"Tree Hash:     %v\n" +
+		"Root Hash:     %v\n" +
+		"StateHash:     %v\n\n",
+		fromAddress,
+		crypto.AddressBytesToAddressString(fromAddress),
 		contractStateObject.Address(),
+		crypto.AddressBytesToAddressString(contractStateObject.Address()),
 		contractHash,
+		crypto.HashBytesToHashString(contractHash),
 		contractStateObject.Nonce(),
 		contractStateObject.Code(state.Database()),
 		contractStateObject.CodeHash(),
