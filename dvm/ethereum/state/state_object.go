@@ -254,7 +254,7 @@ func (c *stateObject) AddBalance(amount *big.Int) {
 
 		return
 	}
-	c.SetBalance(new(big.Int).Add(c.Balance(), amount))
+	c.SetBalance(new(big.Int).Add(c.account.Balance, amount))
 }
 
 // SubBalance removes amount from c's balance.
@@ -263,7 +263,7 @@ func (c *stateObject) SubBalance(amount *big.Int) {
 	if amount.Sign() == 0 {
 		return
 	}
-	c.SetBalance(new(big.Int).Sub(c.Balance(), amount))
+	c.SetBalance(new(big.Int).Sub(c.account.Balance, amount))
 }
 
 func (self *stateObject) SetBalance(amount *big.Int) {
@@ -302,12 +302,8 @@ func (self *stateObject) deepCopy(db *StateDB) *stateObject {
 //
 // Attribute accessors
 //
-
-// Returns the address of the contract/account
-func (c *stateObject) Address() crypto.AddressBytes {
-	var addressAsBytes = crypto.GetAddressBytes(c.account.Address)
-
-	return addressAsBytes
+func (self stateObject) Account() *types.Account {
+	return &self.account
 }
 
 // Code returns the contract code associated with this object, if any.
@@ -315,16 +311,16 @@ func (self *stateObject) Code(db Database) []byte {
 	if self.code != nil {
 		return self.code
 	}
-	if bytes.Equal(self.CodeHash(), emptyCodeHash) {
+	if bytes.Equal(self.account.CodeHash, emptyCodeHash) {
 		return nil
 	}
 
 	var addressAsBytes = crypto.GetAddressBytes(self.account.Address)
 	var addressHash = crypto.NewHash(addressAsBytes[:])
 
-	code, err := db.ContractCode(addressHash, crypto.BytesToHash(self.CodeHash()))
+	code, err := db.ContractCode(addressHash, crypto.BytesToHash(self.account.CodeHash))
 	if err != nil {
-		self.setError(fmt.Errorf("can't load code hash %x: %v", self.CodeHash(), err))
+		self.setError(fmt.Errorf("can't load code hash %x: %v", self.account.CodeHash, err))
 	}
 	self.code = code
 	return code
@@ -336,7 +332,7 @@ func (self *stateObject) SetCode(codeHash crypto.HashBytes, code []byte) {
 	prevcode := self.Code(self.db.db)
 	self.db.journal.append(codeChange{
 		account:  addressAsBytes,
-		prevhash: self.CodeHash(),
+		prevhash: self.account.CodeHash,
 		prevcode: prevcode,
 	})
 	self.setCode(codeHash, code)
@@ -355,23 +351,7 @@ func (self *stateObject) SetNonce(nonce uint64) {
 		account: addressAsBytes,
 		prev:    self.account.Nonce,
 	})
-	self.setNonce(nonce)
-}
-
-func (self *stateObject) setNonce(nonce uint64) {
 	self.account.Nonce = nonce
-}
-
-func (self *stateObject) CodeHash() []byte {
-	return self.account.CodeHash
-}
-
-func (self *stateObject) Balance() *big.Int {
-	return self.account.Balance
-}
-
-func (self *stateObject) Nonce() uint64 {
-	return self.account.Nonce
 }
 
 // Never called, but must be present to allow stateObject to be used

@@ -181,7 +181,7 @@ func (ch balanceChange) dirtied() *crypto.AddressBytes {
 }
 
 func (ch nonceChange) revert(s *StateDB) {
-	s.getStateObject(ch.account).setNonce(ch.prev)
+	s.getStateObject(ch.account).account.Nonce = ch.prev
 }
 
 func (ch nonceChange) dirtied() *crypto.AddressBytes {

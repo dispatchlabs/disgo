@@ -236,34 +236,32 @@ func (self *DVMService) applyTransaction(tx *commonTypes.Transaction) error {
 }
 
 func (self *DVMService) evaluateContract(fromAddress crypto.AddressBytes, contractAddress crypto.AddressBytes, root crypto.HashBytes) {
-	state := self.was.ethState
-	contractStateObject := state.GetOrNewStateObject(contractAddress)
+	theEthStateDb := self.was.ethState
+	contractStateObject := theEthStateDb.GetOrNewStateObject(contractAddress)
 	contractHash := crypto.NewHash(contractAddress[:])
-	stateHash := state.GetState(contractAddress, contractHash)
-	trie := state.StorageTrie(contractAddress)
+	stateHash := theEthStateDb.GetState(contractAddress, contractHash)
+	trie := theEthStateDb.StorageTrie(contractAddress)
 
-	fmt.Printf("Contract state object --> \n\n" +
-		"From Address:  %v\n" +
-		"From Address:  %v\n" +
-		"Address:       %v\n" +
-		"Address:       %v\n" +
-		"Hash:          %v\n" +
-		"Hash:          %v\n" +
-		"Nonce:         %v\n" +
-		"Code:          %v\n" +
-		"Code Hash:     %v\n" +
-		"Tree Hash:     %v\n" +
-		"Root Hash:     %v\n" +
+	fmt.Printf("Contract state object --> \n\n"+
+		"From Address:  %v\n"+
+		"Address:       %v\n"+
+		"Address:       %v\n"+
+		"Hash:          %v\n"+
+		"Hash:          %v\n"+
+		"Nonce:         %v\n"+
+		"Code:          %v\n"+
+		"Code Hash:     %v\n"+
+		"Tree Hash:     %v\n"+
+		"Root Hash:     %v\n"+
 		"StateHash:     %v\n\n",
 		fromAddress,
 		crypto.AddressBytesToAddressString(fromAddress),
-		contractStateObject.Address(),
-		crypto.AddressBytesToAddressString(contractStateObject.Address()),
+		contractStateObject.Account().Address,
 		contractHash,
 		crypto.HashBytesToHashString(contractHash),
-		contractStateObject.Nonce(),
-		contractStateObject.Code(state.Database()),
-		contractStateObject.CodeHash(),
+		contractStateObject.Account().Nonce,
+		contractStateObject.Code(theEthStateDb.Database()),
+		contractStateObject.Account().CodeHash,
 		trie.Hash(),
 		root,
 		stateHash,

@@ -214,7 +214,7 @@ func (self *StateDB) GetBalance(addr crypto.AddressBytes) *big.Int {
 	if stateObject != nil {
 		// utils.Info(fmt.Sprintf("%s : %d @ %s", common.EthAddressToDispatchAddress(addr), stateObject.Balance(), utils.GetCallStackWithFileAndLineNumber()))
 
-		return stateObject.Balance()
+		return stateObject.account.Balance
 	}
 	return common.Big0
 }
@@ -224,7 +224,7 @@ func (self *StateDB) GetNonce(addr crypto.AddressBytes) uint64 {
 
 	stateObject := self.getStateObject(addr)
 	if stateObject != nil {
-		return stateObject.Nonce()
+		return stateObject.account.Nonce
 	}
 
 	return 0
@@ -254,7 +254,7 @@ func (self *StateDB) GetCodeSize(addr crypto.AddressBytes) int {
 	var addressAsBytes = crypto.GetAddressBytes(stateObject.account.Address)
 	var addressHash = crypto.NewHash(addressAsBytes[:])
 
-	size, err := self.db.ContractCodeSize(addressHash, crypto.BytesToHash(stateObject.CodeHash()))
+	size, err := self.db.ContractCodeSize(addressHash, crypto.BytesToHash(stateObject.account.CodeHash))
 	if err != nil {
 		self.setError(err)
 	}
@@ -268,7 +268,7 @@ func (self *StateDB) GetCodeHash(addr crypto.AddressBytes) crypto.HashBytes {
 	if stateObject == nil {
 		return crypto.HashBytes{}
 	}
-	return crypto.BytesToHash(stateObject.CodeHash())
+	return crypto.BytesToHash(stateObject.account.CodeHash)
 }
 
 func (self *StateDB) GetState(addr crypto.AddressBytes, bhash crypto.HashBytes) crypto.HashBytes {
@@ -388,7 +388,7 @@ func (self *StateDB) Suicide(addr crypto.AddressBytes) bool {
 	self.journal.append(suicideChange{
 		account:     addr,
 		prev:        stateObject.suicided,
-		prevbalance: new(big.Int).Set(stateObject.Balance()),
+		prevbalance: new(big.Int).Set(stateObject.account.Balance),
 	})
 	stateObject.markSuicided()
 	stateObject.account.Balance = big.NewInt(0)
@@ -404,15 +404,15 @@ func (self *StateDB) Suicide(addr crypto.AddressBytes) bool {
 func (self *StateDB) updateStateObject(stateObject *stateObject) {
 	utils.Info(fmt.Sprintf("StateDB-updateStateObject:"))
 
-	addr := stateObject.Address()
+	var addressAsBytes = crypto.GetAddressBytes(stateObject.account.Address)
 	data, err := rlp.EncodeToBytes(stateObject)
 	if err != nil {
-		panic(fmt.Errorf("can't encode object at %x: %v", addr[:], err))
+		panic(fmt.Errorf("can't encode object at %x: %v", addressAsBytes[:], err))
 	}
 	if len(stateObject.code) > 0 {
 		fmt.Printf("This is where you want your breakpoint")
 	}
-	self.setError(self.trie.TryUpdate(addr[:], data))
+	self.setError(self.trie.TryUpdate(addressAsBytes[:], data))
 }
 
 // deleteStateObject removes the given object from the state trie.
@@ -420,8 +420,9 @@ func (self *StateDB) deleteStateObject(stateObject *stateObject) {
 	utils.Info(fmt.Sprintf("StateDB-deleteStateObject:"))
 
 	stateObject.deleted = true
-	addr := stateObject.Address()
-	self.setError(self.trie.TryDelete(addr[:]))
+
+	var addressAsBytes = crypto.GetAddressBytes(stateObject.account.Address)
+	self.setError(self.trie.TryDelete(addressAsBytes[:]))
 }
 
 // Retrieve a state object given my the address. Returns nil if not found.
@@ -459,7 +460,9 @@ func (self *StateDB) setStateObject(object *stateObject) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	self.stateObjects[object.Address()] = object
+	var addressAsBytes = crypto.GetAddressBytes(object.account.Address)
+
+	self.stateObjects[addressAsBytes] = object
 }
 
 // Retrieve a state object or create a new state object if nil.
@@ -495,7 +498,8 @@ func (self *StateDB) createObject(addr crypto.AddressBytes) (newobj, prev *state
 	}
 
 	newobj = newObject(self, addr, account)
-	newobj.setNonce(0) // sets the object to dirty
+	newobj.account.Nonce = 0 // sets the object to dirty
+
 	if prev == nil {
 		self.journal.append(createObjectChange{account: addr})
 	} else {
@@ -733,7 +737,7 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root crypto.HashBytes, err er
 		case isDirty:
 			// Write any contract code associated with the state object
 			if stateObject.code != nil && stateObject.dirtyCode {
-				s.db.TrieDB().Insert(crypto.BytesToHash(stateObject.CodeHash()), stateObject.code)
+				s.db.TrieDB().Insert(crypto.BytesToHash(stateObject.account.CodeHash), stateObject.code)
 				stateObject.dirtyCode = false
 			}
 			// Write any storage changes in the state object to its storage trie.
