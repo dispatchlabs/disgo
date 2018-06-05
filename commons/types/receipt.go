@@ -23,6 +23,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/google/uuid"
 	"time"
+	"github.com/patrickmn/go-cache"
 )
 
 // Name
@@ -41,11 +42,26 @@ func (this Receipt) Key() string {
 	return fmt.Sprintf("table-receipt-%s", this.Id)
 }
 
-// Set
-func (this *Receipt) Set(txn *badger.Txn) error {
-	err := txn.SetWithTTL([]byte(this.Key()), []byte(this.String()), ReceiptTTL)
+//Cache
+func (this *Receipt) Cache(cache *cache.Cache){
+	cache.Set(this.Id, this, ReceiptTTL)
+}
+
+//Persist
+func (this *Receipt) Persist(txn *badger.Txn) error{
+	err := txn.Set([]byte(this.Key()), []byte(this.String()))
 	if err != nil {
-		utils.Error(err)
+		return err
+	}
+	return nil
+}
+
+// Set
+func (this *Receipt) Set(txn *badger.Txn,cache *cache.Cache) error {
+	this.Cache(cache)
+
+	err := this.Persist(txn)
+	if err != nil {
 		return err
 	}
 	return nil

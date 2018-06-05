@@ -28,6 +28,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"github.com/patrickmn/go-cache"
 )
 
 var accountInstance *Account
@@ -53,13 +54,28 @@ func (this Account) NameKey() string {
 	return fmt.Sprintf("key-account-name-%s", strings.ToLower(this.Name))
 }
 
-// Set
-func (this *Account) Set(txn *badger.Txn) error {
+//Cache
+func (this *Account) Cache(cache *cache.Cache){
+	cache.Set(this.Address, this, AccountTTL)
+}
+
+//Persist
+func (this *Account) Persist(txn *badger.Txn) error{
 	err := txn.Set([]byte(this.Key()), []byte(this.String()))
 	if err != nil {
 		return err
 	}
 	err = txn.Set([]byte(this.NameKey()), []byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Set
+func (this *Account) Set(txn *badger.Txn,cache *cache.Cache) error {
+	this.Cache(cache)
+	err := this.Persist(txn)
 	if err != nil {
 		return err
 	}

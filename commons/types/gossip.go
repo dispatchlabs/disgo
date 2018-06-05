@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/patrickmn/go-cache"
 )
 
 // Gossip
@@ -35,9 +36,28 @@ func (this Gossip) Key() string {
 	return fmt.Sprintf("table-gossip-%s", this.Transaction.Hash)
 }
 
+//Cache
+func (this *Gossip) Cache(cache *cache.Cache){
+	cache.Set(this.Transaction.Hash, this, GossipTTL)
+}
+
+//Persist
+func (this *Gossip) Persist(txn *badger.Txn) error{
+	err := txn.Set([]byte(this.Key()), []byte(this.String()))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // Set
-func (this *Gossip) Set(txn *badger.Txn) error {
-	return txn.SetWithTTL([]byte(this.Key()), []byte(this.String()), GossipTTL)
+func (this *Gossip) Set(txn *badger.Txn,cache *cache.Cache) error {
+	this.Cache(cache)
+	err := this.Persist(txn)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (this Gossip) String() string {

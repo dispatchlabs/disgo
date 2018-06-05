@@ -320,7 +320,7 @@ func TransferTokens(transaction *types.Transaction, txn *badger.Txn, receipt *ty
 	// Save accounts.
 	fromAccount.Balance -= transaction.Value
 	fromAccount.Updated = now
-	err = fromAccount.Set(txn)
+	err = fromAccount.Set(txn,services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
@@ -330,7 +330,7 @@ func TransferTokens(transaction *types.Transaction, txn *badger.Txn, receipt *ty
 	}
 	toAccount.Balance += transaction.Value
 	toAccount.Updated = now
-	err = toAccount.Set(txn)
+	err = toAccount.Set(txn,services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
@@ -339,8 +339,8 @@ func TransferTokens(transaction *types.Transaction, txn *badger.Txn, receipt *ty
 		return
 	}
 
-	// Save transaction.  -- actually does save to BadgerDB
-	err = transaction.Set(txn)
+	// Save transaction.
+	err = transaction.Set(txn,services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
@@ -352,7 +352,7 @@ func TransferTokens(transaction *types.Transaction, txn *badger.Txn, receipt *ty
 	// Save receipt.
 	receipt.Status = types.StatusOk
 	services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
-	err = receipt.Set(txn)
+	err = receipt.Set(txn,services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
@@ -362,7 +362,7 @@ func TransferTokens(transaction *types.Transaction, txn *badger.Txn, receipt *ty
 	}
 
 	// Save gossip.
-	err = gossip.Set(txn)
+	err = gossip.Set(txn,services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
@@ -388,7 +388,7 @@ func TransferTokens(transaction *types.Transaction, txn *badger.Txn, receipt *ty
 }
 
 //TODO: implement if useful
-func commit(transaction *types.Transaction) {}
+//func commit(transaction *types.Transaction) {}
 
 func processDVMResult(result *dvm.DVMResult) error {
 	utils.Info("TODO: *** Not doing anything right now")

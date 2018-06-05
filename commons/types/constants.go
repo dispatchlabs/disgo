@@ -61,6 +61,9 @@ const (
 	ReceiptTTL = time.Hour * 24
 	GossipTTL  = time.Hour * 48
 	NodeTTL    = time.Hour * 24
+	AccountTTL = time.Hour * 24
+	PageTTL = time.Hour * 24
+	TransactionTTL = time.Hour * 48
 )
 
 // Cache TTLs

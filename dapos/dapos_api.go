@@ -40,7 +40,7 @@ func (this *DAPoSService) GetDelegateNodes() *types.Receipt {
 		return nil
 	}
 	receipt.Data = nodes
-	err = receipt.Set(txn) // TODO: Should we store receipts?
+	err = receipt.Set(txn,services.GetCache()) // TODO: Should we store receipts?
 	if err != nil {
 		utils.Error(err)
 		receipt.SetInternalErrorWithNewTransaction(services.GetDb(), err)
@@ -111,7 +111,7 @@ func (this *DAPoSService) GetAccount(address string) *types.Receipt {
 	}
 
 	// Save receipt.
-	err := receipt.Set(txn)
+	err := receipt.Set(txn,services.GetCache())
 	if err != nil {
 		utils.Error(err)
 	}
@@ -209,7 +209,7 @@ func (this *DAPoSService) GetTransactions() *types.Receipt {
 	}
 
 	// Save receipt.
-	err := receipt.Set(txn)
+	err := receipt.Set(txn,services.GetCache())
 	if err != nil {
 		utils.Error(err)
 	}
@@ -244,7 +244,7 @@ func (this *DAPoSService) GetTransactionsByFromAddress(address string) *types.Re
 	}
 
 	// Save receipt.
-	err := receipt.Set(txn)
+	err := receipt.Set(txn,services.GetCache())
 	if err != nil {
 		utils.Error(err)
 	}
@@ -279,7 +279,7 @@ func (this *DAPoSService) GetTransactionsByToAddress(address string) *types.Rece
 	}
 
 	// Save receipt.
-	err := receipt.Set(txn)
+	err := receipt.Set(txn,services.GetCache())
 	if err != nil {
 		utils.Error(err)
 	}

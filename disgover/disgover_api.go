@@ -176,11 +176,9 @@ func (this *DisGoverService) findViaPeers(idToFind string, sender *types.Node) (
 */
 
 func (this *DisGoverService) addPeer(node types.Node) (bool bool, err error){
-
-	services.GetCache().Set(node.Address, node, types.NodeTTL)
 	txn := services.NewTxn(true)
 	defer txn.Discard()
-	err = node.Set(txn)
+	err = node.Set(txn,services.GetCache())
 	if err != nil {
 		return false, err
 	}

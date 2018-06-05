@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/patrickmn/go-cache"
 )
 
 // Node - Is the DisGover's notion of what a node is
@@ -40,13 +41,28 @@ func (this Node) TypeKey() string {
 	return fmt.Sprintf("key-node-type-%s-%s", this.Type, this.Address)
 }
 
-// Set
-func (this *Node) Set(txn *badger.Txn) error {
+//Cache
+func (this *Node) Cache(cache *cache.Cache){
+	cache.Set(this.Address, this, NodeTTL)
+}
+
+//Persist
+func (this *Node) Persist(txn *badger.Txn) error{
 	err := txn.Set([]byte(this.Key()), []byte(this.String()))
 	if err != nil {
 		return err
 	}
 	err = txn.Set([]byte(this.TypeKey()), []byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Set
+func (this *Node) Set(txn *badger.Txn,cache *cache.Cache) error {
+	this.Cache(cache)
+	err := this.Persist(txn)
 	if err != nil {
 		return err
 	}

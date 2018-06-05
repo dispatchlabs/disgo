@@ -28,6 +28,7 @@ import (
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/patrickmn/go-cache"
 )
 
 // Types
@@ -78,8 +79,13 @@ func (this Transaction) ToKey() string {
 	return fmt.Sprintf("key-transaction-to-%s-%d", this.To, this.Time)
 }
 
-// Set
-func (this *Transaction) Set(txn *badger.Txn) error {
+//Cache
+func (this *Transaction) Cache(cache *cache.Cache){
+	cache.Set(this.Hash, this, TransactionTTL)
+}
+
+// Persist
+func (this *Transaction) Persist(txn *badger.Txn) error {
 	err := txn.Set([]byte(this.Key()), []byte(this.String()))
 	if err != nil {
 		return err
@@ -102,6 +108,18 @@ func (this *Transaction) Set(txn *badger.Txn) error {
 	}
 	return nil
 }
+
+// Set
+func (this *Transaction) Set(txn *badger.Txn,cache *cache.Cache) error {
+	this.Cache(cache)
+
+	err := this.Persist(txn)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 
 // UnmarshalJSON
 func (this *Transaction) UnmarshalJSON(bytes []byte) error {

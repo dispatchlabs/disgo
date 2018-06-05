@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/utils"
+	"strconv"
+	"github.com/patrickmn/go-cache"
 )
 
 // Block
@@ -39,9 +41,25 @@ func (this Page) Key() string {
 	return fmt.Sprintf("Page-%d", this.Number)
 }
 
-// Set
-func (this *Page) Set(txn *badger.Txn) error {
+//Cache
+func (this *Page) Cache(cache *cache.Cache){
+	cache.Set(strconv.Itoa(int(this.Number)), this, PageTTL)
+}
+
+//Persist
+func (this *Page) Persist(txn *badger.Txn) error{
 	err := txn.Set([]byte(this.Key()), []byte(this.String()))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Set
+func (this *Page) Set(txn *badger.Txn,cache *cache.Cache) error {
+	this.Cache(cache)
+
+	err := this.Persist(txn)
 	if err != nil {
 		return err
 	}
