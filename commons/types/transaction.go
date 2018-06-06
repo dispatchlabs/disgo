@@ -359,6 +359,16 @@ func ToTransactionFromJson(payload []byte) (*Transaction, error) {
 	return transaction, nil
 }
 
+// ToTransactionFromCache -
+func ToTransactionFromCache(cache *cache.Cache, hash string) (*Transaction, error) {
+	value, ok :=cache.Get(hash)
+	if !ok{
+		return nil, ErrNotFound
+	}
+	transaction := value.(*Transaction)
+	return transaction, nil
+}
+
 // ToTransactions
 func ToTransactions(txn *badger.Txn) ([]*Transaction, error) {
 	iterator := txn.NewIterator(badger.DefaultIteratorOptions)

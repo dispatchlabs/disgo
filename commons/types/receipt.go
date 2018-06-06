@@ -67,6 +67,16 @@ func (this *Receipt) Set(txn *badger.Txn,cache *cache.Cache) error {
 	return nil
 }
 
+// Unset
+func (this *Receipt) Unset(txn *badger.Txn,cache *cache.Cache) error {
+	cache.Delete(this.Id)
+	err := txn.Delete([]byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UnmarshalJSON
 func (this *Receipt) UnmarshalJSON(bytes []byte) error {
 	var jsonMap map[string]interface{}
@@ -182,6 +192,16 @@ func ToReceiptFromJson(payload []byte) (*Receipt, error) {
 	if err != nil {
 		return nil, err
 	}
+	return receipt, nil
+}
+
+// ToReceiptFromCache -
+func ToReceiptFromCache(cache *cache.Cache, id string) (*Receipt, error) {
+	value, ok :=cache.Get(id)
+	if !ok{
+		return nil, ErrNotFound
+	}
+	receipt := value.(*Receipt)
 	return receipt, nil
 }
 

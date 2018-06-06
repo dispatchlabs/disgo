@@ -40,17 +40,10 @@ func (this *DisGoverService) WithGrpc() *DisGoverService {
 
 // PeerPingGrpc - Called when a PING call was made by a client
 func (this *DisGoverService) PingGrpc(ctx context.Context, node *proto.Node) (*proto.Node, error) {
-	// FROM-AVERY
-	// txn := services.NewTxn(true)
-	// defer txn.Discard()
-	// domainNode := convertToDomain(node)
-	// domainNode.Set(txn)
-	// this.kdht.Update(peer.ID(node.Address))
-	// utils.Info(fmt.Sprintf("received ping [address=%s, ip=%s, port=%d]", node.Address, node.Endpoint.Host, node.Endpoint.Port))
-	// return convertToProto(this.ThisNode), nil
-
 	domainNode := convertToDomain(node)
-	services.GetCache().Set(domainNode.Address, domainNode, types.NodeTTL)
+	txn := services.NewTxn(true)
+	defer txn.Discard()
+	domainNode.Set(txn, services.GetCache())
 	this.kdht.Update(peer.ID(node.Address))
 	utils.Info(fmt.Sprintf("received ping [address=%s, ip=%s, port=%d]", node.Address, node.Endpoint.Host, node.Endpoint.Port))
 	return convertToProto(this.ThisNode), nil

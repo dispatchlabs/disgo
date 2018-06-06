@@ -21,8 +21,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
-	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"time"
@@ -160,105 +158,6 @@ func (this Rumor) Verify() bool {
 	return crypto.VerifySignature(publicKeyBytes, hashBytes, signatureBytes)
 }
 
-// ToRumorByKey
-func ToRumorByKey(txn *badger.Txn, key []byte) (*Rumor, error) {
-	item, err := txn.Get(key)
-	if err != nil {
-		return nil, err
-	}
-	value, err := item.Value()
-	if err != nil {
-		return nil, err
-	}
-	transaction, err := ToRumorFromJson(value)
-	if err != nil {
-		return nil, err
-	}
-	return transaction, err
-}
-
-// ToRumors
-func ToRumors(txn *badger.Txn) ([]*Rumor, error) {
-	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
-	defer iterator.Close()
-	prefix := []byte(fmt.Sprintf("table-rumor-"))
-	var transactions = make([]*Rumor, 0)
-	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
-		item := iterator.Item()
-		value, err := item.Value()
-		if err != nil {
-			utils.Error(err)
-			continue
-		}
-		transaction, err := ToRumorFromJson(value)
-		if err != nil {
-			utils.Error(err)
-			continue
-		}
-		transactions = append(transactions, transaction)
-	}
-	return transactions, nil
-}
-
-// ToRumorByAddress
-func ToRumorsByAddress(txn *badger.Txn, address string) ([]*Rumor, error) {
-	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
-	defer iterator.Close()
-	prefix := []byte(fmt.Sprintf("key-rumor-address-%s", address))
-	var rumors = make([]*Rumor, 0)
-	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
-		item := iterator.Item()
-		value, err := item.Value()
-		if err != nil {
-			utils.Error(err)
-			continue
-		}
-		rumor, err := ToRumorByKey(txn, value)
-		if err != nil {
-			utils.Error(err)
-			continue
-		}
-		rumors = append(rumors, rumor)
-	}
-	return rumors, nil
-}
-
-// ToRumorsByTransactionHash
-func ToRumorsByTransactionHash(txn *badger.Txn, transactionHash string) ([]*Rumor, error) {
-	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
-	defer iterator.Close()
-	prefix := []byte(fmt.Sprintf("key-rumor-hash-%s", transactionHash))
-	var rumors = make([]*Rumor, 0)
-	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
-		item := iterator.Item()
-		value, err := item.Value()
-		if err != nil {
-			utils.Error(err)
-			continue
-		}
-		rumor, err := ToRumorByKey(txn, value)
-		if err != nil {
-			utils.Error(err)
-			continue
-		}
-		rumors = append(rumors, rumor)
-	}
-	return rumors, nil
-}
-
-// ToJsonByRumorTransactionHash
-func ToJsonByRumorTransactionHash(txn *badger.Txn, transactionHash string) ([]byte, error) {
-	rumors, err := ToRumorsByTransactionHash(txn, transactionHash)
-	if err != nil {
-		return nil, err
-	}
-	bytes, err := json.Marshal(rumors)
-	if err != nil {
-		return nil, err
-	}
-	return bytes, nil
-}
-
 // ToJsonByRumors
 func ToJsonByRumors(rumors []*Rumor) ([]byte, error) {
 	bytes, err := json.Marshal(rumors)
@@ -266,29 +165,6 @@ func ToJsonByRumors(rumors []*Rumor) ([]byte, error) {
 		return nil, err
 	}
 	return bytes, nil
-}
-
-// ToRumorsByTime
-func ToRumorsByTime(txn *badger.Txn, address string) ([]*Rumor, error) {
-	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
-	defer iterator.Close()
-	prefix := []byte(fmt.Sprintf("key-rumor-time-%s", address))
-	var rumors = make([]*Rumor, 0)
-	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
-		item := iterator.Item()
-		value, err := item.Value()
-		if err != nil {
-			utils.Error(err)
-			continue
-		}
-		rumor, err := ToRumorByKey(txn, value)
-		if err != nil {
-			utils.Error(err)
-			continue
-		}
-		rumors = append(rumors, rumor)
-	}
-	return rumors, nil
 }
 
 // ToRumorFromJson -

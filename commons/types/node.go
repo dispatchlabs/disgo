@@ -69,8 +69,9 @@ func (this *Node) Set(txn *badger.Txn,cache *cache.Cache) error {
 	return nil
 }
 
-// Set
-func (this *Node) Delete(txn *badger.Txn) error {
+// Unset
+func (this *Node) Unset(txn *badger.Txn,cache *cache.Cache) error {
+	cache.Delete(this.Address)
 	err := txn.Delete([]byte(this.Key()))
 	if err != nil {
 		return err
@@ -78,36 +79,6 @@ func (this *Node) Delete(txn *badger.Txn) error {
 	return nil
 }
 
-//func (this *Node) UnmarshalJSON(bytes []byte) error {
-//	var jsonMap map[string]interface{}
-//	err := json.Unmarshal(bytes, &jsonMap)
-//	if err != nil {
-//		return err
-//	}
-//	if jsonMap["address"] != nil {
-//		this.Address = jsonMap["address"].(string)
-//	}
-//	if jsonMap["transaction"] != nil {
-//		this.Transaction = jsonMap["transaction"].(Transaction)
-//	}
-//	if jsonMap["rumor"] != nil {
-//		this.Rumors = jsonMap["rumor"].([]Rumor)
-//	}
-//	return nil
-//}
-//
-//// MarshalJSON
-//func (this Node) MarshalJSON() ([]byte, error) {
-//	return json.Marshal(struct {
-//		ReceiptId    string    		`json:"receiptId"`
-//		Transaction  Transaction    `json:"transaction"`
-//		Rumors       []Rumor    	`json:"rumor"`
-//	}{
-//		ReceiptId:    	this.ReceiptId,
-//		Transaction:	this.Transaction,
-//		Rumors:       	this.Rumors,
-//	})
-//}
 
 // String
 func (this Node) String() string {
@@ -126,6 +97,16 @@ func ToNodeFromJson(payload []byte) (*Node, error) {
 	if err != nil {
 		return nil, err
 	}
+	return node, nil
+}
+
+// ToGossipFromCache -
+func ToNodeFromCache(cache *cache.Cache, address string) (*Node, error) {
+	value, ok :=cache.Get(address)
+	if !ok{
+		return nil, ErrNotFound
+	}
+	node := value.(*Node)
 	return node, nil
 }
 

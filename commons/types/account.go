@@ -166,6 +166,16 @@ func ToAccountFromJson(payload []byte) (*Account, error) {
 	return account, nil
 }
 
+// ToAccountFromCache -
+func ToAccountFromCache(cache *cache.Cache, address string) (*Account, error) {
+	value, ok :=cache.Get(address)
+	if !ok{
+		return nil, ErrNotFound
+	}
+	account := value.(*Account)
+	return account, nil
+}
+
 // ToAccountByAddress
 func ToAccountByAddress(txn *badger.Txn, address string) (*Account, error) {
 	item, err := txn.Get([]byte(fmt.Sprintf("table-account-%s", address)))

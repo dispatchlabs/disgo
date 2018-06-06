@@ -66,6 +66,7 @@ func (this *Page) Set(txn *badger.Txn,cache *cache.Cache) error {
 	return nil
 }
 
+//Delete
 func (this *Page) Delete(txn *badger.Txn) error {
 	err := txn.Delete([]byte(this.Key()))
 	if err != nil {
@@ -128,8 +129,7 @@ func (this Page) String() string {
 	return string(bytes)
 }
 
-
-
+//toPageFromJson
 func ToPageFromJson(payload []byte) (*Page, error) {
 	page := &Page{}
 	err := json.Unmarshal(payload, page)
@@ -139,6 +139,17 @@ func ToPageFromJson(payload []byte) (*Page, error) {
 	return page, nil
 }
 
+// ToPageFromCache -
+func ToPageFromCache(cache *cache.Cache, number string) (*Page, error) {
+	value, ok :=cache.Get(number)
+	if !ok{
+		return nil, ErrNotFound
+	}
+	page := value.(*Page)
+	return page, nil
+}
+
+//ToPageByKey
 func ToPageByKey(txn *badger.Txn, key []byte) (*Page, error) {
 	item, err := txn.Get(key)
 	if err != nil {

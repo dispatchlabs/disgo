@@ -38,7 +38,7 @@ func (this Gossip) Key() string {
 
 //Cache
 func (this *Gossip) Cache(cache *cache.Cache){
-	cache.Set(this.Transaction.Hash, this, GossipTTL)
+	cache.Set("Gossip-" + this.Transaction.Hash, this, GossipTTL)
 }
 
 //Persist
@@ -59,6 +59,17 @@ func (this *Gossip) Set(txn *badger.Txn,cache *cache.Cache) error {
 	}
 	return nil
 }
+
+//Unset
+func (this *Gossip) Unset(txn *badger.Txn,cache *cache.Cache) error {
+	cache.Delete("Gossip-" + this.Transaction.Hash)
+	err := txn.Delete([]byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 
 func (this Gossip) String() string {
 	bytes, err := json.Marshal(this)
@@ -138,6 +149,16 @@ func ToJsonByGossip(gossip Gossip) ([]byte, error) {
 		return nil, err
 	}
 	return bytes, nil
+}
+
+// ToGossipFromCache -
+func ToGossipFromCache(cache *cache.Cache, tx Transaction) (*Gossip, error) {
+	value, ok :=cache.Get("Gossip-" + tx.Hash)
+	if !ok{
+		return nil, ErrNotFound
+	}
+	gossip := value.(*Gossip)
+	return gossip, nil
 }
 
 // ToGossipByKey
