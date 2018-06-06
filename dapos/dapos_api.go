@@ -65,9 +65,9 @@ func (this *DAPoSService) GetStatus(id string) *types.Receipt {
 
 	// Delegate?
 	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
-		value, ok := services.GetCache().Get(id)
-		if !ok {
-			var err error
+		var err error
+		receipt, err = types.ToReceiptFromCache(services.GetCache(),id)
+		if err != nil {
 			receipt, err = types.ToReceiptFromId(txn, id)
 			if err != nil {
 				if err == badger.ErrKeyNotFound {
@@ -76,8 +76,6 @@ func (this *DAPoSService) GetStatus(id string) *types.Receipt {
 					receipt = types.NewReceiptWithError(types.RequestGetStatus, err)
 				}
 			}
-		} else {
-			receipt = value.(*types.Receipt)
 		}
 	} else {
 		receipt = this.peerDelegateExecuteGrpc(types.RequestGetStatus, id)
