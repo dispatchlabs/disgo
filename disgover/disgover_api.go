@@ -29,10 +29,11 @@
 package disgover
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
-	"errors"
+
 	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
@@ -52,19 +53,19 @@ func (this *DisGoverService) Find(address string) (*types.Node, error) {
 	//now check badger
 	txn := services.NewTxn(true)
 	defer txn.Discard()
-	node, _ := types.ToNodeByAddress(txn,address)
-	if node != nil{
+	node, _ := types.ToNodeByAddress(txn, address)
+	if node != nil {
 		return node, nil
 	}
 
 	// Find node from peer seeds.
 	peer := this.kdht.Find(peer.ID(address))
-	 if peer != "" {
-	 	id := peer.Pretty()
-	 	//id := kbucket.ConvertPeerID(peer)
-	 	node, err := types.ToNodeByAddress(txn, id)
-	 	return node, err
-	 }
+	if peer != "" {
+		id := peer.Pretty()
+		//id := kbucket.ConvertPeerID(peer)
+		node, err := types.ToNodeByAddress(txn, id)
+		return node, err
+	}
 
 	//peerID := kbucket.ConvertPeerID(peer.ID(this.ThisNode.Address))
 	//nearestpeer := this.kdht.NearestPeer(peerID)
@@ -84,7 +85,7 @@ func (this *DisGoverService) Find(address string) (*types.Node, error) {
 
 // FindByType
 func (this *DisGoverService) FindByType(tipe string) ([]*types.Node, error) {
-	utils.Debug(fmt.Sprintf("finding %s nodes...", strings.ToLower(tipe)))
+	utils.Info(fmt.Sprintf("finding %s nodes...", strings.ToLower(tipe)))
 
 	// FROM-AVERY
 	// var nodes []*types.Node
@@ -176,7 +177,7 @@ func (this *DisGoverService) findViaPeers(idToFind string, sender *types.Node) (
 }
 */
 
-func (this *DisGoverService) addPeer(node types.Node) (bool bool, err error){
+func (this *DisGoverService) addPeer(node types.Node) (bool bool, err error) {
 
 	services.GetCache().Set(node.Address, node, types.NodeTTL)
 	txn := services.NewTxn(true)
@@ -190,7 +191,7 @@ func (this *DisGoverService) addPeer(node types.Node) (bool bool, err error){
 	return true, nil
 }
 
-func (this *DisGoverService) deletePeer(node types.Node) (bool bool, err error){
+func (this *DisGoverService) deletePeer(node types.Node) (bool bool, err error) {
 	services.GetCache().Delete(node.Address)
 	txn := services.NewTxn(true)
 	defer txn.Discard()
@@ -202,9 +203,9 @@ func (this *DisGoverService) deletePeer(node types.Node) (bool bool, err error){
 	return true, nil
 }
 
-func (this *DisGoverService) updatePeer(node types.Node) (bool bool, err error){
+func (this *DisGoverService) updatePeer(node types.Node) (bool bool, err error) {
 
-	oldNode,err := this.Find(node.Address)
+	oldNode, err := this.Find(node.Address)
 	ok, err := this.deletePeer(*oldNode)
 	if !ok {
 		return false, err

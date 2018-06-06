@@ -17,6 +17,7 @@
 package dapos
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"math/rand"
@@ -32,6 +33,8 @@ import (
 	"github.com/patrickmn/go-cache"
 	"github.com/processout/grpc-go-pool"
 	"google.golang.org/grpc"
+
+	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
 )
 
 // startGossiping
@@ -396,15 +399,33 @@ func TransferTokens(transaction *types.Transaction, txn *badger.Txn, receipt *ty
 		return
 	}
 	utils.Info(fmt.Sprintf("successful transaction [hash=%s, rumors=%d]", transaction.Hash, len(gossip.Rumors)))
-
 }
 
 //TODO: implement if useful
 func commit(transaction *types.Transaction) {}
 
-func processDVMResult(result *dvm.DVMResult) error {
+func processDVMResult(dvmResult *dvm.DVMResult) error {
 	utils.Info("TODO: *** Not doing anything right now")
-	utils.Info(result)
+	utils.Info(dvmResult)
+
+	if dvmResult.ContractExecError != nil {
+		utils.Error(dvmResult.ContractExecError)
+		return dvmResult.ContractExecError
+	}
+
+	// Try read the execution result
+	if len(strings.TrimSpace(dvmResult.ABI)) > 0 {
+		fromHexAsByteArray, _ := hex.DecodeString(dvmResult.ABI)
+		abiAsString := string(fromHexAsByteArray)
+		jsonABI, err := abi.JSON(strings.NewReader(abiAsString))
+		if err == nil {
+			var parsedRes string
+			err = jsonABI.Unpack(&parsedRes, "getVar5", dvmResult.ContractExecResult)
+			if err == nil {
+				utils.Info(fmt.Sprintf("CONTRACT-CALL-RES: %s", parsedRes))
+			}
+		}
+	}
 
 	return nil
 }

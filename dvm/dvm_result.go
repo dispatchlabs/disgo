@@ -8,12 +8,16 @@ import (
 	"github.com/dispatchlabs/disgo/dvm/ethereum/types"
 )
 
+// DVMResult - represents a result after a `Deploy` or `Execute` of a Smart Contract
 type DVMResult struct {
-	From  crypto.AddressBytes
-	To    crypto.AddressBytes
-	Divvy int64
+	From               crypto.AddressBytes //
+	To                 crypto.AddressBytes //
+	ABI                string              // The ABI for the smart contract
+	StorageState       *VMStateHelper      // The state of the storage
+	ContractExecError  error               // Execution error
+	ContractExecResult []byte              // Execution result - parsable with `jsonABI.Unpack`
 
-	ContractAddress     crypto.AddressBytes
+	Divvy               int64
 	Status              uint
 	HertzCost           uint64
 	CumulativeHertzUsed uint64
@@ -42,7 +46,7 @@ func (this *DVMResult) UnmarshalJSON(bytes []byte) error {
 		this.From = crypto.GetAddressBytes(jsonMap["from"].(string))
 	}
 	if jsonMap["contractAddress"] != nil {
-		this.ContractAddress = crypto.GetAddressBytes(jsonMap["contractAddress"].(string))
+		this.To = crypto.GetAddressBytes(jsonMap["to"].(string))
 	}
 	if jsonMap["hertzCost"] != nil {
 		this.HertzCost = jsonMap["hertzCost"].(uint64)
@@ -54,12 +58,12 @@ func (this *DVMResult) UnmarshalJSON(bytes []byte) error {
 // MarshalJSON -
 func (this DVMResult) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		From            string `json:"from"`
-		ContractAddress string `json:"contractAddress"`
-		HertzCost       uint64 `json:"hertzCost"`
+		From      string `json:"from"`
+		To        string `json:"to"`
+		HertzCost uint64 `json:"hertzCost"`
 	}{
-		From:            crypto.Encode(this.From[:]),
-		ContractAddress: crypto.Encode(this.ContractAddress[:]),
-		HertzCost:       this.HertzCost,
+		From:      crypto.Encode(this.From[:]),
+		To:        crypto.Encode(this.To[:]),
+		HertzCost: this.HertzCost,
 	})
 }

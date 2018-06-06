@@ -23,6 +23,7 @@ import (
 	"crypto/elliptic"
 	"encoding/hex"
 	"math/big"
+	"strings"
 
 	"github.com/dispatchlabs/disgo/commons/crypto/secp256k1"
 	"github.com/dispatchlabs/disgo/commons/math"
@@ -90,6 +91,10 @@ func Hex2Bytes(str string) []byte {
 }
 
 func GetAddressBytes(value string) AddressBytes {
+	if len(strings.TrimSpace(value)) <= 0 {
+		return AddressBytes{}
+	}
+
 	bytes, err := hex.DecodeString(value)
 	if err != nil {
 		utils.Error("unable to decode value", err)
