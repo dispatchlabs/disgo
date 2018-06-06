@@ -28,18 +28,11 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"github.com/patrickmn/go-cache"
 )
 
 var accountInstance *Account
 var accountOnce sync.Once
-
-// GetAccount - Returns the singleton instance of the current account
-func GetAccount() *Account {
-	accountOnce.Do(func() {
-		accountInstance = readAccountFile()
-	})
-	return accountInstance
-}
 
 // Account
 type Account struct {
@@ -49,84 +42,6 @@ type Account struct {
 	Balance    int64
 	Updated    time.Time
 	Created    time.Time
-}
-
-// type Account interface {
-// 	Key()
-// 	NameKey()
-// 	Set(txn *badger.Txn)
-// 	VerifyAddress(hash string, signature string)
-// 	UnmarshalJSON(bytes []byte)
-// 	MarshalJSON()
-// 	String()
-// }
-
-// ToAccountFromJson -
-func ToAccountFromJson(payload []byte) (*Account, error) {
-	account := &Account{}
-	err := json.Unmarshal(payload, account)
-	if err != nil {
-		return nil, err
-	}
-	return account, nil
-}
-
-// ToAccountByAddress
-func ToAccountByAddress(txn *badger.Txn, address string) (*Account, error) {
-	item, err := txn.Get([]byte(fmt.Sprintf("table-account-%s", address)))
-	if err != nil {
-		return nil, err
-	}
-	value, err := item.Value()
-	if err != nil {
-		return nil, err
-	}
-	account, err := ToAccountFromJson(value)
-	if err != nil {
-		return nil, err
-	}
-	return account, err
-}
-
-// ToAccountByName
-func ToAccountByName(txn *badger.Txn, name string) (*Account, error) {
-	item, err := txn.Get([]byte(fmt.Sprintf("key-account-name-%s", name)))
-	if err != nil {
-		return nil, err
-	}
-	value, err := item.Value()
-	if err != nil {
-		return nil, err
-	}
-	account, err := ToAccountByAddress(txn, string(value))
-	if err != nil {
-		return nil, err
-	}
-	return account, err
-}
-
-// ToAccountsByName
-func ToAccountsByName(name string, txn *badger.Txn) ([]*Account, error) {
-	defer txn.Discard()
-	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
-	defer iterator.Close()
-	prefix := []byte(fmt.Sprintf("key-account-name-%s", name))
-	var Accounts = make([]*Account, 0)
-	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
-		item := iterator.Item()
-		value, err := item.Value()
-		if err != nil {
-			utils.Error(err)
-			continue
-		}
-		Account, err := ToAccountByAddress(txn, string(value))
-		if err != nil {
-			utils.Error(err)
-			continue
-		}
-		Accounts = append(Accounts, Account)
-	}
-	return Accounts, nil
 }
 
 // Key
@@ -139,13 +54,28 @@ func (this Account) NameKey() string {
 	return fmt.Sprintf("key-account-name-%s", strings.ToLower(this.Name))
 }
 
-// Set
-func (this *Account) Set(txn *badger.Txn) error {
+//Cache
+func (this *Account) Cache(cache *cache.Cache){
+	cache.Set(this.Address, this, AccountTTL)
+}
+
+//Persist
+func (this *Account) Persist(txn *badger.Txn) error{
 	err := txn.Set([]byte(this.Key()), []byte(this.String()))
 	if err != nil {
 		return err
 	}
 	err = txn.Set([]byte(this.NameKey()), []byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Set
+func (this *Account) Set(txn *badger.Txn,cache *cache.Cache) error {
+	this.Cache(cache)
+	err := this.Persist(txn)
 	if err != nil {
 		return err
 	}
@@ -218,6 +148,92 @@ func (this Account) String() string {
 	return string(bytes)
 }
 
+// GetAccount - Returns the singleton instance of the current account
+func GetAccount() *Account {
+	accountOnce.Do(func() {
+		accountInstance = readAccountFile()
+	})
+	return accountInstance
+}
+
+// ToAccountFromJson -
+func ToAccountFromJson(payload []byte) (*Account, error) {
+	account := &Account{}
+	err := json.Unmarshal(payload, account)
+	if err != nil {
+		return nil, err
+	}
+	return account, nil
+}
+
+// ToAccountFromCache -
+func ToAccountFromCache(cache *cache.Cache, address string) (*Account, error) {
+	value, ok :=cache.Get(address)
+	if !ok{
+		return nil, ErrNotFound
+	}
+	account := value.(*Account)
+	return account, nil
+}
+
+// ToAccountByAddress
+func ToAccountByAddress(txn *badger.Txn, address string) (*Account, error) {
+	item, err := txn.Get([]byte(fmt.Sprintf("table-account-%s", address)))
+	if err != nil {
+		return nil, err
+	}
+	value, err := item.Value()
+	if err != nil {
+		return nil, err
+	}
+	account, err := ToAccountFromJson(value)
+	if err != nil {
+		return nil, err
+	}
+	return account, err
+}
+
+// ToAccountByName
+func ToAccountByName(txn *badger.Txn, name string) (*Account, error) {
+	item, err := txn.Get([]byte(fmt.Sprintf("key-account-name-%s", name)))
+	if err != nil {
+		return nil, err
+	}
+	value, err := item.Value()
+	if err != nil {
+		return nil, err
+	}
+	account, err := ToAccountByAddress(txn, string(value))
+	if err != nil {
+		return nil, err
+	}
+	return account, err
+}
+
+// ToAccountsByName
+func ToAccountsByName(name string, txn *badger.Txn) ([]*Account, error) {
+	defer txn.Discard()
+	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
+	defer iterator.Close()
+	prefix := []byte(fmt.Sprintf("key-account-name-%s", name))
+	var Accounts = make([]*Account, 0)
+	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
+		item := iterator.Item()
+		value, err := item.Value()
+		if err != nil {
+			utils.Error(err)
+			continue
+		}
+		Account, err := ToAccountByAddress(txn, string(value))
+		if err != nil {
+			utils.Error(err)
+			continue
+		}
+		Accounts = append(Accounts, Account)
+	}
+	return Accounts, nil
+}
+
 // readAccountFile -
 func readAccountFile(name_optional ...string) *Account {
 	name := "account.json"
@@ -232,6 +248,10 @@ func readAccountFile(name_optional ...string) *Account {
 		account.Address = hex.EncodeToString(address)
 		account.PrivateKey = hex.EncodeToString(privateKey)
 		account.Balance = 0
+		account.Name = ""
+		now := time.Now()
+		account.Created = now
+		account.Updated = now
 
 		// Write account.
 		var jsonMap map[string]interface{}

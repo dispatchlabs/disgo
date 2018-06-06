@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/patrickmn/go-cache"
 )
 
 // Gossip
@@ -29,6 +30,98 @@ type Gossip struct {
 	Transaction Transaction
 	Rumors      []Rumor
 }
+
+// Key
+func (this Gossip) Key() string {
+	return fmt.Sprintf("table-gossip-%s", this.Transaction.Hash)
+}
+
+//Cache
+func (this *Gossip) Cache(cache *cache.Cache){
+	cache.Set("Gossip-" + this.Transaction.Hash, this, GossipTTL)
+}
+
+//Persist
+func (this *Gossip) Persist(txn *badger.Txn) error{
+	err := txn.Set([]byte(this.Key()), []byte(this.String()))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Set
+func (this *Gossip) Set(txn *badger.Txn,cache *cache.Cache) error {
+	this.Cache(cache)
+	err := this.Persist(txn)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+//Unset
+func (this *Gossip) Unset(txn *badger.Txn,cache *cache.Cache) error {
+	cache.Delete("Gossip-" + this.Transaction.Hash)
+	err := txn.Delete([]byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+
+func (this Gossip) String() string {
+	bytes, err := json.Marshal(this)
+	if err != nil {
+		utils.Error("unable to marshal gossip", err)
+		return ""
+	}
+	return string(bytes)
+}
+
+// ContainsRumor
+func (this Gossip) ContainsRumor(address string) bool {
+	for _, persistedRumor := range this.Rumors {
+		if persistedRumor.Address == address {
+			return true
+		}
+	}
+	return false
+}
+
+// ValidRumors
+func (this Gossip) ValidRumors() int {
+	validRumors := 0
+	for _, rumor := range this.Rumors {
+		if !rumor.Verify() {
+			continue
+		}
+		validRumors++
+	}
+	return validRumors
+}
+
+// Refresh
+func (this *Gossip) Refresh(txn *badger.Txn) error {
+	item, err := txn.Get([]byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	value, err := item.Value()
+	if err != nil {
+		return err
+	}
+	gossip, err := ToGossipFromJson(value)
+	if err != nil {
+		return err
+	}
+	this = gossip
+	return nil
+}
+
+// String
+
 
 // NewGossip -
 func NewGossip(transaction Transaction, receipt Receipt) *Gossip {
@@ -56,6 +149,16 @@ func ToJsonByGossip(gossip Gossip) ([]byte, error) {
 		return nil, err
 	}
 	return bytes, nil
+}
+
+// ToGossipFromCache -
+func ToGossipFromCache(cache *cache.Cache, tx Transaction) (*Gossip, error) {
+	value, ok :=cache.Get("Gossip-" + tx.Hash)
+	if !ok{
+		return nil, ErrNotFound
+	}
+	gossip := value.(*Gossip)
+	return gossip, nil
 }
 
 // ToGossipByKey
@@ -135,64 +238,4 @@ func ToOldGossips(txn *badger.Txn) ([]*Gossip, error) {
 		gossips = append(gossips, gossip)
 	}
 	return gossips, nil
-}
-
-// ContainsRumor
-func (this Gossip) ContainsRumor(address string) bool {
-	for _, persistedRumor := range this.Rumors {
-		if persistedRumor.Address == address {
-			return true
-		}
-	}
-	return false
-}
-
-// ValidRumors
-func (this Gossip) ValidRumors() int {
-	validRumors := 0
-	for _, rumor := range this.Rumors {
-		if !rumor.Verify() {
-			continue
-		}
-		validRumors++
-	}
-	return validRumors
-}
-
-// Key
-func (this Gossip) Key() string {
-	return fmt.Sprintf("table-gossip-%s", this.Transaction.Hash)
-}
-
-// Set
-func (this *Gossip) Set(txn *badger.Txn) error {
-	return txn.SetWithTTL([]byte(this.Key()), []byte(this.String()), GossipTTL)
-}
-
-// Refresh
-func (this *Gossip) Refresh(txn *badger.Txn) error {
-	item, err := txn.Get([]byte(this.Key()))
-	if err != nil {
-		return err
-	}
-	value, err := item.Value()
-	if err != nil {
-		return err
-	}
-	gossip, err := ToGossipFromJson(value)
-	if err != nil {
-		return err
-	}
-	this = gossip
-	return nil
-}
-
-// String
-func (this Gossip) String() string {
-	bytes, err := json.Marshal(this)
-	if err != nil {
-		utils.Error("unable to marshal gossip", err)
-		return ""
-	}
-	return string(bytes)
 }

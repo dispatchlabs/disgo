@@ -77,7 +77,6 @@ func GetDisGoverService() *DisGoverService {
 type DisGoverService struct {
 	ThisNode  *types.Node
 	seedNodes []*types.Node
-	// lruCache  *lru.Cache // FROM-AVERY
 	kdht    *kbucket.RoutingTable
 	running bool
 }
@@ -99,9 +98,6 @@ func (this *DisGoverService) Go(waitGroup *sync.WaitGroup) {
 // pingSeedNodes
 func (this *DisGoverService) pingSeedNodes() {
 	utils.Info("pinging other seed nodes...")
-
-	// txn := services.NewTxn(true) // FROM-AVERY
-	// defer txn.Discard() // FROM-AVERY
 
 	// Ping Seed List
 	for _, endpoint := range types.GetConfig().SeedEndpoints {

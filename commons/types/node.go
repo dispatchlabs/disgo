@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/patrickmn/go-cache"
 )
 
 // Node - Is the DisGover's notion of what a node is
@@ -30,6 +31,65 @@ type Node struct {
 	Type     string    `json:"type"`
 }
 
+// Key
+func (this Node) Key() string {
+	return fmt.Sprintf("table-node-%s", this.Address)
+}
+
+// TypeKey
+func (this Node) TypeKey() string {
+	return fmt.Sprintf("key-node-type-%s-%s", this.Type, this.Address)
+}
+
+//Cache
+func (this *Node) Cache(cache *cache.Cache){
+	cache.Set(this.Address, this, NodeTTL)
+}
+
+//Persist
+func (this *Node) Persist(txn *badger.Txn) error{
+	err := txn.Set([]byte(this.Key()), []byte(this.String()))
+	if err != nil {
+		return err
+	}
+	err = txn.Set([]byte(this.TypeKey()), []byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Set
+func (this *Node) Set(txn *badger.Txn,cache *cache.Cache) error {
+	this.Cache(cache)
+	err := this.Persist(txn)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Unset
+func (this *Node) Unset(txn *badger.Txn,cache *cache.Cache) error {
+	cache.Delete(this.Address)
+	err := txn.Delete([]byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+
+// String
+func (this Node) String() string {
+	bytes, err := json.Marshal(this)
+	if err != nil {
+		utils.Error("unable to marshal node", err)
+		return ""
+	}
+	return string(bytes)
+}
+
 // ToTransactionFromJson -
 func ToNodeFromJson(payload []byte) (*Node, error) {
 	node := &Node{}
@@ -37,6 +97,16 @@ func ToNodeFromJson(payload []byte) (*Node, error) {
 	if err != nil {
 		return nil, err
 	}
+	return node, nil
+}
+
+// ToGossipFromCache -
+func ToNodeFromCache(cache *cache.Cache, address string) (*Node, error) {
+	value, ok :=cache.Get(address)
+	if !ok{
+		return nil, ErrNotFound
+	}
+	node := value.(*Node)
 	return node, nil
 }
 
@@ -95,46 +165,4 @@ func ToNodesByType(txn *badger.Txn, tipe string) ([]*Node, error) {
 		nodes = append(nodes, node)
 	}
 	return nodes, nil
-}
-
-// String
-func (this Node) String() string {
-	bytes, err := json.Marshal(this)
-	if err != nil {
-		utils.Error("unable to marshal node", err)
-		return ""
-	}
-	return string(bytes)
-}
-
-// Key
-func (this Node) Key() string {
-	return fmt.Sprintf("table-node-%s", this.Address)
-}
-
-// TypeKey
-func (this Node) TypeKey() string {
-	return fmt.Sprintf("key-node-type-%s-%s", this.Type, this.Address)
-}
-
-// Set
-func (this *Node) Set(txn *badger.Txn) error {
-	err := txn.Set([]byte(this.Key()), []byte(this.String()))
-	if err != nil {
-		return err
-	}
-	err = txn.Set([]byte(this.TypeKey()), []byte(this.Key()))
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// Set
-func (this *Node) Delete(txn *badger.Txn) error {
-	err := txn.Delete([]byte(this.Key()))
-	if err != nil {
-		return err
-	}
-	return nil
 }

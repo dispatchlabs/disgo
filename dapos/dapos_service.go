@@ -108,12 +108,12 @@ func (this *DAPoSService) createGenesisTransactionAndAccount() error {
 	_, err = types.ToTransactionByKey(txn, []byte(transaction.Key()))
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
-			err = transaction.Set(txn)
+			err = transaction.Set(txn,services.GetCache())
 			if err != nil {
 				return err
 			}
 			account := &types.Account{Address: transaction.To, Name: "Dispatch Labs", Balance: transaction.Value, Updated: time.Now(), Created: time.Now()}
-			err = account.Set(txn)
+			err = account.Set(txn,services.GetCache())
 			if err != nil {
 				return err
 			}

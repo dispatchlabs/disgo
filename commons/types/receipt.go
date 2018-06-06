@@ -23,6 +23,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/google/uuid"
 	"time"
+	"github.com/patrickmn/go-cache"
 )
 
 // Name
@@ -35,61 +36,106 @@ type Receipt struct {
 	Created             time.Time
 }
 
-// NewReceipt
-func NewReceipt(tipe string) *Receipt {
-	return &Receipt{Id: uuid.New().String(), Type: tipe, Status: StatusPending, Created: time.Now()}
-}
-
-// NewReceiptWithStatus
-func NewReceiptWithStatus(tipe string, status string, humanReadableStatus string) *Receipt {
-	return &Receipt{Id: uuid.New().String(), Type: tipe, Status: status, HumanReadableStatus: humanReadableStatus, Created: time.Now()}
-}
-
-// NewReceiptWithError
-func NewReceiptWithError(tipe string, err error) *Receipt {
-	return &Receipt{Id: uuid.New().String(), Type: tipe, Status: StatusInternalError, HumanReadableStatus: err.Error(), Created: time.Now()}
-}
-
-// ToReceiptFromJson
-func ToReceiptFromJson(payload []byte) (*Receipt, error) {
-	receipt := &Receipt{}
-	err := json.Unmarshal(payload, receipt)
-	if err != nil {
-		return nil, err
-	}
-	return receipt, nil
-}
-
-// ToReceiptFromId
-func ToReceiptFromId(txn *badger.Txn, id string) (*Receipt, error) {
-	item, err := txn.Get([]byte("table-receipt-" + id))
-	if err != nil {
-		return nil, err
-	}
-	value, err := item.Value()
-	if err != nil {
-		return nil, err
-	}
-	receipt, err := ToReceiptFromJson(value)
-	if err != nil {
-		return nil, err
-	}
-	return receipt, err
-}
 
 // Key
 func (this Receipt) Key() string {
 	return fmt.Sprintf("table-receipt-%s", this.Id)
 }
 
-// Set
-func (this *Receipt) Set(txn *badger.Txn) error {
-	err := txn.SetWithTTL([]byte(this.Key()), []byte(this.String()), ReceiptTTL)
+//Cache
+func (this *Receipt) Cache(cache *cache.Cache){
+	cache.Set(this.Id, this, ReceiptTTL)
+}
+
+//Persist
+func (this *Receipt) Persist(txn *badger.Txn) error{
+	err := txn.Set([]byte(this.Key()), []byte(this.String()))
 	if err != nil {
-		utils.Error(err)
 		return err
 	}
 	return nil
+}
+
+// Set
+func (this *Receipt) Set(txn *badger.Txn,cache *cache.Cache) error {
+	this.Cache(cache)
+
+	err := this.Persist(txn)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Unset
+func (this *Receipt) Unset(txn *badger.Txn,cache *cache.Cache) error {
+	cache.Delete(this.Id)
+	err := txn.Delete([]byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UnmarshalJSON
+func (this *Receipt) UnmarshalJSON(bytes []byte) error {
+	var jsonMap map[string]interface{}
+	error := json.Unmarshal(bytes, &jsonMap)
+	if error != nil {
+		return error
+	}
+	if jsonMap["id"] != nil {
+		this.Id = jsonMap["id"].(string)
+	}
+	if jsonMap["type"] != nil {
+		this.Type = jsonMap["type"].(string)
+	}
+	if jsonMap["status"] != nil {
+		this.Status = jsonMap["status"].(string)
+	}
+	if jsonMap["humanReadableStatus"] != nil {
+		this.HumanReadableStatus = jsonMap["humanReadableStatus"].(string)
+	}
+	if jsonMap["data"] != nil {
+		this.Data = jsonMap["data"]
+	}
+	if jsonMap["created"] != nil {
+		created, err := time.Parse(time.RFC3339, jsonMap["created"].(string))
+		if err != nil {
+			return err
+		}
+		this.Created = created
+	}
+	return nil
+}
+
+// MarshalJSON
+func (this Receipt) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Id                  string      `json:"id"`
+		Type                string      `json:"type"`
+		Status              string      `json:"status"`
+		HumanReadableStatus string      `json:"humanReadableStatus,omitempty"`
+		Data                interface{} `json:"data,omitempty"`
+		Created             time.Time   `json:"created"`
+	}{
+		Id:                  this.Id,
+		Type:                this.Type,
+		Status:              this.Status,
+		HumanReadableStatus: this.HumanReadableStatus,
+		Data:                this.Data,
+		Created:             this.Created,
+	})
+}
+
+// String
+func (this Receipt) String() string {
+	bytes, err := json.Marshal(this)
+	if err != nil {
+		utils.Error("unable to marshal receipt", err)
+		return ""
+	}
+	return string(bytes)
 }
 
 // SetInternalErrorWithNewTransaction
@@ -123,64 +169,55 @@ func (this *Receipt) SetStatusWithNewTransaction(db *badger.DB, status string) {
 	}
 }
 
-// UnmarshalJSON
-func (this *Receipt) UnmarshalJSON(bytes []byte) error {
-	var jsonMap map[string]interface{}
-	error := json.Unmarshal(bytes, &jsonMap)
-	if error != nil {
-		return error
-	}
-	if jsonMap["id"] != nil {
-		this.Id = jsonMap["id"].(string)
-	}
-	if jsonMap["type"] != nil {
-		this.Type = jsonMap["type"].(string)
-	}
-	if jsonMap["status"] != nil {
-		this.Status = jsonMap["status"].(string)
-	}
-	if jsonMap["humanReadableStatus"] != nil {
-		this.HumanReadableStatus = jsonMap["humanReadableStatus"].(string)
-	}
-	if jsonMap["data"] != nil {
-		this.Data = jsonMap["data"]
-	}
-	if jsonMap["created"] != nil {
-		created, err := time.Parse(time.RFC3339, jsonMap["created"].(string))
-		if err != nil {
-			return err
-		}
-		this.Created = created
-	}
 
-	return nil
+// NewReceipt
+func NewReceipt(tipe string) *Receipt {
+	return &Receipt{Id: uuid.New().String(), Type: tipe, Status: StatusPending, Created: time.Now()}
 }
 
-// MarshalJSON
-func (this Receipt) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Id                  string      `json:"id"`
-		Type                string      `json:"type"`
-		Status              string      `json:"status"`
-		HumanReadableStatus string      `json:"humanReadableStatus,omitempty"`
-		Data                interface{} `json:"data,omitempty"`
-		Created             time.Time   `json:"created"`
-	}{
-		Id:                  this.Id,
-		Type:                this.Type,
-		Status:              this.Status,
-		HumanReadableStatus: this.HumanReadableStatus,
-		Data:                this.Data,
-		Created:             this.Created,
-	})
+// NewReceiptWithStatus
+func NewReceiptWithStatus(tipe string, status string, humanReadableStatus string) *Receipt {
+	return &Receipt{Id: uuid.New().String(), Type: tipe, Status: status, HumanReadableStatus: humanReadableStatus, Created: time.Now()}
 }
 
-// String
-func (this Receipt) String() string {
-	bytes, err := json.Marshal(this)
+// NewReceiptWithError
+func NewReceiptWithError(tipe string, err error) *Receipt {
+	return &Receipt{Id: uuid.New().String(), Type: tipe, Status: StatusInternalError, HumanReadableStatus: err.Error(), Created: time.Now()}
+}
+
+// ToReceiptFromJson
+func ToReceiptFromJson(payload []byte) (*Receipt, error) {
+	receipt := &Receipt{}
+	err := json.Unmarshal(payload, receipt)
 	if err != nil {
-		utils.Error("unable to marshal receipt", err)
-		return ""
+		return nil, err
 	}
-	return string(bytes)
+	return receipt, nil
+}
+
+// ToReceiptFromCache -
+func ToReceiptFromCache(cache *cache.Cache, id string) (*Receipt, error) {
+	value, ok :=cache.Get(id)
+	if !ok{
+		return nil, ErrNotFound
+	}
+	receipt := value.(*Receipt)
+	return receipt, nil
+}
+
+// ToReceiptFromId
+func ToReceiptFromId(txn *badger.Txn, id string) (*Receipt, error) {
+	item, err := txn.Get([]byte("table-receipt-" + id))
+	if err != nil {
+		return nil, err
+	}
+	value, err := item.Value()
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := ToReceiptFromJson(value)
+	if err != nil {
+		return nil, err
+	}
+	return receipt, err
 }
