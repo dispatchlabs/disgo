@@ -53,8 +53,14 @@ func NewBadgerDatabase() (*BadgerDatabase, error) {
 // Based on https://github.com/dgraph-io/badger#using-keyvalue-pairs
 // ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~
 func (db *BadgerDatabase) Put(key []byte, value []byte) error {
-	utils.Info(fmt.Sprintf("BadgerDatabase-PUT-Key: %s", crypto.Encode(key)))
-	utils.Info(fmt.Sprintf("BadgerDatabase-PUT-Val: %s", crypto.Encode(value)))
+	utils.Info(fmt.Sprintf("BadgerDatabase-PUT-Key   : %s", crypto.Encode(key)))
+	utils.Info(fmt.Sprintf("BadgerDatabase-PUT-KeyRAW: %v", key))
+	// utils.Info(fmt.Sprintf("BadgerDatabase-PUT-Val: %s", crypto.Encode(value)))
+
+	// valEncoded := crypto.Encode(value)
+	// if strings.Index(valEncoded, "f90163a0") > -1 {
+	// 	utils.Info("HERE!!!")
+	// }
 
 	err := disgoServices.GetDb().Update(func(txn *badger.Txn) error {
 		err := txn.Set(key, value)
@@ -65,7 +71,8 @@ func (db *BadgerDatabase) Put(key []byte, value []byte) error {
 }
 
 func (db *BadgerDatabase) Get(key []byte) ([]byte, error) {
-	utils.Info(fmt.Sprintf("BadgerDatabase-GET-Key: %s", crypto.Encode(key)))
+	utils.Info(fmt.Sprintf("BadgerDatabase-GET-Key   : %s", crypto.Encode(key)))
+	utils.Info(fmt.Sprintf("BadgerDatabase-GET-KeyRAW: %v", key))
 
 	var value []byte
 	err := disgoServices.GetDb().View(func(txn *badger.Txn) error {
@@ -84,7 +91,7 @@ func (db *BadgerDatabase) Get(key []byte) ([]byte, error) {
 		return nil
 	})
 
-	utils.Info(fmt.Sprintf("BadgerDatabase-GET-Val: %s", crypto.Encode(value)))
+	// utils.Info(fmt.Sprintf("BadgerDatabase-GET-Val: %s", crypto.Encode(value)))
 	return value, err
 }
 
@@ -152,6 +159,13 @@ func (b *memBatch) ValueSize() int {
 
 func (b *memBatch) Write() error {
 	for _, kv := range b.writes {
+
+		// utils.Info(fmt.Sprintf("memBatch-Write-KEY: %v", crypto.Encode(kv.k)))
+		// utils.Info(fmt.Sprintf("memBatch-Write-VAL: %v", crypto.Encode(kv.v)))
+
+		// utils.Info(fmt.Sprintf("memBatch-Write-KEY-RAW: %v", kv.k))
+		// utils.Info(fmt.Sprintf("memBatch-Write-VAL-RAW: %v", kv.v))
+
 		b.db.Put(kv.k, kv.v)
 	}
 

@@ -32,8 +32,8 @@ import (
 
 // write ahead state, updated with each AppendTx and reset on Commit
 type WriteAheadState struct {
-	db         ethdb.Database
-	ethStateDB *ethState.StateDB
+	db         ethdb.Database    // Storate
+	ethStateDB *ethState.StateDB // Trie aka Merkle
 
 	txIndex      int
 	transactions []*types.Transaction
@@ -42,13 +42,22 @@ type WriteAheadState struct {
 
 	totalUsedGas *big.Int
 	gp           *ethereum.GasPool
+
+	account *types.Account
 }
 
 func (was *WriteAheadState) Commit() (crypto.HashBytes, error) {
 	utils.Info(fmt.Sprintf("WAS-Commit"))
 
-	//commit all state changes to the database
-	hashArray, err := was.ethStateDB.Commit(false)
+	// Commit all state changes to the database
+	hashOfTrieRootNode, err := was.ethStateDB.Commit(false)
+
+	was.ethStateDB.Database().TrieDB().Commit(hashOfTrieRootNode, true)
+
+	// STORE STATE per account
+	accuntAddressAsBytes := crypto.GetAddressBytes(was.account.Address).Bytes()
+	was.db.Put(append(acctounStatePrefix, accuntAddressAsBytes...), hashOfTrieRootNode.Bytes())
+
 	if err != nil {
 		utils.Error(fmt.Sprintf("%s Committing state", err))
 		return crypto.HashBytes{}, err
@@ -66,19 +75,20 @@ func (was *WriteAheadState) Commit() (crypto.HashBytes, error) {
 		utils.Error(fmt.Sprintf("%s Writing receipts", err))
 		return crypto.HashBytes{}, err
 	}
-	return hashArray, nil
+
+	return hashOfTrieRootNode, nil
 }
 
 func (was *WriteAheadState) writeHead() error {
 	utils.Info(fmt.Sprintf("WAS-writeHead: TX count %d", len(was.transactions)))
 
-	head := &types.Transaction{}
+	headTx := &types.Transaction{}
 	if len(was.transactions) > 0 {
-		head = was.transactions[len(was.transactions)-1]
+		headTx = was.transactions[len(was.transactions)-1]
 	}
 
-	utils.Info(fmt.Sprintf("WAS-writeHead: 'LastTx' == '%v' + %v", crypto.Encode(headTxKey), crypto.Encode(head.CalculateHash())))
-	return was.db.Put(headTxKey, head.CalculateHash())
+	utils.Info(fmt.Sprintf("WAS-writeHead: 'LastTx' == '%v' + %v", crypto.Encode(headTxKey), crypto.Encode(crypto.GetHashBytes(headTx.Hash).Bytes())))
+	return was.db.Put(headTxKey, crypto.GetHashBytes(headTx.Hash).Bytes())
 }
 
 func (was *WriteAheadState) writeTransactions() error {
@@ -91,7 +101,7 @@ func (was *WriteAheadState) writeTransactions() error {
 		if err != nil {
 			return err
 		}
-		if err := batch.Put(tx.CalculateHash(), data); err != nil {
+		if err := batch.Put(crypto.GetHashBytes(tx.Hash).Bytes(), data); err != nil {
 			return err
 		}
 	}
@@ -100,7 +110,7 @@ func (was *WriteAheadState) writeTransactions() error {
 	return batch.Write()
 }
 
-func (was *WriteAheadState) writeReceipts() error {
+func (was *WriteAheadState) writeReceipts() error { // hashOfTrieRootNode crypto.HashBytes
 	utils.Info(fmt.Sprintf("WAS-writeReceipts: TX count %d", len(was.transactions)))
 
 	batch := was.db.NewBatch()
@@ -113,7 +123,17 @@ func (was *WriteAheadState) writeReceipts() error {
 		}
 
 		utils.Info(fmt.Sprintf("receipts- [%v]", crypto.Encode(receiptsPrefix)))
-		if err := batch.Put(append(receiptsPrefix, receipt.TxHash.Bytes()...), data); err != nil {
+
+		var key = append(receiptsPrefix, receipt.TxHash.Bytes()...)
+		var val = data
+
+		utils.Info(fmt.Sprintf("WAS-writeReceipts-KEY: %v", crypto.Encode(key)))
+		utils.Info(fmt.Sprintf("WAS-writeReceipts-VAL: %v", crypto.Encode(val)))
+
+		utils.Info(fmt.Sprintf("WAS-writeReceipts-KEY-RAW: %v", key))
+		utils.Info(fmt.Sprintf("WAS-writeReceipts-VAL-RAW: %v", val))
+
+		if err := batch.Put(key, data); err != nil {
 			return err
 		}
 	}
@@ -123,74 +143,26 @@ func (was *WriteAheadState) writeReceipts() error {
 
 func (was *WriteAheadState) initState() error {
 
-	rootHash := crypto.HashBytes{}
+	hashOfTrieRootNode := crypto.HashBytes{}
 
-	//get head transaction hash
-	headTxHash := crypto.HashBytes{}
-
-	utils.Info(fmt.Sprintf("LastTx [%v]", crypto.Encode(headTxKey)))
-	data, _ := was.db.Get(headTxKey)
-	if len(data) != 0 {
-		headTxHash = crypto.BytesToHash(data)
-		utils.Info(fmt.Sprintf("Loading state from existing head - head_tx: %v", headTxHash.Hex()))
-
-		// bytes, _ := hex.DecodeString(tx.Hash)
-		// receipt, err := dvm.getReceipt(bytes)
-
-		// if err != nil {
-		// 	utils.Error(err)
-		// }
-
-		//get head tx receipt
-		headTxReceipt, err := was.getReceipt(headTxHash)
-		if err != nil {
-			utils.Error(fmt.Sprintf("Head transaction receipt missing: %v", err))
-			return err
-		}
-
-		//extract root from receipt
-		if len(headTxReceipt.PostState) != 0 {
-			rootHash = crypto.BytesToHash(headTxReceipt.PostState)
-			utils.Info(fmt.Sprintf("Head transaction root: %v", rootHash.Hex()))
-		}
-
-	}
-
-	//use root to initialise the state
-	var err error
-	was.ethStateDB, err = ethState.New(rootHash, ethState.NewNonCacheDatabase(was.db))
-	return err
-
-	// rootHash := crypto.HashBytes{} // TODO: load this from DB
-	// var err error
-	// dvmServiceInstance.statedb, err = ethState.New(
-	// 	rootHash,
-	// 	ethState.NewNonCacheDatabase(dvmServiceInstance.db),
-	// )
-	// if err != nil {
-	// 	utils.Fatal(err)
-	// }
-
-}
-
-func (was *WriteAheadState) getReceipt2(txHash []byte) (*ethTypes.Receipt, error) {
-	utils.Info(fmt.Sprintf("LastTx [%v]", crypto.Encode(headTxKey)))
-	data, err := was.db.Get(append(headTxKey, txHash[:]...))
+	// READ STATE per account
+	utils.Info(fmt.Sprintf("acctounStatePrefix [%v]", crypto.Encode(acctounStatePrefix)))
+	accuntAddressAsBytes := crypto.GetAddressBytes(was.account.Address).Bytes()
+	data, err := was.db.Get(append(acctounStatePrefix, accuntAddressAsBytes...))
 	if err != nil {
-		utils.Error(fmt.Sprintf("%s GetReceipt", err))
-
-		return nil, err
-	}
-	var receipt ethTypes.ReceiptForStorage
-	if err := rlp.DecodeBytes(data, &receipt); err != nil {
-		utils.Error(fmt.Sprintf("%s Decoding Receipt", err))
-
-		return nil, err
+		// hashOfTrieRootNode = crypto.HashBytes{}
+	} else {
+		hashOfTrieRootNode = crypto.BytesToHash(data)
 	}
 
-	return (*ethTypes.Receipt)(&receipt), nil
+	// use root to initialise the state
+	// was.ethStateDB, err = ethState.New(rootHash, ethState.NewNonCacheDatabase(was.db))
+	was.ethStateDB, err = ethState.New(hashOfTrieRootNode, ethState.NewDatabase(was.db))
+
+	return err
 }
 
+/*
 func (s *WriteAheadState) getReceipt(txHash crypto.HashBytes) (*ethTypes.Receipt, error) {
 	utils.Info(fmt.Sprintf("receipts- [%v]", crypto.Encode(receiptsPrefix)))
 	data, err := s.db.Get(append(receiptsPrefix, txHash[:]...))
@@ -206,14 +178,16 @@ func (s *WriteAheadState) getReceipt(txHash crypto.HashBytes) (*ethTypes.Receipt
 
 	return (*ethTypes.Receipt)(&receipt), nil
 }
+*/
 
-func LoadOrInitNewState(db ethdb.Database) (*WriteAheadState, error) {
+func LoadOrInitNewState(db ethdb.Database, account *types.Account) (*WriteAheadState, error) {
 	was := &WriteAheadState{
 		db: db,
 		// ethState:     // will be set in `initState`
 		txIndex:      0,
 		totalUsedGas: big.NewInt(0),
 		gp:           new(ethereum.GasPool).AddGas(gasLimit.Uint64()),
+		account:      account,
 	}
 
 	if err := was.initState(); err != nil {

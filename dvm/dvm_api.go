@@ -24,11 +24,14 @@ import (
 	"strings"
 
 	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/types"
 	commonTypes "github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/dispatchlabs/disgo/dvm/badgerwrapper"
 	"github.com/dispatchlabs/disgo/dvm/ethereum"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
 	dvmCrypto "github.com/dispatchlabs/disgo/dvm/ethereum/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/ethdb"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/trie"
@@ -37,13 +40,14 @@ import (
 )
 
 var (
-	chainID        = big.NewInt(1)
-	gasLimit       = big.NewInt(1000000000)
-	txMetaSuffix   = []byte{0x01}
-	receiptsPrefix = []byte("receipts-")
-	MIPMapLevels   = []uint64{1000000, 500000, 100000, 50000, 1000}
-	headTxKey      = []byte("LastTx")
-	isDemo         = false
+	chainID            = big.NewInt(1)
+	gasLimit           = big.NewInt(1000000000)
+	txMetaSuffix       = []byte{0x01}
+	receiptsPrefix     = []byte("receipts-")
+	headTxKey          = []byte("LastTx")
+	acctounStatePrefix = []byte("AccountState-")
+	MIPMapLevels       = []uint64{1000000, 500000, 100000, 50000, 1000}
+	isDemo             = false
 
 	_defaultValue    = big.NewInt(0)
 	_defaultGas      = big.NewInt(1000000)
@@ -52,12 +56,47 @@ var (
 	_defaultDivvy    = int64(0)
 )
 
+type stateHelper struct {
+	DB  ethdb.Database // Storate aka Badger
+	WAS *WriteAheadState
+}
+
+func newStateHelper(account *types.Account) *stateHelper {
+	badgerWrapper, _ := badgerwrapper.NewBadgerDatabase()
+	// rootHash := crypto.HashBytes{} // TODO: load this from DB
+	// var err error
+	// dvmServiceInstance.statedb, err = ethState.New(
+	// 	rootHash,
+	// 	ethState.NewNonCacheDatabase(dvmServiceInstance.db),
+	// )
+	// if err != nil {
+	// 	utils.Fatal(err)
+	// }
+
+	var err error
+	was, err := LoadOrInitNewState(badgerWrapper, account)
+	if err != nil {
+		utils.Fatal(err)
+	}
+
+	return &stateHelper{
+		DB:  badgerWrapper,
+		WAS: was,
+	}
+}
+
 func (dvm *DVMService) DeploySmartContract(tx *commonTypes.Transaction) (*DVMResult, error) {
-	if err := dvm.applyTransaction(tx); err != nil {
+
+	// TODO - Fetch the account from Badger
+	sHelper := newStateHelper(&types.Account{
+		Address: tx.From,
+	})
+
+	if err := dvm.applyTransaction(tx, sHelper); err != nil {
 		return nil, err
 	}
 
-	_, err := dvm.commit() // hash
+	_, err := dvm.commit(sHelper) // hashOfTrieRootNode
 	if err != nil {
 		utils.Error(err)
 	}
@@ -82,6 +121,12 @@ func (dvm *DVMService) DeploySmartContract(tx *commonTypes.Transaction) (*DVMRes
 }
 
 func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMResult, error) {
+
+	// TODO - Fetch the account from Badger
+	sHelper := newStateHelper(&types.Account{
+		Address: tx.From,
+	})
+
 	// var expected = big.NewInt(tx.Params)
 	fmt.Printf("\n***************** Contract Address = %v\n\n", tx.To)
 	fromHex, _ := hex.DecodeString(tx.Abi)
@@ -114,22 +159,22 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 		return nil, err
 	}
 
-	res, err := dvm.call(callMsg)
+	res, err := dvm.call(callMsg, sHelper)
 	if err != nil {
 		utils.Error(err)
 		return nil, err
 	}
-	_, err = dvm.commit() // hash
 	var parsedRes string
 	err = jsonABI.Unpack(&parsedRes, "getVar5", res)
-
 	utils.Info(fmt.Sprintf("DEBUG-CONTRACT-CALL res: %s", parsedRes))
-
-	// var parsedRes *big.Int
-	// err = jsonABI.Unpack(&parsedRes, "test", res)
 	if err != nil {
 		utils.Error(err)
 	}
+
+	_, err = dvm.commit(sHelper) // hash
+
+	// var parsedRes *big.Int
+	// err = jsonABI.Unpack(&parsedRes, "test", res)
 	//utils.Info(fmt.Sprintf("parsed res: %v", parsedRes))
 
 	// if parsedRes.Cmp(expected) != 0 {
@@ -147,16 +192,15 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 		// Bloom:               receipt.Bloom,
 		// Logs:                receipt.Logs,
 	}, nil
-
 }
 
-func (self *DVMService) applyTransaction(tx *commonTypes.Transaction) error {
+func (self *DVMService) applyTransaction(tx *commonTypes.Transaction, sHelper *stateHelper) error {
 	price := big.NewInt(int64(0))
 
 	context := vm.Context{
 		CanTransfer: ethereum.CanTransfer,
 		Transfer:    ethereum.Transfer,
-		GetHash:     func(uint64) crypto.HashBytes { return tx.GetHashBytes() },
+		GetHash:     func(uint64) crypto.HashBytes { return crypto.GetHashBytes(tx.Hash) },
 		// Message information
 		Origin:      crypto.GetAddressBytes(tx.From),
 		GasLimit:    gasLimit.Uint64(),
@@ -167,7 +211,7 @@ func (self *DVMService) applyTransaction(tx *commonTypes.Transaction) error {
 	//Prepare the ethState with transaction Hash so that it can be used in emitted
 	//logs
 	var txIndex = 0
-	self.was.ethStateDB.Prepare(tx.GetHashBytes(), tx.GetHashBytes(), txIndex)
+	sHelper.WAS.ethStateDB.Prepare(crypto.GetHashBytes(tx.Hash), crypto.GetHashBytes(tx.Hash), txIndex)
 
 	// The EVM should never be reused and is not thread safe.
 	vmLogger := vm.NewStructLogger(&vm.LogConfig{
@@ -180,7 +224,7 @@ func (self *DVMService) applyTransaction(tx *commonTypes.Transaction) error {
 
 	vmenv := vm.NewEVM(
 		context,
-		self.was.ethStateDB,
+		sHelper.WAS.ethStateDB,
 		&params.ChainConfig{
 			ChainId: chainID,
 		},
@@ -194,39 +238,39 @@ func (self *DVMService) applyTransaction(tx *commonTypes.Transaction) error {
 
 	// Apply the transaction to the current state (included in the env)
 	// GRAB-THIS: gas will be the GAS/Hertz used to execute the TX - for contract creation or execution
-	_, gas, failed, err := ethereum.ApplyMessage(vmenv, msg, self.was.gp)
+	_, gas, failed, err := ethereum.ApplyMessage(vmenv, msg, sHelper.WAS.gp)
 	if err != nil {
 		utils.Error(fmt.Sprintf("%s Applying transaction to WAS", err))
 		return err
 	}
-	self.was.totalUsedGas.Add(self.was.totalUsedGas, big.NewInt(0).SetUint64(gas))
+	sHelper.WAS.totalUsedGas.Add(sHelper.WAS.totalUsedGas, big.NewInt(0).SetUint64(gas))
 
 	// Create a new receipt for the transaction, storing the intermediate root and gas used by the tx
 	// based on the eip phase, we're passing wether the root touch-delete accounts.
-	root := self.was.ethStateDB.IntermediateRoot(true) //this has side effects. It updates StateObjects (SmartContract memory)
+	root := sHelper.WAS.ethStateDB.IntermediateRoot(true) //this has side effects. It updates StateObjects (SmartContract memory)
 
-	receipt := ethTypes.NewReceipt(root.Bytes(), failed, self.was.totalUsedGas.Uint64())
-	receipt.TxHash = tx.GetHashBytes()
+	receipt := ethTypes.NewReceipt(root.Bytes(), failed, sHelper.WAS.totalUsedGas.Uint64())
+	receipt.TxHash = crypto.GetHashBytes(tx.Hash)
 	receipt.GasUsed = gas
 	// if the transaction created a contract, store the creation address in the receipt.
 	if msg.To() == nil {
 		receipt.ContractAddress = dvmCrypto.CreateAddress(vmenv.Context.Origin, 0)
 	}
 	// Set the receipt logs and create a bloom for filtering
-	receipt.Logs = self.was.ethStateDB.GetLogs(tx.GetHashBytes())
+	receipt.Logs = sHelper.WAS.ethStateDB.GetLogs(crypto.GetHashBytes(tx.Hash))
 	//receipt.Logs = s.was.state.Logs()
 	receipt.Bloom = ethTypes.CreateBloom(ethTypes.Receipts{receipt})
 
-	self.was.txIndex++
-	self.was.transactions = append(self.was.transactions, tx)
-	self.was.receipts = append(self.was.receipts, receipt)
-	self.was.allLogs = append(self.was.allLogs, receipt.Logs...)
+	sHelper.WAS.txIndex++
+	sHelper.WAS.transactions = append(sHelper.WAS.transactions, tx)
+	sHelper.WAS.receipts = append(sHelper.WAS.receipts, receipt)
+	sHelper.WAS.allLogs = append(sHelper.WAS.allLogs, receipt.Logs...)
 
 	utils.Info(fmt.Sprintf("%s Applied tx to WAS", tx.Hash))
 
 	// DEMO-Today
 	if isDemo {
-		// logsAsJSON, _ := json.Marshal(self.was.allLogs)
+		// logsAsJSON, _ := json.Marshal(sHelper.WAS.allLogs)
 		logsAsJSON, _ := json.Marshal(vmLogger.StructLogs())
 		utils.Info(string(logsAsJSON))
 	}
@@ -235,8 +279,8 @@ func (self *DVMService) applyTransaction(tx *commonTypes.Transaction) error {
 	return nil
 }
 
-func (self *DVMService) evaluateContract(fromAddress crypto.AddressBytes, contractAddress crypto.AddressBytes, root crypto.HashBytes) {
-	theEthStateDb := self.was.ethStateDB
+func (self *DVMService) evaluateContract(fromAddress crypto.AddressBytes, contractAddress crypto.AddressBytes, root crypto.HashBytes, sHelper *stateHelper) {
+	theEthStateDb := sHelper.WAS.ethStateDB
 	contractStateObject := theEthStateDb.GetOrNewStateObject(contractAddress)
 	contractHash := crypto.NewHash(contractAddress[:])
 	stateHash := theEthStateDb.GetState(contractAddress, contractHash)
@@ -303,7 +347,7 @@ func iterateTrie(iterator trie.NodeIterator, isRoot bool) {
 	}
 }
 
-func (self *DVMService) call(callMsg ethTypes.Message) ([]byte, error) {
+func (self *DVMService) call(callMsg ethTypes.Message, sHelper *stateHelper) ([]byte, error) {
 	context := vm.Context{
 		CanTransfer: ethereum.CanTransfer,
 		Transfer:    ethereum.Transfer,
@@ -326,7 +370,7 @@ func (self *DVMService) call(callMsg ethTypes.Message) ([]byte, error) {
 
 	vmenv := vm.NewEVM(
 		context,
-		self.was.ethStateDB.Copy(),
+		sHelper.WAS.ethStateDB,
 		&params.ChainConfig{
 			ChainId: chainID,
 		},
@@ -337,7 +381,7 @@ func (self *DVMService) call(callMsg ethTypes.Message) ([]byte, error) {
 	)
 
 	// Apply the transaction to the current state (included in the env)
-	res, _, _, err := ethereum.ApplyMessage(vmenv, callMsg, self.was.gp)
+	res, _, _, err := ethereum.ApplyMessage(vmenv, callMsg, sHelper.WAS.gp)
 	if err != nil {
 		utils.Error(fmt.Sprintf("%s Executing Call on WAS", err))
 		return nil, err
@@ -345,7 +389,7 @@ func (self *DVMService) call(callMsg ethTypes.Message) ([]byte, error) {
 
 	// DEMO-Today
 	if isDemo {
-		// logsAsJSON, _ := json.Marshal(self.was.allLogs)
+		// logsAsJSON, _ := json.Marshal(sHelper.WAS.allLogs)
 		logsAsJSON, _ := json.Marshal(vmLogger.StructLogs())
 		utils.Info(string(logsAsJSON))
 	}
@@ -353,9 +397,9 @@ func (self *DVMService) call(callMsg ethTypes.Message) ([]byte, error) {
 	return res, err
 }
 
-func (self *DVMService) commit() (crypto.HashBytes, error) {
+func (self *DVMService) commit(sHelper *stateHelper) (crypto.HashBytes, error) {
 	//commit all state changes to the database
-	root, err := self.was.Commit()
+	root, err := sHelper.WAS.Commit()
 	if err != nil {
 		utils.Error(fmt.Sprintf("%s Committing WAS", err))
 
@@ -364,28 +408,28 @@ func (self *DVMService) commit() (crypto.HashBytes, error) {
 
 	// reset the write ahead state for the next block
 	// with the latest eth state
-	self.ethStateDB = self.was.ethStateDB
+	// self.ethStateDB = sHelper.WAS.ethStateDB
 	utils.Info(fmt.Sprintf("root %s Committed", root.Hex()))
 
-	self.resetWAS()
+	// self.resetWAS()
 
 	return root, nil
 }
 
-func (self *DVMService) resetWAS() {
-	self.was = &WriteAheadState{
-		db:           self.db,
-		ethStateDB:   self.ethStateDB.Copy(),
-		txIndex:      0,
-		totalUsedGas: big.NewInt(0),
-		gp:           new(ethereum.GasPool).AddGas(gasLimit.Uint64()),
-	}
-	// utils.Info("Reset Write Ahead state")
-}
+// func (self *DVMService) resetWAS() {
+// 	self.was = &WriteAheadState{
+// 		db:           self.db,
+// 		ethStateDB:   self.ethStateDB.Copy(),
+// 		txIndex:      0,
+// 		totalUsedGas: big.NewInt(0),
+// 		gp:           new(ethereum.GasPool).AddGas(gasLimit.Uint64()),
+// 	}
+// 	// utils.Info("Reset Write Ahead state")
+// }
 
 func (self *DVMService) getReceipt(txHash []byte) (*ethTypes.Receipt, error) {
 	utils.Info(fmt.Sprintf("receipts- [%v]", crypto.Encode(receiptsPrefix)))
-	data, err := self.db.Get(append(receiptsPrefix, txHash[:]...))
+	data, err := badgerwrapper.GetBadgerDatabase().Get(append(receiptsPrefix, txHash[:]...))
 	if err != nil {
 		utils.Error(fmt.Sprintf("%s GetReceipt", err))
 		return nil, err

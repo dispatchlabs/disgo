@@ -767,6 +767,7 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root crypto.HashBytes, err er
 		}
 		return nil
 	})
+
 	log.Debug("Trie cache stats after commit", "misses", trie.CacheMisses(), "unloads", trie.CacheUnloads())
 	return root, err
 }
