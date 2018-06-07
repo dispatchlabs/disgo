@@ -30,7 +30,7 @@ import (
 
 // DeploySmartContract -
 func (dvm *DVMService) DeploySmartContract(tx *commonTypes.Transaction) (*DVMResult, error) {
-	utils.Info(fmt.Sprintf("DVMServices-DeploySmartContract: %s", tx))
+	utils.Debug(fmt.Sprintf("DVMServices-DeploySmartContract: %s", tx))
 
 	// Load the TRIE state for [FROM:TO] combo
 	stateHelper, err := NewVMStateHelper(crypto.GetAddressBytes(tx.From), crypto.GetAddressBytes(tx.To))
@@ -73,7 +73,7 @@ func (dvm *DVMService) DeploySmartContract(tx *commonTypes.Transaction) (*DVMRes
 
 // ExecuteSmartContract -
 func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMResult, error) {
-	utils.Info(fmt.Sprintf("DVMServices-ExecuteSmartContract: %s", tx))
+	utils.Debug(fmt.Sprintf("DVMServices-ExecuteSmartContract: %s", tx))
 
 	// Load the TRIE state for [FROM:TO] combo
 	stateHelper, err := NewVMStateHelper(crypto.GetAddressBytes(tx.From), crypto.GetAddressBytes(tx.To))

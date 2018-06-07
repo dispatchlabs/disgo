@@ -90,9 +90,9 @@ func (stateHelper *VMStateHelper) Commit() (crypto.HashBytes, error) {
 	var key = append(acctounStatePrefix, stateHelper.from.Bytes()...)
 	key = append(key, stateHelper.to.Bytes()...)
 
-	utils.Info(fmt.Sprintf("`acctounStatePrefix` is %v", crypto.Encode(acctounStatePrefix)))
-	utils.Info(fmt.Sprintf("`from` is %v", crypto.Encode(stateHelper.from.Bytes())))
-	utils.Info(fmt.Sprintf("`to` is %v", crypto.Encode(stateHelper.to.Bytes())))
+	utils.Debug(fmt.Sprintf("`acctounStatePrefix` is %v", crypto.Encode(acctounStatePrefix)))
+	utils.Debug(fmt.Sprintf("`from` is %v", crypto.Encode(stateHelper.from.Bytes())))
+	utils.Debug(fmt.Sprintf("`to` is %v", crypto.Encode(stateHelper.to.Bytes())))
 
 	var val = stateHelper.HashOfTrieRootNode.Bytes()
 	stateHelper.db.Put(key, val)
@@ -116,19 +116,19 @@ func (stateHelper *VMStateHelper) Commit() (crypto.HashBytes, error) {
 }
 
 func (stateHelper *VMStateHelper) writeHead() error {
-	utils.Info(fmt.Sprintf("VMStateHelper-writeHead: TX count %d", len(stateHelper.transactions)))
+	utils.Debug(fmt.Sprintf("VMStateHelper-writeHead: TX count %d", len(stateHelper.transactions)))
 
 	headTx := &types.Transaction{}
 	if len(stateHelper.transactions) > 0 {
 		headTx = stateHelper.transactions[len(stateHelper.transactions)-1]
 	}
 
-	utils.Info(fmt.Sprintf("VMStateHelper-writeHead: 'LastTx' == '%v' + %v", crypto.Encode(headTxKey), crypto.Encode(crypto.GetHashBytes(headTx.Hash).Bytes())))
+	utils.Debug(fmt.Sprintf("VMStateHelper-writeHead: 'LastTx' == '%v' + %v", crypto.Encode(headTxKey), crypto.Encode(crypto.GetHashBytes(headTx.Hash).Bytes())))
 	return stateHelper.db.Put(headTxKey, crypto.GetHashBytes(headTx.Hash).Bytes())
 }
 
 func (stateHelper *VMStateHelper) writeTransactions() error {
-	utils.Info(fmt.Sprintf("VMStateHelper-writeTransactions: TX count %d", len(stateHelper.transactions)))
+	utils.Debug(fmt.Sprintf("VMStateHelper-writeTransactions: TX count %d", len(stateHelper.transactions)))
 
 	batch := stateHelper.db.NewBatch()
 
@@ -147,7 +147,7 @@ func (stateHelper *VMStateHelper) writeTransactions() error {
 }
 
 func (stateHelper *VMStateHelper) writeReceipts() error {
-	utils.Info(fmt.Sprintf("VMStateHelper-writeReceipts: TX count %d", len(stateHelper.transactions)))
+	utils.Debug(fmt.Sprintf("VMStateHelper-writeReceipts: TX count %d", len(stateHelper.transactions)))
 
 	batch := stateHelper.db.NewBatch()
 
@@ -158,16 +158,16 @@ func (stateHelper *VMStateHelper) writeReceipts() error {
 			return err
 		}
 
-		utils.Info(fmt.Sprintf("receipts- [%v]", crypto.Encode(receiptsPrefix)))
+		utils.Debug(fmt.Sprintf("receipts- [%v]", crypto.Encode(receiptsPrefix)))
 
 		var key = append(receiptsPrefix, receipt.TxHash.Bytes()...)
 		var val = data
 
-		utils.Info(fmt.Sprintf("VMStateHelper-writeReceipts-KEY: %v", crypto.Encode(key)))
-		utils.Info(fmt.Sprintf("VMStateHelper-writeReceipts-VAL: %v", crypto.Encode(val)))
+		utils.Debug(fmt.Sprintf("VMStateHelper-writeReceipts-KEY: %v", crypto.Encode(key)))
+		utils.Debug(fmt.Sprintf("VMStateHelper-writeReceipts-VAL: %v", crypto.Encode(val)))
 
-		utils.Info(fmt.Sprintf("VMStateHelper-writeReceipts-KEY-RAW: %v", key))
-		utils.Info(fmt.Sprintf("VMStateHelper-writeReceipts-VAL-RAW: %v", val))
+		utils.Debug(fmt.Sprintf("VMStateHelper-writeReceipts-KEY-RAW: %v", key))
+		utils.Debug(fmt.Sprintf("VMStateHelper-writeReceipts-VAL-RAW: %v", val))
 
 		if err := batch.Put(key, data); err != nil {
 			return err
@@ -185,9 +185,9 @@ func (stateHelper *VMStateHelper) initOrLoadState() error {
 	var key = append(acctounStatePrefix, stateHelper.from.Bytes()...)
 	key = append(key, stateHelper.to.Bytes()...)
 
-	utils.Info(fmt.Sprintf("`acctounStatePrefix` is %v", crypto.Encode(acctounStatePrefix)))
-	utils.Info(fmt.Sprintf("`from` is %v", crypto.Encode(stateHelper.from.Bytes())))
-	utils.Info(fmt.Sprintf("`to` is %v", crypto.Encode(stateHelper.to.Bytes())))
+	utils.Debug(fmt.Sprintf("`acctounStatePrefix` is %v", crypto.Encode(acctounStatePrefix)))
+	utils.Debug(fmt.Sprintf("`from` is %v", crypto.Encode(stateHelper.from.Bytes())))
+	utils.Debug(fmt.Sprintf("`to` is %v", crypto.Encode(stateHelper.to.Bytes())))
 
 	data, err := stateHelper.db.Get(key)
 	if err != nil {

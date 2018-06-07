@@ -177,15 +177,15 @@ func (st *StateTransition) TransitionDb() (ret []byte, contractAddress crypto.Ad
 	homestead := st.evm.ChainConfig().IsHomestead(st.evm.BlockNumber)
 	contractCreation := msg.To() == nil
 
-	utils.Info("AddrRaw   ", "From", ": ", fmt.Sprintf("%v", msg.From().Bytes()))
-	utils.Info("AddrString", "From", ": ", crypto.Encode(msg.From().Bytes()))
-	utils.Info("AddrHash1 ", "From", ": ", crypto.BytesToHash(msg.From().Bytes()).Hex())
-	utils.Info("AddrHash2 ", "From", ": ", crypto.NewHash(msg.From().Bytes()).Hex())
+	utils.Debug("AddrRaw   ", "From", ": ", fmt.Sprintf("%v", msg.From().Bytes()))
+	utils.Debug("AddrString", "From", ": ", crypto.Encode(msg.From().Bytes()))
+	utils.Debug("AddrHash1 ", "From", ": ", crypto.BytesToHash(msg.From().Bytes()).Hex())
+	utils.Debug("AddrHash2 ", "From", ": ", crypto.NewHash(msg.From().Bytes()).Hex())
 	if msg.To() != nil {
-		utils.Info("AddrRaw   ", "From", ": ", fmt.Sprintf("%v", msg.To().Bytes()))
-		utils.Info("AddrString", "From", ": ", crypto.Encode(msg.To().Bytes()))
-		utils.Info("AddrHash1 ", "From", ": ", crypto.BytesToHash(msg.To().Bytes()).Hex())
-		utils.Info("AddrHash2 ", "From", ": ", crypto.NewHash(msg.To().Bytes()).Hex())
+		utils.Debug("AddrRaw   ", "From", ": ", fmt.Sprintf("%v", msg.To().Bytes()))
+		utils.Debug("AddrString", "From", ": ", crypto.Encode(msg.To().Bytes()))
+		utils.Debug("AddrHash1 ", "From", ": ", crypto.BytesToHash(msg.To().Bytes()).Hex())
+		utils.Debug("AddrHash2 ", "From", ": ", crypto.NewHash(msg.To().Bytes()).Hex())
 	}
 
 	// Pay intrinsic gas

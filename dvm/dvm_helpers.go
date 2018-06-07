@@ -122,13 +122,13 @@ func (self *DVMService) applyTransaction(tx *commonTypes.Transaction, stateHelpe
 	stateHelper.receipts = append(stateHelper.receipts, receipt)
 	stateHelper.allLogs = append(stateHelper.allLogs, receipt.Logs...)
 
-	utils.Info(fmt.Sprintf("%s Applied tx to WAS", tx.Hash))
+	utils.Debug(fmt.Sprintf("%s Applied tx to WAS", tx.Hash))
 
 	// DEMO-Today
 	if isDemo {
 		// logsAsJSON, _ := json.Marshal(stateHelper.allLogs)
 		logsAsJSON, _ := json.Marshal(vmLogger.StructLogs())
-		utils.Info(string(logsAsJSON))
+		utils.Debug(string(logsAsJSON))
 	}
 	// self.evaluateContract(crypto.GetAddressBytes(tx.From), receipt.ContractAddress, root)
 
@@ -179,14 +179,14 @@ func (self *DVMService) call(callMsg ethTypes.Message, stateHelper *VMStateHelpe
 	if isDemo {
 		// logsAsJSON, _ := json.Marshal(stateHelper.allLogs)
 		logsAsJSON, _ := json.Marshal(vmLogger.StructLogs())
-		utils.Info(string(logsAsJSON))
+		utils.Debug(string(logsAsJSON))
 	}
 
 	return res, err
 }
 
 func (self *DVMService) getReceipt(txHash []byte) (*ethTypes.Receipt, error) {
-	utils.Info(fmt.Sprintf("receipts- [%v]", crypto.Encode(receiptsPrefix)))
+	utils.Debug(fmt.Sprintf("receipts- [%v]", crypto.Encode(receiptsPrefix)))
 	data, err := badgerwrapper.GetBadgerDatabase().Get(append(receiptsPrefix, txHash[:]...))
 	if err != nil {
 		utils.Error(fmt.Sprintf("%s GetReceipt", err))

@@ -95,7 +95,7 @@ func (t *Trie) newFlag() nodeFlag {
 // New will panic if db is nil and returns a MissingNodeError if root does
 // not exist in the database. Accessing the trie loads nodes from db on demand.
 func New(root crypto.HashBytes, db *Database) (*Trie, error) {
-	utils.Info(fmt.Sprintf("TRIE-New: %s", crypto.Encode(root[:])))
+	utils.Debug(fmt.Sprintf("TRIE-New: %s", crypto.Encode(root[:])))
 
 	if db == nil {
 		panic("trie.New called without a database")
@@ -134,7 +134,7 @@ func (t *Trie) Get(key []byte) []byte {
 // The value bytes must not be modified by the caller.
 // If a node was not found in the database, a MissingNodeError is returned.
 func (t *Trie) TryGet(key []byte) ([]byte, error) {
-	utils.Info(fmt.Sprintf("TRIE-Get: %s", crypto.Encode(key)))
+	utils.Debug(fmt.Sprintf("TRIE-Get: %s", crypto.Encode(key)))
 
 	key = keybytesToHex(key)
 	value, newroot, didResolve, err := t.tryGet(t.root, key, 0)
@@ -203,7 +203,7 @@ func (t *Trie) Update(key, value []byte) {
 //
 // If a node was not found in the database, a MissingNodeError is returned.
 func (t *Trie) TryUpdate(key, value []byte) error {
-	utils.Info(fmt.Sprintf("TRIE-Update: %s -> %s", crypto.Encode(key), crypto.Encode(value)))
+	utils.Debug(fmt.Sprintf("TRIE-Update: %s -> %s", crypto.Encode(key), crypto.Encode(value)))
 
 	k := keybytesToHex(key)
 	if len(value) != 0 {
@@ -301,7 +301,7 @@ func (t *Trie) Delete(key []byte) {
 // TryDelete removes any existing value for key from the trie.
 // If a node was not found in the database, a MissingNodeError is returned.
 func (t *Trie) TryDelete(key []byte) error {
-	utils.Info(fmt.Sprintf("TRIE-Delete: %s", crypto.Encode(key)))
+	utils.Debug(fmt.Sprintf("TRIE-Delete: %s", crypto.Encode(key)))
 
 	k := keybytesToHex(key)
 	_, n, err := t.delete(t.root, nil, k)

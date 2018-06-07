@@ -39,7 +39,7 @@ type nonCacheDB struct {
 
 // OpenTrie opens the main account trie.
 func (db *nonCacheDB) OpenTrie(root crypto.HashBytes) (Trie, error) {
-	utils.Info(fmt.Sprintf("nonCacheDB-OpenTrie: %s", crypto.Encode(root[:])))
+	utils.Debug(fmt.Sprintf("nonCacheDB-OpenTrie: %s", crypto.Encode(root[:])))
 
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -52,7 +52,7 @@ func (db *nonCacheDB) OpenTrie(root crypto.HashBytes) (Trie, error) {
 }
 
 func (db *nonCacheDB) pushTrie(t *trie.SecureTrie) {
-	utils.Info(fmt.Sprintf("nonCacheDB-pushTrie: %v", t))
+	utils.Debug(fmt.Sprintf("nonCacheDB-pushTrie: %v", t))
 
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -67,14 +67,14 @@ func (db *nonCacheDB) pushTrie(t *trie.SecureTrie) {
 
 // OpenStorageTrie opens the storage trie of an account.
 func (db *nonCacheDB) OpenStorageTrie(addrHash, root crypto.HashBytes) (Trie, error) {
-	utils.Info(fmt.Sprintf("nonCacheDB-OpenStorageTrie: %s", crypto.Encode(root[:])))
+	utils.Debug(fmt.Sprintf("nonCacheDB-OpenStorageTrie: %s", crypto.Encode(root[:])))
 
 	return trie.NewSecure(root, db.db, 0)
 }
 
 // CopyTrie returns an independent copy of the given trie.
 func (db *nonCacheDB) CopyTrie(t Trie) Trie {
-	utils.Info(fmt.Sprintf("nonCacheDB-CopyTrie: %v", t))
+	utils.Debug(fmt.Sprintf("nonCacheDB-CopyTrie: %v", t))
 
 	switch t := t.(type) {
 	// case cachedTrie:
@@ -88,7 +88,7 @@ func (db *nonCacheDB) CopyTrie(t Trie) Trie {
 
 // ContractCode retrieves a particular contract's code.
 func (db *nonCacheDB) ContractCode(addrHash, codeHash crypto.HashBytes) ([]byte, error) {
-	utils.Info(fmt.Sprintf("nonCacheDB-ContractCode: %s -> %s", crypto.Encode(addrHash[:]), crypto.Encode(codeHash[:])))
+	utils.Debug(fmt.Sprintf("nonCacheDB-ContractCode: %s -> %s", crypto.Encode(addrHash[:]), crypto.Encode(codeHash[:])))
 
 	code, err := db.db.Node(codeHash)
 	return code, err
@@ -96,7 +96,7 @@ func (db *nonCacheDB) ContractCode(addrHash, codeHash crypto.HashBytes) ([]byte,
 
 // ContractCodeSize retrieves a particular contracts code's size.
 func (db *nonCacheDB) ContractCodeSize(addrHash, codeHash crypto.HashBytes) (int, error) {
-	utils.Info(fmt.Sprintf("nonCacheDB-ContractCodeSize: %s -> %s", crypto.Encode(addrHash[:]), crypto.Encode(codeHash[:])))
+	utils.Debug(fmt.Sprintf("nonCacheDB-ContractCodeSize: %s -> %s", crypto.Encode(addrHash[:]), crypto.Encode(codeHash[:])))
 
 	code, err := db.ContractCode(addrHash, codeHash)
 	return len(code), err
@@ -104,7 +104,7 @@ func (db *nonCacheDB) ContractCodeSize(addrHash, codeHash crypto.HashBytes) (int
 
 // TrieDB retrieves any intermediate trie-node caching layer.
 func (db *nonCacheDB) TrieDB() *trie.Database {
-	utils.Info(fmt.Sprintf("nonCacheDB-TrieDB:"))
+	utils.Debug(fmt.Sprintf("nonCacheDB-TrieDB:"))
 
 	return db.db
 }
