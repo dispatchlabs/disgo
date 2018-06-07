@@ -33,7 +33,7 @@ import (
 
 // VMStateHelper - Helps load and save Smart Contract storage state
 type VMStateHelper struct {
-	db           ethdb.Database       // Storage - like disk storae
+	db           ethdb.Database       // Storage - like disk storage
 	ethStateDB   *ethState.StateDB    // Particia Merkle Trie
 	txIndex      int                  // TODO: is it used ?
 	transactions []*types.Transaction // TXes executed

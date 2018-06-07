@@ -27,6 +27,7 @@ import (
 	disgoServices "github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	ethdbInterfaces "github.com/dispatchlabs/disgo/dvm/ethereum/ethdb"
+	"strings"
 )
 
 var badgerDatabaseInstance *BadgerDatabase
@@ -120,6 +121,39 @@ func (db *BadgerDatabase) Close() {
 func (db *BadgerDatabase) NewBatch() ethdbInterfaces.Batch {
 	utils.Info(fmt.Sprintf("BadgerDatabase-NewBatch:"))
 	return &memBatch{db: db}
+}
+
+func (db *BadgerDatabase) Dump() {
+	//var items = make([]*proto.Item, 0)
+	err := disgoServices.GetDb().View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchSize = 100
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		fmt.Println("\n\n*****************************************************************************\n")
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			key := item.Key()
+			value, err := item.Value()
+			if err != nil {
+				return err
+			}
+			if(!strings.HasPrefix(string(key), "key")) {
+				fmt.Printf("\nItem:\nKey: %v\nValue:%v\n", crypto.Encode(key), crypto.Encode(value))
+				fmt.Printf("Key: %v\nValue: %v\n", string(key), string(value))
+				fmt.Printf("Key: %v\nValue: %v\n", key, value)
+			}
+			//items = append(items, &proto.Item{Key: string(key), Value: string(value)})
+		}
+		fmt.Println("*****************************************************************************\n\n")
+		return nil
+	})
+	if err != nil {
+		utils.Error(err)
+	}
+	//for _, itm := range items {
+	//	fmt.Printf("Item:\nKey: %v\nValue:%v\n", crypto.Encode([]byte(itm.Key)), itm.Value)
+	//}
 }
 
 // func (db *BadgerDatabase) Keys() [][]byte {

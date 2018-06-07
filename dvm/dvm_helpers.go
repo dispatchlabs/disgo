@@ -26,7 +26,6 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/dvm/badgerwrapper"
 	"github.com/dispatchlabs/disgo/dvm/ethereum"
-	dvmCrypto "github.com/dispatchlabs/disgo/dvm/ethereum/crypto"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"
 	ethTypes "github.com/dispatchlabs/disgo/dvm/ethereum/types"
@@ -93,7 +92,7 @@ func (self *DVMService) applyTransaction(tx *commonTypes.Transaction, stateHelpe
 
 	// Apply the transaction to the current state (included in the env)
 	// GRAB-THIS: gas will be the GAS/Hertz used to execute the TX - for contract creation or execution
-	_, gas, failed, err := ethereum.ApplyMessage(vmenv, msg, stateHelper.gp)
+	_, contractAddress, gas, failed, err := ethereum.ApplyMessage(vmenv, msg, stateHelper.gp)
 	if err != nil {
 		utils.Error(fmt.Sprintf("%s Applying transaction to WAS", err))
 		return err
@@ -109,7 +108,7 @@ func (self *DVMService) applyTransaction(tx *commonTypes.Transaction, stateHelpe
 	receipt.GasUsed = gas
 	// if the transaction created a contract, store the creation address in the receipt.
 	if msg.To() == nil {
-		receipt.ContractAddress = dvmCrypto.CreateAddress(vmenv.Context.Origin, 0)
+		receipt.ContractAddress = contractAddress
 
 		stateHelper.to = receipt.ContractAddress
 	}
@@ -170,7 +169,7 @@ func (self *DVMService) call(callMsg ethTypes.Message, stateHelper *VMStateHelpe
 	)
 
 	// Apply the transaction to the current state (included in the env)
-	res, _, _, err := ethereum.ApplyMessage(vmenv, callMsg, stateHelper.gp)
+	res, _, _, _, err := ethereum.ApplyMessage(vmenv, callMsg, stateHelper.gp)
 	if err != nil {
 		utils.Error(fmt.Sprintf("%s Executing Call on WAS", err))
 		return nil, err
