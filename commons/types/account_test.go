@@ -83,7 +83,8 @@ func TestReadAccountFile(t *testing.T) {
 	defer testCleanAccountFile(t, name)
 	newAccount := readAccountFile(name)
 	existingAccount := readAccountFile(name)
-	if newAccount.String() != existingAccount.String(){
+
+	if reflect.DeepEqual(newAccount, existingAccount) == false {
 		t.Error("newAccount not equal to existingAccount")
 	}
 	if newAccount.Address == "" {

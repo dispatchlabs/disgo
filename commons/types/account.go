@@ -269,7 +269,6 @@ func readAccountFile(name_optional ...string) *Account {
 			os.Exit(1)
 		}
 		writeAccountFile(bytes, name)
-		return account
 	}
 	bytes, err := ioutil.ReadFile(fileName)
 	if err != nil {
