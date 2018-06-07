@@ -192,6 +192,15 @@ func (this *Account) UnmarshalJSON(bytes []byte) error {
 		}
 		this.Created = created
 	}
+	if jsonMap["nonce"] != nil {
+		this.Nonce = uint64(jsonMap["nonce"].(float64))
+	}
+	if jsonMap["root"] != nil {
+		this.Root = crypto.GetHashBytes(jsonMap["root"].(string))
+	}
+	if jsonMap["codehash"] != nil {
+		this.CodeHash = crypto.GetHashBytes(jsonMap["codehash"].(string)).Bytes()
+	}
 
 	return nil
 }
@@ -205,6 +214,9 @@ func (this Account) MarshalJSON() ([]byte, error) {
 		Balance    int64     `json:"balance"`
 		Updated    time.Time `json:"updated"`
 		Created    time.Time `json:"created"`
+		Nonce      uint64    `json:"nonce"`
+		Root       string    `json:"root"`
+		CodeHash   string    `json:"codehash"`
 	}{
 		Address:    this.Address,
 		PrivateKey: this.PrivateKey,
@@ -212,6 +224,9 @@ func (this Account) MarshalJSON() ([]byte, error) {
 		Balance:    this.Balance.Int64(),
 		Updated:    this.Updated,
 		Created:    this.Created,
+		Nonce:      this.Nonce,
+		Root:       crypto.Encode(this.Root.Bytes()),
+		CodeHash:   crypto.Encode(this.CodeHash),
 	})
 }
 
