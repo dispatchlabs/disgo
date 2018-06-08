@@ -54,13 +54,13 @@ func NewBadgerDatabase() (*BadgerDatabase, error) {
 // Based on https://github.com/dgraph-io/badger#using-keyvalue-pairs
 // ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~
 func (db *BadgerDatabase) Put(key []byte, value []byte) error {
-	utils.Info(fmt.Sprintf("BadgerDatabase-PUT-Key   : %s", crypto.Encode(key)))
-	utils.Info(fmt.Sprintf("BadgerDatabase-PUT-KeyRAW: %v", key))
-	// utils.Info(fmt.Sprintf("BadgerDatabase-PUT-Val: %s", crypto.Encode(value)))
+	utils.Debug(fmt.Sprintf("BadgerDatabase-PUT-Key   : %s", crypto.Encode(key)))
+	utils.Debug(fmt.Sprintf("BadgerDatabase-PUT-KeyRAW: %v", key))
+	// utils.Debug(fmt.Sprintf("BadgerDatabase-PUT-Val: %s", crypto.Encode(value)))
 
 	// valEncoded := crypto.Encode(value)
 	// if strings.Index(valEncoded, "f90163a0") > -1 {
-	// 	utils.Info("HERE!!!")
+	// 	utils.Debug("HERE!!!")
 	// }
 
 	err := disgoServices.GetDb().Update(func(txn *badger.Txn) error {
@@ -72,8 +72,8 @@ func (db *BadgerDatabase) Put(key []byte, value []byte) error {
 }
 
 func (db *BadgerDatabase) Get(key []byte) ([]byte, error) {
-	utils.Info(fmt.Sprintf("BadgerDatabase-GET-Key   : %s", crypto.Encode(key)))
-	utils.Info(fmt.Sprintf("BadgerDatabase-GET-KeyRAW: %v", key))
+	utils.Debug(fmt.Sprintf("BadgerDatabase-GET-Key   : %s", crypto.Encode(key)))
+	utils.Debug(fmt.Sprintf("BadgerDatabase-GET-KeyRAW: %v", key))
 
 	var value []byte
 	err := disgoServices.GetDb().View(func(txn *badger.Txn) error {
@@ -92,12 +92,12 @@ func (db *BadgerDatabase) Get(key []byte) ([]byte, error) {
 		return nil
 	})
 
-	// utils.Info(fmt.Sprintf("BadgerDatabase-GET-Val: %s", crypto.Encode(value)))
+	// utils.Debug(fmt.Sprintf("BadgerDatabase-GET-Val: %s", crypto.Encode(value)))
 	return value, err
 }
 
 func (db *BadgerDatabase) Has(key []byte) (bool, error) {
-	utils.Info(fmt.Sprintf("BadgerDatabase-HAS-Key: %s", crypto.Encode(key)))
+	utils.Debug(fmt.Sprintf("BadgerDatabase-HAS-Key: %s", crypto.Encode(key)))
 
 	item, err := db.Get(key)
 
@@ -109,17 +109,17 @@ func (db *BadgerDatabase) Has(key []byte) (bool, error) {
 }
 
 func (db *BadgerDatabase) Delete(key []byte) error {
-	utils.Info(fmt.Sprintf("BadgerDatabase-DELETE-Key: %s", crypto.Encode(key)))
+	utils.Debug(fmt.Sprintf("BadgerDatabase-DELETE-Key: %s", crypto.Encode(key)))
 
 	return nil
 }
 
 func (db *BadgerDatabase) Close() {
-	utils.Info(fmt.Sprintf("BadgerDatabase-Close:"))
+	utils.Debug(fmt.Sprintf("BadgerDatabase-Close:"))
 }
 
 func (db *BadgerDatabase) NewBatch() ethdbInterfaces.Batch {
-	utils.Info(fmt.Sprintf("BadgerDatabase-NewBatch:"))
+	utils.Debug(fmt.Sprintf("BadgerDatabase-NewBatch:"))
 	return &memBatch{db: db}
 }
 
@@ -194,11 +194,11 @@ func (b *memBatch) ValueSize() int {
 func (b *memBatch) Write() error {
 	for _, kv := range b.writes {
 
-		// utils.Info(fmt.Sprintf("memBatch-Write-KEY: %v", crypto.Encode(kv.k)))
-		// utils.Info(fmt.Sprintf("memBatch-Write-VAL: %v", crypto.Encode(kv.v)))
+		// utils.Debug(fmt.Sprintf("memBatch-Write-KEY: %v", crypto.Encode(kv.k)))
+		// utils.Debug(fmt.Sprintf("memBatch-Write-VAL: %v", crypto.Encode(kv.v)))
 
-		// utils.Info(fmt.Sprintf("memBatch-Write-KEY-RAW: %v", kv.k))
-		// utils.Info(fmt.Sprintf("memBatch-Write-VAL-RAW: %v", kv.v))
+		// utils.Debug(fmt.Sprintf("memBatch-Write-KEY-RAW: %v", kv.k))
+		// utils.Debug(fmt.Sprintf("memBatch-Write-VAL-RAW: %v", kv.v))
 
 		b.db.Put(kv.k, kv.v)
 	}

@@ -76,7 +76,7 @@ func NewReceipt(root []byte, failed bool, cumulativeGasUsed uint64) *Receipt {
 		r.Status = ReceiptStatusSuccessful
 	}
 
-	utils.Info(fmt.Sprintf("Receipt-NewReceipt: %s", r.String()))
+	utils.Debug(fmt.Sprintf("Receipt-NewReceipt: %s", r.String()))
 
 	return r
 }
@@ -84,7 +84,7 @@ func NewReceipt(root []byte, failed bool, cumulativeGasUsed uint64) *Receipt {
 // EncodeRLP implements rlp.Encoder, and flattens the consensus fields of a receipt
 // into an RLP stream. If no post state is present, byzantium fork is assumed.
 func (r *Receipt) EncodeRLP(w io.Writer) error {
-	utils.Info(fmt.Sprintf("Receipt-EncodeRLP: %s", r.String()))
+	utils.Debug(fmt.Sprintf("Receipt-EncodeRLP: %s", r.String()))
 
 	return rlp.Encode(w, &receiptRLP{r.statusEncoding(), r.CumulativeGasUsed, r.Bloom, r.Logs})
 }
@@ -101,7 +101,7 @@ func (r *Receipt) DecodeRLP(s *rlp.Stream) error {
 	}
 	r.CumulativeGasUsed, r.Bloom, r.Logs = dec.CumulativeGasUsed, dec.Bloom, dec.Logs
 
-	utils.Info(fmt.Sprintf("Receipt-DecodeRLP: %s", r.String()))
+	utils.Debug(fmt.Sprintf("Receipt-DecodeRLP: %s", r.String()))
 	return nil
 }
 
@@ -117,7 +117,7 @@ func (r *Receipt) setStatus(postStateOrStatus []byte) error {
 		return fmt.Errorf("invalid receipt status %x", postStateOrStatus)
 	}
 
-	utils.Info(fmt.Sprintf("Receipt-setStatus: %s", r.String()))
+	utils.Debug(fmt.Sprintf("Receipt-setStatus: %s", r.String()))
 
 	return nil
 }
@@ -130,7 +130,7 @@ func (r *Receipt) statusEncoding() []byte {
 		return receiptStatusSuccessfulRLP
 	}
 
-	utils.Info(fmt.Sprintf("Receipt-statusEncoding: %s", r.String()))
+	utils.Debug(fmt.Sprintf("Receipt-statusEncoding: %s", r.String()))
 
 	return r.PostState
 }
@@ -145,7 +145,7 @@ func (r *Receipt) Size() common.StorageSize {
 		size += common.StorageSize(len(log.Topics)*crypto.HashLength + len(log.Data))
 	}
 
-	utils.Info(fmt.Sprintf("Receipt-Size: %v", size))
+	utils.Debug(fmt.Sprintf("Receipt-Size: %v", size))
 
 	return size
 }

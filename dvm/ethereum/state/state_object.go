@@ -25,6 +25,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"
+	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
 var emptyCodeHash = crypto.NewHash(nil).Bytes()
@@ -193,7 +194,7 @@ func (self *stateObject) GetState(db Database, key crypto.HashBytes) crypto.Hash
 
 // SetState updates a value in account storage.
 func (self *stateObject) SetState(db Database, key, value crypto.HashBytes) {
-	fmt.Printf("***** DB SetState: %s\n", crypto.HashBytesToHashString(key))
+	utils.Debug("***** DB SetState: %s\n", crypto.HashBytesToHashString(key))
 	var addressAsBytes = crypto.GetAddressBytes(self.account.Address)
 
 	self.db.journal.append(storageChange{

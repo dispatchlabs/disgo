@@ -105,7 +105,7 @@ func New(root crypto.HashBytes, db Database) (*StateDB, error) {
 
 // setError remembers the first non-nil error it is called with.
 func (self *StateDB) setError(err error) {
-	utils.Info(fmt.Sprintf("StateDB-setError: %v", err))
+	utils.Debug(fmt.Sprintf("StateDB-setError: %v", err))
 
 	if self.dbErr == nil {
 		self.dbErr = err
@@ -119,7 +119,7 @@ func (self *StateDB) Error() error {
 // Reset clears out all ephemeral state objects from the state db, but keeps
 // the underlying state trie to avoid reloading data for the next operations.
 func (self *StateDB) Reset(root crypto.HashBytes) error {
-	utils.Info(fmt.Sprintf("StateDB-Reset: %s", crypto.Encode(root[:])))
+	utils.Debug(fmt.Sprintf("StateDB-Reset: %s", crypto.Encode(root[:])))
 
 	tr, err := self.db.OpenTrie(root)
 	if err != nil {
@@ -139,7 +139,7 @@ func (self *StateDB) Reset(root crypto.HashBytes) error {
 }
 
 func (self *StateDB) AddLog(log *types.Log) {
-	utils.Info(fmt.Sprintf("StateDB-AddLog: %v", log))
+	utils.Debug(fmt.Sprintf("StateDB-AddLog: %v", log))
 
 	self.journal.append(addLogChange{txhash: self.thash})
 
@@ -152,7 +152,7 @@ func (self *StateDB) AddLog(log *types.Log) {
 }
 
 func (self *StateDB) GetLogs(hash crypto.HashBytes) []*types.Log {
-	utils.Info(fmt.Sprintf("StateDB-GetLogs: %s", crypto.Encode(hash[:])))
+	utils.Debug(fmt.Sprintf("StateDB-GetLogs: %s", crypto.Encode(hash[:])))
 
 	return self.logs[hash]
 }
@@ -167,7 +167,7 @@ func (self *StateDB) Logs() []*types.Log {
 
 // AddPreimage records a SHA3 preimage seen by the VM.
 func (self *StateDB) AddPreimage(hash crypto.HashBytes, preimage []byte) {
-	utils.Info(fmt.Sprintf("StateDB-AddPreimage: %s", crypto.Encode(hash[:])))
+	utils.Debug(fmt.Sprintf("StateDB-AddPreimage: %s", crypto.Encode(hash[:])))
 
 	if _, ok := self.preimages[hash]; !ok {
 		self.journal.append(addPreimageChange{hash: hash})
@@ -183,7 +183,7 @@ func (self *StateDB) Preimages() map[crypto.HashBytes][]byte {
 }
 
 func (self *StateDB) AddRefund(gas uint64) {
-	utils.Info(fmt.Sprintf("StateDB-AddRefund: %v", gas))
+	utils.Debug(fmt.Sprintf("StateDB-AddRefund: %v", gas))
 
 	self.journal.append(refundChange{prev: self.refund})
 	self.refund += gas
@@ -192,7 +192,7 @@ func (self *StateDB) AddRefund(gas uint64) {
 // Exist reports whether the given account address exists in the state.
 // Notably this also returns true for suicided accounts.
 func (self *StateDB) Exist(addr crypto.AddressBytes) bool {
-	utils.Info(fmt.Sprintf("StateDB-Exist: %s", crypto.Encode(addr[:])))
+	utils.Debug(fmt.Sprintf("StateDB-Exist: %s", crypto.Encode(addr[:])))
 
 	return self.getStateObject(addr) != nil
 }
@@ -200,7 +200,7 @@ func (self *StateDB) Exist(addr crypto.AddressBytes) bool {
 // Empty returns whether the state object is either non-existent
 // or empty according to the EIP161 specification (balance = nonce = code = 0)
 func (self *StateDB) Empty(addr crypto.AddressBytes) bool {
-	utils.Info(fmt.Sprintf("StateDB-Empty: %s", crypto.Encode(addr[:])))
+	utils.Debug(fmt.Sprintf("StateDB-Empty: %s", crypto.Encode(addr[:])))
 
 	so := self.getStateObject(addr)
 	return so == nil || so.empty()
@@ -208,11 +208,11 @@ func (self *StateDB) Empty(addr crypto.AddressBytes) bool {
 
 // Retrieve the balance from the given address or 0 if object not found
 func (self *StateDB) GetBalance(addr crypto.AddressBytes) *big.Int {
-	utils.Info(fmt.Sprintf("StateDB-GetBalance: %s", crypto.Encode(addr[:])))
+	utils.Debug(fmt.Sprintf("StateDB-GetBalance: %s", crypto.Encode(addr[:])))
 
 	stateObject := self.getStateObject(addr)
 	if stateObject != nil {
-		// utils.Info(fmt.Sprintf("%s : %d @ %s", common.EthAddressToDispatchAddress(addr), stateObject.Balance(), utils.GetCallStackWithFileAndLineNumber()))
+		// utils.Debug(fmt.Sprintf("%s : %d @ %s", common.EthAddressToDispatchAddress(addr), stateObject.Balance(), utils.GetCallStackWithFileAndLineNumber()))
 
 		return stateObject.account.Balance
 	}
@@ -220,7 +220,7 @@ func (self *StateDB) GetBalance(addr crypto.AddressBytes) *big.Int {
 }
 
 func (self *StateDB) GetNonce(addr crypto.AddressBytes) uint64 {
-	utils.Info(fmt.Sprintf("StateDB-GetNonce: %s", crypto.Encode(addr[:])))
+	utils.Debug(fmt.Sprintf("StateDB-GetNonce: %s", crypto.Encode(addr[:])))
 
 	stateObject := self.getStateObject(addr)
 	if stateObject != nil {
@@ -231,7 +231,7 @@ func (self *StateDB) GetNonce(addr crypto.AddressBytes) uint64 {
 }
 
 func (self *StateDB) GetCode(addr crypto.AddressBytes) []byte {
-	utils.Info(fmt.Sprintf("StateDB-GetCode: %s", crypto.Encode(addr[:])))
+	utils.Debug(fmt.Sprintf("StateDB-GetCode: %s", crypto.Encode(addr[:])))
 
 	stateObject := self.getStateObject(addr)
 	if stateObject != nil {
@@ -241,7 +241,7 @@ func (self *StateDB) GetCode(addr crypto.AddressBytes) []byte {
 }
 
 func (self *StateDB) GetCodeSize(addr crypto.AddressBytes) int {
-	utils.Info(fmt.Sprintf("StateDB-GetCodeSize: %s", crypto.Encode(addr[:])))
+	utils.Debug(fmt.Sprintf("StateDB-GetCodeSize: %s", crypto.Encode(addr[:])))
 
 	stateObject := self.getStateObject(addr)
 	if stateObject == nil {
@@ -262,7 +262,7 @@ func (self *StateDB) GetCodeSize(addr crypto.AddressBytes) int {
 }
 
 func (self *StateDB) GetCodeHash(addr crypto.AddressBytes) crypto.HashBytes {
-	utils.Info(fmt.Sprintf("StateDB-GetCodeHash: %s", crypto.Encode(addr[:])))
+	utils.Debug(fmt.Sprintf("StateDB-GetCodeHash: %s", crypto.Encode(addr[:])))
 
 	stateObject := self.getStateObject(addr)
 	if stateObject == nil {
@@ -272,7 +272,7 @@ func (self *StateDB) GetCodeHash(addr crypto.AddressBytes) crypto.HashBytes {
 }
 
 func (self *StateDB) GetState(addr crypto.AddressBytes, bhash crypto.HashBytes) crypto.HashBytes {
-	utils.Info(fmt.Sprintf("StateDB-GetState: %s", crypto.Encode(addr[:])))
+	utils.Debug(fmt.Sprintf("StateDB-GetState: %s", crypto.Encode(addr[:])))
 
 	stateObject := self.getStateObject(addr)
 	if stateObject != nil {
@@ -289,7 +289,7 @@ func (self *StateDB) Database() Database {
 // StorageTrie returns the storage trie of an account.
 // The return value is a copy and is nil for non-existent accounts.
 func (self *StateDB) StorageTrie(addr crypto.AddressBytes) Trie {
-	utils.Info(fmt.Sprintf("StateDB-StorageTrie: %s", crypto.Encode(addr[:])))
+	utils.Debug(fmt.Sprintf("StateDB-StorageTrie: %s", crypto.Encode(addr[:])))
 
 	stateObject := self.getStateObject(addr)
 	if stateObject == nil {
@@ -300,7 +300,7 @@ func (self *StateDB) StorageTrie(addr crypto.AddressBytes) Trie {
 }
 
 func (self *StateDB) HasSuicided(addr crypto.AddressBytes) bool {
-	utils.Info(fmt.Sprintf("StateDB-HasSuicided: %s", crypto.Encode(addr[:])))
+	utils.Debug(fmt.Sprintf("StateDB-HasSuicided: %s", crypto.Encode(addr[:])))
 
 	stateObject := self.getStateObject(addr)
 	if stateObject != nil {
@@ -315,7 +315,7 @@ func (self *StateDB) HasSuicided(addr crypto.AddressBytes) bool {
 
 // AddBalance adds amount to the account associated with addr.
 func (self *StateDB) AddBalance(addr crypto.AddressBytes, amount *big.Int) {
-	utils.Info(fmt.Sprintf("StateDB-AddBalance: %s", crypto.Encode(addr[:])))
+	utils.Debug(fmt.Sprintf("StateDB-AddBalance: %s", crypto.Encode(addr[:])))
 
 	stateObject := self.GetOrNewStateObject(addr)
 	if stateObject != nil {
@@ -326,7 +326,7 @@ func (self *StateDB) AddBalance(addr crypto.AddressBytes, amount *big.Int) {
 
 // SubBalance subtracts amount from the account associated with addr.
 func (self *StateDB) SubBalance(addr crypto.AddressBytes, amount *big.Int) {
-	utils.Info(fmt.Sprintf("StateDB-SubBalance: %s", crypto.Encode(addr[:])))
+	utils.Debug(fmt.Sprintf("StateDB-SubBalance: %s", crypto.Encode(addr[:])))
 
 	stateObject := self.GetOrNewStateObject(addr)
 	if stateObject != nil {
@@ -337,7 +337,7 @@ func (self *StateDB) SubBalance(addr crypto.AddressBytes, amount *big.Int) {
 }
 
 func (self *StateDB) SetBalance(addr crypto.AddressBytes, amount *big.Int) {
-	utils.Info(fmt.Sprintf("StateDB-SetBalance: %s", crypto.Encode(addr[:])))
+	utils.Debug(fmt.Sprintf("StateDB-SetBalance: %s", crypto.Encode(addr[:])))
 
 	stateObject := self.GetOrNewStateObject(addr)
 	if stateObject != nil {
@@ -346,7 +346,7 @@ func (self *StateDB) SetBalance(addr crypto.AddressBytes, amount *big.Int) {
 }
 
 func (self *StateDB) SetNonce(addr crypto.AddressBytes, nonce uint64) {
-	utils.Info(fmt.Sprintf("StateDB-SetNonce: %s", crypto.Encode(addr[:])))
+	utils.Debug(fmt.Sprintf("StateDB-SetNonce: %s", crypto.Encode(addr[:])))
 
 	stateObject := self.GetOrNewStateObject(addr)
 	if stateObject != nil {
@@ -355,7 +355,7 @@ func (self *StateDB) SetNonce(addr crypto.AddressBytes, nonce uint64) {
 }
 
 func (self *StateDB) SetCode(addr crypto.AddressBytes, code []byte) {
-	utils.Info(fmt.Sprintf("StateDB-SetCode: %s", crypto.Encode(addr[:])))
+	utils.Debug(fmt.Sprintf("StateDB-SetCode: %s", crypto.Encode(addr[:])))
 
 	stateObject := self.GetOrNewStateObject(addr)
 	if stateObject != nil {
@@ -364,7 +364,7 @@ func (self *StateDB) SetCode(addr crypto.AddressBytes, code []byte) {
 }
 
 func (self *StateDB) SetState(addr crypto.AddressBytes, key, value crypto.HashBytes) {
-	utils.Info(fmt.Sprintf("StateDB-SetState: %s", crypto.Encode(addr[:])))
+	utils.Debug(fmt.Sprintf("StateDB-SetState: %s", crypto.Encode(addr[:])))
 
 	stateObject := self.GetOrNewStateObject(addr)
 	if stateObject != nil {
@@ -378,7 +378,7 @@ func (self *StateDB) SetState(addr crypto.AddressBytes, key, value crypto.HashBy
 // The account's state object is still available until the state is committed,
 // getStateObject will return a non-nil account after Suicide.
 func (self *StateDB) Suicide(addr crypto.AddressBytes) bool {
-	utils.Info(fmt.Sprintf("StateDB-Suicide: %s", crypto.Encode(addr[:])))
+	utils.Debug(fmt.Sprintf("StateDB-Suicide: %s", crypto.Encode(addr[:])))
 
 	stateObject := self.getStateObject(addr)
 	if stateObject == nil {
@@ -402,22 +402,22 @@ func (self *StateDB) Suicide(addr crypto.AddressBytes) bool {
 
 // updateStateObject writes the given object to the trie.
 func (self *StateDB) updateStateObject(stateObject *stateObject) {
-	utils.Info(fmt.Sprintf("StateDB-updateStateObject:"))
+	utils.Debug(fmt.Sprintf("StateDB-updateStateObject:"))
 
 	var addressAsBytes = crypto.GetAddressBytes(stateObject.account.Address)
 	data, err := rlp.EncodeToBytes(stateObject)
 	if err != nil {
 		panic(fmt.Errorf("can't encode object at %x: %v", addressAsBytes[:], err))
 	}
-	if len(stateObject.code) > 0 {
-		fmt.Printf("This is where you want your breakpoint")
-	}
+	//if len(stateObject.code) > 0 {
+	//	fmt.Printf("This is where you want your breakpoint")
+	//}
 	self.setError(self.trie.TryUpdate(addressAsBytes[:], data))
 }
 
 // deleteStateObject removes the given object from the state trie.
 func (self *StateDB) deleteStateObject(stateObject *stateObject) {
-	utils.Info(fmt.Sprintf("StateDB-deleteStateObject:"))
+	utils.Debug(fmt.Sprintf("StateDB-deleteStateObject:"))
 
 	stateObject.deleted = true
 
@@ -427,7 +427,7 @@ func (self *StateDB) deleteStateObject(stateObject *stateObject) {
 
 // Retrieve a state object given my the address. Returns nil if not found.
 func (self *StateDB) getStateObject(addr crypto.AddressBytes) (stateObject *stateObject) {
-	utils.Info(fmt.Sprintf("StateDB-getStateObject: %s", crypto.Encode(addr[:])))
+	utils.Debug(fmt.Sprintf("StateDB-getStateObject: %s", crypto.Encode(addr[:])))
 
 	// Prefer 'live' objects.
 	if obj := self.stateObjects[addr]; obj != nil {
@@ -455,7 +455,7 @@ func (self *StateDB) getStateObject(addr crypto.AddressBytes) (stateObject *stat
 }
 
 func (self *StateDB) setStateObject(object *stateObject) {
-	utils.Info(fmt.Sprintf("StateDB-setStateObject:"))
+	utils.Debug(fmt.Sprintf("StateDB-setStateObject:"))
 
 	self.lock.Lock()
 	defer self.lock.Unlock()
@@ -467,7 +467,7 @@ func (self *StateDB) setStateObject(object *stateObject) {
 
 // Retrieve a state object or create a new state object if nil.
 func (self *StateDB) GetOrNewStateObject(addr crypto.AddressBytes) *stateObject {
-	utils.Info(fmt.Sprintf("StateDB-GetOrNewStateObject: %s", crypto.Encode(addr[:])))
+	utils.Debug(fmt.Sprintf("StateDB-GetOrNewStateObject: %s", crypto.Encode(addr[:])))
 
 	stateObject := self.getStateObject(addr)
 	if stateObject == nil || stateObject.deleted {
@@ -479,7 +479,7 @@ func (self *StateDB) GetOrNewStateObject(addr crypto.AddressBytes) *stateObject 
 // createObject creates a new state object. If there is an existing account with
 // the given address, it is overwritten and returned as the second return value.
 func (self *StateDB) createObject(addr crypto.AddressBytes) (newobj, prev *stateObject) {
-	utils.Info(fmt.Sprintf("StateDB-createObject: %s", crypto.Encode(addr[:])))
+	utils.Debug(fmt.Sprintf("StateDB-createObject: %s", crypto.Encode(addr[:])))
 
 	prev = self.getStateObject(addr)
 
@@ -523,7 +523,7 @@ func (self *StateDB) createObject(addr crypto.AddressBytes) (newobj, prev *state
 //
 // Carrying over the balance ensures that Ether doesn't disappear.
 func (self *StateDB) CreateAccount(addr crypto.AddressBytes) {
-	utils.Info(fmt.Sprintf("StateDB-CreateAccount: %s", crypto.Encode(addr[:])))
+	utils.Debug(fmt.Sprintf("StateDB-CreateAccount: %s", crypto.Encode(addr[:])))
 
 	new, prev := self.createObject(addr)
 	if prev != nil {
@@ -532,7 +532,7 @@ func (self *StateDB) CreateAccount(addr crypto.AddressBytes) {
 }
 
 func (db *StateDB) ForEachStorage(addr crypto.AddressBytes, cb func(key, value crypto.HashBytes) bool) {
-	utils.Info(fmt.Sprintf("StateDB-ForEachStorage: %s", crypto.Encode(addr[:])))
+	utils.Debug(fmt.Sprintf("StateDB-ForEachStorage: %s", crypto.Encode(addr[:])))
 
 	so := db.getStateObject(addr)
 	if so == nil {
@@ -557,7 +557,7 @@ func (db *StateDB) ForEachStorage(addr crypto.AddressBytes, cb func(key, value c
 // Copy creates a deep, independent copy of the state.
 // Snapshots of the copied state cannot be applied to the copy.
 func (self *StateDB) Copy() *StateDB {
-	utils.Info(fmt.Sprintf("StateDB-Copy:"))
+	utils.Debug(fmt.Sprintf("StateDB-Copy:"))
 
 	self.lock.Lock()
 	defer self.lock.Unlock()
@@ -601,7 +601,7 @@ func (self *StateDB) Copy() *StateDB {
 
 // Snapshot returns an identifier for the current revision of the state.
 func (self *StateDB) Snapshot() int {
-	utils.Info(fmt.Sprintf("StateDB-Snapshot:"))
+	utils.Debug(fmt.Sprintf("StateDB-Snapshot:"))
 
 	id := self.nextRevisionId
 	self.nextRevisionId++
@@ -611,7 +611,7 @@ func (self *StateDB) Snapshot() int {
 
 // RevertToSnapshot reverts all state changes made since the given revision.
 func (self *StateDB) RevertToSnapshot(revid int) {
-	utils.Info(fmt.Sprintf("StateDB-RevertToSnapshot:"))
+	utils.Debug(fmt.Sprintf("StateDB-RevertToSnapshot:"))
 
 	// Find the snapshot in the stack of valid snapshots.
 	idx := sort.Search(len(self.validRevisions), func(i int) bool {
@@ -629,7 +629,7 @@ func (self *StateDB) RevertToSnapshot(revid int) {
 
 // GetRefund returns the current value of the refund counter.
 func (self *StateDB) GetRefund() uint64 {
-	utils.Info(fmt.Sprintf("StateDB-GetRefund:"))
+	utils.Debug(fmt.Sprintf("StateDB-GetRefund:"))
 
 	return self.refund
 }
@@ -637,7 +637,7 @@ func (self *StateDB) GetRefund() uint64 {
 // Finalise finalises the state by removing the self destructed objects
 // and clears the journal as well as the refunds.
 func (s *StateDB) Finalise(deleteEmptyObjects bool) {
-	utils.Info(fmt.Sprintf("StateDB-Finalise:"))
+	utils.Debug(fmt.Sprintf("StateDB-Finalise:"))
 
 	for addr := range s.journal.dirties {
 		stateObject, exist := s.stateObjects[addr]
@@ -667,7 +667,7 @@ func (s *StateDB) Finalise(deleteEmptyObjects bool) {
 // It is called in between transactions to get the root hash that
 // goes into transaction receipts.
 func (s *StateDB) IntermediateRoot(deleteEmptyObjects bool) crypto.HashBytes {
-	utils.Info(fmt.Sprintf("StateDB-IntermediateRoot:"))
+	utils.Debug(fmt.Sprintf("StateDB-IntermediateRoot:"))
 
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -679,7 +679,7 @@ func (s *StateDB) IntermediateRoot(deleteEmptyObjects bool) crypto.HashBytes {
 // Prepare sets the current transaction hash and index and block hash which is
 // used when the EVM emits new state logs.
 func (self *StateDB) Prepare(thash, bhash crypto.HashBytes, ti int) {
-	utils.Info(fmt.Sprintf("StateDB-Prepare:"))
+	utils.Debug(fmt.Sprintf("StateDB-Prepare:"))
 
 	self.thash = thash
 	self.bhash = bhash
@@ -692,7 +692,7 @@ func (self *StateDB) Prepare(thash, bhash crypto.HashBytes, ti int) {
 // DeleteSuicides should not be used for consensus related updates
 // under any circumstances.
 func (s *StateDB) DeleteSuicides() {
-	utils.Info(fmt.Sprintf("StateDB-DeleteSuicides:"))
+	utils.Debug(fmt.Sprintf("StateDB-DeleteSuicides:"))
 
 	// Reset refund so that any used-gas calculations can use this method.
 	s.clearJournalAndRefund()
@@ -710,7 +710,7 @@ func (s *StateDB) DeleteSuicides() {
 }
 
 func (s *StateDB) clearJournalAndRefund() {
-	utils.Info(fmt.Sprintf("StateDB-clearJournalAndRefund:"))
+	utils.Debug(fmt.Sprintf("StateDB-clearJournalAndRefund:"))
 
 	s.journal = newJournal()
 	s.validRevisions = s.validRevisions[:0]
@@ -719,7 +719,7 @@ func (s *StateDB) clearJournalAndRefund() {
 
 // Commit writes the state to the underlying in-memory trie database.
 func (s *StateDB) Commit(deleteEmptyObjects bool) (root crypto.HashBytes, err error) {
-	utils.Info(fmt.Sprintf("StateDB-Commit:"))
+	utils.Debug(fmt.Sprintf("StateDB-Commit:"))
 
 	defer s.clearJournalAndRefund()
 

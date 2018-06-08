@@ -44,7 +44,7 @@ type receiptStorageRLP struct {
 // EncodeRLP implements rlp.Encoder, and flattens all content fields of a receipt
 // into an RLP stream.
 func (r *ReceiptForStorage) EncodeRLP(w io.Writer) error {
-	utils.Info(fmt.Sprintf("ReceiptForStorage-EncodeRLP: %s", r.String()))
+	utils.Debug(fmt.Sprintf("ReceiptForStorage-EncodeRLP: %s", r.String()))
 
 	enc := &receiptStorageRLP{
 		PostStateOrStatus: (*Receipt)(r).statusEncoding(),
@@ -81,7 +81,7 @@ func (r *ReceiptForStorage) DecodeRLP(s *rlp.Stream) error {
 	// Assign the implementation fields
 	r.TxHash, r.ContractAddress, r.GasUsed = dec.TxHash, dec.ContractAddress, dec.GasUsed
 
-	utils.Info(fmt.Sprintf("ReceiptForStorage-DecodeRLP: %s", r.String()))
+	utils.Debug(fmt.Sprintf("ReceiptForStorage-DecodeRLP: %s", r.String()))
 	return nil
 }
 
