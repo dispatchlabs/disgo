@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"github.com/dispatchlabs/disgo/commons/crypto"
 
-	"github.com/gin-gonic/gin/json"
+	"encoding/hex"
 )
 
 func Build() {
@@ -73,26 +73,44 @@ func PrintMyTree(eng merkleTree.StorageEngine, tree *merkleTree.Tree) {
 	if err != nil {
 		fmt.Errorf(err.Error())
 	}
-	printNodes(tree, node)
+	printNodes(eng, tree, node)
 }
 
-func printNodes(tree *merkleTree.Tree, node *merkleTree.Node) {
+func printNodes(eng merkleTree.StorageEngine, tree *merkleTree.Tree, node *merkleTree.Node) {
+	if node == nil {
+		fmt.Printf("Child is null\n")
+		return
+	}
 	if(len(node.INodes) > 0) {
 		for _, hash := range node.INodes {
-			//var child *merkleTree.Node
-			val, nodeHash, err := tree.Find(context.TODO(), hash)
-			fmt.Printf("Node Value: %v\n", val)
-			//err = merkleTree.DecodeFromBytes(&child, val)
+			if len(hash) == 0 {
+				continue
+			}
+			var child *merkleTree.Node
+			childNode, err := eng.LookupNode(context.TODO(), hash)
+			//fmt.Printf("Hash Value: %v\n", hash)
+			//val, nodeHash, err := tree.Find(context.TODO(), hash)
+			_, nodeHash, err := tree.Find(context.TODO(), hash)
+			//fmt.Printf("Node Value: %v\n", val)
+			err = merkleTree.DecodeFromBytes(&child, childNode)
 			if err != nil {
 				fmt.Errorf(err.Error())
 			}
+			//fmt.Printf("ChildNode Value: %v\n", childNode)
 			jsn, _ := hash.MarshalJSON()
 			jsn2, _ := nodeHash.MarshalJSON()
 			fmt.Printf("Hash: = %v --> Parent %v\n", string(jsn), string(jsn2))
-			//printNodes(tree, child)
+			printNodes(eng, tree, child)
+		}
+	} else {
+		if node != nil {
+			fmt.Printf("Leaf Len: %v\n", len(node.Leafs))
 		}
 	}
-	ret, _ := json.MarshalIndent(node, "", "   ")
-	fmt.Printf("%v\n", string(ret))
+	for _, kvp := range node.Leafs {
+		fmt.Printf("Leaf: %v\n", hex.EncodeToString(kvp.Key)[0:8])
+	}
+	//ret, _ := json.MarshalIndent(node, "", "   ")
+	//fmt.Printf("%v\n", string(ret))
 
 }
