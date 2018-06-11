@@ -52,7 +52,7 @@ func (of *TestFactory) Mproduce(n int) []merkleTree.KeyValuePair {
 func (of *TestFactory) Produce() merkleTree.KeyValuePair {
 	var testTX *types.Transaction
 	testTX = mockTransaction()
-	key := testTX.CalculateHash()
+	key := crypto.GetHashBytes(testTX.Hash).Bytes()
 	keyString := hex.EncodeToString(key)
 
 	val := testValue{Seqno: of.seqno, Key: keyString, KeyRaw: key}

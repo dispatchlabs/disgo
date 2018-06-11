@@ -191,7 +191,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, contractAddress crypto.Ad
 	// Pay intrinsic gas
 	gas, err := IntrinsicGas(st.data, contractCreation, homestead)
 	if err != nil {
-		return nil, crypto.AddressBytes{}, 0,false, err
+		return nil, crypto.AddressBytes{}, 0, false, err
 	}
 	if err = st.useGas(gas); err != nil {
 		return nil, crypto.AddressBytes{}, 0, false, err
@@ -206,6 +206,9 @@ func (st *StateTransition) TransitionDb() (ret []byte, contractAddress crypto.Ad
 	)
 	if contractCreation {
 		ret, contractAddress, st.gas, vmerr = evm.Create(sender, st.data, st.gas, st.value)
+
+		// Make sure next time there is new `salt` - copied from below
+		st.state.SetNonce(msg.From(), st.state.GetNonce(sender.Address())+1)
 	} else {
 		// Increment the nonce for the next transaction
 		st.state.SetNonce(msg.From(), st.state.GetNonce(sender.Address())+1)
