@@ -38,6 +38,7 @@ func (dvm *DVMService) DeploySmartContract(tx *commonTypes.Transaction) (*DVMRes
 		return nil, err
 	}
 
+	stateHelper.ethStateDB.SetNonce(crypto.GetAddressBytes(tx.From), uint64(tx.Time))
 	if err := dvm.applyTransaction(tx, stateHelper); err != nil {
 		utils.Error(err)
 		return nil, err
