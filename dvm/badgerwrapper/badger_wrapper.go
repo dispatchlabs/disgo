@@ -23,11 +23,12 @@ import (
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
 	// "github.com/dispatchlabs/disgo/dvm/ethereum/ethdb"
+	"strings"
+
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	disgoServices "github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	ethdbInterfaces "github.com/dispatchlabs/disgo/dvm/ethereum/ethdb"
-	"strings"
 )
 
 var badgerDatabaseInstance *BadgerDatabase
@@ -130,7 +131,7 @@ func (db *BadgerDatabase) Dump() {
 		opts.PrefetchSize = 100
 		it := txn.NewIterator(opts)
 		defer it.Close()
-		fmt.Println("\n\n*****************************************************************************\n")
+		fmt.Println("\n\n*****************************************************************************")
 		for it.Rewind(); it.Valid(); it.Next() {
 			item := it.Item()
 			key := item.Key()
@@ -138,14 +139,14 @@ func (db *BadgerDatabase) Dump() {
 			if err != nil {
 				return err
 			}
-			if(!strings.HasPrefix(string(key), "key")) {
+			if !strings.HasPrefix(string(key), "key") {
 				fmt.Printf("\nItem:\nKey: %v\nValue:%v\n", crypto.Encode(key), crypto.Encode(value))
 				fmt.Printf("Key: %v\nValue: %v\n", string(key), string(value))
 				fmt.Printf("Key: %v\nValue: %v\n", key, value)
 			}
 			//items = append(items, &proto.Item{Key: string(key), Value: string(value)})
 		}
-		fmt.Println("*****************************************************************************\n\n")
+		fmt.Println("*****************************************************************************")
 		return nil
 	})
 	if err != nil {
