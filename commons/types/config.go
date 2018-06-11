@@ -40,7 +40,7 @@ func GetConfig() *Config {
 				Port: 1975,
 			},
 			GrpcEndpoint: &Endpoint{
-				Host: "",
+				Host: "127.0.0.1",
 				Port: 1973,
 			},
 			GrpcTimeout: 5,
