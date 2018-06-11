@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-var testReceiptByte = []byte("{\"id\":\"60ef98ce-73b2-470e-ae92-4cd0a1eae0a3\",\"type\":\"test\",\"status\":\"Pending\",\"humanReadableStatus\":\"Pending\",\"data\":\"test data\",\"created\":\"2018-05-09T15:04:05Z\"}")
+var testReceiptByte = []byte("{\"id\":\"60ef98ce-73b2-470e-ae92-4cd0a1eae0a3\",\"type\":\"test\",\"status\":\"Pending\",\"humanReadableStatus\":\"Pending\",\"data\":\"test data\",\"contractAddress\":\"\",\"contractResult\":\"\",\"created\":\"2018-05-09T15:04:05Z\"}")
 
 func TestNewReceipt(t *testing.T) {
 	receipt := NewReceipt("test")
@@ -162,6 +162,9 @@ func testReceiptStruct(t *testing.T, receipt *Receipt) {
 	if receipt.Key() != "table-receipt-60ef98ce-73b2-470e-ae92-4cd0a1eae0a3" {
 		t.Errorf("receipt.Key() returning invalid %s value: %s", "Key", receipt.Key())
 	}
+
+	// fmt.Print(receipt.String())
+
 	if receipt.String() != string(testReceiptByte) {
 		t.Errorf("receipt.String() returning invalid value.\nGot: %s\nExpected: %s", receipt.String(), string(testReceiptByte))
 	}
