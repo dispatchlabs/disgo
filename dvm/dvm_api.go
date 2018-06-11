@@ -59,6 +59,7 @@ func (dvm *DVMService) DeploySmartContract(tx *commonTypes.Transaction) (*DVMRes
 		To:                 receipt.ContractAddress,
 		ABI:                "",
 		StorageState:       stateHelper,
+		ContractAddress:    receipt.ContractAddress,
 		ContractExecError:  nil,
 		ContractExecResult: nil,
 

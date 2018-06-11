@@ -64,7 +64,7 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 		return receipt
 	}
 
-	// TODO: Check minimum hertz!!!!!
+	// TODO: Check minimum hertz and balance!!!!!
 
 	// Are we already gossiping about this transaction?
 	_, ok := services.GetCache().Get(transaction.Hash)
@@ -179,7 +179,7 @@ func (this *DAPoSService) gossipWorker() {
 			}
 
 			// Peer gossip.
-			peerGossip, err := this.peerGossipGrpc(*node, gossip)
+			peerGossip, err := this.peerGossipGrpc(*node, gossip) // TODO: Maybe this should be a different channel????
 			if err != nil {
 				utils.Error(err)
 				continue
@@ -226,13 +226,13 @@ func (this *DAPoSService) transactionWorker() {
 			//defer services.Unlock(transaction.From)
 			//services.Lock(transaction.To)
 			//defer services.Unlock(transaction.To)
-			txn := services.NewTxn(true)
-			defer txn.Discard()
+			txn := services.NewTxn(false)
 
 			// TODO: Should we check the receipt status is pending?
 
 			// Has this transaction already been processed?
 			_, err := txn.Get([]byte(transaction.Key()))
+			txn.Discard()
 			if err == nil {
 				continue
 			}
@@ -257,49 +257,28 @@ func (this *DAPoSService) transactionWorker() {
 				continue
 			}
 
-			if len(strings.TrimSpace(transaction.To)) == 0 &&
-				len(strings.TrimSpace(transaction.Code)) != 0 {
-
-				// DEPLOY
-				dvmService := dvm.GetDVMService()
-				dvmResult, err := dvmService.DeploySmartContract(&transaction)
-				if err != nil {
-					utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
-				}
-
-				processDVMResult(dvmResult)
-
-			} else if len(strings.TrimSpace(transaction.To)) != 0 &&
-				len(strings.TrimSpace(transaction.Abi)) != 0 &&
-				len(strings.TrimSpace(transaction.Method)) != 0 {
-
-				// EXECUTE
-				dvmService := dvm.GetDVMService()
-				dvmResult, err1 := dvmService.ExecuteSmartContract(&transaction)
-				if err1 != nil {
-					utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
-				}
-
-				processDVMResult(dvmResult)
+			if len(strings.TrimSpace(transaction.To)) == 0 && len(strings.TrimSpace(transaction.Code)) != 0 {
+				deploySmartContract(&transaction, receipt, gossip)
+			} else if len(strings.TrimSpace(transaction.To)) != 0 && len(strings.TrimSpace(transaction.Abi)) != 0 && len(strings.TrimSpace(transaction.Method)) != 0 {
+				executeSmartContract(&transaction, receipt, gossip)
 			} else {
-
-				// TRANSFER $$$
-				TransferTokens(&transaction, txn, receipt, gossip)
+				transferTokens(&transaction, receipt, gossip)
 			}
 		}
 	}
 }
 
-// - TransferTokens is only called if it is a simple transfer and has no contract
-func TransferTokens(transaction *types.Transaction, txn *badger.Txn, receipt *types.Receipt, gossip *types.Gossip) {
+// - transferTokens is only called if it is a simple transfer and has no contract
+func transferTokens(transaction *types.Transaction, receipt *types.Receipt, gossip *types.Gossip) {
+
+	txn := services.NewTxn(true)
+	defer txn.Discard()
+
 	// Find/create fromAccount?
 	now := time.Now()
-	var fromAccount *types.Account
 	fromAccount, err := types.ToAccountByAddress(txn, transaction.From)
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
-			utils.Error(fmt.Sprintf("txKeyFrom = %s", transaction.From), err)
-
 			fromAccount = &types.Account{Address: transaction.From, Balance: big.NewInt(0), Created: now}
 		} else {
 			utils.Error(err)
@@ -318,12 +297,9 @@ func TransferTokens(transaction *types.Transaction, txn *badger.Txn, receipt *ty
 	}
 
 	// Find/create toAccount?
-	var toAccount *types.Account
-	toAccount, err = types.ToAccountByAddress(txn, transaction.To)
+	toAccount, err := types.ToAccountByAddress(txn, transaction.To)
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
-			utils.Error(fmt.Sprintf("txKeyTo = %s", transaction.To), err)
-
 			toAccount = &types.Account{Address: transaction.To, Balance: big.NewInt(0), Created: now}
 		} else {
 			utils.Error(err)
@@ -404,7 +380,196 @@ func TransferTokens(transaction *types.Transaction, txn *badger.Txn, receipt *ty
 //TODO: implement if useful
 func commit(transaction *types.Transaction) {}
 
-func processDVMResult(dvmResult *dvm.DVMResult) error {
+// deploySmartContract
+func deploySmartContract(transaction *types.Transaction, receipt *types.Receipt, gossip *types.Gossip) {
+
+	txn := services.NewTxn(true)
+	defer txn.Discard()
+
+	// Find/create fromAccount?
+	now := time.Now()
+	fromAccount, err := types.ToAccountByAddress(txn, transaction.From)
+	if err != nil {
+		if err == badger.ErrKeyNotFound {
+			fromAccount = &types.Account{Address: transaction.From, Balance: big.NewInt(0), Created: now}
+		} else {
+			utils.Error(err)
+			receipt.Status = types.StatusInternalError
+			receipt.HumanReadableStatus = err.Error()
+			services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+			return
+		}
+	}
+
+	// Set fromAccount.
+	fromAccount.Updated = now
+	err = fromAccount.Set(txn)
+	if err != nil {
+		utils.Error(err)
+		receipt.Status = types.StatusInternalError
+		receipt.HumanReadableStatus = err.Error()
+		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		return
+	}
+
+	// DEPLOY
+	dvmService := dvm.GetDVMService()
+	dvmResult, err := dvmService.DeploySmartContract(transaction)
+	if err != nil {
+		utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
+	}
+
+	processDVMResult(dvmResult, receipt)
+
+	// Set contract account.
+	contractAccount := &types.Account{Address: hex.EncodeToString(dvmResult.ContractAddress[:]), Balance: big.NewInt(0), Updated: now, Created: now}
+	err = contractAccount.Set(txn)
+	if err != nil {
+		utils.Error(err)
+		receipt.Status = types.StatusInternalError
+		receipt.HumanReadableStatus = err.Error()
+		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		return
+	}
+
+	// Save transaction.  -- actually does save to BadgerDB
+	err = transaction.Set(txn)
+	if err != nil {
+		utils.Error(err)
+		receipt.Status = types.StatusInternalError
+		receipt.HumanReadableStatus = err.Error()
+		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		return
+	}
+
+	// Save receipt.
+	receipt.Status = types.StatusOk
+	receipt.ContractAddress = contractAccount.Address
+	services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+	err = receipt.Set(txn)
+	if err != nil {
+		utils.Error(err)
+		receipt.Status = types.StatusInternalError
+		receipt.HumanReadableStatus = err.Error()
+		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		return
+	}
+
+	// Save gossip.
+	err = gossip.Set(txn)
+	if err != nil {
+		utils.Error(err)
+		receipt.Status = types.StatusInternalError
+		receipt.HumanReadableStatus = err.Error()
+		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		return
+	}
+
+	// Commit.
+	err = txn.Commit(nil)
+	if err != nil {
+		if err == badger.ErrConflict { // Another thread already committed this transaction. This will happen, which is ok.
+			return
+		}
+		utils.Error(err)
+		receipt.Status = types.StatusInternalError
+		receipt.HumanReadableStatus = err.Error()
+		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		return
+	}
+	utils.Info(fmt.Sprintf("smart contract deployed [hash=%s, contractAddress=%s]", transaction.Hash, contractAccount.Address))
+}
+
+// executeSmartContract
+func executeSmartContract(transaction *types.Transaction, receipt *types.Receipt, gossip *types.Gossip) {
+
+	txn := services.NewTxn(true)
+	defer txn.Discard()
+
+	// Find/create fromAccount?
+	now := time.Now()
+	fromAccount, err := types.ToAccountByAddress(txn, transaction.From)
+	if err != nil {
+		if err == badger.ErrKeyNotFound {
+			fromAccount = &types.Account{Address: transaction.From, Balance: big.NewInt(0), Created: now}
+		} else {
+			utils.Error(err)
+			receipt.Status = types.StatusInternalError
+			receipt.HumanReadableStatus = err.Error()
+			services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+			return
+		}
+	}
+
+	// Set fromAccount.
+	fromAccount.Updated = now
+	err = fromAccount.Set(txn)
+	if err != nil {
+		utils.Error(err)
+		receipt.Status = types.StatusInternalError
+		receipt.HumanReadableStatus = err.Error()
+		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		return
+	}
+
+	dvmService := dvm.GetDVMService()
+	dvmResult, err1 := dvmService.ExecuteSmartContract(transaction)
+	if err1 != nil {
+		utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
+	}
+
+	processDVMResult(dvmResult, receipt)
+
+	// Save transaction.  -- actually does save to BadgerDB
+	err = transaction.Set(txn)
+	if err != nil {
+		utils.Error(err)
+		receipt.Status = types.StatusInternalError
+		receipt.HumanReadableStatus = err.Error()
+		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		return
+	}
+
+	// Save receipt.
+	receipt.Status = types.StatusOk
+	receipt.ContractAddress = transaction.To
+	services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+	err = receipt.Set(txn)
+	if err != nil {
+		utils.Error(err)
+		receipt.Status = types.StatusInternalError
+		receipt.HumanReadableStatus = err.Error()
+		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		return
+	}
+
+	// Save gossip.
+	err = gossip.Set(txn)
+	if err != nil {
+		utils.Error(err)
+		receipt.Status = types.StatusInternalError
+		receipt.HumanReadableStatus = err.Error()
+		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		return
+	}
+
+	// Commit.
+	err = txn.Commit(nil)
+	if err != nil {
+		if err == badger.ErrConflict { // Another thread already committed this transaction. This will happen, which is ok.
+			return
+		}
+		utils.Error(err)
+		receipt.Status = types.StatusInternalError
+		receipt.HumanReadableStatus = err.Error()
+		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		return
+	}
+	utils.Info(fmt.Sprintf("executed smart contract deployed [hash=%s, contractAddress=%s]", transaction.Hash, receipt.ContractAddress))
+
+}
+
+func processDVMResult(dvmResult *dvm.DVMResult, receipt *types.Receipt) error {
 	utils.Info("TODO: *** Not doing anything right now")
 	utils.Info(dvmResult)
 
@@ -423,6 +588,7 @@ func processDVMResult(dvmResult *dvm.DVMResult) error {
 			err = jsonABI.Unpack(&parsedRes, "getVar5", dvmResult.ContractExecResult)
 			if err == nil {
 				utils.Info(fmt.Sprintf("CONTRACT-CALL-RES: %s", parsedRes))
+				receipt.ContractResult = parsedRes
 			}
 		}
 	}

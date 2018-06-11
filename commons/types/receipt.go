@@ -32,6 +32,8 @@ type Receipt struct {
 	Status              string
 	HumanReadableStatus string
 	Data                interface{}
+	ContractAddress     string
+	ContractResult      string
 	Created             time.Time
 }
 
@@ -145,6 +147,12 @@ func (this *Receipt) UnmarshalJSON(bytes []byte) error {
 	if jsonMap["data"] != nil {
 		this.Data = jsonMap["data"]
 	}
+	if jsonMap["contractAddress"] != nil {
+		this.ContractAddress = jsonMap["contractAddress"].(string)
+	}
+	if jsonMap["ContractResult"] != nil {
+		this.ContractResult = jsonMap["contractResult"].(string)
+	}
 	if jsonMap["created"] != nil {
 		created, err := time.Parse(time.RFC3339, jsonMap["created"].(string))
 		if err != nil {
@@ -164,6 +172,8 @@ func (this Receipt) MarshalJSON() ([]byte, error) {
 		Status              string      `json:"status"`
 		HumanReadableStatus string      `json:"humanReadableStatus,omitempty"`
 		Data                interface{} `json:"data,omitempty"`
+		ContractAddress     string      `json:"contractAddress"`
+		ContractResult      string      `json:"contractResult"`
 		Created             time.Time   `json:"created"`
 	}{
 		Id:                  this.Id,
@@ -171,6 +181,8 @@ func (this Receipt) MarshalJSON() ([]byte, error) {
 		Status:              this.Status,
 		HumanReadableStatus: this.HumanReadableStatus,
 		Data:                this.Data,
+		ContractAddress:     this.ContractAddress,
+		ContractResult:      this.ContractResult,
 		Created:             this.Created,
 	})
 }

@@ -14,8 +14,9 @@ type DVMResult struct {
 	To                 crypto.AddressBytes //
 	ABI                string              // The ABI for the smart contract
 	StorageState       *VMStateHelper      // The state of the storage
-	ContractExecError  error               // Execution error
-	ContractExecResult []byte              // Execution result - parsable with `jsonABI.Unpack`
+	ContractAddress    crypto.AddressBytes
+	ContractExecError  error  // Execution error
+	ContractExecResult []byte // Execution result - parsable with `jsonABI.Unpack`
 
 	Divvy               int64
 	Status              uint
