@@ -278,18 +278,13 @@ func (this Transaction) NewHash() (string, error) {
 		utils.Error("unable decode code", err)
 		return "", err
 	}
-	abiBytes, err := hex.DecodeString(this.Abi)
-	if err != nil {
-		utils.Error("unable decode abi", err)
-		return "", err
-	}
 	var values = []interface{}{
 		this.Type,
 		fromBytes,
 		toBytes,
 		this.Value,
 		codeBytes,
-		abiBytes,
+		[]byte(this.Abi),
 		[]byte(this.Method),
 		// TODO: this.Params,
 		this.Time,
