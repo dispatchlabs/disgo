@@ -147,10 +147,10 @@ func (this *Receipt) UnmarshalJSON(bytes []byte) error {
 	if jsonMap["data"] != nil {
 		this.Data = jsonMap["data"]
 	}
-	if jsonMap["contractAddress"] != nil {
+	if jsonMap["contractAddress"] != nil && jsonMap["contractAddress"] != ""{
 		this.ContractAddress = jsonMap["contractAddress"].(string)
 	}
-	if jsonMap["contractResult"] != nil {
+	if jsonMap["contractResult"] != nil && jsonMap["contractResult"] != "" {
 		this.ContractResult = jsonMap["contractResult"].(string)
 	}
 	if jsonMap["created"] != nil {

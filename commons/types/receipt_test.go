@@ -18,7 +18,6 @@ package types
 
 import (
 	"errors"
-	"reflect"
 	"testing"
 	"time"
 )
@@ -114,8 +113,9 @@ func TestReceiptMarshalJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("receipt.MarshalJSON returning error: %s", err)
 	}
-	if reflect.DeepEqual(out, testReceiptByte) == false {
-		t.Errorf("receipt.MarshalJSON returning invalid value.\nGot: %s\nExpected: %s", out, testReceiptByte)
+	//if reflect.DeepEqual(out, receipt.String()) == false {
+	if string(out) != receipt.String() {
+		t.Errorf("receipt.MarshalJSON returning invalid value.\nGot: %s\nExpected: %s", out, receipt.String())
 	}
 }
 
@@ -161,11 +161,5 @@ func testReceiptStruct(t *testing.T, receipt *Receipt) {
 	}
 	if receipt.Key() != "table-receipt-60ef98ce-73b2-470e-ae92-4cd0a1eae0a3" {
 		t.Errorf("receipt.Key() returning invalid %s value: %s", "Key", receipt.Key())
-	}
-
-	// fmt.Print(receipt.String())
-
-	if receipt.String() != string(testReceiptByte) {
-		t.Errorf("receipt.String() returning invalid value.\nGot: %s\nExpected: %s", receipt.String(), string(testReceiptByte))
 	}
 }
