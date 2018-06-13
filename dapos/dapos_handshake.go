@@ -419,7 +419,7 @@ func deploySmartContract(transaction *types.Transaction, receipt *types.Receipt,
 		utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
 	}
 
-	processDVMResult(dvmResult, receipt)
+	processDVMResult(transaction, dvmResult, receipt)
 
 	// Set contract account.
 	contractAccount := &types.Account{Address: hex.EncodeToString(dvmResult.ContractAddress[:]), Balance: big.NewInt(0), Updated: now, Created: now}
@@ -518,7 +518,7 @@ func executeSmartContract(transaction *types.Transaction, receipt *types.Receipt
 		utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
 	}
 
-	processDVMResult(dvmResult, receipt)
+	processDVMResult(transaction, dvmResult, receipt)
 
 	// Save transaction.  -- actually does save to BadgerDB
 	err = transaction.Set(txn)
@@ -569,13 +569,13 @@ func executeSmartContract(transaction *types.Transaction, receipt *types.Receipt
 
 }
 
-func processDVMResult(dvmResult *dvm.DVMResult, receipt *types.Receipt) error {
-	utils.Info("TODO: *** Not doing anything right now")
+func processDVMResult(transaction *types.Transaction, dvmResult *dvm.DVMResult, receipt *types.Receipt) error {
+	utils.Info("######### DUMPING-DVMResult #########")
 	utils.Info(dvmResult)
 
-	if dvmResult.ContractExecError != nil {
-		utils.Error(dvmResult.ContractExecError)
-		return dvmResult.ContractExecError
+	if dvmResult.ContractMethodExecError != nil {
+		utils.Error(dvmResult.ContractMethodExecError)
+		return dvmResult.ContractMethodExecError
 	}
 
 	// Try read the execution result
@@ -585,7 +585,7 @@ func processDVMResult(dvmResult *dvm.DVMResult, receipt *types.Receipt) error {
 		jsonABI, err := abi.JSON(strings.NewReader(abiAsString))
 		if err == nil {
 			var parsedRes string
-			err = jsonABI.Unpack(&parsedRes, "getVar5", dvmResult.ContractExecResult)
+			err = jsonABI.Unpack(&parsedRes, transaction.Method, dvmResult.ContractMethodExecResult)
 			if err == nil {
 				utils.Info(fmt.Sprintf("CONTRACT-CALL-RES: %s", parsedRes))
 				receipt.ContractResult = parsedRes

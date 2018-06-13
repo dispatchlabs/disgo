@@ -56,13 +56,13 @@ func (dvm *DVMService) DeploySmartContract(tx *commonTypes.Transaction) (*DVMRes
 	receipt, err := dvm.getReceipt(bytes)
 
 	return &DVMResult{
-		From:               crypto.GetAddressBytes(tx.From),
-		To:                 receipt.ContractAddress,
-		ABI:                "",
-		StorageState:       stateHelper,
-		ContractAddress:    receipt.ContractAddress,
-		ContractExecError:  nil,
-		ContractExecResult: nil,
+		From:                     crypto.GetAddressBytes(tx.From),
+		To:                       receipt.ContractAddress,
+		ABI:                      "",
+		StorageState:             stateHelper,
+		ContractAddress:          receipt.ContractAddress,
+		ContractMethodExecError:  nil,
+		ContractMethodExecResult: nil,
 
 		Divvy:               _defaultDivvy,
 		Status:              receipt.Status,
@@ -126,12 +126,12 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 
 	// Return the state of the storage and the execution result
 	return &DVMResult{
-		From:               crypto.GetAddressBytes(tx.From),
-		To:                 crypto.GetAddressBytes(tx.To),
-		ABI:                tx.Abi,
-		StorageState:       stateHelper,
-		ContractExecError:  execError,
-		ContractExecResult: execResult,
+		From:                     crypto.GetAddressBytes(tx.From),
+		To:                       crypto.GetAddressBytes(tx.To),
+		ABI:                      tx.Abi,
+		StorageState:             stateHelper,
+		ContractMethodExecError:  execError,
+		ContractMethodExecResult: execResult,
 
 		// Status:              receipt.Status,
 		// HertzCost:           receipt.GasUsed,
