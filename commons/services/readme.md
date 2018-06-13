@@ -73,7 +73,7 @@ func (grpcService *GrpcService) Go(waitGroup *sync.WaitGroup) {
 	grpcService.running = true
 	listener, error := net.Listen("tcp", ":"+strconv.Itoa(grpcService.Port))
 	if error != nil {
-		log.Fatalf("failed to listen: %v", error)
+		fmt.Sprintf("failed to listen: %v", error)
 	}
 
 	// Serve.

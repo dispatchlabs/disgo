@@ -1,14 +1,14 @@
 package tree
 
 import (
-	"github.com/dispatchlabs/disgo/commons/utils"
+	"crypto/rand"
+	"encoding/hex"
+	"time"
+
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/types"
+	"github.com/dispatchlabs/disgo/commons/utils"
 	merkleTree "github.com/keybase/go-merkle-tree"
-	"crypto/rand"
-	"time"
-	"encoding/hex"
-
 )
 
 // TestObjFactory generates a bunch of test objects for debugging
@@ -52,7 +52,7 @@ func (of *TestFactory) Mproduce(n int) []merkleTree.KeyValuePair {
 func (of *TestFactory) Produce() merkleTree.KeyValuePair {
 	var testTX *types.Transaction
 	testTX = mockTransaction()
-	key := testTX.CalculateHash()
+	key := crypto.GetHashBytes(testTX.Hash).Bytes()
 	keyString := hex.EncodeToString(key)
 
 	val := testValue{Seqno: of.seqno, Key: keyString, KeyRaw: key}
@@ -65,9 +65,8 @@ func (of *TestFactory) Produce() merkleTree.KeyValuePair {
 func mockTransaction() *types.Transaction {
 	key, _ := crypto.NewKey(rand.Reader)
 
-	tx, err := types.NewTransaction(
+	tx, err := types.NewTransferTokensTransaction(
 		key.GetPrivateKeyString(),
-		0,
 		key.Address,
 		"d70613f93152c84050e7826c4e2b0cc02c1c3b99",
 		1,

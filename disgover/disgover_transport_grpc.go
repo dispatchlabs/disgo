@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	peer "github.com/libp2p/go-libp2p-peer"
-	log "github.com/sirupsen/logrus"
 
 	"time"
 
@@ -76,10 +75,12 @@ func (this *DisGoverService) peerPingGrpc(contactToPing *types.Node, sender *typ
 	defer conn.Close()
 
 	if response == nil {
-		log.Error(fmt.Sprintf("uanble to pinge peer node [address=%s, ip=%s]", response.Address, response.Endpoint.Host))
+		utils.Error(fmt.Sprintf("uanble to pinge peer node [address=%s, ip:port=%s:%d]", response.Address, response.Endpoint.Host, response.Endpoint.Port))
 		return nil, nil
 	}
-	log.Info(fmt.Sprintf("pinged peer node [address=%s, ip=%s]", response.Address, response.Endpoint.Host))
+
+	utils.Info(fmt.Sprintf("pinged peer node [address=%s, ip:port=%s:%d]", response.Address, response.Endpoint.Host, response.Endpoint.Port))
+
 	return convertToDomain(response), nil
 }
 

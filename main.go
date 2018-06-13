@@ -17,12 +17,13 @@
 package main
 
 import (
+	"github.com/dispatchlabs/disgo/bootstrap"
 	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
 func main() {
 	utils.InitMainPackagePath()
-
-	server := NewServer()
+	utils.InitializeLogger()
+	server := bootstrap.NewServer()
 	server.Go()
 }

@@ -334,6 +334,8 @@ func (evm *EVM) Create(caller ContractRef, code []byte, gas uint64, value *big.I
 	nonce := evm.StateDB.GetNonce(caller.Address())
 	evm.StateDB.SetNonce(caller.Address(), nonce+1)
 
+	//this creates the contract address and creates an account in the EVM.StateDB
+	//I don't think this matters at all since we capture in receipt
 	contractAddr = legacyCrypto.CreateAddress(caller.Address(), nonce)
 	contractHash := evm.StateDB.GetCodeHash(contractAddr)
 	if evm.StateDB.GetNonce(contractAddr) != 0 || (contractHash != (crypto.HashBytes{}) && contractHash != emptyCodeHash) {

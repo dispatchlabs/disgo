@@ -26,7 +26,6 @@ const (
 	RequestGetStatus                    = "GetStatus"
 	RequestGetDelegates                 = "GetDelegates"
 	RequestGetAccount                   = "GetAccount"
-	RequestSetName                      = "SetName"
 	RequestNewTransaction               = "NewTransaction"
 	RequestGetTransactions              = "GetTransactions"
 	RequestGetTransactionsByFromAddress = "GetTransactionsByFromAddress"
@@ -52,8 +51,12 @@ const (
 
 // Types
 const (
-	TypeSeed     = "Seed"
-	TypeDelegate = "Delegate"
+	TypeSeed                 = "Seed"
+	TypeDelegate             = "Delegate"
+	TypeNode                 = "Node"
+	TypeTransferTokens       = 0
+	TypeDeploySmartContract  = 1
+	TypeExecuteSmartContract = 2
 )
 
 // Persistence TTLs

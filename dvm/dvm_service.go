@@ -19,10 +19,7 @@ package dvm
 import (
 	"sync"
 
-	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/utils"
-	"github.com/dispatchlabs/disgo/dvm/ethereum/ethdb"
-	ethState "github.com/dispatchlabs/disgo/dvm/ethereum/state"
 )
 
 var dvmServiceInstance *DVMService
@@ -42,19 +39,7 @@ var (
 // GetDVMService
 func GetDVMService() *DVMService {
 	dvmServiceOnce.Do(func() {
-		db, _ := NewBadgerDatabase()
-
 		dvmServiceInstance = &DVMService{running: false}
-		dvmServiceInstance.db = db
-
-		rootHash := crypto.HashBytes{}
-		var err error
-		dvmServiceInstance.statedb, err = ethState.New(rootHash, ethState.NewDatabase(dvmServiceInstance.db))
-		if err != nil {
-			utils.Fatal(err)
-		}
-
-		dvmServiceInstance.resetWAS()
 	})
 
 	return dvmServiceInstance
@@ -63,10 +48,6 @@ func GetDVMService() *DVMService {
 // DVMService -
 type DVMService struct {
 	running bool
-
-	db      ethdb.Database    // Storate
-	statedb *ethState.StateDB // Trie aka Merkle
-	was     *WriteAheadState
 }
 
 // IsRunning -

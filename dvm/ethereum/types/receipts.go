@@ -1,4 +1,4 @@
-// Copyright 2016 The go-ethereum Authors
+// Copyright 2014 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -14,17 +14,29 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-// package mclock is a wrapper for a monotonic clock source
-package mclock
+package types
 
 import (
-	"time"
+	"fmt"
 
-	"github.com/aristanetworks/goarista/monotime"
+	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"
 )
 
-type AbsTime time.Duration // absolute monotonic time
+// Receipts is a wrapper around a Receipt array to implement DerivableList.
+type Receipts []*Receipt
 
-func Now() AbsTime {
-	return AbsTime(monotime.Now())
+// Len returns the number of receipts in this list.
+func (r Receipts) Len() int { return len(r) }
+
+// GetRlp returns the RLP encoding of one receipt from the list.
+func (r Receipts) GetRlp(i int) []byte {
+	utils.Info(fmt.Sprintf("ReceiptS-GetRlp: %s", r[i].String()))
+
+	bytes, err := rlp.EncodeToBytes(r[i])
+	if err != nil {
+		panic(err)
+	}
+
+	return bytes
 }

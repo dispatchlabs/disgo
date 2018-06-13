@@ -29,20 +29,19 @@ func testMockTransaction(t *testing.T) *Transaction {
 	//	t.Fatalf("Could not create privKeyBytes %s", err.Error())
 	//	return nil
 	//} else {
-		tx, err := NewTransaction(
-			"0f86ea981203b26b5b8244c8f661e30e5104555068a4bd168d3e3015db9bb25a",
-			0,
-			"3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c",
-			"d70613f93152c84050e7826c4e2b0cc02c1c3b99",
-			1,
-			0,
-			d.UnixNano(),
-		)
+	tx, err := NewTransferTokensTransaction(
+		"0f86ea981203b26b5b8244c8f661e30e5104555068a4bd168d3e3015db9bb25a",
+		"3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c",
+		"d70613f93152c84050e7826c4e2b0cc02c1c3b99",
+		1,
+		0,
+		d.UnixNano(),
+	)
 
-		if err != nil {
-			t.Fatalf("Could not create transaction %s", err.Error())
-		}
-		return tx
+	if err != nil {
+		t.Fatalf("Could not create transaction %s", err.Error())
+	}
+	return tx
 	//}
 }
 
@@ -69,7 +68,7 @@ func TestNewTransaction(t *testing.T) {
 
 func TestNewHash(t *testing.T) {
 	tx := testMockTransaction(t)
-	hash := tx.NewHash()
+	hash, _ := tx.NewHash()
 
 	if hash == "" {
 		t.Error("unable to create new hash for a TX")
@@ -90,9 +89,8 @@ func TestBadKeyTransaction(t *testing.T) {
 	//	t.Log("Correctly determined that this is an invalid key")
 	//}
 
-	tx, err := NewTransaction(
+	tx, err := NewTransferTokensTransaction(
 		"0f86ea981203b26b5b8244c8f661e30e5104555068a4bd168d3e3015db9bb25",
-		TransactionTypeTransferTokens,
 		"7777f2b40aacbef5a5127f65418dc5f951280833",
 		"0e19046b35344383ac0a27c1902fdc1c8c060fa9",
 		1,

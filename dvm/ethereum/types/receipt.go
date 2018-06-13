@@ -18,14 +18,15 @@ package types
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"unsafe"
 
-	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
-	"github.com/dispatchlabs/disgo/dvm/ethereum/common/hexutil"
-	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"
 	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"
 )
 
 //go:generate gencodec -type Receipt -field-override receiptMarshaling -out gen_receipt_json.go
@@ -55,14 +56,7 @@ type Receipt struct {
 	// Implementation fields (don't reorder!)
 	TxHash          crypto.HashBytes    `json:"transactionHash" gencodec:"required"`
 	ContractAddress crypto.AddressBytes `json:"contractAddress"`
-	GasUsed         uint64         `json:"gasUsed" gencodec:"required"`
-}
-
-type receiptMarshaling struct {
-	PostState         hexutil.Bytes
-	Status            hexutil.Uint
-	CumulativeGasUsed hexutil.Uint64
-	GasUsed           hexutil.Uint64
+	GasUsed         uint64              `json:"gasUsed" gencodec:"required"`
 }
 
 // receiptRLP is the consensus encoding of a receipt.
@@ -73,16 +67,6 @@ type receiptRLP struct {
 	Logs              []*Log
 }
 
-type receiptStorageRLP struct {
-	PostStateOrStatus []byte
-	CumulativeGasUsed uint64
-	Bloom             Bloom
-	TxHash            crypto.HashBytes
-	ContractAddress   crypto.AddressBytes
-	Logs              []*LogForStorage
-	GasUsed           uint64
-}
-
 // NewReceipt creates a barebone transaction receipt, copying the init fields.
 func NewReceipt(root []byte, failed bool, cumulativeGasUsed uint64) *Receipt {
 	r := &Receipt{PostState: common.CopyBytes(root), CumulativeGasUsed: cumulativeGasUsed}
@@ -91,12 +75,17 @@ func NewReceipt(root []byte, failed bool, cumulativeGasUsed uint64) *Receipt {
 	} else {
 		r.Status = ReceiptStatusSuccessful
 	}
+
+	utils.Debug(fmt.Sprintf("Receipt-NewReceipt: %s", r.String()))
+
 	return r
 }
 
 // EncodeRLP implements rlp.Encoder, and flattens the consensus fields of a receipt
 // into an RLP stream. If no post state is present, byzantium fork is assumed.
 func (r *Receipt) EncodeRLP(w io.Writer) error {
+	utils.Debug(fmt.Sprintf("Receipt-EncodeRLP: %s", r.String()))
+
 	return rlp.Encode(w, &receiptRLP{r.statusEncoding(), r.CumulativeGasUsed, r.Bloom, r.Logs})
 }
 
@@ -111,6 +100,8 @@ func (r *Receipt) DecodeRLP(s *rlp.Stream) error {
 		return err
 	}
 	r.CumulativeGasUsed, r.Bloom, r.Logs = dec.CumulativeGasUsed, dec.Bloom, dec.Logs
+
+	utils.Debug(fmt.Sprintf("Receipt-DecodeRLP: %s", r.String()))
 	return nil
 }
 
@@ -125,6 +116,9 @@ func (r *Receipt) setStatus(postStateOrStatus []byte) error {
 	default:
 		return fmt.Errorf("invalid receipt status %x", postStateOrStatus)
 	}
+
+	utils.Debug(fmt.Sprintf("Receipt-setStatus: %s", r.String()))
+
 	return nil
 }
 
@@ -135,6 +129,9 @@ func (r *Receipt) statusEncoding() []byte {
 		}
 		return receiptStatusSuccessfulRLP
 	}
+
+	utils.Debug(fmt.Sprintf("Receipt-statusEncoding: %s", r.String()))
+
 	return r.PostState
 }
 
@@ -147,64 +144,18 @@ func (r *Receipt) Size() common.StorageSize {
 	for _, log := range r.Logs {
 		size += common.StorageSize(len(log.Topics)*crypto.HashLength + len(log.Data))
 	}
+
+	utils.Debug(fmt.Sprintf("Receipt-Size: %v", size))
+
 	return size
 }
 
-// ReceiptForStorage is a wrapper around a Receipt that flattens and parses the
-// entire content of a receipt, as opposed to only the consensus fields originally.
-type ReceiptForStorage Receipt
-
-// EncodeRLP implements rlp.Encoder, and flattens all content fields of a receipt
-// into an RLP stream.
-func (r *ReceiptForStorage) EncodeRLP(w io.Writer) error {
-	enc := &receiptStorageRLP{
-		PostStateOrStatus: (*Receipt)(r).statusEncoding(),
-		CumulativeGasUsed: r.CumulativeGasUsed,
-		Bloom:             r.Bloom,
-		TxHash:            r.TxHash,
-		ContractAddress:   r.ContractAddress,
-		Logs:              make([]*LogForStorage, len(r.Logs)),
-		GasUsed:           r.GasUsed,
-	}
-	for i, l := range r.Logs {
-
-		enc.Logs[i] = (*LogForStorage)(l)
-	}
-	return rlp.Encode(w, enc)
-}
-
-// DecodeRLP implements rlp.Decoder, and loads both consensus and implementation
-// fields of a receipt from an RLP stream.
-func (r *ReceiptForStorage) DecodeRLP(s *rlp.Stream) error {
-	var dec receiptStorageRLP
-	if err := s.Decode(&dec); err != nil {
-		return err
-	}
-	if err := (*Receipt)(r).setStatus(dec.PostStateOrStatus); err != nil {
-		return err
-	}
-	// Assign the consensus fields
-	r.CumulativeGasUsed, r.Bloom = dec.CumulativeGasUsed, dec.Bloom
-	r.Logs = make([]*Log, len(dec.Logs))
-	for i, l := range dec.Logs {
-		r.Logs[i] = (*Log)(l)
-	}
-	// Assign the implementation fields
-	r.TxHash, r.ContractAddress, r.GasUsed = dec.TxHash, dec.ContractAddress, dec.GasUsed
-	return nil
-}
-
-// Receipts is a wrapper around a Receipt array to implement DerivableList.
-type Receipts []*Receipt
-
-// Len returns the number of receipts in this list.
-func (r Receipts) Len() int { return len(r) }
-
-// GetRlp returns the RLP encoding of one receipt from the list.
-func (r Receipts) GetRlp(i int) []byte {
-	bytes, err := rlp.EncodeToBytes(r[i])
+// String -
+func (r Receipt) String() string {
+	bytes, err := json.Marshal(r)
 	if err != nil {
-		panic(err)
+		utils.Error("unable to marshal receipt", err)
+		return ""
 	}
-	return bytes
+	return string(bytes)
 }

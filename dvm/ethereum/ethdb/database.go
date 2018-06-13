@@ -352,6 +352,10 @@ func (dt *table) Close() {
 	// Do nothing; don't close the underlying DB.
 }
 
+func (dt *table) Dump() {
+	// Do nothing
+}
+
 type tableBatch struct {
 	batch  Batch
 	prefix string
