@@ -147,10 +147,10 @@ func (this *Receipt) UnmarshalJSON(bytes []byte) error {
 	if jsonMap["data"] != nil {
 		this.Data = jsonMap["data"]
 	}
-	if jsonMap["contractAddress"] != nil {
+	if jsonMap["contractAddress"] != nil && jsonMap["contractAddress"] != ""{
 		this.ContractAddress = jsonMap["contractAddress"].(string)
 	}
-	if jsonMap["ContractResult"] != nil {
+	if jsonMap["contractResult"] != nil && jsonMap["contractResult"] != "" {
 		this.ContractResult = jsonMap["contractResult"].(string)
 	}
 	if jsonMap["created"] != nil {
@@ -172,8 +172,8 @@ func (this Receipt) MarshalJSON() ([]byte, error) {
 		Status              string      `json:"status"`
 		HumanReadableStatus string      `json:"humanReadableStatus,omitempty"`
 		Data                interface{} `json:"data,omitempty"`
-		ContractAddress     string      `json:"contractAddress"`
-		ContractResult      string      `json:"contractResult"`
+		ContractAddress     string      `json:"contractAddress,omitempty"`
+		ContractResult      string      `json:"contractResult,omitempty"`
 		Created             time.Time   `json:"created"`
 	}{
 		Id:                  this.Id,

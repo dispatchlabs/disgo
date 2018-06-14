@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-curl 'http://127.0.0.1:1975/v1/statuses/a0907016-bb76-466b-9252-d96d7074d96a'
+curl 'http://10.0.1.2:1975/v1/statuses/745df4c9-c492-44e4-808a-62e0f9909761'
