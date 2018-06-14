@@ -55,8 +55,12 @@ func (this Account) NameKey() string {
 }
 
 //Cache
-func (this *Account) Cache(cache *cache.Cache){
-	cache.Set(this.Address, this, AccountTTL)
+func (this *Account) Cache(cache *cache.Cache, time_optional ...time.Duration){
+	TTL := AccountTTL
+	if len(time_optional) > 0 {
+		TTL = time_optional[0]
+	}
+	cache.Set(this.Key(), this,TTL)
 }
 
 //Persist
@@ -168,7 +172,7 @@ func ToAccountFromJson(payload []byte) (*Account, error) {
 
 // ToAccountFromCache -
 func ToAccountFromCache(cache *cache.Cache, address string) (*Account, error) {
-	value, ok :=cache.Get(address)
+	value, ok := cache.Get(fmt.Sprintf("table-account-%s", address))
 	if !ok{
 		return nil, ErrNotFound
 	}

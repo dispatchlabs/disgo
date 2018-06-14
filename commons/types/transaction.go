@@ -80,8 +80,12 @@ func (this Transaction) ToKey() string {
 }
 
 //Cache
-func (this *Transaction) Cache(cache *cache.Cache){
-	cache.Set(this.Hash, this, TransactionTTL)
+func (this *Transaction) Cache(cache *cache.Cache, time_optional ...time.Duration){
+	TTL := TransactionTTL
+	if len(time_optional) > 0 {
+		TTL = time_optional[0]
+	}
+	cache.Set(this.Key(), this, TTL)
 }
 
 // Persist
@@ -361,7 +365,7 @@ func ToTransactionFromJson(payload []byte) (*Transaction, error) {
 
 // ToTransactionFromCache -
 func ToTransactionFromCache(cache *cache.Cache, hash string) (*Transaction, error) {
-	value, ok :=cache.Get(hash)
+	value, ok :=cache.Get(fmt.Sprintf("table-transaction-%s", hash))
 	if !ok{
 		return nil, ErrNotFound
 	}

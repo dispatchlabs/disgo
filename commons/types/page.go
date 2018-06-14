@@ -21,17 +21,19 @@ import (
 	"fmt"
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/utils"
-	"strconv"
 	"github.com/patrickmn/go-cache"
+	"time"
 )
 
 // Block
 type Page struct {
+	Hash 				string
 	Number      		int64
 	TransactionsHash    string
+	ReceiptsHash 		string
 	StateHash			string
-	ParentHash 			string
-	BWused				int64
+	BWused				int64 //Bandwidth Used
+	Created 		time.Time
 }
 
 //TODO: link transactions to pages... maybe transaction Page key.
@@ -42,8 +44,12 @@ func (this Page) Key() string {
 }
 
 //Cache
-func (this *Page) Cache(cache *cache.Cache){
-	cache.Set(strconv.Itoa(int(this.Number)), this, PageTTL)
+func (this *Page) Cache(cache *cache.Cache,time_optional ...time.Duration){
+	TTL := PageTTL
+	if len(time_optional) > 0 {
+		TTL = time_optional[0]
+	}
+	cache.Set(this.Key(), this, TTL)
 }
 
 //Persist
@@ -58,7 +64,6 @@ func (this *Page) Persist(txn *badger.Txn) error{
 // Set
 func (this *Page) Set(txn *badger.Txn,cache *cache.Cache) error {
 	this.Cache(cache)
-
 	err := this.Persist(txn)
 	if err != nil {
 		return err
@@ -67,7 +72,8 @@ func (this *Page) Set(txn *badger.Txn,cache *cache.Cache) error {
 }
 
 //Delete
-func (this *Page) Delete(txn *badger.Txn) error {
+func (this *Page)Unset(txn *badger.Txn,cache *cache.Cache) error {
+	cache.Delete(this.Key())
 	err := txn.Delete([]byte(this.Key()))
 	if err != nil {
 		return err
@@ -83,39 +89,52 @@ func (this *Page) UnmarshalJSON(bytes []byte) error {
 	if error != nil {
 		return error
 	}
+	if jsonMap["hash"] != nil {
+		this.Hash = jsonMap["hash"].(string)
+	}
 	if jsonMap["number"] != nil {
 		this.Number = int64(jsonMap["number"].(float64))
 	}
 	if jsonMap["transactionsHash"] != nil {
 		this.TransactionsHash = jsonMap["transactionsHash"].(string)
 	}
+	if jsonMap["receiptsHash"] != nil {
+		this.ReceiptsHash = jsonMap["receiptsHash"].(string)
+	}
 	if jsonMap["stateHash"] != nil {
 		this.StateHash = jsonMap["stateHash"].(string)
-	}
-	if jsonMap["parentHash"] != nil {
-		this.ParentHash = jsonMap["parentHash"].(string)
 	}
 	if jsonMap["bwUsed"] != nil {
 		this.BWused = int64(jsonMap["bwUsed"].(float64))
 	}
-
+	if jsonMap["created"] != nil {
+		created, err := time.Parse(time.RFC3339, jsonMap["created"].(string))
+		if err != nil {
+			return err
+		}
+		this.Created = created
+	}
 	return nil
 }
 
 // MarshalJSON
 func (this Page) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Number               int64  `json:"number"`
-		TransactionsHash     string `json:"transactionsHash"`
-		StateHash 			 string  `json:"stateHash"`
-		ParentHash           string `json:"parentHash"`
-		BWused               int64 `json:"bwUsed"`
+		Hash               		string  `json:"hash"`
+		Number               	int64  `json:"number"`
+		TransactionsHash     	string `json:"transactionsHash"`
+		ReceiptsHash           	string `json:"receiptsHash"`
+		StateHash 			 	string  `json:"stateHash"`
+		BWused               	int64 `json:"bwUsed"`
+		Created             	time.Time   `json:"created"`
 	}{
-		Number:                   this.Number,
-		TransactionsHash:                 this.TransactionsHash,
-		StateHash: this.StateHash,
-		ParentHash:              this.ParentHash,
-		BWused:              this.BWused,
+		Hash:                   this.Hash,
+		Number:                 this.Number,
+		TransactionsHash:       this.TransactionsHash,
+		ReceiptsHash:           this.ReceiptsHash,
+		StateHash: 				this.StateHash,
+		BWused:             	this.BWused,
+		Created:             	this.Created,
 	})
 }
 

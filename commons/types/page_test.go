@@ -16,12 +16,14 @@
  */
 package types
 
-import (
-	//"reflect"
-	//"testing"
-	//"time"
-)
-
+//func init()  {
+//	c = cache.New(CacheTTL, CacheTTL*2)
+//	utils.Info("opening DB...")
+//	opts := badger.DefaultOptions
+//	opts.Dir = "." + string(os.PathSeparator) + "testdb"
+//	opts.ValueDir = "." + string(os.PathSeparator) + "testdb"
+//	db, _ = badger.Open(opts)
+//}
 //var testBlockByte = []byte("{\"id\":123,\"hash\":\"abc123\",\"numberOfTransactions\":1,\"updated\":\"2018-05-09T15:04:05Z\",\"created\":\"2018-05-09T15:04:05Z\"}")
 //
 //func TestBlockKey(t *testing.T) {

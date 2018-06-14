@@ -24,7 +24,6 @@ import (
 	"io/ioutil"
 	"os"
 	"sync"
-
 	"github.com/dispatchlabs/disgo/commons/utils"
 )
 

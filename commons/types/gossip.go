@@ -22,6 +22,7 @@ import (
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/patrickmn/go-cache"
+	"time"
 )
 
 // Gossip
@@ -37,8 +38,12 @@ func (this Gossip) Key() string {
 }
 
 //Cache
-func (this *Gossip) Cache(cache *cache.Cache){
-	cache.Set("Gossip-" + this.Transaction.Hash, this, GossipTTL)
+func (this *Gossip) Cache(cache *cache.Cache,time_optional ...time.Duration){
+	TTL := GossipTTL
+	if len(time_optional) > 0 {
+		TTL = time_optional[0]
+	}
+	cache.Set(this.Key(), this, TTL)
 }
 
 //Persist
@@ -62,7 +67,7 @@ func (this *Gossip) Set(txn *badger.Txn,cache *cache.Cache) error {
 
 //Unset
 func (this *Gossip) Unset(txn *badger.Txn,cache *cache.Cache) error {
-	cache.Delete("Gossip-" + this.Transaction.Hash)
+	cache.Delete(this.Key())
 	err := txn.Delete([]byte(this.Key()))
 	if err != nil {
 		return err
@@ -152,8 +157,8 @@ func ToJsonByGossip(gossip Gossip) ([]byte, error) {
 }
 
 // ToGossipFromCache -
-func ToGossipFromCache(cache *cache.Cache, tx Transaction) (*Gossip, error) {
-	value, ok :=cache.Get("Gossip-" + tx.Hash)
+func ToGossipFromCache(cache *cache.Cache, txHash string) (*Gossip, error) {
+	value, ok := cache.Get(fmt.Sprintf("table-gossip-%s", txHash))
 	if !ok{
 		return nil, ErrNotFound
 	}

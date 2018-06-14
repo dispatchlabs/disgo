@@ -22,6 +22,7 @@ import (
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/patrickmn/go-cache"
+	"time"
 )
 
 // Node - Is the DisGover's notion of what a node is
@@ -42,8 +43,12 @@ func (this Node) TypeKey() string {
 }
 
 //Cache
-func (this *Node) Cache(cache *cache.Cache){
-	cache.Set(this.Address, this, NodeTTL)
+func (this *Node) Cache(cache *cache.Cache, time_optional ...time.Duration){
+	TTL := NodeTTL
+	if len(time_optional) > 0 {
+		TTL = time_optional[0]
+	}
+	cache.Set(this.Key(), this, TTL)
 }
 
 //Persist
@@ -71,7 +76,7 @@ func (this *Node) Set(txn *badger.Txn,cache *cache.Cache) error {
 
 // Unset
 func (this *Node) Unset(txn *badger.Txn,cache *cache.Cache) error {
-	cache.Delete(this.Address)
+	cache.Delete(this.Key())
 	err := txn.Delete([]byte(this.Key()))
 	if err != nil {
 		return err
@@ -102,7 +107,7 @@ func ToNodeFromJson(payload []byte) (*Node, error) {
 
 // ToGossipFromCache -
 func ToNodeFromCache(cache *cache.Cache, address string) (*Node, error) {
-	value, ok :=cache.Get(address)
+	value, ok :=cache.Get(fmt.Sprintf("table-node-%s", address))
 	if !ok{
 		return nil, ErrNotFound
 	}

@@ -20,8 +20,10 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 )
 
+//testMockNewGossip
 func testMockNewGossip(t *testing.T) (*Gossip, *Transaction) {
 	tx := testMockTransaction(t)
 	receipt := NewReceipt("test")
@@ -29,11 +31,26 @@ func testMockNewGossip(t *testing.T) (*Gossip, *Transaction) {
 	return gossip, tx
 }
 
+//TestNewGossip
 func TestNewGossip(t *testing.T) {
 	gossip, tx := testMockNewGossip(t)
 	testGossipStruct(t, gossip, tx)
 }
 
+//TestGossipCache
+func TestGossipCache(t *testing.T) {
+	gossip, tx := testMockNewGossip(t)
+	gossip.Cache(c, time.Second * 5)
+	testGossip, err := ToGossipFromCache(c, tx.Hash)
+	if err != nil {
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testGossip, gossip) == false{
+		t.Error("Gossip not equal to testGossip")
+	}
+}
+
+//TestToGossipFromJson
 func TestToGossipFromJson(t *testing.T) {
 	receipt := NewReceipt(RequestNewTransaction)
 	tx := testMockTransaction(t)
@@ -59,6 +76,7 @@ func TestToGossipFromJson(t *testing.T) {
 	}
 }
 
+//TestToJsonByGossip
 func TestToJsonByGossip(t *testing.T) {
 	gossip, tx := testMockNewGossip(t)
 	bytes, err := ToJsonByGossip(*gossip)
@@ -71,6 +89,7 @@ func TestToJsonByGossip(t *testing.T) {
 	}
 }
 
+//TestContainsRumor
 func TestContainsRumor(t *testing.T) {
 	gossip, _ := testMockNewGossip(t)
 	r1 := testMockRumor()
@@ -84,31 +103,37 @@ func TestContainsRumor(t *testing.T) {
 	}
 }
 
+//TestToGossipByKey
 func TestToGossipByKey(t *testing.T) {
 	// TODO: ToGossipByKey()
 	t.Skip("Need a Badger DB mock")
 }
 
+//TestToGossips
 func TestToGossips(t *testing.T) {
 	// TODO: ToGossips()
 	t.Skip("Need a Badger DB mock")
 }
 
+//TestToOldGossips
 func TestToOldGossips(t *testing.T) {
 	// TODO: ToOldGossips()
 	t.Skip("Need a Badger DB mock")
 }
 
+//TestGossipSet
 func TestGossipSet(t *testing.T) {
 	// TODO: Gossip.Set()
 	t.Skip("Need a Badger DB mock")
 }
 
+//TestGossipRefresh
 func TestGossipRefresh(t *testing.T) {
 	// TODO: Gossip.Refresh()
 	t.Skip("Need a Badger DB mock")
 }
 
+//testGossipStruct
 func testGossipStruct(t *testing.T, gossip *Gossip, tx *Transaction) {
 	if reflect.DeepEqual(gossip.Transaction, *tx) == false {
 		t.Errorf("gossip contains invalid %s value.\nG: %s\nE: %s", "Transaction", gossip.Transaction, *tx)

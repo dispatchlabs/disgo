@@ -43,8 +43,12 @@ func (this Receipt) Key() string {
 }
 
 //Cache
-func (this *Receipt) Cache(cache *cache.Cache){
-	cache.Set(this.Id, this, ReceiptTTL)
+func (this *Receipt) Cache(cache *cache.Cache,time_optional ...time.Duration){
+	TTL := ReceiptTTL
+	if len(time_optional) > 0 {
+		TTL = time_optional[0]
+	}
+	cache.Set(this.Key(), this, TTL)
 }
 
 //Persist
@@ -69,7 +73,7 @@ func (this *Receipt) Set(txn *badger.Txn,cache *cache.Cache) error {
 
 // Unset
 func (this *Receipt) Unset(txn *badger.Txn,cache *cache.Cache) error {
-	cache.Delete(this.Id)
+	cache.Delete(this.Key())
 	err := txn.Delete([]byte(this.Key()))
 	if err != nil {
 		return err
@@ -197,7 +201,7 @@ func ToReceiptFromJson(payload []byte) (*Receipt, error) {
 
 // ToReceiptFromCache -
 func ToReceiptFromCache(cache *cache.Cache, id string) (*Receipt, error) {
-	value, ok :=cache.Get(id)
+	value, ok :=cache.Get(fmt.Sprintf("table-receipt-%s", id))
 	if !ok{
 		return nil, ErrNotFound
 	}
