@@ -508,7 +508,7 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		}
 	}
 	if jsonMap["time"] != nil {
-		time, ok := jsonMap["type"].(float64)
+		time, ok := jsonMap["time"].(float64)
 		if !ok {
 			return errors.Errorf("value for field 'time' must be a number")
 		}
