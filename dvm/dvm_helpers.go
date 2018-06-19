@@ -43,7 +43,7 @@ var (
 	isDemo             = false
 
 	_defaultValue    = big.NewInt(0)
-	_defaultGas      = big.NewInt(1000000)
+	_defaultGas      = big.NewInt(1000000000)
 	_defaultGasPrice = big.NewInt(0)
 	_defaultGasLimit = 1000000000
 	_defaultDivvy    = int64(0)
@@ -135,7 +135,7 @@ func (self *DVMService) applyTransaction(tx *commonTypes.Transaction, stateHelpe
 	return nil
 }
 
-func (self *DVMService) call(callMsg ethTypes.Message, stateHelper *VMStateHelper) ([]byte, error) {
+func (self *DVMService) call(tx *commonTypes.Transaction, callMsg ethTypes.Message, stateHelper *VMStateHelper) ([]byte, error) {
 	context := vm.Context{
 		CanTransfer: ethereum.CanTransfer,
 		Transfer:    ethereum.Transfer,
@@ -169,11 +169,37 @@ func (self *DVMService) call(callMsg ethTypes.Message, stateHelper *VMStateHelpe
 	)
 
 	// Apply the transaction to the current state (included in the env)
-	res, _, _, _, err := ethereum.ApplyMessage(vmenv, callMsg, stateHelper.gp)
-	if err != nil {
-		utils.Error(fmt.Sprintf("%s Executing Call on WAS", err))
-		return nil, err
+	execResult, _ /*contractAddress*/, gas, failed, execError := ethereum.ApplyMessage(vmenv, callMsg, stateHelper.gp)
+	if execError != nil {
+		utils.Error(fmt.Sprintf("%s Executing Call on WAS", execError))
+		return nil, execError
 	}
+
+	// __START__
+	stateHelper.totalUsedGas.Add(stateHelper.totalUsedGas, big.NewInt(0).SetUint64(gas))
+
+	// Create a new receipt for the transaction, storing the intermediate root and gas used by the tx
+	// based on the eip phase, we're passing wether the root touch-delete accounts.
+	root := stateHelper.ethStateDB.IntermediateRoot(true) //this has side effects. It updates StateObjects (SmartContract memory)
+
+	receipt := ethTypes.NewReceipt(root.Bytes(), failed, stateHelper.totalUsedGas.Uint64())
+	receipt.TxHash = crypto.GetHashBytes(tx.Hash)
+	receipt.GasUsed = gas
+	// if the transaction created a contract, store the creation address in the receipt.
+	// if callMsg.To() == nil {
+	receipt.ContractAddress = crypto.GetAddressBytes(tx.To)
+
+	stateHelper.to = receipt.ContractAddress
+	// }
+	// Set the receipt logs and create a bloom for filtering
+	receipt.Logs = stateHelper.ethStateDB.GetLogs(crypto.GetHashBytes(tx.Hash))
+	receipt.Bloom = ethTypes.CreateBloom(ethTypes.Receipts{receipt})
+
+	stateHelper.txIndex++
+	stateHelper.transactions = append(stateHelper.transactions, tx)
+	stateHelper.receipts = append(stateHelper.receipts, receipt)
+	stateHelper.allLogs = append(stateHelper.allLogs, receipt.Logs...)
+	// __END__
 
 	// DEMO-Today
 	if isDemo {
@@ -182,7 +208,7 @@ func (self *DVMService) call(callMsg ethTypes.Message, stateHelper *VMStateHelpe
 		utils.Debug(string(logsAsJSON))
 	}
 
-	return res, err
+	return execResult, execError
 }
 
 func (self *DVMService) getReceipt(txHash []byte) (*ethTypes.Receipt, error) {

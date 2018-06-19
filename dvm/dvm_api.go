@@ -61,6 +61,7 @@ func (dvm *DVMService) DeploySmartContract(tx *commonTypes.Transaction) (*DVMRes
 		ABI:                      "",
 		StorageState:             stateHelper,
 		ContractAddress:          receipt.ContractAddress,
+		ContractMethod:           "",
 		ContractMethodExecError:  nil,
 		ContractMethodExecResult: nil,
 
@@ -111,10 +112,28 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 		false,
 	)
 
-	execResult, execError := dvm.call(callMsg, stateHelper)
+	execResult, execError := dvm.call(tx, callMsg, stateHelper)
 	if execError != nil {
 		utils.Error(execError)
-		return nil, execError
+		// return nil, execError
+
+		return &DVMResult{
+			From:                     crypto.GetAddressBytes(tx.From),
+			To:                       crypto.GetAddressBytes(tx.To),
+			ABI:                      tx.Abi,
+			StorageState:             stateHelper,
+			ContractAddress:          crypto.GetAddressBytes(tx.To),
+			ContractMethod:           tx.Method,
+			ContractMethodExecError:  execError,
+			ContractMethodExecResult: nil,
+
+			Divvy:  _defaultDivvy,
+			Status: ethTypes.ReceiptStatusFailed,
+			// HertzCost:           receipt.GasUsed,
+			// CumulativeHertzUsed: receipt.CumulativeGasUsed,
+			// Bloom:               receipt.Bloom,
+			// Logs:                receipt.Logs,
+		}, execError
 	}
 
 	// Commit the change
@@ -124,19 +143,26 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 		return nil, err
 	}
 
+	// Get info about the TX
+	bytes, _ := hex.DecodeString(tx.Hash)
+	receipt, err := dvm.getReceipt(bytes)
+
 	// Return the state of the storage and the execution result
 	return &DVMResult{
 		From:                     crypto.GetAddressBytes(tx.From),
 		To:                       crypto.GetAddressBytes(tx.To),
 		ABI:                      tx.Abi,
 		StorageState:             stateHelper,
+		ContractAddress:          crypto.GetAddressBytes(tx.To),
+		ContractMethod:           tx.Method,
 		ContractMethodExecError:  execError,
 		ContractMethodExecResult: execResult,
 
-		// Status:              receipt.Status,
-		// HertzCost:           receipt.GasUsed,
-		// CumulativeHertzUsed: receipt.CumulativeGasUsed,
-		// Bloom:               receipt.Bloom,
-		// Logs:                receipt.Logs,
+		Divvy:               _defaultDivvy,
+		Status:              receipt.Status,
+		HertzCost:           receipt.GasUsed,
+		CumulativeHertzUsed: receipt.CumulativeGasUsed,
+		Bloom:               receipt.Bloom,
+		Logs:                receipt.Logs,
 	}, nil
 }
