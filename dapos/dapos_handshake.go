@@ -334,7 +334,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			return
 		}
 		fromAccount.Balance.SetInt64(fromAccount.Balance.Int64() - transaction.Value)
-		fromAccount.Balance.SetInt64(fromAccount.Balance.Int64() + transaction.Value)
+		toAccount.Balance.SetInt64(toAccount.Balance.Int64() + transaction.Value)
 		utils.Info(fmt.Sprintf("transferred tokens [receiptId=%s hash=%s, rumors=%d]", receipt.Id, transaction.Hash, len(gossip.Rumors)))
 	}
 
