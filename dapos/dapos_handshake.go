@@ -422,7 +422,7 @@ func processDVMResult(transaction *types.Transaction, dvmResult *dvm.DVMResult, 
 		abiAsString := string(fromHexAsByteArray)
 		jsonABI, err := abi.JSON(strings.NewReader(abiAsString))
 		if err == nil {
-			var parsedRes string
+			var parsedRes interface{}
 			err = jsonABI.Unpack(&parsedRes, transaction.Method, dvmResult.ContractMethodExecResult)
 			if err == nil {
 				utils.Info(fmt.Sprintf("CONTRACT-CALL-RES: %s", parsedRes))
