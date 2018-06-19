@@ -1,4 +1,4 @@
-<img src="https://www.dispatchlabs.io/images/svg/dispatch_logo_b.svg" width="250">
+<img src="https://dispatchlabs.io/wp-content/themes/ccprototypev5/images/dispatchlabs-logo.png" width="250">
  
 &nbsp;
 
@@ -29,9 +29,9 @@ For more technical details on how disgo works, please visit the [Wiki](https://g
 ### Dependencies
 uses all of the packages in the repo.
 
- - [commons](https://github.com/dispatchlabs/disgo_commons) for common types domain types.
- - [disgover](https://github.com/dispatchlabs/disgover) for node discovery.
- - [dapos](https://github.com/dispatchlabs/dapos) for consensus.
+ - [commons](https://github.com/dispatchlabs/disgo_commons) for common domain types.
+ - [disgover](https://github.com/dispatchlabs/disgo/disgover) for node discovery.
+ - [dapos](https://github.com/dispatchlabs/disgo/dapos) for consensus.
 
 <a name="configuration"></a>
 ### Configuration

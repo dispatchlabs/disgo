@@ -6,7 +6,6 @@ debug
 disgo
 db
 
-config/
-test1/
+config
 
 *.iml
