@@ -28,6 +28,7 @@ import (
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/pkg/errors"
 )
 
 // Transaction - The transaction info
@@ -262,22 +263,22 @@ func NewExecuteContractTransaction(privateKey string, from string, to string, ab
 }
 
 // NewHash
-func (this Transaction) NewHash() (string, error) {
-	fromBytes, err := hex.DecodeString(this.From)
-	if err != nil {
-		utils.Error("unable decode from", err)
-		return "", err
-	}
-	toBytes, err := hex.DecodeString(this.To)
-	if err != nil {
-		utils.Error("unable decode to", err)
-		return "", err
-	}
-	codeBytes, err := hex.DecodeString(this.Code)
-	if err != nil {
-		utils.Error("unable decode code", err)
-		return "", err
-	}
+	func (this Transaction) NewHash() (string, error) {
+		fromBytes, err := hex.DecodeString(this.From)
+		if err != nil {
+			utils.Error("unable decode from", err)
+			return "", err
+		}
+		toBytes, err := hex.DecodeString(this.To)
+		if err != nil {
+			utils.Error("unable decode to", err)
+			return "", err
+		}
+		codeBytes, err := hex.DecodeString(this.Code)
+		if err != nil {
+			utils.Error("unable decode code", err)
+			return "", err
+		}
 	var values = []interface{}{
 		this.Type,
 		fromBytes,
@@ -298,6 +299,8 @@ func (this Transaction) NewHash() (string, error) {
 		}
 	}
 	hash := crypto.NewHash(buffer.Bytes())
+	hashString := hex.EncodeToString(hash[:])
+	fmt.Printf("\n%v\nHash: %v\n\n", this.String(), hashString)
 	return hex.EncodeToString(hash[:]), nil
 }
 
@@ -443,60 +446,99 @@ func (this Transaction) String() string {
 // UnmarshalJSON
 func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 	var jsonMap map[string]interface{}
+	var ok bool
 	error := json.Unmarshal(bytes, &jsonMap)
 	if error != nil {
 		return error
 	}
 	if jsonMap["hash"] != nil {
-		this.Hash = jsonMap["hash"].(string)
+		this.Hash, ok = jsonMap["hash"].(string)
+		if !ok {
+			return errors.Errorf("value for field 'hash' must be a string")
+		}
 	}
 	if jsonMap["type"] != nil {
-		this.Type = byte(jsonMap["type"].(float64))
+		typ, ok := jsonMap["type"].(float64)
+		if !ok {
+			return errors.Errorf("value for field 'type' must be a number")
+		}
+		this.Type = byte(typ)
 	}
 	if jsonMap["from"] != nil {
-		this.From = jsonMap["from"].(string)
+		this.From, ok = jsonMap["from"].(string)
+		if !ok {
+			return errors.Errorf("value for field 'from' must be a string")
+		}
 	}
 	if jsonMap["to"] != nil {
-		this.To = jsonMap["to"].(string)
+		this.To, ok = jsonMap["to"].(string)
+		if !ok {
+			return errors.Errorf("value for field 'to' must be a string")
+		}
 	}
 	if jsonMap["value"] != nil {
-		this.Value = int64(jsonMap["value"].(float64))
+		val, ok := jsonMap["value"].(float64)
+		if !ok {
+			return errors.Errorf("value for field 'value' must be a number")
+		}
+		this.Value = int64(val)
 	}
 	if jsonMap["code"] != nil {
-		this.Code = jsonMap["code"].(string)
+		this.Code, ok = jsonMap["code"].(string)
+		if !ok {
+			return errors.Errorf("value for field 'code' must be a string")
+		}
 	}
 	if jsonMap["abi"] != nil {
-		this.Abi = jsonMap["abi"].(string)
+		this.Abi, ok = jsonMap["abi"].(string)
+		if !ok {
+			return errors.Errorf("value for field 'abi' must be a string")
+		}
 	}
 	if jsonMap["method"] != nil {
-		this.Method = jsonMap["method"].(string)
+		this.Method, ok = jsonMap["method"].(string)
+		if !ok {
+			return errors.Errorf("value for field 'method' must be a string")
+		}
 	}
 	if jsonMap["params"] != nil {
-		this.Params = jsonMap["params"].([]interface{})
+		this.Params, ok = jsonMap["params"].([]interface{})
+		if !ok {
+			return errors.Errorf("value for field 'params' must be an array")
+		}
 	}
 	if jsonMap["time"] != nil {
-		this.Time = int64(jsonMap["time"].(float64))
+		time, ok := jsonMap["time"].(float64)
+		if !ok {
+			return errors.Errorf("value for field 'time' must be a number")
+		}
+		this.Time = int64(time)
 	}
 	if jsonMap["signature"] != nil {
-		this.Signature = jsonMap["signature"].(string)
+		this.Signature, ok = jsonMap["signature"].(string)
+		if !ok {
+			return errors.Errorf("value for field 'signature' must be a string")
+		}
 	}
 	if jsonMap["hertz"] != nil {
-		this.Hertz = int64(jsonMap["hertz"].(float64))
+		hertz, ok := jsonMap["type"].(float64)
+		if !ok {
+			return errors.Errorf("value for field 'hertz' must be a number")
+		}
+		this.Hertz = int64(hertz)
 	}
 	if jsonMap["fromName"] != nil {
-		this.FromName = jsonMap["fromName"].(string)
+		this.FromName, ok = jsonMap["fromName"].(string)
+		if !ok {
+			return errors.Errorf("value for field 'fromName' must be a string")
+		}
 	}
 	if jsonMap["toName"] != nil {
-		this.ToName = jsonMap["toName"].(string)
+		this.ToName, ok = jsonMap["toName"].(string)
+		if !ok {
+			return errors.Errorf("value for field 'toName' must be a string")
+		}
 	}
-
-	if jsonMap["code"] != nil {
-		this.Code = jsonMap["code"].(string)
-	}
-	if jsonMap["method"] != nil {
-		this.Method = jsonMap["method"].(string)
-	}
-
 	return nil
 }
 
