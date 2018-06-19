@@ -19,6 +19,7 @@ package dapos
 import (
 	"fmt"
 	"math/rand"
+
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/types"
@@ -28,11 +29,12 @@ import (
 	"github.com/processout/grpc-go-pool"
 	"google.golang.org/grpc"
 
-	"time"
-	"math/big"
-	"github.com/dispatchlabs/disgo/dvm"
 	"encoding/hex"
+	"math/big"
 	"strings"
+	"time"
+
+	"github.com/dispatchlabs/disgo/dvm"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
 )
 
@@ -427,7 +429,11 @@ func processDVMResult(transaction *types.Transaction, dvmResult *dvm.DVMResult, 
 			if err == nil {
 				utils.Info(fmt.Sprintf("CONTRACT-CALL-RES: %s", parsedRes))
 				receipt.ContractResult = parsedRes
+			} else {
+				utils.Error(err)
 			}
+		} else {
+			utils.Error(err)
 		}
 	}
 	return nil

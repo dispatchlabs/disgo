@@ -219,9 +219,12 @@ func (st *StateTransition) TransitionDb() (ret []byte, contractAddress crypto.Ad
 		// The only possible consensus-error would be if there wasn't
 		// sufficient balance to make the transfer happen. The first
 		// balance transfer may never fail.
+
 		if vmerr == vm.ErrInsufficientBalance {
 			return nil, contractAddress, 0, false, vmerr
 		}
+
+		err = vmerr
 	}
 	st.refundGas()
 	st.state.AddBalance(st.evm.Coinbase, new(big.Int).Mul(new(big.Int).SetUint64(st.gasUsed()), st.gasPrice))
