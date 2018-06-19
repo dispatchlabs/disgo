@@ -24,6 +24,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/gorilla/mux"
+	"fmt"
 )
 
 // WithHttp -
@@ -84,7 +85,7 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 	transaction, err := types.ToTransactionFromJson(body)
 	if err != nil {
 		utils.Error("JSON parse error", err)
-		http.Error(responseWriter, `{"status":"JSON_PARSE_ERROR"}`, http.StatusInternalServerError)
+		http.Error(responseWriter, fmt.Sprintf(`{"status":"JSON_PARSE_ERROR: %v"}`, err), http.StatusInternalServerError)
 		return
 	}
 	receipt := this.NewTransaction(transaction)
