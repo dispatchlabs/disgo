@@ -11,10 +11,30 @@ Disgo is the main client / node for the Dispatch platform. It initializes all of
 
 ### Download
 
+With Go installed, enter either of the following commands into your terminal:
+
 `go get github.com/dispatchlabs/disgo`  
 or  
-`git clone http://github.com/dispatchlabs/disgo`
+`git clone http://github.com/dispatchlabs/disgo` (into your GOPATH)
 
+If you have yet to install Go, visit our [tutorial](https://github.com/dispatchlabs/samples/tree/master/golang-setup) or download straight from the [Golang website.](https://golang.org/dl/)
+<a name="running"></a>
+### How to run the Disgo package
+
+Disgo is a full node, so you should be able to run it right out of the box:
+
+simply run the following commands in your terminal
+
+```
+cd $GOPATH/src/github.com/dispatchlabs/disgo
+go run main.go
+```
+
+For instructions on running Disgo in Docker, please visit the [Wiki Page](https://github.com/dispatchlabs/disgo/wiki#docker)
+
+<a name="using"></a>
+### Dancing with Disgo
+To dance with disgo either use our [Java SDK](https://github.com/dispatchlabs/java-sdk), [mobile wallet](https://github.com/dispatchlabs/mobile-wallet), or [ScanDis](https://github.com/dispatchlabs/scandis)
 
 <a name="wiki"></a>
 ### Wiki Documentation
@@ -27,34 +47,19 @@ For more technical details on how disgo works, please visit the [Wiki](https://g
 
 <a name="dependencies"></a>
 ### Dependencies
-uses all of the packages in the repo.
 
- - [commons](https://github.com/dispatchlabs/disgo_commons) for common domain types.
- - [disgover](https://github.com/dispatchlabs/disgo/disgover) for node discovery.
- - [dapos](https://github.com/dispatchlabs/disgo/dapos) for consensus.
+to get all the dependencies simply run `go get ./...` from disgo directory
 
 <a name="configuration"></a>
 ### Configuration
-The disgo package relies on the configuration loaded by [commons](https://github.com/dispatchlabs/disgo_commons) 
+The disgo package relies on the configuration loaded by [commons](https://github.com/dispatchlabs/disgo/commons) 
 
 <a name="protobuf"></a>
 ##### protobuf ([see common install instructions](https://github.com/dispatchlabs/disgo#-develop))
 
-<a name="usage"></a>
-### How to run the disgo package
-
-Disgo is a full node, so you should be able to run it right out of the box:
-
-```
-cd ~/go/src/dispatchlabs/disgo
-go run main.go
-```
-
-For instructions on running Disgo in Docker, please visit the [Wiki Page](https://github.com/dispatchlabs/disgo/wiki#docker)
-
 <a name="tests"></a>
 ### Tests
-*Tests to be added*
+We have multiple unit test throughout disgo, go provides a test framework that is easy to use. Simply go into any directory with a file ending in _test.go and call `go test`
 
 <a name="acknowledgments"></a>
 ### Acknowledgments
