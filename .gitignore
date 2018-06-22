@@ -9,5 +9,4 @@ db
 config
 
 *.iml
-
 commons/types/testdb/
