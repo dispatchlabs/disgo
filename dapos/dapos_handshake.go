@@ -328,6 +328,10 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		}
 		receipt.ContractAddress = transaction.To
 		utils.Info(fmt.Sprintf("executed contract [receiptId=%s hash=%s, contractAddress=%s]", receipt.Id, transaction.Hash, transaction.To))
+	} else if len(strings.TrimSpace(transaction.To)) == 0 {
+		utils.Error(fmt.Sprintf("invalid transaction data [hash=%s]", transaction.Hash))
+		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInvalidTransaction)
+		return
 	} else {
 		// Sufficient tokens?
 		if fromAccount.Balance.Int64() < transaction.Value {
