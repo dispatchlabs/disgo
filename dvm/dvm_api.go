@@ -96,7 +96,25 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 	callData, err := jsonABI.Pack(tx.Method, tx.Params...)
 	if err != nil {
 		utils.Error(err)
-		return nil, err
+		// return nil, err
+
+		return &DVMResult{
+			From:                     crypto.GetAddressBytes(tx.From),
+			To:                       crypto.GetAddressBytes(tx.To),
+			ABI:                      tx.Abi,
+			StorageState:             stateHelper,
+			ContractAddress:          crypto.GetAddressBytes(tx.To),
+			ContractMethod:           tx.Method,
+			ContractMethodExecError:  err,
+			ContractMethodExecResult: nil,
+
+			Divvy:  _defaultDivvy,
+			Status: ethTypes.ReceiptStatusFailed,
+			// HertzCost:           receipt.GasUsed,
+			// CumulativeHertzUsed: receipt.CumulativeGasUsed,
+			// Bloom:               receipt.Bloom,
+			// Logs:                receipt.Logs,
+		}, err
 	}
 
 	// Execte the Smart-Contract Method
