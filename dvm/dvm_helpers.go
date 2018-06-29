@@ -141,8 +141,9 @@ func (self *DVMService) call(tx *commonTypes.Transaction, callMsg ethTypes.Messa
 		Transfer:    ethereum.Transfer,
 		GetHash:     func(uint64) crypto.HashBytes { return crypto.HashBytes{} },
 		// Message information
-		Origin:   callMsg.From(),
-		GasPrice: callMsg.GasPrice(),
+		Origin:      callMsg.From(),
+		GasPrice:    callMsg.GasPrice(),
+		BlockNumber: big.NewInt(0), //the vm has a dependency on this..
 	}
 
 	// The EVM should never be reused and is not thread safe.
