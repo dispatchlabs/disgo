@@ -35,20 +35,74 @@ func (dvm *DVMService) DeploySmartContract(tx *commonTypes.Transaction) (*DVMRes
 	// Load the TRIE state for [FROM:TO] combo
 	stateHelper, err := NewVMStateHelper(crypto.GetAddressBytes(tx.From), crypto.GetAddressBytes(tx.To))
 	if err != nil {
-		return nil, err
+		// return nil, err
+
+		return &DVMResult{
+			From: crypto.GetAddressBytes(tx.From),
+			// To:                       receipt.ContractAddress,
+			ABI:          "",
+			StorageState: stateHelper,
+			// ContractAddress:          receipt.ContractAddress,
+			ContractMethod:           "",
+			ContractMethodExecError:  nil,
+			ContractMethodExecResult: nil,
+
+			Divvy: _defaultDivvy,
+			// Status:              receipt.Status,
+			// HertzCost:           receipt.GasUsed,
+			// CumulativeHertzUsed: receipt.CumulativeGasUsed,
+			// Bloom:               receipt.Bloom,
+			// Logs:                receipt.Logs,
+		}, err
 	}
 
 	stateHelper.ethStateDB.SetNonce(crypto.GetAddressBytes(tx.From), uint64(tx.Time))
 	if err := dvm.applyTransaction(tx, stateHelper); err != nil {
 		utils.Error(err)
-		return nil, err
+		// return nil, err
+
+		return &DVMResult{
+			From: crypto.GetAddressBytes(tx.From),
+			// To:                       receipt.ContractAddress,
+			ABI:          "",
+			StorageState: stateHelper,
+			// ContractAddress:          receipt.ContractAddress,
+			ContractMethod:           "",
+			ContractMethodExecError:  nil,
+			ContractMethodExecResult: nil,
+
+			Divvy: _defaultDivvy,
+			// Status:              receipt.Status,
+			// HertzCost:           receipt.GasUsed,
+			// CumulativeHertzUsed: receipt.CumulativeGasUsed,
+			// Bloom:               receipt.Bloom,
+			// Logs:                receipt.Logs,
+		}, err
 	}
 
 	// Commit the change
 	_, err = stateHelper.Commit() // returns `hashOfTrieRootNode` but don't use below
 	if err != nil {
 		utils.Error(err)
-		return nil, err
+		// return nil, err
+
+		return &DVMResult{
+			From: crypto.GetAddressBytes(tx.From),
+			// To:                       receipt.ContractAddress,
+			ABI:          "",
+			StorageState: stateHelper,
+			// ContractAddress:          receipt.ContractAddress,
+			ContractMethod:           "",
+			ContractMethodExecError:  nil,
+			ContractMethodExecResult: nil,
+
+			Divvy: _defaultDivvy,
+			// Status:              receipt.Status,
+			// HertzCost:           receipt.GasUsed,
+			// CumulativeHertzUsed: receipt.CumulativeGasUsed,
+			// Bloom:               receipt.Bloom,
+			// Logs:                receipt.Logs,
+		}, err
 	}
 
 	// Get info about the TX
@@ -81,7 +135,25 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 	// Load the TRIE state for [FROM:TO] combo
 	stateHelper, err := NewVMStateHelper(crypto.GetAddressBytes(tx.From), crypto.GetAddressBytes(tx.To))
 	if err != nil {
-		return nil, err
+		// return nil, err
+
+		return &DVMResult{
+			From:                     crypto.GetAddressBytes(tx.From),
+			To:                       crypto.GetAddressBytes(tx.To),
+			ABI:                      tx.Abi,
+			StorageState:             stateHelper,
+			ContractAddress:          crypto.GetAddressBytes(tx.To),
+			ContractMethod:           tx.Method,
+			ContractMethodExecError:  err,
+			ContractMethodExecResult: nil,
+
+			Divvy:  _defaultDivvy,
+			Status: ethTypes.ReceiptStatusFailed,
+			// HertzCost:           receipt.GasUsed,
+			// CumulativeHertzUsed: receipt.CumulativeGasUsed,
+			// Bloom:               receipt.Bloom,
+			// Logs:                receipt.Logs,
+		}, err
 	}
 
 	// Prepare the method params from ABI
@@ -90,7 +162,25 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 	jsonABI, err := abi.JSON(strings.NewReader(abiAsString))
 	if err != nil {
 		utils.Error(err)
-		return nil, err
+		// return nil, err
+
+		return &DVMResult{
+			From:                     crypto.GetAddressBytes(tx.From),
+			To:                       crypto.GetAddressBytes(tx.To),
+			ABI:                      tx.Abi,
+			StorageState:             stateHelper,
+			ContractAddress:          crypto.GetAddressBytes(tx.To),
+			ContractMethod:           tx.Method,
+			ContractMethodExecError:  err,
+			ContractMethodExecResult: nil,
+
+			Divvy:  _defaultDivvy,
+			Status: ethTypes.ReceiptStatusFailed,
+			// HertzCost:           receipt.GasUsed,
+			// CumulativeHertzUsed: receipt.CumulativeGasUsed,
+			// Bloom:               receipt.Bloom,
+			// Logs:                receipt.Logs,
+		}, err
 	}
 
 	callData, err := jsonABI.Pack(tx.Method, tx.Params...)
@@ -158,7 +248,25 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 	_, err = stateHelper.Commit() // returns `hashOfTrieRootNode` but don't use below
 	if err != nil {
 		utils.Error(err)
-		return nil, err
+		// return nil, err
+
+		return &DVMResult{
+			From:                     crypto.GetAddressBytes(tx.From),
+			To:                       crypto.GetAddressBytes(tx.To),
+			ABI:                      tx.Abi,
+			StorageState:             stateHelper,
+			ContractAddress:          crypto.GetAddressBytes(tx.To),
+			ContractMethod:           tx.Method,
+			ContractMethodExecError:  execError,
+			ContractMethodExecResult: nil,
+
+			Divvy:  _defaultDivvy,
+			Status: ethTypes.ReceiptStatusFailed,
+			// HertzCost:           receipt.GasUsed,
+			// CumulativeHertzUsed: receipt.CumulativeGasUsed,
+			// Bloom:               receipt.Bloom,
+			// Logs:                receipt.Logs,
+		}, execError
 	}
 
 	// Get info about the TX
