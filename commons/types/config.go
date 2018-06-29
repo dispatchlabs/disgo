@@ -45,8 +45,8 @@ func GetConfig() *Config {
 			},
 			GrpcTimeout: 5,
 			SeedEndpoints: []*Endpoint{
-				&Endpoint{
-					Host: "127.0.0.1",
+				{
+					Host: "35.227.182.49",
 					Port: 1973,
 				},
 			},

@@ -108,33 +108,40 @@ func (this *DisGoverService) FindByType(tipe string) ([]*types.Node, error) {
 	// TODO: We should put this in node.go and use table- and key- style keys.
 	var nodes []*types.Node
 	for _, value := range services.GetCache().Items() {
-		if reflect.TypeOf(value.Object) != reflect.TypeOf(&types.Node{}) {
+		if reflect.TypeOf(value.Object) != reflect.TypeOf(types.Node{}) {
 			continue
 		}
-		node := value.Object.(*types.Node)
+		node := value.Object.(types.Node)
 		if node.Type == types.TypeDelegate {
-			nodes = append(nodes, node)
+			nodes = append(nodes, &node)
 		}
 	}
 
 	for _, seedNode := range this.seedNodes {
 		if seedNode.Address == this.ThisNode.Address {
-			continue
-		}
+			for _, endpoint := range types.GetConfig().DelegateEndpoints {
+				deli := &types.Node{
+					Address:  "",
+					Endpoint: endpoint,
+					Type:     types.TypeDelegate,
+					}
+				nodes = append(nodes, deli)
+				}
+				continue
+			}
 		peerNodes, err := this.peerFindByTypeGrpc(seedNode, tipe)
 		if err != nil {
 			utils.Error(err)
 			continue
 		}
-		for _, node := range peerNodes {
-			if !containsNode(nodes, node.Address) {
-				nodes = append(nodes, node)
-			}
-			services.GetCache().Set(node.Address, node, types.NodeTTL)
-			this.kdht.Update(peer.ID(node.Address))
+		for _, node := range peerNodes { //go through what seed gave us
+			if !containsNode(nodes, node.Address) { //if our list doesn't contain one of the seeds nodes
+				nodes = append(nodes, node) //add to our list
+				this.addPeer(*node)
+				this.kdht.Update(peer.ID(node.Address))
+				}
 		}
 	}
-
 	return nodes, nil
 }
 
@@ -177,25 +184,53 @@ func (this *DisGoverService) findViaPeers(idToFind string, sender *types.Node) (
 }
 */
 
-func (this *DisGoverService) addPeer(node types.Node) (bool bool, err error) {
-
-	services.GetCache().Set(node.Address, node, types.NodeTTL)
+func (this *DisGoverService) addOrUpdatePeer(node types.Node) (bool, error) {
+	var exist bool
+	search, err := this.Find(node.Address)
+	if err != nil {
+		if search == nil{
+			exist = false
+		}else{
+			utils.Error(err)
+			return false, err
+		}
+	}else{
+		exist = true
+	}
 	txn := services.NewTxn(true)
 	defer txn.Discard()
-	err = node.Set(txn)
-	if err != nil {
-		return false, err
-	}
-	this.kdht.Update(peer.ID(node.Address))
+	if exist == true{
+		ok, err := this.deletePeer(*search)
+		if !ok {
+			return false, err
+		}
+		services.GetCache().Set(node.Type +"-"+ node.Address, node, types.NodeTTL)
+		err = node.Set(txn)
+		if err != nil {
+			return false, err
+		}
+		this.kdht.Update(peer.ID(node.Address))
 
-	return true, nil
+		return true, nil
+	}else{
+		services.GetCache().Set(node.Type +"-"+ node.Address, node, types.NodeTTL)
+		err = node.Set(txn)
+		if err != nil {
+			return false, err
+		}
+		this.kdht.Update(peer.ID(node.Address))
+
+		return true, nil
+	}
+
+	return false, err
 }
 
-func (this *DisGoverService) deletePeer(node types.Node) (bool bool, err error) {
-	services.GetCache().Delete(node.Address)
+func (this *DisGoverService) deletePeer(node types.Node) (bool, error) {
+	services.GetCache().Delete(node.Type +"-"+ node.Address)
 	txn := services.NewTxn(true)
 	defer txn.Discard()
-	err = node.Delete(txn)
+	err := node.Delete(txn)
 	if err != nil {
 		return false, err
 	}
@@ -203,16 +238,3 @@ func (this *DisGoverService) deletePeer(node types.Node) (bool bool, err error) 
 	return true, nil
 }
 
-func (this *DisGoverService) updatePeer(node types.Node) (bool bool, err error) {
-
-	oldNode, err := this.Find(node.Address)
-	ok, err := this.deletePeer(*oldNode)
-	if !ok {
-		return false, err
-	}
-	ok, err = this.addPeer(node)
-	if !ok {
-		return false, err
-	}
-	return true, nil
-}

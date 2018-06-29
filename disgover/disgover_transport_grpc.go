@@ -19,8 +19,6 @@ package disgover
 import (
 	"fmt"
 
-	peer "github.com/libp2p/go-libp2p-peer"
-
 	"time"
 
 	"github.com/dispatchlabs/disgo/commons/services"
@@ -49,8 +47,7 @@ func (this *DisGoverService) PingGrpc(ctx context.Context, node *proto.Node) (*p
 	// return convertToProto(this.ThisNode), nil
 
 	domainNode := convertToDomain(node)
-	services.GetCache().Set(domainNode.Address, domainNode, types.NodeTTL)
-	this.kdht.Update(peer.ID(node.Address))
+	this.addOrUpdatePeer(*domainNode)
 	utils.Info(fmt.Sprintf("received ping [address=%s, ip=%s, port=%d]", node.Address, node.Endpoint.Host, node.Endpoint.Port))
 	return convertToProto(this.ThisNode), nil
 }
@@ -65,7 +62,7 @@ func (this *DisGoverService) peerPingGrpc(contactToPing *types.Node, sender *typ
 	defer conn.Close()
 	client := proto.NewDisgoverGrpcClient(conn)
 	contactProto := convertToProto(sender)
-	ctx, cancel := context.WithTimeout(context.Background(), 2000*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	response, err := client.PingGrpc(ctx, contactProto)
 	if err != nil {

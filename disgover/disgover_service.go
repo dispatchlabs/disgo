@@ -58,27 +58,12 @@ func GetDisGoverService() *DisGoverService {
 			}
 		}
 
-		// Check if we are a DELEGATE
-		if thisNodeType == types.TypeNode {
-			for _, endpoint := range types.GetConfig().DelegateEndpoints {
-				var portAndIP1 = fmt.Sprintf("%s:%d", endpoint.Host, endpoint.Port)
-				var portAndIP2 = fmt.Sprintf("%s:%d", types.GetConfig().GrpcEndpoint.Host, types.GetConfig().GrpcEndpoint.Port)
-
-				if portAndIP1 == portAndIP2 {
-					thisNodeType = types.TypeDelegate
-					break
-				}
-			}
-		}
-
 		// If no seeds are specified then we are THE seed
 		if thisNodeType == types.TypeNode && len(types.GetConfig().SeedEndpoints) == 0 {
 			thisNodeType = types.TypeSeed
 		}
 
 		utils.Info(fmt.Sprintf("running as %s", thisNodeType))
-
-		// lCache, _ := lru.New(0), // FROM-AVERY
 
 		disGoverServiceInstance = &DisGoverService{
 			ThisNode: &types.Node{
@@ -103,7 +88,6 @@ func GetDisGoverService() *DisGoverService {
 type DisGoverService struct {
 	ThisNode  *types.Node
 	seedNodes []*types.Node
-	// lruCache  *lru.Cache // FROM-AVERY
 	kdht    *kbucket.RoutingTable
 	running bool
 }
@@ -126,9 +110,6 @@ func (this *DisGoverService) Go(waitGroup *sync.WaitGroup) {
 func (this *DisGoverService) pingSeedNodes() {
 	utils.Info("PING seed nodes...")
 
-	// txn := services.NewTxn(true) // FROM-AVERY
-	// defer txn.Discard() // FROM-AVERY
-
 	// Ping Seed List
 	for _, endpoint := range types.GetConfig().SeedEndpoints {
 		var seedNode *types.Node
@@ -138,7 +119,7 @@ func (this *DisGoverService) pingSeedNodes() {
 		// IF - WE are the seed then do nothing
 		if portAndIP1 == portAndIP2 {
 			seedNode = this.ThisNode
-			this.addPeer(*seedNode)
+			this.addOrUpdatePeer(*seedNode)
 			continue
 		}
 
@@ -155,11 +136,29 @@ func (this *DisGoverService) pingSeedNodes() {
 			utils.Error(err)
 			continue
 		}
+		//add the seed nodes
 		this.seedNodes = append(this.seedNodes, seedNode)
+		this.addOrUpdatePeer(*seedNode)
 
-		this.addPeer(*seedNode)
+		//ask them for delegates
+		delis, err := this.FindByType(types.TypeDelegate)
+		if err != nil{
+			utils.Error(err)
+			continue
+		}
+		//check if we are one
+		for _, deli := range delis {
+			deliPortAndIP1 := fmt.Sprintf("%s:%d", deli.Endpoint.Host, deli.Endpoint.Port)
+			if deliPortAndIP1 == portAndIP2 {
+				this.ThisNode.Type = types.TypeDelegate
+			}
+		}
+		if this.ThisNode.Type == types.TypeDelegate{
+			seedNode, err = this.peerPingGrpc(seedNode, this.ThisNode) // tell the seed
+		}
 		utils.Info(fmt.Sprintf("pinged seed [address=%s, ip:port=%s:%d]", seedNode.Address, seedNode.Endpoint.Host, seedNode.Endpoint.Port))
 	}
 
 	utils.Events().Raise(Events.DisGoverServiceInitFinished)
+	return
 }
