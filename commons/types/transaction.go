@@ -508,11 +508,20 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		}
 	}
 	if jsonMap["time"] != nil {
-		time, ok := jsonMap["time"].(float64)
+		t, ok := jsonMap["time"].(float64)
 		if !ok {
 			return errors.Errorf("value for field 'time' must be a number")
 		}
-		this.Time = int64(time)
+		txTime := int64(t)
+		if time.Now().UnixNano() < txTime {
+			return errors.Errorf("transaction time cannot be in the future")
+		} else if txTime < 0 {
+			return errors.Errorf("transaction time cannot be negative")
+			//TODO: need to have a limit check here that it is not older than some value whether that is static at startup or relative to current time.
+			//TODO: Talking with Avery, should be related to page TS limits.  This will not be the appropriate place for the check but will suffice for the moment.
+		}
+
+		this.Time = txTime
 	}
 	if jsonMap["signature"] != nil {
 		this.Signature, ok = jsonMap["signature"].(string)
