@@ -137,7 +137,7 @@ func (this *DisGoverService) FindByType(tipe string) ([]*types.Node, error) {
 		for _, node := range peerNodes { //go through what seed gave us
 			if !containsNode(nodes, node.Address) { //if our list doesn't contain one of the seeds nodes
 				nodes = append(nodes, node) //add to our list
-				this.addPeer(*node)
+				this.addOrUpdatePeer(*node)
 				this.kdht.Update(peer.ID(node.Address))
 				}
 		}
