@@ -78,8 +78,6 @@ func GetDisGoverService() *DisGoverService {
 
 		utils.Info(fmt.Sprintf("running as %s", thisNodeType))
 
-		// lCache, _ := lru.New(0), // FROM-AVERY
-
 		disGoverServiceInstance = &DisGoverService{
 			ThisNode: &types.Node{
 				Address:  types.GetAccount().Address,
@@ -103,9 +101,8 @@ func GetDisGoverService() *DisGoverService {
 type DisGoverService struct {
 	ThisNode  *types.Node
 	seedNodes []*types.Node
-	// lruCache  *lru.Cache // FROM-AVERY
-	kdht    *kbucket.RoutingTable
-	running bool
+	kdht      *kbucket.RoutingTable
+	running   bool
 }
 
 // IsRunning - Returns the status if service is running
@@ -117,17 +114,13 @@ func (this *DisGoverService) IsRunning() bool {
 func (this *DisGoverService) Go(waitGroup *sync.WaitGroup) {
 	this.running = true
 	utils.Info("running")
-	go func() {
-		go this.pingSeedNodes()
-	}()
+	this.saveDelegatesFromConfigToCache()
+	go this.pingSeedNodes()
 }
 
 // pingSeedNodes
 func (this *DisGoverService) pingSeedNodes() {
 	utils.Info("PING seed nodes...")
-
-	// txn := services.NewTxn(true) // FROM-AVERY
-	// defer txn.Discard() // FROM-AVERY
 
 	// Ping Seed List
 	for _, endpoint := range types.GetConfig().SeedEndpoints {
@@ -138,7 +131,7 @@ func (this *DisGoverService) pingSeedNodes() {
 		// IF - WE are the seed then do nothing
 		if portAndIP1 == portAndIP2 {
 			seedNode = this.ThisNode
-			this.addPeer(*seedNode)
+			this.addOrUpdatePeer(seedNode)
 			continue
 		}
 
@@ -157,9 +150,23 @@ func (this *DisGoverService) pingSeedNodes() {
 		}
 		this.seedNodes = append(this.seedNodes, seedNode)
 
-		this.addPeer(*seedNode)
+		this.addOrUpdatePeer(seedNode)
 		utils.Info(fmt.Sprintf("pinged seed [address=%s, ip:port=%s:%d]", seedNode.Address, seedNode.Endpoint.Host, seedNode.Endpoint.Port))
 	}
 
 	utils.Events().Raise(Events.DisGoverServiceInitFinished)
+}
+
+func (this *DisGoverService) saveDelegatesFromConfigToCache() {
+	for _, endpoint := range types.GetConfig().DelegateEndpoints {
+		var node = &types.Node{
+			Address:  "",
+			Endpoint: endpoint,
+			Type:     types.TypeDelegate,
+		}
+
+		this.addOrUpdatePeer(node)
+	}
+
+	this.addOrUpdatePeer(this.ThisNode)
 }

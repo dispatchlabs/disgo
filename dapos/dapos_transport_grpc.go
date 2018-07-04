@@ -1,4 +1,4 @@
-/*	
+/*
  *    This file is part of DAPoS library.
  *
  *    The DAPoS library is free software: you can redistribute it and/or modify
@@ -13,7 +13,7 @@
  *
  *    You should have received a copy of the GNU General Public License
  *    along with the DAPoS library.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 package dapos
 
 import (
@@ -26,10 +26,10 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/dapos/proto"
 	"github.com/dispatchlabs/disgo/disgover"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"github.com/pkg/errors"
 	"github.com/processout/grpc-go-pool"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 // TODO: Should we GZIP the response from remote call?
@@ -83,24 +83,26 @@ func (this *DAPoSService) peerSynchronize() {
 		return
 	}
 	for _, node := range nodes {
+
+		// Check if it is the same node
 		if node.Address == disgover.GetDisGoverService().ThisNode.Address {
 			continue
 		}
 
-		// Get delegate node.
-		node, err := disgover.GetDisGoverService().Find(node.Address)
+		foundNode, err := disgover.GetDisGoverService().Find(node.Address)
 		if err != nil {
-			utils.Warn(fmt.Sprintf("unable to connect to delegate [host=%s, port=%d]", node.Endpoint.Host, node.Endpoint.Port), err)
+			utils.Warn(fmt.Sprintf("'%s' with [host=%s, port=%d]", node.Address, node.Endpoint.Host, node.Endpoint.Port), err)
 			continue
 		}
-		if node == nil {
+
+		if foundNode == nil {
 			continue
 		}
 
 		// Connect to delegate.
-		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", node.Endpoint.Host, node.Endpoint.Port), grpc.WithInsecure())
+		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", foundNode.Endpoint.Host, foundNode.Endpoint.Port), grpc.WithInsecure())
 		if err != nil {
-			utils.Warn(fmt.Sprintf("unable to connect to delegate [host=%s, port=%d]", node.Endpoint.Host, node.Endpoint.Port), err)
+			utils.Warn(fmt.Sprintf("unable to connect to delegate [host=%s, port=%d]", foundNode.Endpoint.Host, foundNode.Endpoint.Port), err)
 			continue
 		}
 		defer conn.Close()
@@ -111,7 +113,7 @@ func (this *DAPoSService) peerSynchronize() {
 		// Synchronize
 		response, err := client.SynchronizeGrpc(contextWithTimeout, &proto.Empty{})
 		if err != nil {
-			utils.Warn(fmt.Sprintf("unable to synchronize with delegate [host=%s, port=%d]", node.Endpoint.Host, node.Endpoint.Port), err)
+			utils.Warn(fmt.Sprintf("unable to synchronize with delegate [host=%s, port=%d]", foundNode.Endpoint.Host, foundNode.Endpoint.Port), err)
 			continue
 		}
 		txn := services.NewTxn(true)
@@ -167,21 +169,25 @@ func (this *DAPoSService) peerDelegateExecuteGrpc(tipe string, payload string) *
 	}
 
 	for _, node := range nodes {
+
+		// Check if it is the same node
 		if node.Address == disgover.GetDisGoverService().ThisNode.Address {
 			continue
 		}
 
-		// Find delegate node.
-		node, err := disgover.GetDisGoverService().Find(node.Address)
+		foundNode, err := disgover.GetDisGoverService().Find(node.Address)
 		if err != nil {
-			utils.Warn(fmt.Sprintf("unable to connect to delegate [host=%s, port=%d]", node.Endpoint.Host, node.Endpoint.Port), err)
+			utils.Warn(fmt.Sprintf("'%s' with [host=%s, port=%d]", node.Address, node.Endpoint.Host, node.Endpoint.Port), err)
 			continue
 		}
-		if node == nil {
+
+		if foundNode == nil {
 			continue
 		}
-		return this.peerExecuteGrpc(*node, tipe, payload)
+
+		return this.peerExecuteGrpc(*foundNode, tipe, payload)
 	}
+
 	return types.NewReceiptWithStatus(tipe, types.StatusUnableToConnectToDelegate, "unable to connect to a delegate")
 }
 
@@ -235,10 +241,16 @@ func (this *DAPoSService) GossipGrpc(context context.Context, request *proto.Req
 func (this *DAPoSService) peerGossipGrpc(node types.Node, gossip *types.Gossip) (*types.Gossip, error) {
 	utils.Debug(fmt.Sprintf("attempting to gossip with delegate [address=%s]", node.Address))
 
-	value, ok := services.GetCache().Get(fmt.Sprintf("dapos-grpc-pool-%s",  node.Address))
+	value, ok := services.GetCache().Get(fmt.Sprintf("dapos-grpc-pool-%s", node.Address))
+	// IF not found then setup one
 	if !ok {
-		return nil, errors.New("unable to find GRPC pool for this delegate")
+		this.setupConnectionPoolForPeer(&node)
 	}
+	value, ok = services.GetCache().Get(fmt.Sprintf("dapos-grpc-pool-%s", node.Address))
+	if !ok {
+		return nil, errors.New(fmt.Sprintf("unable to find GRPC pool for this delegate [address=%s]", node.Address))
+	}
+
 	pool := value.(*grpcpool.Pool)
 	clientConn, err := pool.Get(context.Background())
 	defer clientConn.Close()

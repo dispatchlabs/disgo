@@ -25,9 +25,6 @@ import (
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/disgover"
-	"github.com/patrickmn/go-cache"
-	"github.com/processout/grpc-go-pool"
-	"google.golang.org/grpc"
 
 	"encoding/hex"
 	"math/big"
@@ -141,64 +138,46 @@ func (this *DAPoSService) gossipWorker() {
 		select {
 		case gossip = <-this.gossipChan:
 
-			// TODO: The following code should be executed during elections!!!!
-			if len(this.delegateNodes) == 0 {
-				var err error
-				this.delegateNodes, err = disgover.GetDisGoverService().FindByType(types.TypeDelegate)
+			go func(theGossip *types.Gossip) {
+				delegateNodes, err := disgover.GetDisGoverService().FindByType(types.TypeDelegate)
 				if err != nil {
 					utils.Error(err)
-					continue
 				}
 
-				// Create delegate connection pools.
-				for _, delegateNode := range this.delegateNodes {
-					if delegateNode.Address == disgover.GetDisGoverService().ThisNode.Address {
+				if len(gossip.Rumors) >= len(delegateNodes)*2/3 {
+					this.transactionChan <- gossip
+				}
+
+				// Gossip to random delegate.
+				for i := 0; i < 2*len(delegateNodes); i++ { // TODO: the `2 * ...` is a random pick to kind of exaust the list
+					node := this.getRandomDelegate(gossip, delegateNodes)
+					if node == nil {
 						continue
 					}
-					pool, err := grpcpool.New(func() (*grpc.ClientConn, error) {
-						clientConn, err := grpc.Dial(fmt.Sprintf("%s:%d", delegateNode.Endpoint.Host, delegateNode.Endpoint.Port), grpc.WithInsecure())
-						if err != nil {
-							utils.Error(err.Error())
-							return nil, err
-						}
-						return clientConn, nil
-					}, 10, 10, -1)
+
+					// Peer gossip.
+					peerGossip, err := this.peerGossipGrpc(*node, gossip) // TODO: Maybe this should be a different channel????
 					if err != nil {
-						utils.Error(err.Error())
+						utils.Error(err)
+						continue
 					}
-					services.GetCache().Set(fmt.Sprintf("dapos-grpc-pool-%s", delegateNode.Address), pool, cache.NoExpiration)
+					this.gossipChan <- peerGossip
+					break
 				}
-			}
-			if len(gossip.Rumors) >= len(this.delegateNodes)*2/3 {
-				this.transactionChan <- gossip
-			}
-
-			// Gossip to random delegate.
-			node := this.getRandomDelegate(gossip)
-			if node == nil {
-				continue
-			}
-
-			// Peer gossip.
-			peerGossip, err := this.peerGossipGrpc(*node, gossip) // TODO: Maybe this should be a different channel????
-			if err != nil {
-				utils.Error(err)
-				continue
-			}
-			this.gossipChan <- peerGossip
+			}(gossip)
 		}
 	}
 }
 
 // getRandomDelegate
-func (this *DAPoSService) getRandomDelegate(gossip *types.Gossip) *types.Node {
-	if len(this.delegateNodes) == 0 {
+func (this *DAPoSService) getRandomDelegate(gossip *types.Gossip, delegateNodes []*types.Node) *types.Node {
+	if len(delegateNodes) == 0 {
 		return nil
 	}
 
 	// Get delegates that have not rumored?
 	delegatesNotRumored := make([]*types.Node, 0)
-	for _, node := range this.delegateNodes {
+	for _, node := range delegateNodes {
 		if gossip.ContainsRumor(node.Address) || node.Address == disgover.GetDisGoverService().ThisNode.Address {
 			continue
 		}
@@ -209,6 +188,7 @@ func (this *DAPoSService) getRandomDelegate(gossip *types.Gossip) *types.Node {
 	}
 
 	// Find random delegate.
+	rand.Seed(time.Now().UTC().UnixNano())
 	index := rand.Intn(len(delegatesNotRumored))
 	return delegatesNotRumored[index]
 }
