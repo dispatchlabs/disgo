@@ -1,4 +1,4 @@
-/*	
+/*
  *    This file is part of DAPoS library.
  *
  *    The DAPoS library is free software: you can redistribute it and/or modify
@@ -13,18 +13,19 @@
  *
  *    You should have received a copy of the GNU General Public License
  *    along with the DAPoS library.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 package dapos
 
 import (
 	"io/ioutil"
 	"net/http"
 
+	"fmt"
+
 	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/gorilla/mux"
-	"fmt"
 )
 
 // WithHttp -

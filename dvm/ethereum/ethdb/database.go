@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/dispatchlabs/disgo/dvm/ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/filter"
@@ -38,11 +37,11 @@ type LDBDatabase struct {
 	fn string      // filename for reporting
 	db *leveldb.DB // LevelDB instance
 
-	compTimeMeter  metrics.Meter // Meter for measuring the total time spent in database compaction
-	compReadMeter  metrics.Meter // Meter for measuring the data read during compaction
-	compWriteMeter metrics.Meter // Meter for measuring the data written during compaction
-	diskReadMeter  metrics.Meter // Meter for measuring the effective amount of data read
-	diskWriteMeter metrics.Meter // Meter for measuring the effective amount of data written
+	//compTimeMeter  metrics.Meter // Meter for measuring the total time spent in database compaction
+	//compReadMeter  metrics.Meter // Meter for measuring the data read during compaction
+	//compWriteMeter metrics.Meter // Meter for measuring the data written during compaction
+	//diskReadMeter  metrics.Meter // Meter for measuring the effective amount of data read
+	//diskWriteMeter metrics.Meter // Meter for measuring the effective amount of data written
 
 	quitLock sync.Mutex      // Mutex protecting the quit channel access
 	quitChan chan chan error // Quit channel to stop the metrics collection before closing the database
@@ -226,15 +225,15 @@ func (db *LDBDatabase) meter(refresh time.Duration) {
 			}
 		}
 		// Update all the requested meters
-		if db.compTimeMeter != nil {
-			db.compTimeMeter.Mark(int64((compactions[i%2][0] - compactions[(i-1)%2][0]) * 1000 * 1000 * 1000))
-		}
-		if db.compReadMeter != nil {
-			db.compReadMeter.Mark(int64((compactions[i%2][1] - compactions[(i-1)%2][1]) * 1024 * 1024))
-		}
-		if db.compWriteMeter != nil {
-			db.compWriteMeter.Mark(int64((compactions[i%2][2] - compactions[(i-1)%2][2]) * 1024 * 1024))
-		}
+		//if db.compTimeMeter != nil {
+		//	db.compTimeMeter.Mark(int64((compactions[i%2][0] - compactions[(i-1)%2][0]) * 1000 * 1000 * 1000))
+		//}
+		//if db.compReadMeter != nil {
+		//	db.compReadMeter.Mark(int64((compactions[i%2][1] - compactions[(i-1)%2][1]) * 1024 * 1024))
+		//}
+		//if db.compWriteMeter != nil {
+		//	db.compWriteMeter.Mark(int64((compactions[i%2][2] - compactions[(i-1)%2][2]) * 1024 * 1024))
+		//}
 
 		// Retrieve the database iostats.
 		ioStats, err := db.db.GetProperty("leveldb.iostats")
@@ -267,12 +266,12 @@ func (db *LDBDatabase) meter(refresh time.Duration) {
 			db.log.Error("Write entry parsing failed", "err", err)
 			return
 		}
-		if db.diskReadMeter != nil {
-			db.diskReadMeter.Mark(int64((read - iostats[0]) * 1024 * 1024))
-		}
-		if db.diskWriteMeter != nil {
-			db.diskWriteMeter.Mark(int64((write - iostats[1]) * 1024 * 1024))
-		}
+		//if db.diskReadMeter != nil {
+		//	db.diskReadMeter.Mark(int64((read - iostats[0]) * 1024 * 1024))
+		//}
+		//if db.diskWriteMeter != nil {
+		//	db.diskWriteMeter.Mark(int64((write - iostats[1]) * 1024 * 1024))
+		//}
 		iostats[0] = read
 		iostats[1] = write
 
