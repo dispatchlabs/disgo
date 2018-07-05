@@ -36,14 +36,16 @@ type event struct {
 
 // EventManager - event manager
 type EventManager struct {
-	events map[string]*event
+	events     map[string]*event
+	eventsSync sync.RWMutex
 }
 
 // Events - Singleton to get the events manager instance
 func Events() *EventManager {
 	eventManagerOnce.Do(func() {
 		eventManagerInstance = &EventManager{
-			events: make(map[string]*event),
+			events:     make(map[string]*event),
+			eventsSync: sync.RWMutex{},
 		}
 	})
 
@@ -55,6 +57,9 @@ func (thisRef *EventManager) On(eventName string, eventHandler EventHandler) {
 	thisRef.addEventIfNotExists(eventName)
 	thisRef.addSubscriberIfNotExists(eventName, eventHandler)
 
+	thisRef.eventsSync.RLock()
+	defer thisRef.eventsSync.RUnlock()
+
 	if thisRef.events[eventName].happenedOnce {
 		go eventHandler()
 	}
@@ -63,6 +68,9 @@ func (thisRef *EventManager) On(eventName string, eventHandler EventHandler) {
 // Off - Tells EventManager to remove a subscriber for an event
 func (thisRef *EventManager) Off(eventName string, eventHandler EventHandler) {
 	thisRef.addEventIfNotExists(eventName)
+
+	thisRef.eventsSync.RLock()
+	defer thisRef.eventsSync.RUnlock()
 
 	var foundIndex = -1
 	for index, existingEventHandler := range thisRef.events[eventName].subscribers {
@@ -84,6 +92,9 @@ func (thisRef *EventManager) Off(eventName string, eventHandler EventHandler) {
 func (thisRef *EventManager) Raise(eventName string) {
 	thisRef.addEventIfNotExists(eventName)
 
+	thisRef.eventsSync.RLock()
+	defer thisRef.eventsSync.RUnlock()
+
 	thisRef.events[eventName].happenedOnce = true
 	for _, eventHandler := range thisRef.events[eventName].subscribers {
 		go eventHandler()
@@ -91,6 +102,9 @@ func (thisRef *EventManager) Raise(eventName string) {
 }
 
 func (thisRef *EventManager) addEventIfNotExists(eventName string) {
+	thisRef.eventsSync.Lock()
+	defer thisRef.eventsSync.Unlock()
+
 	if _, ok := thisRef.events[eventName]; !ok {
 		thisRef.events[eventName] = &event{
 			subscribers:  []EventHandler{},
@@ -100,6 +114,9 @@ func (thisRef *EventManager) addEventIfNotExists(eventName string) {
 }
 
 func (thisRef *EventManager) addSubscriberIfNotExists(eventName string, eventHandler EventHandler) bool {
+	thisRef.eventsSync.RLock()
+	defer thisRef.eventsSync.RUnlock()
+
 	// 1. Check if delegate for the event already there, assumes map-key exists
 	var alreadyThere = false
 
