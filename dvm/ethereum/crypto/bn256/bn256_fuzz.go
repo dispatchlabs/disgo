@@ -21,7 +21,8 @@ package bn256
 import (
 	"bytes"
 	"math/big"
-	"github.com/dispatchlabs/disgo/dvm/ethereum/crypto/bn256/google"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/crypto/bn256/cloudflare"
+	google "github.com/ethereum/go-ethereum/crypto/bn256/google"
 )
 
 // FuzzAdd fuzzez bn256 addition between the Google and Cloudflare libraries.
