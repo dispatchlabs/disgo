@@ -208,7 +208,10 @@ func NewTransferTokensTransaction(privateKey string, from, to string, value, her
 	transaction.From = from
 	transaction.To = to
 	transaction.Value = value
-	transaction.Time = timeInMiliseconds
+	transaction.Time, err = checkTime(timeInMiliseconds)
+	if err != nil {
+		return nil, err
+	}
 	transaction.Hash, err = transaction.NewHash()
 	if err != nil {
 		return nil, err
@@ -228,7 +231,10 @@ func NewDeployContractTransaction(privateKey string, from string, code string, t
 	transaction.From = from
 	transaction.To = ""
 	transaction.Code = code
-	transaction.Time = timeInMiliseconds
+	transaction.Time, err = checkTime(timeInMiliseconds)
+	if err != nil {
+		return nil, err
+	}
 	transaction.Hash, err = transaction.NewHash()
 	if err != nil {
 		return nil, err
@@ -250,7 +256,10 @@ func NewExecuteContractTransaction(privateKey string, from string, to string, ab
 	transaction.Abi = abi
 	transaction.Method = method
 	transaction.Params = params
-	transaction.Time = timeInMiliseconds
+	transaction.Time, err = checkTime(timeInMiliseconds)
+	if err != nil {
+		return nil, err
+	}
 	transaction.Hash, err = transaction.NewHash()
 	if err != nil {
 		return nil, err
@@ -508,11 +517,15 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		}
 	}
 	if jsonMap["time"] != nil {
-		time, ok := jsonMap["time"].(float64)
+		t, ok := jsonMap["time"].(float64)
 		if !ok {
 			return errors.Errorf("value for field 'time' must be a number")
 		}
-		this.Time = int64(time)
+		txTime, err := checkTime(int64(t))
+		if err != nil {
+			return err
+		}
+		this.Time = txTime
 	}
 	if jsonMap["signature"] != nil {
 		this.Signature, ok = jsonMap["signature"].(string)
@@ -580,4 +593,16 @@ func (this Transaction) MarshalJSON() ([]byte, error) {
 // Equals
 func (this Transaction) Equals(other string) bool {
 	return this.Hash == other
+}
+
+func checkTime(txTime int64) (int64, error) {
+	if time.Now().UnixNano() < txTime {
+		return txTime, errors.Errorf("transaction time cannot be in the future")
+	} else if txTime < 0 {
+		return txTime, errors.Errorf("transaction time cannot be negative")
+	}
+	//TODO: need to have a limit check here that it is not older than some value whether that is static at startup or relative to current time.
+	//TODO: Talking with Avery, should be related to page TS limits.  This will not be the appropriate place for the check but will suffice for the moment.
+
+	return txTime, nil
 }

@@ -107,6 +107,22 @@ func TestBadKeyTransaction(t *testing.T) {
 	}
 }
 
+func TestBadTime(t *testing.T) {
+	_, err := NewTransferTokensTransaction(
+		"0f86ea981203b26b5b8244c8f661e30e5104555068a4bd168d3e3015db9bb25a",
+		"3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c",
+		"d70613f93152c84050e7826c4e2b0cc02c1c3b99",
+		1,
+		0,
+		-1,
+	)
+
+	if err != nil {
+		t.Log("Correctly failed to create transaction with bad time value")
+		t.Log(err)
+	}
+}
+
 func TestVerify(t *testing.T) {
 	tx := testMockTransaction(t)
 	b := tx.Verify()
