@@ -78,3 +78,13 @@ func (this *HttpService) Go(waitGroup *sync.WaitGroup) {
 	// QUESTION: this line is never reached
 	utils.Error("unable to listen/serve HTTP [error=" + error.Error() + "]")
 }
+
+// Error replies to the request with the specified error message and HTTP code.
+// It does not otherwise end the request; the caller should ensure no further
+// This is an override of the default http.Error to set the header content type to application/json
+func Error(responseWriter http.ResponseWriter, error string, code int) {
+	responseWriter.Header().Set("Content-Type", "application/json; charset=utf-8")
+	responseWriter.Header().Set("X-Content-Type-Options", "nosniff")
+	responseWriter.WriteHeader(code)
+	fmt.Fprintln(responseWriter, error)
+}

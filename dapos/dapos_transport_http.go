@@ -78,7 +78,7 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 	body, err := ioutil.ReadAll(request.Body)
 	if err != nil {
 		utils.Error("unable to read HTTP body of request", err)
-		http.Error(responseWriter, `{"status":"INTERNAL_ERROR"}`, http.StatusInternalServerError)
+		services.Error(responseWriter, `{"status":"INTERNAL_ERROR"}`, http.StatusInternalServerError)
 		return
 	}
 
@@ -86,7 +86,7 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 	transaction, err := types.ToTransactionFromJson(body)
 	if err != nil {
 		utils.Error("JSON parse error", err)
-		http.Error(responseWriter, fmt.Sprintf(`{"status":"JSON_PARSE_ERROR: %v"}`, err), http.StatusInternalServerError)
+		services.Error(responseWriter, fmt.Sprintf(`{"status":"JSON_PARSE_ERROR: %v"}`, err), http.StatusInternalServerError)
 		return
 	}
 	receipt := this.NewTransaction(transaction)
