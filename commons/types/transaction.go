@@ -248,6 +248,12 @@ func NewDeployContractTransaction(privateKey string, from string, code string, t
 
 // NewExecuteContractTransaction -
 func NewExecuteContractTransaction(privateKey string, from string, to string, abi string, method string, params []interface{}, timeInMiliseconds int64) (*Transaction, error) {
+	if  abi == "" {
+		return nil, errors.Errorf("cannot have empty abi")
+	}
+	if  method == "" {
+		return nil, errors.Errorf("cannot have empty method")
+	}
 	var err error
 	transaction := &Transaction{}
 	transaction.Type = TypeExecuteSmartContract
@@ -502,6 +508,11 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		this.Abi, ok = jsonMap["abi"].(string)
 		if !ok {
 			return errors.Errorf("value for field 'abi' must be a string")
+		}
+		to, _ := jsonMap["to"].(string)
+		method, _ := jsonMap["method"].(string)
+		if len(to) > 0 && len(method) > 0 && this.Abi == "" {
+			return errors.Errorf("value for field 'abi' is invalid")
 		}
 	}
 	if jsonMap["method"] != nil {
