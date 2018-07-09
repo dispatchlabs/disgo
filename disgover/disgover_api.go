@@ -38,6 +38,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/libp2p/go-libp2p-peer"
+	cache "github.com/patrickmn/go-cache"
 )
 
 // Find - Finds a node on the network, check internally then asks the peers if not found
@@ -196,11 +197,11 @@ func (this *DisGoverService) findViaPeers(idToFind string, sender *types.Node) (
 func (this *DisGoverService) addHelper(node *types.Node) (bool bool, err error) {
 
 	if len(strings.TrimSpace(node.Address)) <= 0 {
-		utils.Error(fmt.Sprintf("address is empty for: [%d : %s]", node.Endpoint.Host, node.Endpoint.Port))
+		utils.Error(fmt.Sprintf("address is empty for: [%s : %d]", node.Endpoint.Host, node.Endpoint.Port))
 		return false, nil
 	}
 
-	services.GetCache().Set(node.Address, node, types.NodeTTL)
+	services.GetCache().Set(node.Address, node, cache.NoExpiration)
 	txn := services.NewTxn(true)
 	defer txn.Discard()
 	err = node.Set(txn)
