@@ -24,12 +24,31 @@ import (
 	"io/ioutil"
 	"os"
 	"sync"
-
 	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
 var configInstance *Config
 var configOnce sync.Once
+
+// Config - Is the structure definition for the system properties
+type Config struct {
+	HttpEndpoint       *Endpoint   `json:"httpEndpoint"`
+	GrpcEndpoint       *Endpoint   `json:"grpcEndpoint"`
+	GrpcTimeout        int         `json:"grpcTimeout"`
+	SeedEndpoints      []*Endpoint `json:"seedEndpoints"`
+	UseQuantumEntropy  bool        `json:"useQuantumEntropy"`
+	GenesisTransaction string      `json:"genesisTransaction"`
+}
+
+// String - Implement the `fmt.Stringer` interface
+func (this Config) String() string {
+	bytes, err := json.Marshal(configInstance)
+	if err != nil {
+		utils.Error("unable to marshal config", err)
+		return ""
+	}
+	return string(bytes)
+}
 
 // GetConfig -
 func GetConfig() *Config {
@@ -95,12 +114,5 @@ type Config struct {
 	GenesisTransaction string      `json:"genesisTransaction"`
 }
 
-// String - Implement the `fmt.Stringer` interface
-func (this Config) String() string {
-	bytes, err := json.Marshal(configInstance)
-	if err != nil {
-		utils.Error("unable to marshal config", err)
-		return ""
-	}
-	return string(bytes)
-}
+
+

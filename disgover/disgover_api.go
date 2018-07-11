@@ -44,17 +44,16 @@ import (
 func (this *DisGoverService) Find(address string) (*types.Node, error) {
 
 	//first check cache
-	value, ok := services.GetCache().Get(address)
-	if ok {
-		node := value.(*types.Node)
+	node, err := types.ToNodeFromCache(services.GetCache(), address)
+	if err == nil{
 		return node, nil
 	}
 
 	//now check badger
 	txn := services.NewTxn(true)
 	defer txn.Discard()
-	node, _ := types.ToNodeByAddress(txn, address)
-	if node != nil {
+	node, _ = types.ToNodeByAddress(txn,address)
+	if node != nil{
 		return node, nil
 	}
 
@@ -79,7 +78,7 @@ func (this *DisGoverService) Find(address string) (*types.Node, error) {
 	//		continue
 	//	}
 	//}
-	err := errors.New("could not find")
+	err = types.ErrNotFound
 	return nil, err
 }
 
@@ -227,10 +226,9 @@ func (this *DisGoverService) addOrUpdatePeer(node types.Node) (bool, error) {
 }
 
 func (this *DisGoverService) deletePeer(node types.Node) (bool, error) {
-	services.GetCache().Delete(node.Type +"-"+ node.Address)
 	txn := services.NewTxn(true)
 	defer txn.Discard()
-	err := node.Delete(txn)
+	err = node.Unset(txn,services.GetCache())
 	if err != nil {
 		return false, err
 	}

@@ -19,8 +19,10 @@ package types
 import (
 	"testing"
 	"time"
+	"reflect"
 )
 
+//testMockTransaction
 func testMockTransaction(t *testing.T) *Transaction {
 	//codeBytes := make([]byte, 0)
 	d, _ := time.Parse(time.RFC3339, "2018-05-09T15:04:05Z")
@@ -45,6 +47,19 @@ func testMockTransaction(t *testing.T) *Transaction {
 	//}
 }
 
+//TestTransactionCache
+func TestTransactionCache(t *testing.T) {
+	tx := testMockTransaction(t)
+	tx.Cache(c, time.Second * 5)
+	testTx, err := ToTransactionFromCache(c, tx.Hash)
+	if err != nil {
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testTx, tx) == false{
+		t.Error("tx not equal to testTx")
+	}
+}
+
 // TestTransactionVerify
 func TestTransactionVerify(t *testing.T) {
 	tx := testMockTransaction(t)
@@ -56,6 +71,7 @@ func TestTransactionVerify(t *testing.T) {
 	}
 }
 
+//TestNewTransaction
 func TestNewTransaction(t *testing.T) {
 	tx := testMockTransaction(t)
 	if tx == nil {
@@ -66,6 +82,7 @@ func TestNewTransaction(t *testing.T) {
 	}
 }
 
+//TestNewHash
 func TestNewHash(t *testing.T) {
 	tx := testMockTransaction(t)
 	hash, _ := tx.NewHash()
@@ -79,6 +96,7 @@ func TestNewHash(t *testing.T) {
 	}
 }
 
+//TestBadKeyTransaction
 func TestBadKeyTransaction(t *testing.T) {
 
 	//var tx *Transaction
@@ -107,6 +125,7 @@ func TestBadKeyTransaction(t *testing.T) {
 	}
 }
 
+//TestVerify
 func TestVerify(t *testing.T) {
 	tx := testMockTransaction(t)
 	b := tx.Verify()
@@ -116,6 +135,7 @@ func TestVerify(t *testing.T) {
 	}
 }
 
+//TestGettersSetters
 func TestGettersSetters(t *testing.T) {
 	tx := testMockTransaction(t)
 	if tx.Key() == "" {
@@ -139,41 +159,49 @@ func TestGettersSetters(t *testing.T) {
 
 }
 
+//TestTransactionCalculateHash
 func TestTransactionCalculateHash(t *testing.T) {
 	// TODO: Transaction.CalculateHash()
 	t.Skip("Need a unit test for this...")
 }
 
+//TestTransactionEquals
 func TestTransactionEquals(t *testing.T) {
 	// TODO: Transaction.Equals()
 	t.Skip("Need a unit test for this...")
 }
 
+//TestTransactionSet
 func TestTransactionSet(t *testing.T) {
 	// TODO: Transaction.Set()
 	t.Skip("Need a Badger DB mock")
 }
 
+//TestToTransactions
 func TestToTransactions(t *testing.T) {
 	// TODO: ToTransactions()
 	t.Skip("Need a Badger DB mock")
 }
 
+//TestToTransactionsByFromAddress
 func TestToTransactionsByFromAddress(t *testing.T) {
 	// TODO: ToTransactionsByFromAddress()
 	t.Skip("Need a Badger DB mock")
 }
 
+//TestToTransactionsByToAddress
 func TestToTransactionsByToAddress(t *testing.T) {
 	// TODO: ToTransactionsByToAddress()
 	t.Skip("Need a Badger DB mock")
 }
 
+//TestToTransactionsByType
 func TestToTransactionsByType(t *testing.T) {
 	// TODO: ToTransactionsByType()
 	t.Skip("Need a Badger DB mock")
 }
 
+//TestToTransactionsByKey
 func TestToTransactionsByKey(t *testing.T) {
 	// TODO: ToTransactionsByKey()
 	t.Skip("Need a Badger DB mock")

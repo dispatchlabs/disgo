@@ -22,19 +22,35 @@ import (
 	"reflect"
 	"testing"
 	"time"
-
+	"github.com/patrickmn/go-cache"
+	"github.com/dgraph-io/badger"
+	"fmt"
 	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
 // var testAccountByte = []byte("{\"address\":\"99022124e110f5a9567a334a2017bdbd41c475e3\",\"privateKey\":\"abc\",\"name\":\"test\",\"balance\":1000,\"updated\":\"2018-05-09T15:04:05Z\",\"created\":\"2018-05-09T15:04:05Z\",\"nonce\":0,\"root\":\"0x0000000000000000000000000000000000000000000000000000000000000000\",\"codehash\":\"0x0000000000000000000000000000000000000000000000000000000000000000\"}")
 var testAccountByte = []byte("{\"address\":\"99022124e110f5a9567a334a2017bdbd41c475e3\",\"privateKey\":\"abc\",\"name\":\"test\",\"balance\":1000,\"updated\":\"2018-05-09T15:04:05Z\",\"created\":\"2018-05-09T15:04:05Z\",\"nonce\":0}")
 var testAccountAddressHash = "de3a0dba79b563588b15e38909ce206eb83dd27b53150e53c858036978b23412"
+var c *cache.Cache
+var db *badger.DB
 
+//init
+func init()  {
+	c = cache.New(CacheTTL, CacheTTL*2)
+	utils.Info("opening DB...")
+	opts := badger.DefaultOptions
+	opts.Dir = "." + string(os.PathSeparator) + "testdb"
+	opts.ValueDir = "." + string(os.PathSeparator) + "testdb"
+	db, _ = badger.Open(opts)
+}
+
+//TestGetAccount
 func TestGetAccount(t *testing.T) {
 	// TODO: GetAccount()
 	t.Skip("Should refactor away from using a singleton for testability?")
 }
 
+//TestToAccountFromJson
 func TestToAccountFromJson(t *testing.T) {
 	account, err := ToAccountFromJson(testAccountByte)
 	if err != nil {
@@ -43,32 +59,54 @@ func TestToAccountFromJson(t *testing.T) {
 	testAccountStruct(t, account)
 }
 
+//TestAccountCache
+func TestAccountCache(t *testing.T) {
+	account := &Account{}
+	account.UnmarshalJSON(testAccountByte)
+	//cache := config.GetTestCache()
+	account.Cache(c, time.Second * 5)
+	testAccount, err := ToAccountFromCache(c, account.Address)
+	fmt.Print(testAccount)
+	if err != nil {
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testAccount, account) == false{
+		t.Error("account not equal to testAccount")
+	}
+}
+
+//TestToAccountByAddress
 func TestToAccountByAddress(t *testing.T) {
 	// TODO: ToAccountByAddress()
 	t.Skip("Need a Badger DB mock")
 }
 
+//TestToAccountByName
 func TestToAccountByName(t *testing.T) {
 	// TODO: ToAccountByName()
 	t.Skip("Need a Badger DB mock")
 }
 
+//TestToAccountsByName
 func TestToAccountsByName(t *testing.T) {
 	// TODO: ToAccountByName()
 	t.Skip("Need a Badger DB mock")
 }
 
+//TestAccountSet
 func TestAccountSet(t *testing.T) {
 	// TODO: account.Set()
 	t.Skip("Need a Badger DB mock")
 }
 
+//TestAccountUnmarshalJSON
 func TestAccountUnmarshalJSON(t *testing.T) {
 	account := &Account{}
 	account.UnmarshalJSON(testAccountByte)
 	testAccountStruct(t, account)
 }
 
+//TestAccountMarshalJSON
 func TestAccountMarshalJSON(t *testing.T) {
 	account := &Account{}
 	account.UnmarshalJSON(testAccountByte)
@@ -81,6 +119,7 @@ func TestAccountMarshalJSON(t *testing.T) {
 	}
 }
 
+//TestReadAccountFile
 func TestReadAccountFile(t *testing.T) {
 	name := "test.json"
 	defer testCleanAccountFile(t, name)
@@ -110,6 +149,7 @@ func TestReadAccountFile(t *testing.T) {
 	//}
 }
 
+//testCleanAccountFile
 func testCleanAccountFile(t *testing.T, name_optional ...string) func() {
 	name := "test.json"
 	if len(name_optional) > 0 {
@@ -129,6 +169,7 @@ func testCleanAccountFile(t *testing.T, name_optional ...string) func() {
 	}
 }
 
+//testAccountStruct
 func testAccountStruct(t *testing.T, account *Account) {
 	if account.Address != "99022124e110f5a9567a334a2017bdbd41c475e3" {
 		t.Errorf("account.UnmarshalJSON returning invalid %s value: %s", "Address", account.Address)

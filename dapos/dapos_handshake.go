@@ -342,7 +342,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 
 	// Save fromAccount.
 	fromAccount.Updated = now
-	err = fromAccount.Set(txn)
+	err = fromAccount.Set(txn,services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
@@ -353,7 +353,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 
 	// Save toAccount.
 	toAccount.Updated = now
-	err = toAccount.Set(txn)
+	err = toAccount.Set(txn,services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
@@ -363,7 +363,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	}
 
 	// Save transaction.
-	err = transaction.Set(txn)
+	err = transaction.Set(txn,services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
@@ -375,7 +375,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	// Save receipt.
 	receipt.Status = types.StatusOk
 	services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
-	err = receipt.Set(txn)
+	err = receipt.Set(txn,services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
@@ -385,7 +385,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	}
 
 	// Save gossip.
-	err = gossip.Set(txn)
+	err = gossip.Set(txn,services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
@@ -408,6 +408,8 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	}
 }
 
+//TODO: implement if useful
+//func commit(transaction *types.Transaction) {}
 // processDVMResult
 func processDVMResult(transaction *types.Transaction, dvmResult *dvm.DVMResult, receipt *types.Receipt) error {
 	utils.Info("######### DUMPING-DVMResult #########")
