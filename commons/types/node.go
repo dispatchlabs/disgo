@@ -23,6 +23,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/patrickmn/go-cache"
 	"time"
+	"reflect"
 )
 
 // Node - Is the DisGover's notion of what a node is
@@ -168,6 +169,25 @@ func ToNodesByType(txn *badger.Txn, tipe string) ([]*Node, error) {
 			continue
 		}
 		nodes = append(nodes, node)
+	}
+	return nodes, nil
+}
+
+// ToNodeByTypeFromCache -
+func ToNodesByTypeFromCache(cache *cache.Cache, tipe string) ([]*Node, error) {
+	var nodes []*Node
+	values := cache.Items()
+	if values == nil{
+		return nil, ErrNotFound
+	}
+	for _, value := range values {
+		if reflect.TypeOf(value.Object) != reflect.TypeOf(&Node{}) {
+			continue
+		}
+		node := value.Object.(*Node)
+		if node.Type == tipe {
+			nodes = append(nodes, node)
+		}
 	}
 	return nodes, nil
 }

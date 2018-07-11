@@ -101,7 +101,9 @@ func (this *DisGoverService) IsRunning() bool {
 func (this *DisGoverService) Go(waitGroup *sync.WaitGroup) {
 	this.running = true
 	utils.Info("running")
-	this.saveDelegatesFromConfigToCache()
+	if this.ThisNode.Type == types.TypeSeed{
+		this.saveDelegatesFromConfigToCache()
+	}
 	go this.pingSeedNodes()
 }
 
@@ -117,8 +119,6 @@ func (this *DisGoverService) pingSeedNodes() {
 
 		// IF - WE are the seed then do nothing
 		if portAndIP1 == portAndIP2 {
-			seedNode = this.ThisNode
-			this.addOrUpdatePeer(seedNode)
 			continue
 		}
 
@@ -137,7 +137,7 @@ func (this *DisGoverService) pingSeedNodes() {
 		}
 		//add the seed nodes
 		this.seedNodes = append(this.seedNodes, seedNode)
-		this.addOrUpdatePeer(*seedNode)
+		this.addOrUpdatePeer(seedNode)
 
 		//ask them for delegates
 		delis, err := this.FindByType(types.TypeDelegate)
@@ -152,6 +152,7 @@ func (this *DisGoverService) pingSeedNodes() {
 				this.ThisNode.Type = types.TypeDelegate
 			}
 		}
+		//if we are
 		if this.ThisNode.Type == types.TypeDelegate{
 			seedNode, err = this.peerPingGrpc(seedNode, this.ThisNode) // tell the seed
 		}
@@ -172,6 +173,5 @@ func (this *DisGoverService) saveDelegatesFromConfigToCache() {
 
 		this.addOrUpdatePeer(node)
 	}
-
 	this.addOrUpdatePeer(this.ThisNode)
 }
