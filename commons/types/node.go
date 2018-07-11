@@ -23,7 +23,8 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/patrickmn/go-cache"
 	"time"
-	"reflect"
+	//"reflect"
+	"strings"
 )
 
 // Node - Is the DisGover's notion of what a node is
@@ -50,6 +51,7 @@ func (this *Node) Cache(cache *cache.Cache, time_optional ...time.Duration){
 		TTL = time_optional[0]
 	}
 	cache.Set(this.Key(), this, TTL)
+	cache.Set(this.TypeKey(), this.Key(), TTL)
 }
 
 //Persist
@@ -174,20 +176,40 @@ func ToNodesByType(txn *badger.Txn, tipe string) ([]*Node, error) {
 }
 
 // ToNodeByTypeFromCache -
-func ToNodesByTypeFromCache(cache *cache.Cache, tipe string) ([]*Node, error) {
+func ToNodesByTypeFromCache(c *cache.Cache, tipe string) ([]*Node, error) {
+	var keys []string
 	var nodes []*Node
-	values := cache.Items()
-	if values == nil{
-		return nil, ErrNotFound
-	}
-	for _, value := range values {
-		if reflect.TypeOf(value.Object) != reflect.TypeOf(&Node{}) {
-			continue
-		}
-		node := value.Object.(*Node)
-		if node.Type == tipe {
-			nodes = append(nodes, node)
+	for i, value := range c.Items() {
+		useful := strings.HasPrefix(i, fmt.Sprintf("key-node-type-%s", tipe))
+		if useful{
+			key := value.Object.(string)
+			keys = append(keys, key)
 		}
 	}
-	return nodes, nil
-}
+	for i, value := range c.Items() {
+		for _, key := range keys {
+			if i == key{
+				node := value.Object.(*Node)
+				nodes = append(nodes, node)
+			}
+		}
+	}
+			return nodes, nil
+	}
+
+	//var nodes []*Node
+	//values := c.Items()
+	//if values == nil{
+	//	return nil, ErrNotFound
+	//}
+	//for _, value := range values {
+	//	if reflect.TypeOf(value.Object) != reflect.TypeOf(&Node{}) {
+	//		continue
+	//	}
+	//	node := value.Object.(*Node)
+	//	if node.Type == tipe {
+	//		nodes = append(nodes, node)
+	//	}
+	//}
+	//return nodes, nil
+//}
