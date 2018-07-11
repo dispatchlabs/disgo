@@ -1,4 +1,4 @@
-/*	
+/*
  *    This file is part of DAPoS library.
  *
  *    The DAPoS library is free software: you can redistribute it and/or modify
@@ -13,18 +13,19 @@
  *
  *    You should have received a copy of the GNU General Public License
  *    along with the DAPoS library.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 package dapos
 
 import (
 	"io/ioutil"
 	"net/http"
 
+	"fmt"
+
 	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/gorilla/mux"
-	"fmt"
 )
 
 // WithHttp -
@@ -77,7 +78,7 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 	body, err := ioutil.ReadAll(request.Body)
 	if err != nil {
 		utils.Error("unable to read HTTP body of request", err)
-		http.Error(responseWriter, `{"status":"INTERNAL_ERROR"}`, http.StatusInternalServerError)
+		services.Error(responseWriter, `{"status":"INTERNAL_ERROR"}`, http.StatusInternalServerError)
 		return
 	}
 
@@ -85,7 +86,7 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 	transaction, err := types.ToTransactionFromJson(body)
 	if err != nil {
 		utils.Error("JSON parse error", err)
-		http.Error(responseWriter, fmt.Sprintf(`{"status":"JSON_PARSE_ERROR: %v"}`, err), http.StatusInternalServerError)
+		services.Error(responseWriter, fmt.Sprintf(`{"status":"JSON_PARSE_ERROR: %v"}`, err), http.StatusInternalServerError)
 		return
 	}
 	receipt := this.NewTransaction(transaction)

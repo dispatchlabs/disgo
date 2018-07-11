@@ -10,7 +10,6 @@ import (
 	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/common/math"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"
-	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
@@ -38,7 +37,7 @@ func Keccak256(data ...[]byte) []byte {
 // Keccak256Hash calculates and returns the Keccak256 hash of the input data,
 // converting it to an internal Hash data structure.
 func Keccak256Hash(data ...[]byte) (h common.Hash) {
-	d := sha3.NewKeccak256()
+	d := NewKeccak256()
 	for _, b := range data {
 		d.Write(b)
 	}

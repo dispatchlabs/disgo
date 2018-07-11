@@ -35,10 +35,12 @@ func (this *DisGoverService) WithGrpc() *DisGoverService {
 	return this
 }
 
-// PeerPingGrpc - Called when a PING call was made by a client
+// PingGrpc - Called when a PING call was made by a client
 func (this *DisGoverService) PingGrpc(ctx context.Context, node *proto.Node) (*proto.Node, error) {
 	domainNode := convertToDomain(node)
-	this.addOrUpdatePeer(*domainNode)
+
+	this.addOrUpdatePeer(domainNode)
+
 	utils.Info(fmt.Sprintf("received ping [address=%s, ip=%s, port=%d]", node.Address, node.Endpoint.Host, node.Endpoint.Port))
 	return convertToProto(this.ThisNode), nil
 }

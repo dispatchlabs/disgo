@@ -17,9 +17,10 @@
 package utils
 
 import (
-	log "github.com/sirupsen/logrus"
 	"os"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var loggerOnce sync.Once

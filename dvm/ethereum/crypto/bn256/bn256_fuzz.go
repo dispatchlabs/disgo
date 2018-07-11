@@ -21,8 +21,7 @@ package bn256
 import (
 	"bytes"
 	"math/big"
-
-	cloudflare "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/crypto/bn256/cloudflare"
 	google "github.com/ethereum/go-ethereum/crypto/bn256/google"
 )
 

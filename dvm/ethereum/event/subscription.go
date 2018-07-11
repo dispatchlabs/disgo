@@ -21,8 +21,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/mclock"
+ 	"github.com/aristanetworks/goarista/monotime"
 )
+
+
+// AbsTime represents absolute monotonic time.
+type AbsTime time.Duration
+
+// Now returns the current absolute monotonic time.
+func Now() AbsTime {
+	return AbsTime(monotime.Now())
+}
+
 
 // Subscription represents a stream of events. The carrier of the events is typically a
 // channel, but isn't part of the interface.
@@ -114,7 +124,7 @@ type resubscribeSub struct {
 	err                  chan error
 	unsub                chan struct{}
 	unsubOnce            sync.Once
-	lastTry              mclock.AbsTime
+	lastTry              AbsTime
 	waitTime, backoffMax time.Duration
 }
 
@@ -147,7 +157,7 @@ func (s *resubscribeSub) subscribe() Subscription {
 	var sub Subscription
 retry:
 	for {
-		s.lastTry = mclock.Now()
+		s.lastTry = Now()
 		ctx, cancel := context.WithCancel(context.Background())
 		go func() {
 			rsub, err := s.fn(ctx)
@@ -186,7 +196,7 @@ func (s *resubscribeSub) waitForError(sub Subscription) bool {
 }
 
 func (s *resubscribeSub) backoffWait() bool {
-	if time.Duration(mclock.Now()-s.lastTry) > s.backoffMax {
+	if time.Duration(Now()-s.lastTry) > s.backoffMax {
 		s.waitTime = s.backoffMax / 10
 	} else {
 		s.waitTime *= 2

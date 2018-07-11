@@ -38,6 +38,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/libp2p/go-libp2p-peer"
+	cache "github.com/patrickmn/go-cache"
 )
 
 // Find - Finds a node on the network, check internally then asks the peers if not found
@@ -86,23 +87,9 @@ func (this *DisGoverService) Find(address string) (*types.Node, error) {
 func (this *DisGoverService) FindByType(tipe string) ([]*types.Node, error) {
 	utils.Info(fmt.Sprintf("finding %s nodes...", strings.ToLower(tipe)))
 
-	// FROM-AVERY
-	// var nodes []*types.Node
-	// txn := services.NewTxn(true)
-	// defer txn.Discard()
+	// TODO: We should put this in node.go and use table- and key- style keys.
 
-	// nodes, err := types.ToNodesByType(txn, tipe)
-	// if err != nil { // We dont know any of the type, go ask people
-	// 	//utils.Error(err)
-	// 	peerID := kbucket.ConvertPeerID(peer.ID(this.ThisNode.Address))
-	// 	nearestpeer := this.kdht.NearestPeer(peerID)
-	// 	peerIDAsString := string(nearestpeer)
-	// 	node, err := types.ToNodeByAddress(txn, peerIDAsString)
-	// 	if err != nil {
-	// 		utils.Error(err)
-	// 	}
-	// 	return this.peerFindByTypeGrpc(node, tipe)
-	// }
+	var nodes []*types.Node
 
 	// TODO: We should put this in node.go and use table- and key- style keys.
 	var nodes []*types.Node
@@ -144,10 +131,19 @@ func (this *DisGoverService) FindByType(tipe string) ([]*types.Node, error) {
 	return nodes, nil
 }
 
-// containsNode
-func containsNode(nodes []*types.Node, address string) bool {
+// containsNodeByAddress
+func containsNodeByAddress(nodes []*types.Node, address string) bool {
 	for _, n := range nodes {
 		if n.Address == address {
+			return true
+		}
+	}
+	return false
+}
+
+func containsNodeByEndpoint(nodes []*types.Node, endpoint *types.Endpoint) bool {
+	for _, n := range nodes {
+		if n.Endpoint.Host == endpoint.Host && n.Endpoint.Port == endpoint.Port {
 			return true
 		}
 	}

@@ -88,8 +88,8 @@ func GetDisGoverService() *DisGoverService {
 type DisGoverService struct {
 	ThisNode  *types.Node
 	seedNodes []*types.Node
-	kdht    *kbucket.RoutingTable
-	running bool
+	kdht      *kbucket.RoutingTable
+	running   bool
 }
 
 // IsRunning - Returns the status if service is running
@@ -101,9 +101,8 @@ func (this *DisGoverService) IsRunning() bool {
 func (this *DisGoverService) Go(waitGroup *sync.WaitGroup) {
 	this.running = true
 	utils.Info("running")
-	go func() {
-		go this.pingSeedNodes()
-	}()
+	this.saveDelegatesFromConfigToCache()
+	go this.pingSeedNodes()
 }
 
 // pingSeedNodes
@@ -119,7 +118,7 @@ func (this *DisGoverService) pingSeedNodes() {
 		// IF - WE are the seed then do nothing
 		if portAndIP1 == portAndIP2 {
 			seedNode = this.ThisNode
-			this.addOrUpdatePeer(*seedNode)
+			this.addOrUpdatePeer(seedNode)
 			continue
 		}
 
@@ -161,4 +160,18 @@ func (this *DisGoverService) pingSeedNodes() {
 
 	utils.Events().Raise(Events.DisGoverServiceInitFinished)
 	return
+}
+
+func (this *DisGoverService) saveDelegatesFromConfigToCache() {
+	for _, endpoint := range types.GetConfig().DelegateEndpoints {
+		var node = &types.Node{
+			Address:  "",
+			Endpoint: endpoint,
+			Type:     types.TypeDelegate,
+		}
+
+		this.addOrUpdatePeer(node)
+	}
+
+	this.addOrUpdatePeer(this.ThisNode)
 }

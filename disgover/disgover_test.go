@@ -54,7 +54,7 @@ func TestDisGoverServiceDelete(t *testing.T) {
 	defer recoverMe(t)
 	DS := GetDisGoverService()
 	node := makeTestNode()
-	DS.deletePeer(node)
+	DS.deletePeer(&node)
 	_, err := DS.Find(node.Address)
 	if err == nil {
 		t.Errorf("found non-added node")

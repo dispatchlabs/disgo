@@ -65,8 +65,8 @@ func GetConfig() *Config {
 			},
 			GrpcTimeout: 5,
 			SeedEndpoints: []*Endpoint{
-				{
-					Host: "35.227.182.49",
+				&Endpoint{
+					Host: "seed.dispatchlabs.io",
 					Port: 1973,
 				},
 			},
