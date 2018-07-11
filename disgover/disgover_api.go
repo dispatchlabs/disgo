@@ -29,7 +29,7 @@
 package disgover
 
 import (
-	"errors"
+	//"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -204,7 +204,7 @@ func (this *DisGoverService) addOrUpdatePeer(node types.Node) (bool, error) {
 			return false, err
 		}
 		services.GetCache().Set(node.Type +"-"+ node.Address, node, types.NodeTTL)
-		err = node.Set(txn)
+		err = node.Set(txn,services.GetCache())
 		if err != nil {
 			return false, err
 		}
@@ -213,7 +213,7 @@ func (this *DisGoverService) addOrUpdatePeer(node types.Node) (bool, error) {
 		return true, nil
 	}else{
 		services.GetCache().Set(node.Type +"-"+ node.Address, node, types.NodeTTL)
-		err = node.Set(txn)
+		err = node.Set(txn,services.GetCache())
 		if err != nil {
 			return false, err
 		}
@@ -228,7 +228,7 @@ func (this *DisGoverService) addOrUpdatePeer(node types.Node) (bool, error) {
 func (this *DisGoverService) deletePeer(node types.Node) (bool, error) {
 	txn := services.NewTxn(true)
 	defer txn.Discard()
-	err = node.Unset(txn,services.GetCache())
+	err := node.Unset(txn,services.GetCache())
 	if err != nil {
 		return false, err
 	}

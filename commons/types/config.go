@@ -36,9 +36,10 @@ type Config struct {
 	GrpcEndpoint       *Endpoint   `json:"grpcEndpoint"`
 	GrpcTimeout        int         `json:"grpcTimeout"`
 	SeedEndpoints      []*Endpoint `json:"seedEndpoints"`
+	DelegateEndpoints  []*Endpoint `json:"delegateEndpoints"`
 	UseQuantumEntropy  bool        `json:"useQuantumEntropy"`
 	GenesisTransaction string      `json:"genesisTransaction"`
-}
+	}
 
 // String - Implement the `fmt.Stringer` interface
 func (this Config) String() string {
@@ -103,16 +104,6 @@ func GetConfig() *Config {
 	return configInstance
 }
 
-// Config - Is the structure definition for the system properties
-type Config struct {
-	HttpEndpoint       *Endpoint   `json:"httpEndpoint"`
-	GrpcEndpoint       *Endpoint   `json:"grpcEndpoint"`
-	GrpcTimeout        int         `json:"grpcTimeout"`
-	SeedEndpoints      []*Endpoint `json:"seedEndpoints"`
-	DelegateEndpoints  []*Endpoint `json:"delegateEndpoints"`
-	UseQuantumEntropy  bool        `json:"useQuantumEntropy"`
-	GenesisTransaction string      `json:"genesisTransaction"`
-}
 
 
 

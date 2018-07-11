@@ -301,7 +301,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 
 		// Set contract account.
 		contractAccount := &types.Account{Address: hex.EncodeToString(dvmResult.ContractAddress[:]), Balance: big.NewInt(0), Updated: now, Created: now}
-		err = contractAccount.Set(txn)
+		err = contractAccount.Set(txn, services.GetCache())
 		if err != nil {
 			utils.Error(err)
 			receipt.Status = types.StatusInternalError
