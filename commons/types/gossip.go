@@ -244,3 +244,4 @@ func ToOldGossips(txn *badger.Txn) ([]*Gossip, error) {
 	}
 	return gossips, nil
 }
+

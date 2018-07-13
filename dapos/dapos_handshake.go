@@ -65,21 +65,21 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 	// TODO: Check minimum hertz, balance, and negative value!!!!!
 
 	// Are we already gossiping about this transaction?
-	_, ok := services.GetCache().Get(transaction.Hash)
-	if ok {
+	_, err = types.ToTransactionFromCache(services.GetCache(),transaction.Hash)
+	if err == nil{
 		utils.Info(fmt.Sprintf("already processing this transaction [hash=%s]", transaction.Hash))
 		receipt.Status = types.StatusAlreadyProcessingTransaction
 		return receipt
 	}
 
 	// Cache receipt.
-	services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+	receipt.Cache(services.GetCache())
 
 	// Cache gossip with my rumor.
 	gossip := types.NewGossip(*transaction, *receipt)
 	rumor := types.NewRumor(types.GetAccount().PrivateKey, types.GetAccount().Address, transaction.Hash)
 	gossip.Rumors = append(gossip.Rumors, *rumor)
-	services.GetCache().Set(gossip.Transaction.Hash, gossip, types.GossipCacheTTL)
+	transaction.Cache(services.GetCache())
 
 	this.gossipChan <- gossip
 
@@ -97,20 +97,20 @@ func (this *DAPoSService) Temp_ProcessTransaction(gossip *types.Gossip) {
 func (this *DAPoSService) synchronizeGossip(gossip *types.Gossip) (*types.Gossip, error) {
 
 	// Get or set receipt?
-	_, ok := services.GetCache().Get(gossip.ReceiptId)
-	if !ok {
+	_, err := types.ToReceiptFromCache(services.GetCache(),gossip.ReceiptId)
+	if err != nil {
 		receipt := types.NewReceipt(types.RequestNewTransaction)
 		receipt.Id = gossip.ReceiptId
-		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		receipt.Cache(services.GetCache())
 	}
 
 	// Set synchronizedGossip.
 	var synchronizedGossip *types.Gossip
-	value, ok := services.GetCache().Get(gossip.Transaction.Hash)
-	if !ok {
+	ourGossip, err := types.ToGossipFromCache(services.GetCache(),gossip.Transaction.Hash)
+	if err != nil {
 		synchronizedGossip = gossip
 	} else {
-		synchronizedGossip = value.(*types.Gossip)
+		synchronizedGossip = ourGossip
 		for _, rumor := range gossip.Rumors {
 			if !synchronizedGossip.ContainsRumor(rumor.Address) && rumor.Verify() { // We don't want to propagate cryptographic lies.
 				synchronizedGossip.Rumors = append(synchronizedGossip.Rumors, rumor)
@@ -203,15 +203,15 @@ func (this *DAPoSService) transactionWorker() {
 
 			// Get receipt.
 			var receipt *types.Receipt
-			value, ok := services.GetCache().Get(gossip.ReceiptId)
-			if !ok {
+			value, err := types.ToReceiptFromCache(services.GetCache(),gossip.ReceiptId)
+			if err != nil {
 				utils.Error(fmt.Sprintf("receipt not found [id=%s]", gossip.ReceiptId))
 				receipt = types.NewReceipt(types.RequestNewTransaction)
 				receipt.Status = types.StatusReceiptNotFound
-				services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+				receipt.Cache(services.GetCache())
 				continue
 			}
-			receipt = value.(*types.Receipt)
+			receipt = value
 
 			// TODO: Should we thread this?
 			// Execute.
@@ -245,7 +245,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			utils.Error(err)
 			receipt.Status = types.StatusInternalError
 			receipt.HumanReadableStatus = err.Error()
-			services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+			receipt.Cache(services.GetCache())
 			return
 		}
 	}
@@ -275,7 +275,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			utils.Error(err)
 			receipt.Status = types.StatusInternalError
 			receipt.HumanReadableStatus = err.Error()
-			services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+			receipt.Cache(services.GetCache())
 			return
 		}
 
@@ -286,7 +286,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			utils.Error(err)
 			receipt.Status = types.StatusInternalError
 			receipt.HumanReadableStatus = err.Error()
-			services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+			receipt.Cache(services.GetCache())
 			return
 		}
 		receipt.ContractAddress = contractAccount.Address
@@ -303,7 +303,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			utils.Error(err)
 			receipt.Status = types.StatusInternalError
 			receipt.HumanReadableStatus = err.Error()
-			services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+			receipt.Cache(services.GetCache())
 			return
 		}
 		receipt.ContractAddress = transaction.To
@@ -331,7 +331,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
 		receipt.HumanReadableStatus = err.Error()
-		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		receipt.Cache(services.GetCache())
 		return
 	}
 
@@ -342,7 +342,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
 		receipt.HumanReadableStatus = err.Error()
-		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		receipt.Cache(services.GetCache())
 		return
 	}
 
@@ -352,19 +352,19 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
 		receipt.HumanReadableStatus = err.Error()
-		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		receipt.Cache(services.GetCache())
 		return
 	}
 
 	// Save receipt.
 	receipt.Status = types.StatusOk
-	services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+	receipt.Cache(services.GetCache())
 	err = receipt.Set(txn,services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
 		receipt.HumanReadableStatus = err.Error()
-		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		receipt.Cache(services.GetCache())
 		return
 	}
 
@@ -374,7 +374,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
 		receipt.HumanReadableStatus = err.Error()
-		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		receipt.Cache(services.GetCache())
 		return
 	}
 
@@ -387,7 +387,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
 		receipt.HumanReadableStatus = err.Error()
-		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		receipt.Cache(services.GetCache())
 		return
 	}
 }

@@ -184,7 +184,7 @@ func (this *DisGoverService) addOrUpdatePeer(node *types.Node) (bool, error) {
 		if !ok {
 			return false, err
 		}
-		services.GetCache().Set(node.Key(), node, types.NodeTTL)
+		node.Cache(services.GetCache())
 		err = node.Set(txn,services.GetCache())
 		if err != nil {
 			return false, err
@@ -193,7 +193,7 @@ func (this *DisGoverService) addOrUpdatePeer(node *types.Node) (bool, error) {
 
 		return true, nil
 	}else{
-		services.GetCache().Set(node.Key(), node, types.NodeTTL)
+		node.Cache(services.GetCache())
 		err = node.Set(txn,services.GetCache())
 		if err != nil {
 			return false, err
