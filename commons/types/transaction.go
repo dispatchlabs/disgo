@@ -490,6 +490,12 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		if !ok {
 			return errors.Errorf("value for field 'to' must be a string")
 		}
+		if jsonMap["code"] != nil {
+			code := jsonMap["code"].(string)
+			if len(this.To) == 0 && len(code) == 0 {
+				return errors.Errorf("value for field 'to' is invalid")
+			}
+		}
 	}
 	if jsonMap["value"] != nil {
 		val, ok := jsonMap["value"].(float64)
@@ -607,7 +613,8 @@ func (this Transaction) Equals(other string) bool {
 }
 
 func checkTime(txTime int64) (int64, error) {
-	if time.Now().UnixNano() < txTime {
+	now := utils.ToMilliSeconds(time.Now())
+	if now < txTime {
 		return txTime, errors.Errorf("transaction time cannot be in the future")
 	} else if txTime < 0 {
 		return txTime, errors.Errorf("transaction time cannot be negative")
