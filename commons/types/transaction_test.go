@@ -22,10 +22,6 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"testing"
 	"time"
-	"net/http"
-	"io/ioutil"
-	"bytes"
-	"encoding/json"
 )
 
 func testMockTransaction(t *testing.T) *Transaction {
@@ -424,53 +420,54 @@ func TestToTransactionsByKey(t *testing.T) {utils.ToMilliSeconds(time.Now())
 	// TODO: ToTransactionsByKey()
 	t.Skip("Need a Badger DB mock")
 }
- func TestStatusChange(t *testing.T) {
 
-	 tx := freshMockTransaction(t)
+//func TestStatusChange(t *testing.T) {
+//
+//	 tx := freshMockTransaction(t)
+//
+//	 if tx.Verify() {
+//		 t.Log("transaction verified")
+//	 } else {
+//		 t.Error("cannot verify transaction")
+//	 }
+//	 txBytes, err := tx.MarshalJSON()
+//
+//	 if err != nil {
+//		 panic(err)
+//	 }
+//	 fmt.Printf(string(txBytes))
+//	 response, err := http.Post("http://localhost:1975/v1/transactions", "application/json", bytes.NewBuffer(txBytes))
+//	 if err != nil {
+//		 fmt.Printf("The HTTP request failed with error %s\n", err)
+//		 panic(err)
+//	 }
+//	 data, _ := ioutil.ReadAll(response.Body)
+//	 fmt.Printf("Request: \n%v\n", string(data))
+//
+//	 var x map[string]interface{}
+//	 json.Unmarshal(data, &x)
+//
+//	 response, err = http.Get(fmt.Sprintf("http://localhost:1975/v1/statuses/%v", x["id"]))
+//	 if err != nil {
+//		 fmt.Printf("The HTTP request failed with error %s\n", err)
+//	 } else {
+//		 data, _ := ioutil.ReadAll(response.Body)
+//		 fmt.Printf("Status: \n%v\n", string(data))
+//	 }
+// }
 
-	 if tx.Verify() {
-		 t.Log("transaction verified")
-	 } else {
-		 t.Error("cannot verify transaction")
-	 }
-	 txBytes, err := tx.MarshalJSON()
-
-	 if err != nil {
-		 panic(err)
-	 }
-	 fmt.Printf(string(txBytes))
-	 response, err := http.Post("http://localhost:1975/v1/transactions", "application/json", bytes.NewBuffer(txBytes))
-	 if err != nil {
-		 fmt.Printf("The HTTP request failed with error %s\n", err)
-		 panic(err)
-	 }
-	 data, _ := ioutil.ReadAll(response.Body)
-	 fmt.Printf("Request: \n%v\n", string(data))
-
-	 var x map[string]interface{}
-	 json.Unmarshal(data, &x)
-
-	 response, err = http.Get(fmt.Sprintf("http://localhost:1975/v1/statuses/%v", x["id"]))
-	 if err != nil {
-		 fmt.Printf("The HTTP request failed with error %s\n", err)
-	 } else {
-		 data, _ := ioutil.ReadAll(response.Body)
-		 fmt.Printf("Status: \n%v\n", string(data))
-	 }
- }
-
-func freshMockTransaction(t *testing.T) *Transaction {
-	tx, err := NewTransferTokensTransaction(
-		"0f86ea981203b26b5b8244c8f661e30e5104555068a4bd168d3e3015db9bb25a",
-		"3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c",
-		//"d70613f93152c84050e7826c4e2b0cc02c1c3b99",
-		"",
-		1,
-		0,
-		utils.ToMilliSeconds(time.Now()),
-	)
-	if err != nil {
-		t.Fatalf("Could not create transaction %s", err.Error())
-	}
-	return tx
-}
+//func freshMockTransaction(t *testing.T) *Transaction {
+//	tx, err := NewTransferTokensTransaction(
+//		"0f86ea981203b26b5b8244c8f661e30e5104555068a4bd168d3e3015db9bb25a",
+//		"3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c",
+//		//"d70613f93152c84050e7826c4e2b0cc02c1c3b99",
+//		"",
+//		1,
+//		0,
+//		utils.ToMilliSeconds(time.Now()),
+//	)
+//	if err != nil {
+//		t.Fatalf("Could not create transaction %s", err.Error())
+//	}
+//	return tx
+//}
