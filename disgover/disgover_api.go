@@ -109,6 +109,7 @@ func (this *DisGoverService) FindByType(tipe string) ([]*types.Node, error) {
 		for _, node := range peerNodes { //go through what seed gave us
 			if !containsNodeByEndpoint(nodes, node.Endpoint) { //if our list doesn't contain one of the seeds nodes
 				nodes = append(nodes, node) //add to our list
+				utils.Info("caching %s $s", tipe, node)
 				this.addOrUpdatePeer(node)
 				}
 		}
