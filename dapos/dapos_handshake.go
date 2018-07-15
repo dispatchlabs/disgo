@@ -262,8 +262,10 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		}
 	}
 
-	// Execute.
-	if len(strings.TrimSpace(transaction.To)) == 0 && len(strings.TrimSpace(transaction.Code)) != 0 {
+	if len(strings.TrimSpace(transaction.To)) == 0 &&
+		len(strings.TrimSpace(transaction.Code)) != 0 {
+
+		// Deploy Smart Contract
 		dvmService := dvm.GetDVMService()
 		dvmResult, err := dvmService.DeploySmartContract(transaction)
 		if err != nil {
@@ -291,7 +293,12 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		}
 		receipt.ContractAddress = contractAccount.Address
 		utils.Info(fmt.Sprintf("deployed contract [receiptId=%s hash=%s, contractAddress=%s]", receipt.Id, transaction.Hash, contractAccount.Address))
-	} else if len(strings.TrimSpace(transaction.To)) != 0 && len(strings.TrimSpace(transaction.Abi)) != 0 && len(strings.TrimSpace(transaction.Method)) != 0 {
+
+	} else if len(strings.TrimSpace(transaction.To)) != 0 &&
+		len(strings.TrimSpace(transaction.Abi)) != 0 &&
+		len(strings.TrimSpace(transaction.Method)) != 0 {
+
+		// Execute Smart Contract Method
 		dvmService := dvm.GetDVMService()
 		dvmResult, err1 := dvmService.ExecuteSmartContract(transaction)
 		if err1 != nil {
@@ -308,17 +315,33 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		}
 		receipt.ContractAddress = transaction.To
 		utils.Info(fmt.Sprintf("executed contract [receiptId=%s hash=%s, contractAddress=%s]", receipt.Id, transaction.Hash, transaction.To))
-	} else if len(strings.TrimSpace(transaction.To)) == 0 {
-		utils.Error(fmt.Sprintf("invalid transaction data [hash=%s]", transaction.Hash))
-		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInvalidTransaction)
-		return
+
 	} else {
+
+		//
+		// Check for a list of invalid cases
+		//
+
+		if len(strings.TrimSpace(transaction.To)) == 0 {
+			utils.Error(fmt.Sprintf("invalid transaction data [hash=%s]", transaction.Hash))
+			receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInvalidTransaction)
+			return
+		}
+
+		if strings.TrimSpace(transaction.From) == strings.TrimSpace(transaction.To) {
+			utils.Error(fmt.Sprintf("invalid transaction data [hash=%s]", transaction.Hash))
+			receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInvalidTransaction)
+			return
+		}
+
 		// Sufficient tokens?
 		if fromAccount.Balance.Int64() < transaction.Value {
 			utils.Error(fmt.Sprintf("insufficient tokens [hash=%s]", transaction.Hash))
 			receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInsufficientTokens)
 			return
 		}
+
+		// All seems valid - do the account adjustments
 		fromAccount.Balance.SetInt64(fromAccount.Balance.Int64() - transaction.Value)
 		toAccount.Balance.SetInt64(toAccount.Balance.Int64() + transaction.Value)
 		utils.Info(fmt.Sprintf("transferred tokens [receiptId=%s hash=%s, rumors=%d]", receipt.Id, transaction.Hash, len(gossip.Rumors)))
@@ -402,23 +425,41 @@ func processDVMResult(transaction *types.Transaction, dvmResult *dvm.DVMResult, 
 		return dvmResult.ContractMethodExecError
 	}
 
+	var errorToReturn error
+
 	// Try read the execution result
 	if len(strings.TrimSpace(dvmResult.ABI)) > 0 {
 		fromHexAsByteArray, _ := hex.DecodeString(dvmResult.ABI)
 		abiAsString := string(fromHexAsByteArray)
 		jsonABI, err := abi.JSON(strings.NewReader(abiAsString))
 		if err == nil {
-			var parsedRes interface{}
-			err = jsonABI.Unpack(&parsedRes, transaction.Method, dvmResult.ContractMethodExecResult)
-			if err == nil {
-				utils.Info(fmt.Sprintf("CONTRACT-CALL-RES: %s", parsedRes))
-				receipt.ContractResult = parsedRes
-			} else {
-				utils.Error(err)
+
+			if method, ok := jsonABI.Methods[dvmResult.ContractMethod]; ok {
+				marshalledValues, err := method.Outputs.UnpackValues(dvmResult.ContractMethodExecResult)
+				if err == nil {
+					utils.Info(fmt.Sprintf("CONTRACT-CALL-RES: %v", marshalledValues))
+					receipt.ContractResult = marshalledValues
+				} else {
+					errorToReturn = err
+					utils.Error(err)
+				}
 			}
+
+			// var parsedRes []interface{}
+			// var parsedRes = make([]interface{}, 3)
+			// err = jsonABI.Unpack(&parsedRes, transaction.Method, dvmResult.ContractMethodExecResult)
+			// if err == nil {
+			// 	utils.Info(fmt.Sprintf("CONTRACT-CALL-RES: %s", parsedRes))
+			// 	receipt.ContractResult = parsedRes
+			// } else {
+			// 	errorToReturn = err
+			// 	utils.Error(err)
+			// }
 		} else {
+			errorToReturn = err
 			utils.Error(err)
 		}
 	}
-	return nil
+
+	return errorToReturn
 }
