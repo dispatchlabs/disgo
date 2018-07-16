@@ -103,7 +103,7 @@ func (this *DAPoSService) setupConnectionPoolForPeer(node *types.Node) {
 func (this *DAPoSService) disGoverServiceInitFinished() {
 
 	// Setup GRPC connection Pools
-	delegateNodes, err := disgover.GetDisGoverService().FindByType(types.TypeDelegate)
+	delegateNodes, err := types.ToNodesByTypeFromCache(services.GetCache(),types.TypeDelegate)
 	if err != nil {
 		utils.Error(err)
 	}

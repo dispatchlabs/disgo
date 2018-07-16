@@ -79,7 +79,7 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 	gossip := types.NewGossip(*transaction, *receipt)
 	rumor := types.NewRumor(types.GetAccount().PrivateKey, types.GetAccount().Address, transaction.Hash)
 	gossip.Rumors = append(gossip.Rumors, *rumor)
-	transaction.Cache(services.GetCache())
+	gossip.Cache(services.GetCache())
 
 	this.gossipChan <- gossip
 
@@ -139,13 +139,14 @@ func (this *DAPoSService) gossipWorker() {
 		case gossip = <-this.gossipChan:
 
 			go func(theGossip *types.Gossip) {
-				delegateNodes, err := disgover.GetDisGoverService().FindByType(types.TypeDelegate)
+				delegateNodes, err := types.ToNodesByTypeFromCache(services.GetCache(),types.TypeDelegate)
 				if err != nil {
 					utils.Error(err)
 				}
 
 				if len(gossip.Rumors) >= len(delegateNodes)*2/3 {
 					this.transactionChan <- gossip
+					//TODO: broadcast
 				}
 
 				// Gossip to random delegate.

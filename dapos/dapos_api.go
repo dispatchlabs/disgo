@@ -33,7 +33,7 @@ func (this *DAPoSService) GetDelegateNodes() *types.Receipt {
 	receipt.Status = types.StatusOk
 
 	// Find nodes.
-	nodes, err := disgover.GetDisGoverService().FindByType(types.TypeDelegate)
+	nodes, err := types.ToNodesByTypeFromCache(services.GetCache(),types.TypeDelegate)
 	if err != nil {
 		utils.Error(err)
 		receipt.SetInternalErrorWithNewTransaction(services.GetDb(), err)
