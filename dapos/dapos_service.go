@@ -33,6 +33,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/disgover"
@@ -114,6 +115,10 @@ func (this *DAPoSService) disGoverServiceInitFinished() {
 			continue
 		}
 
+		if len(delegateNode.Address) != crypto.AddressLength*2 {
+			continue
+		}
+		
 		wg.Add(1)
 
 		go func(node *types.Node, wg *sync.WaitGroup) {
