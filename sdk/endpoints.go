@@ -151,7 +151,6 @@ func GetStatus(delegateNode types.Node, id string) (*types.Receipt, error) {
 	}
 
 	return receipt, nil
-
 }
 
 // GetTransactionsSent
