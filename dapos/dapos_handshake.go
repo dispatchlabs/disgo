@@ -263,7 +263,8 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	}
 
 	// Execute.
-	if len(strings.TrimSpace(transaction.To)) == 0 && len(strings.TrimSpace(transaction.Code)) != 0 {
+	switch transaction.Type {
+	case types.TypeDeploySmartContract:
 		dvmService := dvm.GetDVMService()
 		dvmResult, err := dvmService.DeploySmartContract(transaction)
 		if err != nil {
@@ -291,7 +292,8 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		}
 		receipt.ContractAddress = contractAccount.Address
 		utils.Info(fmt.Sprintf("deployed contract [receiptId=%s hash=%s, contractAddress=%s]", receipt.Id, transaction.Hash, contractAccount.Address))
-	} else if len(strings.TrimSpace(transaction.To)) != 0 && len(strings.TrimSpace(transaction.Abi)) != 0 && len(strings.TrimSpace(transaction.Method)) != 0 {
+		break
+	case types.TypeExecuteSmartContract:
 		dvmService := dvm.GetDVMService()
 		dvmResult, err1 := dvmService.ExecuteSmartContract(transaction)
 		if err1 != nil {
@@ -308,11 +310,8 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		}
 		receipt.ContractAddress = transaction.To
 		utils.Info(fmt.Sprintf("executed contract [receiptId=%s hash=%s, contractAddress=%s]", receipt.Id, transaction.Hash, transaction.To))
-	} else if len(strings.TrimSpace(transaction.To)) == 0 {
-		utils.Error(fmt.Sprintf("invalid transaction data [hash=%s]", transaction.Hash))
-		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInvalidTransaction)
-		return
-	} else {
+	case types.TypeTransferTokens:
+
 		// Sufficient tokens?
 		if fromAccount.Balance.Int64() < transaction.Value {
 			utils.Error(fmt.Sprintf("insufficient tokens [hash=%s]", transaction.Hash))
@@ -322,6 +321,11 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		fromAccount.Balance.SetInt64(fromAccount.Balance.Int64() - transaction.Value)
 		toAccount.Balance.SetInt64(toAccount.Balance.Int64() + transaction.Value)
 		utils.Info(fmt.Sprintf("transferred tokens [receiptId=%s hash=%s, rumors=%d]", receipt.Id, transaction.Hash, len(gossip.Rumors)))
+		break
+	default:
+		utils.Error(fmt.Sprintf("invalid transaction type [hash=%s]", transaction.Hash))
+		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInvalidTransaction)
+		return
 	}
 
 	// Save fromAccount.

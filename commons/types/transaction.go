@@ -227,13 +227,17 @@ func NewTransferTokensTransaction(privateKey string, from, to string, value, her
 }
 
 // NewDeployContractTransaction -
-func NewDeployContractTransaction(privateKey string, from string, code string, timeInMiliseconds int64) (*Transaction, error) {
+func NewDeployContractTransaction(privateKey string, from string, code string, abi string, timeInMiliseconds int64) (*Transaction, error) {
+	if abi == "" {
+		return nil, errors.Errorf("cannot have empty abi")
+	}
 	var err error
 	transaction := &Transaction{}
 	transaction.Type = TypeDeploySmartContract
 	transaction.From = from
 	transaction.To = ""
 	transaction.Code = code
+	transaction.Abi = abi
 	transaction.Time, err = checkTime(timeInMiliseconds)
 	if err != nil {
 		return nil, err
@@ -250,11 +254,8 @@ func NewDeployContractTransaction(privateKey string, from string, code string, t
 }
 
 // NewExecuteContractTransaction -
-func NewExecuteContractTransaction(privateKey string, from string, to string, abi string, method string, params []interface{}, timeInMiliseconds int64) (*Transaction, error) {
-	if  abi == "" {
-		return nil, errors.Errorf("cannot have empty abi")
-	}
-	if  method == "" {
+func NewExecuteContractTransaction(privateKey string, from string, to string, method string, params []interface{}, timeInMiliseconds int64) (*Transaction, error) {
+	if method == "" {
 		return nil, errors.Errorf("cannot have empty method")
 	}
 	var err error
@@ -262,7 +263,6 @@ func NewExecuteContractTransaction(privateKey string, from string, to string, ab
 	transaction.Type = TypeExecuteSmartContract
 	transaction.From = from
 	transaction.To = to
-	transaction.Abi = abi
 	transaction.Method = method
 	transaction.Params = params
 	transaction.Time, err = checkTime(timeInMiliseconds)
@@ -281,22 +281,22 @@ func NewExecuteContractTransaction(privateKey string, from string, to string, ab
 }
 
 // NewHash
-	func (this Transaction) NewHash() (string, error) {
-		fromBytes, err := hex.DecodeString(this.From)
-		if err != nil {
-			utils.Error("unable decode from", err)
-			return "", err
-		}
-		toBytes, err := hex.DecodeString(this.To)
-		if err != nil {
-			utils.Error("unable decode to", err)
-			return "", err
-		}
-		codeBytes, err := hex.DecodeString(this.Code)
-		if err != nil {
-			utils.Error("unable decode code", err)
-			return "", err
-		}
+func (this Transaction) NewHash() (string, error) {
+	fromBytes, err := hex.DecodeString(this.From)
+	if err != nil {
+		utils.Error("unable decode from", err)
+		return "", err
+	}
+	toBytes, err := hex.DecodeString(this.To)
+	if err != nil {
+		utils.Error("unable decode to", err)
+		return "", err
+	}
+	codeBytes, err := hex.DecodeString(this.Code)
+	if err != nil {
+		utils.Error("unable decode code", err)
+		return "", err
+	}
 	var values = []interface{}{
 		this.Type,
 		fromBytes,
