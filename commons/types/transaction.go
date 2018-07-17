@@ -87,6 +87,7 @@ func ToTransactions(txn *badger.Txn) ([]*Transaction, error) {
 		}
 		transactions = append(transactions, transaction)
 	}
+	SortByTime(transactions, false)
 	return transactions, nil
 }
 
@@ -118,6 +119,7 @@ func ToTransactionsByFromAddress(txn *badger.Txn, address string) ([]*Transactio
 		}
 		transactions = append(transactions, transaction)
 	}
+	SortByTime(transactions, false)
 	return transactions, nil
 }
 
@@ -149,6 +151,7 @@ func ToTransactionsByToAddress(txn *badger.Txn, address string) ([]*Transaction,
 		}
 		transactions = append(transactions, transaction)
 	}
+	SortByTime(transactions, false)
 	return transactions, nil
 }
 
