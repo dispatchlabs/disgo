@@ -264,6 +264,18 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 
 	// Execute.
 	switch transaction.Type {
+	case types.TypeTransferTokens:
+
+		// Sufficient tokens?
+		if fromAccount.Balance.Int64() < transaction.Value {
+			utils.Error(fmt.Sprintf("insufficient tokens [hash=%s]", transaction.Hash))
+			receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInsufficientTokens)
+			return
+		}
+		fromAccount.Balance.SetInt64(fromAccount.Balance.Int64() - transaction.Value)
+		toAccount.Balance.SetInt64(toAccount.Balance.Int64() + transaction.Value)
+		utils.Info(fmt.Sprintf("transferred tokens [receiptId=%s hash=%s, rumors=%d]", receipt.Id, transaction.Hash, len(gossip.Rumors)))
+		break
 	case types.TypeDeploySmartContract:
 		dvmService := dvm.GetDVMService()
 		dvmResult, err := dvmService.DeploySmartContract(transaction)
@@ -310,18 +322,6 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		}
 		receipt.ContractAddress = transaction.To
 		utils.Info(fmt.Sprintf("executed contract [receiptId=%s hash=%s, contractAddress=%s]", receipt.Id, transaction.Hash, transaction.To))
-	case types.TypeTransferTokens:
-
-		// Sufficient tokens?
-		if fromAccount.Balance.Int64() < transaction.Value {
-			utils.Error(fmt.Sprintf("insufficient tokens [hash=%s]", transaction.Hash))
-			receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInsufficientTokens)
-			return
-		}
-		fromAccount.Balance.SetInt64(fromAccount.Balance.Int64() - transaction.Value)
-		toAccount.Balance.SetInt64(toAccount.Balance.Int64() + transaction.Value)
-		utils.Info(fmt.Sprintf("transferred tokens [receiptId=%s hash=%s, rumors=%d]", receipt.Id, transaction.Hash, len(gossip.Rumors)))
-		break
 	default:
 		utils.Error(fmt.Sprintf("invalid transaction type [hash=%s]", transaction.Hash))
 		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInvalidTransaction)
