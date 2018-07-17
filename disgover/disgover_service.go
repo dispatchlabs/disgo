@@ -26,7 +26,6 @@ import (
 	"github.com/libp2p/go-libp2p-kbucket"
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-peerstore"
-	"strconv"
 )
 
 var disGoverServiceInstance *DisGoverService
@@ -165,15 +164,9 @@ func (this *DisGoverService) pingSeedNodes() {
 }
 
 func (this *DisGoverService) saveDelegatesFromConfigToCache() {
-	i := 0 //TODO: bad practice to make addresses numbers before we have the actual address
-	for _, endpoint := range types.GetConfig().DelegateEndpoints {
-		var node = &types.Node{
-			Address:  strconv.Itoa(i),
-			Endpoint: endpoint,
-			Type:     types.TypeDelegate,
-		}
-		i++
-		this.addOrUpdatePeer(node)
+
+	for _, deli := range types.GetConfig().Delegates {
+		this.addOrUpdatePeer(deli)
 	}
-	this.addOrUpdatePeer(this.ThisNode)
+	this.addOrUpdatePeer(this.ThisNode)// TODO: should we be adding ourselves
 }
