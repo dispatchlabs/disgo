@@ -73,7 +73,7 @@ func (this *DAPoSService) peerSynchronize() {
 
 	// TODO: This should be done during elections.
 	// Find delegate nodes.
-	nodes, err := disgover.GetDisGoverService().FindByType(types.TypeDelegate)
+	nodes, err := types.ToNodesByTypeFromCache(services.GetCache(),types.TypeDelegate)
 	if err != nil {
 		utils.Error(err)
 		return
@@ -158,7 +158,7 @@ func (this *DAPoSService) peerDelegateExecuteGrpc(tipe string, payload string) *
 
 	// TODO: This should be done during elections.
 	// Find delegate nodes.
-	nodes, err := disgover.GetDisGoverService().FindByType(types.TypeDelegate)
+	nodes, err := types.ToNodesByTypeFromCache(services.GetCache(),types.TypeDelegate)
 	if err != nil {
 		utils.Error(err)
 		return types.NewReceiptWithError(tipe, err)

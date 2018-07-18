@@ -22,8 +22,10 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"testing"
 	"time"
+	"reflect"
 )
 
+//testMockTransaction
 func testMockTransaction(t *testing.T) *Transaction {
 	//codeBytes := make([]byte, 0)
 	d, _ := time.Parse(time.RFC3339, "2018-07-09T15:04:05Z")
@@ -48,6 +50,19 @@ func testMockTransaction(t *testing.T) *Transaction {
 	//}
 }
 
+//TestTransactionCache
+func TestTransactionCache(t *testing.T) {
+	tx := testMockTransaction(t)
+	tx.Cache(c, time.Second * 5)
+	testTx, err := ToTransactionFromCache(c, tx.Hash)
+	if err != nil {
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testTx, tx) == false{
+		t.Error("tx not equal to testTx")
+	}
+}
+
 // TestTransactionVerify
 func TestTransactionVerify(t *testing.T) {
 	tx := testMockTransaction(t)
@@ -59,6 +74,7 @@ func TestTransactionVerify(t *testing.T) {
 	}
 }
 
+//TestNewTransaction
 func TestNewTransaction(t *testing.T) {
 	tx := testMockTransaction(t)
 	if tx == nil {
@@ -69,6 +85,7 @@ func TestNewTransaction(t *testing.T) {
 	}
 }
 
+//TestNewHash
 func TestNewHash(t *testing.T) {
 	tx := testMockTransaction(t)
 	hash, _ := tx.NewHash()
@@ -82,6 +99,7 @@ func TestNewHash(t *testing.T) {
 	}
 }
 
+//TestBadKeyTransaction
 func TestPrintTransaction(t *testing.T) {
 	var privateKey = "0f86ea981203b26b5b8244c8f661e30e5104555068a4bd168d3e3015db9bb25a"
 	var from = "3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c"
@@ -373,6 +391,7 @@ func TestVerify(t *testing.T) {
 	}
 }
 
+//TestGettersSetters
 func TestGettersSetters(t *testing.T) {
 	tx := testMockTransaction(t)
 	if tx.Key() == "" {
@@ -396,36 +415,43 @@ func TestGettersSetters(t *testing.T) {
 
 }
 
+//TestTransactionCalculateHash
 func TestTransactionCalculateHash(t *testing.T) {
 	// TODO: Transaction.CalculateHash()
 	t.Skip("Need a unit test for this...")
 }
 
+//TestTransactionEquals
 func TestTransactionEquals(t *testing.T) {
 	// TODO: Transaction.Equals()
 	t.Skip("Need a unit test for this...")
 }
 
+//TestTransactionSet
 func TestTransactionSet(t *testing.T) {
 	// TODO: Transaction.Set()
 	t.Skip("Need a Badger DB mock")
 }
 
+//TestToTransactions
 func TestToTransactions(t *testing.T) {
 	// TODO: ToTransactions()
 	t.Skip("Need a Badger DB mock")
 }
 
+//TestToTransactionsByFromAddress
 func TestToTransactionsByFromAddress(t *testing.T) {
 	// TODO: ToTransactionsByFromAddress()
 	t.Skip("Need a Badger DB mock")
 }
 
+//TestToTransactionsByToAddress
 func TestToTransactionsByToAddress(t *testing.T) {
 	// TODO: ToTransactionsByToAddress()
 	t.Skip("Need a Badger DB mock")
 }
 
+//TestToTransactionsByType
 func TestToTransactionsByType(t *testing.T) {
 	// TODO: ToTransactionsByType()
 	t.Skip("Need a Badger DB mock")

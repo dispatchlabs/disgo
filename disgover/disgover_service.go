@@ -58,19 +58,6 @@ func GetDisGoverService() *DisGoverService {
 			}
 		}
 
-		// Check if we are a DELEGATE
-		if thisNodeType == types.TypeNode {
-			for _, endpoint := range types.GetConfig().DelegateEndpoints {
-				var portAndIP1 = fmt.Sprintf("%s:%d", endpoint.Host, endpoint.Port)
-				var portAndIP2 = fmt.Sprintf("%s:%d", types.GetConfig().GrpcEndpoint.Host, types.GetConfig().GrpcEndpoint.Port)
-
-				if portAndIP1 == portAndIP2 {
-					thisNodeType = types.TypeDelegate
-					break
-				}
-			}
-		}
-
 		// If no seeds are specified then we are THE seed
 		if thisNodeType == types.TypeNode && len(types.GetConfig().SeedEndpoints) == 0 {
 			thisNodeType = types.TypeSeed
@@ -114,7 +101,9 @@ func (this *DisGoverService) IsRunning() bool {
 func (this *DisGoverService) Go(waitGroup *sync.WaitGroup) {
 	this.running = true
 	utils.Info("running")
-	this.saveDelegatesFromConfigToCache()
+	if this.ThisNode.Type == types.TypeSeed{
+		this.saveDelegatesFromConfigToCache()
+	}
 	go this.pingSeedNodes()
 }
 
@@ -130,8 +119,6 @@ func (this *DisGoverService) pingSeedNodes() {
 
 		// IF - WE are the seed then do nothing
 		if portAndIP1 == portAndIP2 {
-			seedNode = this.ThisNode
-			this.addOrUpdatePeer(seedNode)
 			continue
 		}
 
@@ -148,25 +135,38 @@ func (this *DisGoverService) pingSeedNodes() {
 			utils.Error(err)
 			continue
 		}
+		//add the seed nodes
 		this.seedNodes = append(this.seedNodes, seedNode)
-
 		this.addOrUpdatePeer(seedNode)
+
+		//ask them for delegates
+		delis, err := this.FindByType(types.TypeDelegate)
+		if err != nil{
+			utils.Error(err)
+			continue
+		}
+		//check if we are one
+		for _, deli := range delis {
+			deliPortAndIP1 := fmt.Sprintf("%s:%d", deli.Endpoint.Host, deli.Endpoint.Port)
+			if deliPortAndIP1 == portAndIP2 {
+				this.ThisNode.Type = types.TypeDelegate
+			}
+		}
+		//if we are
+		if this.ThisNode.Type == types.TypeDelegate{
+			seedNode, err = this.peerPingGrpc(seedNode, this.ThisNode) // tell the seed
+		}
 		utils.Info(fmt.Sprintf("pinged seed [address=%s, ip:port=%s:%d]", seedNode.Address, seedNode.Endpoint.Host, seedNode.Endpoint.Port))
 	}
 
 	utils.Events().Raise(Events.DisGoverServiceInitFinished)
+	return
 }
 
 func (this *DisGoverService) saveDelegatesFromConfigToCache() {
-	for _, endpoint := range types.GetConfig().DelegateEndpoints {
-		var node = &types.Node{
-			Address:  "",
-			Endpoint: endpoint,
-			Type:     types.TypeDelegate,
-		}
 
-		this.addOrUpdatePeer(node)
+	for _, deli := range types.GetConfig().Delegates {
+		this.addOrUpdatePeer(deli)
 	}
-
-	this.addOrUpdatePeer(this.ThisNode)
+	this.addOrUpdatePeer(this.ThisNode)// TODO: should we be adding ourselves
 }

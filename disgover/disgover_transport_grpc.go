@@ -55,7 +55,7 @@ func (this *DisGoverService) peerPingGrpc(contactToPing *types.Node, sender *typ
 	defer conn.Close()
 	client := proto.NewDisgoverGrpcClient(conn)
 	contactProto := convertToProto(sender)
-	ctx, cancel := context.WithTimeout(context.Background(), 2000*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	response, err := client.PingGrpc(ctx, contactProto)
 	if err != nil {

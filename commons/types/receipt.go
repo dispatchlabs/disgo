@@ -24,6 +24,7 @@ import (
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/google/uuid"
+	"github.com/patrickmn/go-cache"
 )
 
 // Name
@@ -38,92 +39,49 @@ type Receipt struct {
 	Created             time.Time
 }
 
-// NewReceipt
-func NewReceipt(tipe string) *Receipt {
-	return &Receipt{Id: uuid.New().String(), Type: tipe, Status: StatusPending, Created: time.Now()}
-}
-
-// NewReceiptWithStatus
-func NewReceiptWithStatus(tipe string, status string, humanReadableStatus string) *Receipt {
-	return &Receipt{Id: uuid.New().String(), Type: tipe, Status: status, HumanReadableStatus: humanReadableStatus, Created: time.Now()}
-}
-
-// NewReceiptWithError
-func NewReceiptWithError(tipe string, err error) *Receipt {
-	return &Receipt{Id: uuid.New().String(), Type: tipe, Status: StatusInternalError, HumanReadableStatus: err.Error(), Created: time.Now()}
-}
-
-// ToReceiptFromJson
-func ToReceiptFromJson(payload []byte) (*Receipt, error) {
-	receipt := &Receipt{}
-	err := json.Unmarshal(payload, receipt)
-	if err != nil {
-		return nil, err
-	}
-	return receipt, nil
-}
-
-// ToReceiptFromId
-func ToReceiptFromId(txn *badger.Txn, id string) (*Receipt, error) {
-	item, err := txn.Get([]byte("table-receipt-" + id))
-	if err != nil {
-		return nil, err
-	}
-	value, err := item.Value()
-	if err != nil {
-		return nil, err
-	}
-	receipt, err := ToReceiptFromJson(value)
-	if err != nil {
-		return nil, err
-	}
-	return receipt, err
-}
 
 // Key
 func (this Receipt) Key() string {
 	return fmt.Sprintf("table-receipt-%s", this.Id)
 }
 
-// Set
-func (this *Receipt) Set(txn *badger.Txn) error {
-	err := txn.SetWithTTL([]byte(this.Key()), []byte(this.String()), ReceiptTTL)
+//Cache
+func (this *Receipt) Cache(cache *cache.Cache,time_optional ...time.Duration){
+	TTL := ReceiptTTL
+	if len(time_optional) > 0 {
+		TTL = time_optional[0]
+	}
+	cache.Set(this.Key(), this, TTL)
+}
+
+//Persist
+func (this *Receipt) Persist(txn *badger.Txn) error{
+	err := txn.Set([]byte(this.Key()), []byte(this.String()))
 	if err != nil {
-		utils.Error(err)
 		return err
 	}
 	return nil
 }
 
-// SetInternalErrorWithNewTransaction
-func (this *Receipt) SetInternalErrorWithNewTransaction(db *badger.DB, err error) {
-	txn := db.NewTransaction(true)
-	defer txn.Discard()
-	this.Status = StatusInternalError
-	this.HumanReadableStatus = err.Error()
-	err = txn.SetWithTTL([]byte(this.Key()), []byte(this.String()), ReceiptTTL)
+// Set
+func (this *Receipt) Set(txn *badger.Txn,cache *cache.Cache) error {
+	this.Cache(cache)
+
+	err := this.Persist(txn)
 	if err != nil {
-		utils.Error(err)
+		return err
 	}
-	err = txn.Commit(nil)
-	if err != nil {
-		utils.Error(err)
-	}
+	return nil
 }
 
-// SetStatusWithNewTransaction
-func (this *Receipt) SetStatusWithNewTransaction(db *badger.DB, status string) {
-	txn := db.NewTransaction(true)
-	defer txn.Discard()
-	this.Status = status
-	err := txn.SetWithTTL([]byte(this.Key()), []byte(this.String()), ReceiptTTL)
+// Unset
+func (this *Receipt) Unset(txn *badger.Txn,cache *cache.Cache) error {
+	cache.Delete(this.Key())
+	err := txn.Delete([]byte(this.Key()))
 	if err != nil {
-		utils.Error(err)
+		return err
 	}
-	err = txn.Commit(nil)
-	if err != nil {
-		utils.Error(err)
-	}
+	return nil
 }
 
 // UnmarshalJSON
@@ -162,7 +120,6 @@ func (this *Receipt) UnmarshalJSON(bytes []byte) error {
 		}
 		this.Created = created
 	}
-
 	return nil
 }
 
@@ -197,4 +154,88 @@ func (this Receipt) String() string {
 		return ""
 	}
 	return string(bytes)
+}
+
+// SetInternalErrorWithNewTransaction
+func (this *Receipt) SetInternalErrorWithNewTransaction(db *badger.DB, err error) {
+	txn := db.NewTransaction(true)
+	defer txn.Discard()
+	this.Status = StatusInternalError
+	this.HumanReadableStatus = err.Error()
+	err = txn.SetWithTTL([]byte(this.Key()), []byte(this.String()), ReceiptTTL)
+	if err != nil {
+		utils.Error(err)
+	}
+	err = txn.Commit(nil)
+	if err != nil {
+		utils.Error(err)
+	}
+}
+
+// SetStatusWithNewTransaction
+func (this *Receipt) SetStatusWithNewTransaction(db *badger.DB, status string) {
+	txn := db.NewTransaction(true)
+	defer txn.Discard()
+	this.Status = status
+	err := txn.SetWithTTL([]byte(this.Key()), []byte(this.String()), ReceiptTTL)
+	if err != nil {
+		utils.Error(err)
+	}
+	err = txn.Commit(nil)
+	if err != nil {
+		utils.Error(err)
+	}
+}
+
+
+// NewReceipt
+func NewReceipt(tipe string) *Receipt {
+	return &Receipt{Id: uuid.New().String(), Type: tipe, Status: StatusPending, Created: time.Now()}
+}
+
+// NewReceiptWithStatus
+func NewReceiptWithStatus(tipe string, status string, humanReadableStatus string) *Receipt {
+	return &Receipt{Id: uuid.New().String(), Type: tipe, Status: status, HumanReadableStatus: humanReadableStatus, Created: time.Now()}
+}
+
+// NewReceiptWithError
+func NewReceiptWithError(tipe string, err error) *Receipt {
+	return &Receipt{Id: uuid.New().String(), Type: tipe, Status: StatusInternalError, HumanReadableStatus: err.Error(), Created: time.Now()}
+}
+
+// ToReceiptFromJson
+func ToReceiptFromJson(payload []byte) (*Receipt, error) {
+	receipt := &Receipt{}
+	err := json.Unmarshal(payload, receipt)
+	if err != nil {
+		return nil, err
+	}
+	return receipt, nil
+}
+
+// ToReceiptFromCache -
+func ToReceiptFromCache(cache *cache.Cache, id string) (*Receipt, error) {
+	value, ok :=cache.Get(fmt.Sprintf("table-receipt-%s", id))
+	if !ok{
+		return nil, ErrNotFound
+	}
+	receipt := value.(*Receipt)
+	return receipt, nil
+}
+
+// ToReceiptFromId
+func ToReceiptFromId(txn *badger.Txn, id string) (*Receipt, error) {
+	item, err := txn.Get([]byte("table-receipt-" + id))
+	if err != nil {
+		return nil, err
+	}
+	value, err := item.Value()
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := ToReceiptFromJson(value)
+	if err != nil {
+		return nil, err
+	}
+	return receipt, err
 }
