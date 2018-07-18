@@ -19,10 +19,11 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/google/uuid"
-	"time"
 	"github.com/patrickmn/go-cache"
 )
 
@@ -34,7 +35,7 @@ type Receipt struct {
 	HumanReadableStatus string
 	Data                interface{}
 	ContractAddress     string
-	ContractResult      interface{}
+	ContractResult      []interface{}
 	Created             time.Time
 }
 
@@ -109,7 +110,8 @@ func (this *Receipt) UnmarshalJSON(bytes []byte) error {
 		this.ContractAddress = jsonMap["contractAddress"].(string)
 	}
 	if jsonMap["contractResult"] != nil {
-		this.ContractResult = jsonMap["contractResult"]
+		var contractResult = jsonMap["contractResult"]
+		this.ContractResult = contractResult.([]interface{})
 	}
 	if jsonMap["created"] != nil {
 		created, err := time.Parse(time.RFC3339, jsonMap["created"].(string))
@@ -124,14 +126,14 @@ func (this *Receipt) UnmarshalJSON(bytes []byte) error {
 // MarshalJSON
 func (this Receipt) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Id                  string      `json:"id"`
-		Type                string      `json:"type"`
-		Status              string      `json:"status"`
-		HumanReadableStatus string      `json:"humanReadableStatus,omitempty"`
-		Data                interface{} `json:"data,omitempty"`
-		ContractAddress     string      `json:"contractAddress,omitempty"`
-		ContractResult      interface{} `json:"contractResult,omitempty"`
-		Created             time.Time   `json:"created"`
+		Id                  string        `json:"id"`
+		Type                string        `json:"type"`
+		Status              string        `json:"status"`
+		HumanReadableStatus string        `json:"humanReadableStatus,omitempty"`
+		Data                interface{}   `json:"data,omitempty"`
+		ContractAddress     string        `json:"contractAddress,omitempty"`
+		ContractResult      []interface{} `json:"contractResult,omitempty"`
+		Created             time.Time     `json:"created"`
 	}{
 		Id:                  this.Id,
 		Type:                this.Type,
