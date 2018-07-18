@@ -214,7 +214,7 @@ func GetStatus(delegateNode types.Node, id string) (*types.Receipt, error) {
 // GetTransactionsSent
 func GetTransactionsSent(delegateNode types.Node, address string) ([]types.Transaction, error) {
 
-	 // Get sent transaction.
+	// Get sent transaction.
 	response, err := http.Get(fmt.Sprintf("http://%s:1975/v1/transactions/from/%s", delegateNode.Endpoint.Host, address))
 	if err != nil {
 		return nil, err
@@ -241,7 +241,7 @@ func GetTransactionsSent(delegateNode types.Node, address string) ([]types.Trans
 
 	// Unmarshal transactions.
 	var transactions []types.Transaction
-	err = json.Unmarshal(jsonMap["data"] , &transactions)
+	err = json.Unmarshal(jsonMap["data"], &transactions)
 	if err != nil {
 		return nil, err
 	}
@@ -279,7 +279,7 @@ func GetTransactionsReceived(delegateNode types.Node, address string) ([]types.T
 
 	// Unmarshal transactions.
 	var transactions []types.Transaction
-	err = json.Unmarshal(jsonMap["data"] , &transactions)
+	err = json.Unmarshal(jsonMap["data"], &transactions)
 	if err != nil {
 		return nil, err
 	}
