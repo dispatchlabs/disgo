@@ -209,7 +209,7 @@ func (this *Account) UnmarshalJSON(bytes []byte) error {
 func (this Account) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Address    string    `json:"address"`
-		PrivateKey string    `json:"privateKey"`
+		PrivateKey string    `json:"privateKey,omitempty"`
 		Name       string    `json:"name"`
 		Balance    int64     `json:"balance"`
 		Updated    time.Time `json:"updated"`

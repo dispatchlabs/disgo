@@ -19,9 +19,19 @@ package main
 import (
 	"github.com/dispatchlabs/disgo/bootstrap"
 	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/dispatchlabs/disgo/sdk"
 )
 
 func main() {
+
+	delegates, _ := sdk.GetDelegates()
+
+	sdk.GetAccount(delegates[0], "3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c")
+
+
+	sdk.GetTransactionsReceived(delegates[0], "3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c")
+	sdk.GetTransactionsSent(delegates[0], "3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c")
+
 	utils.InitMainPackagePath()
 	utils.InitializeLogger()
 	server := bootstrap.NewServer()
