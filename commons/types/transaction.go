@@ -29,6 +29,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/pkg/errors"
+	"github.com/patrickmn/go-cache"
 )
 
 // Transaction - The transaction info
@@ -49,6 +50,126 @@ type Transaction struct {
 	ToName    string // Transient
 }
 
+// Key
+func (this Transaction) Key() string {
+	return fmt.Sprintf("table-transaction-%s", this.Hash)
+}
+
+// TypeKey
+func (this Transaction) TypeKey() string {
+	return fmt.Sprintf("key-transaction-type-%d-%d-%s", this.Type, this.Time, this.Hash)
+}
+
+// TimeKey
+func (this Transaction) TimeKey() string {
+	return fmt.Sprintf("key-transaction-time-%d-%s", this.Time, this.Hash)
+}
+
+// FromKey
+func (this Transaction) FromKey() string {
+	return fmt.Sprintf("key-transaction-from-%s-%d", this.From, this.Time)
+}
+
+// ToKey
+func (this Transaction) ToKey() string {
+	return fmt.Sprintf("key-transaction-to-%s-%d", this.To, this.Time)
+}
+
+//Cache
+func (this *Transaction) Cache(cache *cache.Cache, time_optional ...time.Duration){
+	TTL := TransactionTTL
+	if len(time_optional) > 0 {
+		TTL = time_optional[0]
+	}
+	cache.Set(this.Key(), this, TTL)
+}
+
+// Persist
+func (this *Transaction) Persist(txn *badger.Txn) error {
+	err := txn.Set([]byte(this.Key()), []byte(this.String()))
+	if err != nil {
+		return err
+	}
+	err = txn.Set([]byte(this.TypeKey()), []byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	err = txn.Set([]byte(this.TimeKey()), []byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	err = txn.Set([]byte(this.FromKey()), []byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	err = txn.Set([]byte(this.ToKey()), []byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Set
+func (this *Transaction) Set(txn *badger.Txn,cache *cache.Cache) error {
+	this.Cache(cache)
+
+	err := this.Persist(txn)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+
+// GetHashBytes
+func (this Transaction) GetHashBytes() crypto.HashBytes {
+	return crypto.GetHashBytes(this.Hash)
+}
+
+
+// ToTime
+func (this Transaction) ToTime() time.Time {
+	return time.Unix(0, this.Time*int64(time.Millisecond))
+}
+
+// CalculateHash (MerkleTree)
+func (this Transaction) CalculateHash() []byte {
+	from, err := hex.DecodeString(this.From)
+	if err != nil {
+		utils.Fatal("unable to decode from", err)
+		panic(err)
+	}
+	to, err := hex.DecodeString(this.To)
+	if err != nil {
+		utils.Fatal("unable to decode to", err)
+		panic(err)
+	}
+	signature, err := hex.DecodeString(this.Signature)
+	if err != nil {
+		utils.Fatal("unable to decode signature", err)
+		panic(err)
+	}
+	var values = []interface{}{
+		this.Type,
+		from,
+		to,
+		this.Value,
+		this.Time,
+		signature,
+	}
+	buffer := new(bytes.Buffer)
+	for _, value := range values {
+		err := binary.Write(buffer, binary.BigEndian, value)
+		if err != nil {
+			utils.Fatal("unable to write transaction bytes to buffer", err)
+			panic(err)
+		}
+	}
+	hash := crypto.NewHash(buffer.Bytes())
+	return hash[:]
+}
+
+
 // ToTransactionFromJson -
 func ToTransactionFromJson(payload []byte) (*Transaction, error) {
 	transaction := &Transaction{}
@@ -56,6 +177,16 @@ func ToTransactionFromJson(payload []byte) (*Transaction, error) {
 	if err != nil {
 		return nil, err
 	}
+	return transaction, nil
+}
+
+// ToTransactionFromCache -
+func ToTransactionFromCache(cache *cache.Cache, hash string) (*Transaction, error) {
+	value, ok :=cache.Get(fmt.Sprintf("table-transaction-%s", hash))
+	if !ok{
+		return nil, ErrNotFound
+	}
+	transaction := value.(*Transaction)
 	return transaction, nil
 }
 
@@ -396,60 +527,6 @@ func (this Transaction) Verify() bool {
 	return crypto.VerifySignature(publicKeyBytes, hashBytes, signatureBytes)
 }
 
-// ToTime
-func (this Transaction) ToTime() time.Time {
-	return time.Unix(0, this.Time*int64(time.Millisecond))
-}
-
-// Key
-func (this Transaction) Key() string {
-	return fmt.Sprintf("table-transaction-%s", this.Hash)
-}
-
-// TypeKey
-func (this Transaction) TypeKey() string {
-	return fmt.Sprintf("key-transaction-type-%d-%d-%s", this.Type, this.Time, this.Hash)
-}
-
-// TimeKey
-func (this Transaction) TimeKey() string {
-	return fmt.Sprintf("key-transaction-time-%d-%s", this.Time, this.Hash)
-}
-
-// FromKey
-func (this Transaction) FromKey() string {
-	return fmt.Sprintf("key-transaction-from-%s-%d", this.From, this.Time)
-}
-
-// ToKey
-func (this Transaction) ToKey() string {
-	return fmt.Sprintf("key-transaction-to-%s-%d", this.To, this.Time)
-}
-
-// Set
-func (this *Transaction) Set(txn *badger.Txn) error {
-	err := txn.Set([]byte(this.Key()), []byte(this.String()))
-	if err != nil {
-		return err
-	}
-	err = txn.Set([]byte(this.TypeKey()), []byte(this.Key()))
-	if err != nil {
-		return err
-	}
-	err = txn.Set([]byte(this.TimeKey()), []byte(this.Key()))
-	if err != nil {
-		return err
-	}
-	err = txn.Set([]byte(this.FromKey()), []byte(this.Key()))
-	if err != nil {
-		return err
-	}
-	err = txn.Set([]byte(this.ToKey()), []byte(this.Key()))
-	if err != nil {
-		return err
-	}
-	return nil
-}
 
 // String
 func (this Transaction) String() string {

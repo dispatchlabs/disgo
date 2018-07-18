@@ -20,10 +20,26 @@ import (
 	"errors"
 	"testing"
 	"time"
+	"reflect"
 )
 
-var testReceiptByte = []byte("{\"id\":\"60ef98ce-73b2-470e-ae92-4cd0a1eae0a3\",\"type\":\"test\",\"status\":\"Pending\",\"humanReadableStatus\":\"Pending\",\"data\":\"test data\",\"contractAddress\":\"\",\"contractResult\":\"\",\"created\":\"2018-05-09T15:04:05Z\"}")
+var testReceiptByte = []byte("{\"id\":\"60ef98ce-73b2-470e-ae92-4cd0a1eae0a3\",\"type\":\"test\",\"status\":\"Pending\",\"humanReadableStatus\":\"Pending\",\"data\":\"test data\",\"contractAddress\":\"\",\"contractResult\":[],\"created\":\"2018-05-09T15:04:05Z\"}")
 
+
+//TestReceiptCache
+func TestReceiptCache(t *testing.T) {
+	receipt := NewReceipt("test")
+	receipt.Cache(c, time.Second * 5)
+	testReceipt, err := ToReceiptFromCache(c, receipt.Id)
+	if err != nil {
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testReceipt, receipt) == false{
+		t.Error("Reciept not equal to testReceipt")
+	}
+}
+
+//TestNewReceipt
 func TestNewReceipt(t *testing.T) {
 	receipt := NewReceipt("test")
 	if receipt.Id == "" {
@@ -47,6 +63,7 @@ func TestNewReceipt(t *testing.T) {
 	}
 }
 
+//TestNewReceiptWithStatus
 func TestNewReceiptWithStatus(t *testing.T) {
 	receipt := NewReceiptWithStatus("test", "Pending", "Pending")
 	if receipt.Id == "" {
@@ -69,6 +86,7 @@ func TestNewReceiptWithStatus(t *testing.T) {
 	}
 }
 
+//TestNewReceiptWithError
 func TestNewReceiptWithError(t *testing.T) {
 	err := errors.New("test error")
 	receipt := NewReceiptWithError("test", err)
@@ -92,6 +110,7 @@ func TestNewReceiptWithError(t *testing.T) {
 	}
 }
 
+//TestToReceiptFromJson
 func TestToReceiptFromJson(t *testing.T) {
 	receipt, err := ToReceiptFromJson(testReceiptByte)
 	if err != nil {
@@ -100,12 +119,14 @@ func TestToReceiptFromJson(t *testing.T) {
 	testReceiptStruct(t, receipt)
 }
 
+//TestReceiptUnmarshalJSON
 func TestReceiptUnmarshalJSON(t *testing.T) {
 	receipt := &Receipt{}
 	receipt.UnmarshalJSON(testReceiptByte)
 	testReceiptStruct(t, receipt)
 }
 
+//TestReceiptMarshalJSON
 func TestReceiptMarshalJSON(t *testing.T) {
 	receipt := &Receipt{}
 	receipt.UnmarshalJSON(testReceiptByte)
@@ -119,26 +140,31 @@ func TestReceiptMarshalJSON(t *testing.T) {
 	}
 }
 
+//TestToReceiptFromId
 func TestToReceiptFromId(t *testing.T) {
 	// TODO: ToReceiptFromId()
 	t.Skip("Need a Badger DB mock")
 }
 
+//TestReceiptSet
 func TestReceiptSet(t *testing.T) {
 	// TODO: Receipt.Set()
 	t.Skip("Need a Badger DB mock")
 }
 
+//TestReceiptSetInternalErrorWithNewTransaction
 func TestReceiptSetInternalErrorWithNewTransaction(t *testing.T) {
 	// TODO: receipt.SetInternalErrorWithNewTransaction()
 	t.Skip("Need a Badger DB mock")
 }
 
+//TestReceiptSetStatusWithNewTransaction
 func TestReceiptSetStatusWithNewTransaction(t *testing.T) {
 	// TODO: receipt.SetStatusWithNewTransaction()
 	t.Skip("Need a Badger DB mock")
 }
 
+//testReceiptStruct
 func testReceiptStruct(t *testing.T, receipt *Receipt) {
 	if receipt.Id != "60ef98ce-73b2-470e-ae92-4cd0a1eae0a3" {
 		t.Errorf("receipt.UnmarshalJSON returning invalid %s value: %s", "Id", receipt.Id)

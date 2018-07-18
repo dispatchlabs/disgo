@@ -65,21 +65,21 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 	// TODO: Check minimum hertz, balance, and negative value!!!!!
 
 	// Are we already gossiping about this transaction?
-	_, ok := services.GetCache().Get(transaction.Hash)
-	if ok {
+	_, err = types.ToTransactionFromCache(services.GetCache(),transaction.Hash)
+	if err == nil{
 		utils.Info(fmt.Sprintf("already processing this transaction [hash=%s]", transaction.Hash))
 		receipt.Status = types.StatusAlreadyProcessingTransaction
 		return receipt
 	}
 
 	// Cache receipt.
-	services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+	receipt.Cache(services.GetCache())
 
 	// Cache gossip with my rumor.
 	gossip := types.NewGossip(*transaction, *receipt)
 	rumor := types.NewRumor(types.GetAccount().PrivateKey, types.GetAccount().Address, transaction.Hash)
 	gossip.Rumors = append(gossip.Rumors, *rumor)
-	services.GetCache().Set(gossip.Transaction.Hash, gossip, types.GossipCacheTTL)
+	gossip.Cache(services.GetCache())
 
 	this.gossipChan <- gossip
 
@@ -97,20 +97,20 @@ func (this *DAPoSService) Temp_ProcessTransaction(gossip *types.Gossip) {
 func (this *DAPoSService) synchronizeGossip(gossip *types.Gossip) (*types.Gossip, error) {
 
 	// Get or set receipt?
-	_, ok := services.GetCache().Get(gossip.ReceiptId)
-	if !ok {
+	_, err := types.ToReceiptFromCache(services.GetCache(),gossip.ReceiptId)
+	if err != nil {
 		receipt := types.NewReceipt(types.RequestNewTransaction)
 		receipt.Id = gossip.ReceiptId
-		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		receipt.Cache(services.GetCache())
 	}
 
 	// Set synchronizedGossip.
 	var synchronizedGossip *types.Gossip
-	value, ok := services.GetCache().Get(gossip.Transaction.Hash)
-	if !ok {
+	ourGossip, err := types.ToGossipFromCache(services.GetCache(),gossip.Transaction.Hash)
+	if err != nil {
 		synchronizedGossip = gossip
 	} else {
-		synchronizedGossip = value.(*types.Gossip)
+		synchronizedGossip = ourGossip
 		for _, rumor := range gossip.Rumors {
 			if !synchronizedGossip.ContainsRumor(rumor.Address) && rumor.Verify() { // We don't want to propagate cryptographic lies.
 				synchronizedGossip.Rumors = append(synchronizedGossip.Rumors, rumor)
@@ -139,13 +139,14 @@ func (this *DAPoSService) gossipWorker() {
 		case gossip = <-this.gossipChan:
 
 			go func(theGossip *types.Gossip) {
-				delegateNodes, err := disgover.GetDisGoverService().FindByType(types.TypeDelegate)
+				delegateNodes, err := types.ToNodesByTypeFromCache(services.GetCache(),types.TypeDelegate)
 				if err != nil {
 					utils.Error(err)
 				}
 
 				if len(gossip.Rumors) >= len(delegateNodes)*2/3 {
 					this.transactionChan <- gossip
+					//TODO: broadcast
 				}
 
 				// Gossip to random delegate.
@@ -203,15 +204,15 @@ func (this *DAPoSService) transactionWorker() {
 
 			// Get receipt.
 			var receipt *types.Receipt
-			value, ok := services.GetCache().Get(gossip.ReceiptId)
-			if !ok {
+			value, err := types.ToReceiptFromCache(services.GetCache(),gossip.ReceiptId)
+			if err != nil {
 				utils.Error(fmt.Sprintf("receipt not found [id=%s]", gossip.ReceiptId))
 				receipt = types.NewReceipt(types.RequestNewTransaction)
 				receipt.Status = types.StatusReceiptNotFound
-				services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+				receipt.Cache(services.GetCache())
 				continue
 			}
-			receipt = value.(*types.Receipt)
+			receipt = value
 
 			// TODO: Should we thread this?
 			// Execute.
@@ -245,7 +246,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			utils.Error(err)
 			receipt.Status = types.StatusInternalError
 			receipt.HumanReadableStatus = err.Error()
-			services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+			receipt.Cache(services.GetCache())
 			return
 		}
 	}
@@ -288,22 +289,23 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			utils.Error(err)
 			receipt.Status = types.StatusInternalError
 			receipt.HumanReadableStatus = err.Error()
-			services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+			receipt.Cache(services.GetCache())
 			return
 		}
 
 		// Set contract account.
 		contractAccount := &types.Account{Address: hex.EncodeToString(dvmResult.ContractAddress[:]), Balance: big.NewInt(0), Updated: now, Created: now}
-		err = contractAccount.Set(txn)
+		err = contractAccount.Set(txn, services.GetCache())
 		if err != nil {
 			utils.Error(err)
 			receipt.Status = types.StatusInternalError
 			receipt.HumanReadableStatus = err.Error()
-			services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+			receipt.Cache(services.GetCache())
 			return
 		}
 		receipt.ContractAddress = contractAccount.Address
 		utils.Info(fmt.Sprintf("deployed contract [receiptId=%s hash=%s, contractAddress=%s]", receipt.Id, transaction.Hash, contractAccount.Address))
+
 		break
 	case types.TypeExecuteSmartContract:
 		dvmService := dvm.GetDVMService()
@@ -317,7 +319,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			utils.Error(err)
 			receipt.Status = types.StatusInternalError
 			receipt.HumanReadableStatus = err.Error()
-			services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+			receipt.Cache(services.GetCache())
 			return
 		}
 		receipt.ContractAddress = transaction.To
@@ -330,55 +332,55 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 
 	// Save fromAccount.
 	fromAccount.Updated = now
-	err = fromAccount.Set(txn)
+	err = fromAccount.Set(txn,services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
 		receipt.HumanReadableStatus = err.Error()
-		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		receipt.Cache(services.GetCache())
 		return
 	}
 
 	// Save toAccount.
 	toAccount.Updated = now
-	err = toAccount.Set(txn)
+	err = toAccount.Set(txn,services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
 		receipt.HumanReadableStatus = err.Error()
-		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		receipt.Cache(services.GetCache())
 		return
 	}
 
 	// Save transaction.
-	err = transaction.Set(txn)
+	err = transaction.Set(txn,services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
 		receipt.HumanReadableStatus = err.Error()
-		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		receipt.Cache(services.GetCache())
 		return
 	}
 
 	// Save receipt.
 	receipt.Status = types.StatusOk
-	services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
-	err = receipt.Set(txn)
+	receipt.Cache(services.GetCache())
+	err = receipt.Set(txn,services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
 		receipt.HumanReadableStatus = err.Error()
-		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		receipt.Cache(services.GetCache())
 		return
 	}
 
 	// Save gossip.
-	err = gossip.Set(txn)
+	err = gossip.Set(txn,services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
 		receipt.HumanReadableStatus = err.Error()
-		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		receipt.Cache(services.GetCache())
 		return
 	}
 
@@ -391,11 +393,13 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
 		receipt.HumanReadableStatus = err.Error()
-		services.GetCache().Set(receipt.Id, receipt, types.ReceiptCacheTTL)
+		receipt.Cache(services.GetCache())
 		return
 	}
 }
 
+//TODO: implement if useful
+//func commit(transaction *types.Transaction) {}
 // processDVMResult
 func processDVMResult(transaction *types.Transaction, dvmResult *dvm.DVMResult, receipt *types.Receipt) error {
 	utils.Info("######### DUMPING-DVMResult #########")
@@ -406,23 +410,41 @@ func processDVMResult(transaction *types.Transaction, dvmResult *dvm.DVMResult, 
 		return dvmResult.ContractMethodExecError
 	}
 
+	var errorToReturn error
+
 	// Try read the execution result
 	if len(strings.TrimSpace(dvmResult.ABI)) > 0 {
 		fromHexAsByteArray, _ := hex.DecodeString(dvmResult.ABI)
 		abiAsString := string(fromHexAsByteArray)
 		jsonABI, err := abi.JSON(strings.NewReader(abiAsString))
 		if err == nil {
-			var parsedRes interface{}
-			err = jsonABI.Unpack(&parsedRes, transaction.Method, dvmResult.ContractMethodExecResult)
-			if err == nil {
-				utils.Info(fmt.Sprintf("CONTRACT-CALL-RES: %s", parsedRes))
-				receipt.ContractResult = parsedRes
-			} else {
-				utils.Error(err)
+
+			if method, ok := jsonABI.Methods[dvmResult.ContractMethod]; ok {
+				marshalledValues, err := method.Outputs.UnpackValues(dvmResult.ContractMethodExecResult)
+				if err == nil {
+					utils.Info(fmt.Sprintf("CONTRACT-CALL-RES: %v", marshalledValues))
+					receipt.ContractResult = marshalledValues
+				} else {
+					errorToReturn = err
+					utils.Error(err)
+				}
 			}
+
+			// var parsedRes []interface{}
+			// var parsedRes = make([]interface{}, 3)
+			// err = jsonABI.Unpack(&parsedRes, transaction.Method, dvmResult.ContractMethodExecResult)
+			// if err == nil {
+			// 	utils.Info(fmt.Sprintf("CONTRACT-CALL-RES: %s", parsedRes))
+			// 	receipt.ContractResult = parsedRes
+			// } else {
+			// 	errorToReturn = err
+			// 	utils.Error(err)
+			// }
 		} else {
+			errorToReturn = err
 			utils.Error(err)
 		}
 	}
-	return nil
+
+	return errorToReturn
 }

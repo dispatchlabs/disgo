@@ -103,7 +103,7 @@ func (this *DAPoSService) setupConnectionPoolForPeer(node *types.Node) {
 func (this *DAPoSService) disGoverServiceInitFinished() {
 
 	// Setup GRPC connection Pools
-	delegateNodes, err := disgover.GetDisGoverService().FindByType(types.TypeDelegate)
+	delegateNodes, err := types.ToNodesByTypeFromCache(services.GetCache(),types.TypeDelegate)
 	if err != nil {
 		utils.Error(err)
 	}
@@ -153,12 +153,12 @@ func (this *DAPoSService) createGenesisTransactionAndAccount() error {
 	_, err = types.ToTransactionByKey(txn, []byte(transaction.Key()))
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
-			err = transaction.Set(txn)
+			err = transaction.Set(txn,services.GetCache())
 			if err != nil {
 				return err
 			}
 			account := &types.Account{Address: transaction.To, Name: "Dispatch Labs", Balance: big.NewInt(transaction.Value), Updated: time.Now(), Created: time.Now()}
-			err = account.Set(txn)
+			err = account.Set(txn,services.GetCache())
 			if err != nil {
 				return err
 			}
