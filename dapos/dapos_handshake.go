@@ -42,14 +42,16 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 	receipt := types.NewReceipt(types.RequestNewTransaction)
 
 	// Verify?
-	if !transaction.Verify() {
+	err := transaction.Verify()
+	if err != nil {
 		utils.Info(fmt.Sprintf("invalid transaction [hash=%s]", transaction.Hash))
 		receipt.Status = types.StatusInvalidTransaction
+		receipt.HumanReadableStatus = err.Error()
 		return receipt
 	}
 
 	// Duplicate transaction?
-	_, err := txn.Get([]byte(transaction.Key()))
+	_, err = txn.Get([]byte(transaction.Key()))
 	if err == nil {
 		utils.Info(fmt.Sprintf("duplicate transaction [hash=%s]", transaction.Hash))
 		receipt.Status = types.StatusDuplicateTransaction
@@ -125,8 +127,15 @@ func (this *DAPoSService) synchronizeGossip(gossip *types.Gossip) (*types.Gossip
 			didRumor = true
 		}
 	}
-	if !didRumor && gossip.Transaction.Verify() { // We don't want to propagate cryptographic lies.
-		synchronizedGossip.Rumors = append(gossip.Rumors, *types.NewRumor(types.GetAccount().PrivateKey, types.GetAccount().Address, gossip.Transaction.Hash))
+	if !didRumor {
+
+		// We don't want to propagate cryptographic lies.
+		err = gossip.Transaction.Verify()
+		if err == nil {
+			synchronizedGossip.Rumors = append(gossip.Rumors, *types.NewRumor(types.GetAccount().PrivateKey, types.GetAccount().Address, gossip.Transaction.Hash))
+		} else {
+			utils.Warn(err)
+		}
 	}
 	return synchronizedGossip, nil
 }
@@ -305,7 +314,6 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		}
 		receipt.ContractAddress = contractAccount.Address
 		utils.Info(fmt.Sprintf("deployed contract [receiptId=%s hash=%s, contractAddress=%s]", receipt.Id, transaction.Hash, contractAccount.Address))
-
 		break
 	case types.TypeExecuteSmartContract:
 		dvmService := dvm.GetDVMService()

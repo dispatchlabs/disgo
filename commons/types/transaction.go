@@ -473,58 +473,85 @@ func (this *Transaction) NewSignature(privateKey string) (string, error) {
 }
 
 // Verify
-func (this Transaction) Verify() bool {
-	if len(this.Hash) != crypto.HashLength*2 {
-		utils.Debug("Invalid Hash")
-		return false
+func (this Transaction) Verify() error {
+	if len(this.Hash) != crypto.HashLength*2  {
+		return errors.New("invalid hash")
 	}
 	if len(this.From) != crypto.AddressLength*2 {
-		utils.Debug("Invalid From Address")
-		return false
-	}
-	if this.To != "" && len(this.To) != crypto.AddressLength*2 {
-		utils.Debug("Invalid To Address")
-		return false
-	}
-	if this.To != "" && this.Value < 0 {
-		return false
+		return errors.New("invalid from address")
 	}
 	if len(this.Signature) != crypto.SignatureLength*2 {
-		utils.Debug("Invalid Signature")
-		return false
+		return errors.New("invalid signature")
+	}
+	if this.From == this.To {
+		return errors.New("from address cannot equal to address")
+	}
+
+	// Type?
+	switch this.Type {
+	case TypeTransferTokens:
+		if len(this.To) != crypto.AddressLength*2 {
+			return errors.New("invalid to address")
+		}
+		if this.Value <= 0 {
+			return errors.New("invalid value")
+		}
+		break
+	case TypeDeploySmartContract:
+		if len(this.To) != 0 {
+			return errors.New("to address must be blank for a deployment of a smart contract")
+		}
+		if len(this.Code) == 0 {
+			return errors.New("invalid code")
+		}
+		if len(this.Abi) == 0 {
+			return errors.New("invalid abi")
+		}
+		break
+	case TypeExecuteSmartContract:
+		if len(this.To) != crypto.AddressLength*2 {
+			return errors.New("invalid to address")
+		}
+
+		// TODO: Should we check method?
+		break
 	}
 
 	// Hash ok?
 	hash, err := this.NewHash()
 	if err != nil {
-		utils.Error(err)
-		return false
+		return errors.New("unable to compute hash")
 	}
 	if this.Hash != hash {
-		return false
+		return errors.New("invalid hash")
 	}
 
 	hashBytes, err := hex.DecodeString(this.Hash)
 	if err != nil {
 		utils.Error("unable to decode hash", err)
-		return false
+		return errors.New("unable to decode hash")
 	}
 	signatureBytes, err := hex.DecodeString(this.Signature)
 	if err != nil {
 		utils.Error("unable to decode signature", err)
-		return false
+		return errors.New("unable to decode signature")
 	}
 	publicKeyBytes, err := crypto.ToPublicKey(hashBytes, signatureBytes)
 	if err != nil {
-		return false
+		utils.Error("unable to generate public key from hash and signature", err)
+		return errors.New("unable to generate public key from hash and signature")
 	}
 
 	// Derived address from publicKeyBytes match from?
 	address := hex.EncodeToString(crypto.ToAddress(publicKeyBytes))
 	if address != this.From {
-		return false
+		return errors.New("from address does not match the computed address from hash and signature")
 	}
-	return crypto.VerifySignature(publicKeyBytes, hashBytes, signatureBytes)
+	if !crypto.VerifySignature(publicKeyBytes, hashBytes, signatureBytes) {
+		return errors.New("invalid signature")
+	}
+
+	return nil
 }
 
 
