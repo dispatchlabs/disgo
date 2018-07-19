@@ -165,6 +165,8 @@ func (this *DAPoSService) gossipWorker() {
 					this.gossipChan <- peerGossip
 					break
 				}
+				//if I have the bookkeeper role add the tx to the queue channel for execution of TX:
+
 			}(gossip)
 		}
 	}
