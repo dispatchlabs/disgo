@@ -2,7 +2,7 @@ package types
 
 import "sort"
 
-// By is the type of a "less" function that defines the ordering of its Planet arguments.
+// By is the type of a "less" function that defines the ordering of its Transaction arguments.
 type By func(t1, t2 *Transaction) bool
 
 // Sort is a method on the function type, By, that sorts the argument slice according to the function.
@@ -14,7 +14,7 @@ func (by By) Sort(transactions []*Transaction) {
 	sort.Sort(ts)
 }
 
-// planetSorter joins a By function and a slice of Planets to be sorted.
+// TransactionSorter joins a By function and a slice of Transaction to be sorted.
 type TransactionSorter struct {
 	transactions 	[]*Transaction
 	by      		func(t1, t2 *Transaction) bool // Closure used in the Less method.
@@ -46,3 +46,21 @@ func SortByTime(txs []*Transaction, ascending bool) {
 	By(timestamp).Sort(txs)
 }
 
+func SortByTimeHash(txs []*Transaction, ascending bool) {
+	timestamp := func(t1, t2 *Transaction) bool {
+		if(ascending) {
+			if t1.Time == t2.Time {
+				return t1.Hash < t2.Hash
+			} else {
+				return t1.Time < t2.Time
+			}
+		} else {
+			if t2.Time == t1.Time {
+				return t2.Hash < t1.Hash
+			} else {
+				return t2.Time < t1.Time
+			}
+		}
+	}
+	By(timestamp).Sort(txs)
+}
