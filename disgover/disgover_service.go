@@ -130,11 +130,11 @@ func (this *DisGoverService) pingSeedNodes() {
 		}
 
 		var err error
-		seedNode, err = this.peerPingGrpc(seedNode, this.ThisNode)
-		if err != nil {
-			utils.Error(err)
-			continue
-		}
+		//seedNode, err = this.peerPingGrpc(seedNode, this.ThisNode)
+		//if err != nil {
+		//	utils.Error(err)
+		//	continue
+		//}
 		//add the seed nodes
 		this.seedNodes = append(this.seedNodes, seedNode)
 		this.addOrUpdatePeer(seedNode)
