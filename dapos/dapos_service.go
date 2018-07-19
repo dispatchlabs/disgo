@@ -55,7 +55,7 @@ var (
 // GetDAPoSService
 func GetDAPoSService() *DAPoSService {
 	daposServiceOnce.Do(func() {
-		daposServiceInstance = &DAPoSService{running: false, gossipChan: make(chan *types.Gossip, 1000), transactionChan: make(chan *types.Gossip, 1000)} // TODO: What should this be?
+		daposServiceInstance = &DAPoSService{running: false, gossipChan: make(chan *types.Gossip, 1000), queueChan: make(chan *types.Gossip, 1000), transactionChan: make(chan *types.Gossip, 1000)} // TODO: What should this be?
 	})
 	return daposServiceInstance
 }
@@ -64,6 +64,7 @@ func GetDAPoSService() *DAPoSService {
 type DAPoSService struct {
 	running         bool
 	gossipChan      chan *types.Gossip
+	queueChan      chan *types.Gossip
 	transactionChan chan *types.Gossip
 }
 
@@ -138,6 +139,7 @@ func (this *DAPoSService) disGoverServiceInitFinished() {
 
 	go this.gossipWorker()
 	go this.transactionWorker()
+	go this.queueWorker()
 
 	utils.Events().Raise(Events.DAPoSServiceInitFinished)
 }

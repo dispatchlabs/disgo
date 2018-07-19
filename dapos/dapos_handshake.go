@@ -144,8 +144,9 @@ func (this *DAPoSService) gossipWorker() {
 					utils.Error(err)
 				}
 
+				// Do we have 2/3 votes to add to queue?
 				if len(gossip.Rumors) >= len(delegateNodes)*2/3 {
-					this.transactionChan <- gossip
+					this.queueChan <- gossip
 				}
 
 				// Gossip to random delegate.
@@ -169,28 +170,15 @@ func (this *DAPoSService) gossipWorker() {
 	}
 }
 
-// getRandomDelegate
-func (this *DAPoSService) getRandomDelegate(gossip *types.Gossip, delegateNodes []*types.Node) *types.Node {
-	if len(delegateNodes) == 0 {
-		return nil
-	}
-
-	// Get delegates that have not rumored?
-	delegatesNotRumored := make([]*types.Node, 0)
-	for _, node := range delegateNodes {
-		if gossip.ContainsRumor(node.Address) || node.Address == disgover.GetDisGoverService().ThisNode.Address {
-			continue
+// queueWorker
+func (this *DAPoSService) queueWorker() {
+	var gossip *types.Gossip
+	for {
+		select {
+		case gossip = <-this.queueChan:
+			// TODO: Bob do your magic adding queue.
 		}
-		delegatesNotRumored = append(delegatesNotRumored, node)
 	}
-	if len(delegatesNotRumored) == 0 {
-		return nil
-	}
-
-	// Find random delegate.
-	rand.Seed(time.Now().UTC().UnixNano())
-	index := rand.Intn(len(delegatesNotRumored))
-	return delegatesNotRumored[index]
 }
 
 // gossipWorker - transfer tokens, deploy smart contract, and execution of smart contract.
@@ -421,4 +409,28 @@ func processDVMResult(transaction *types.Transaction, dvmResult *dvm.DVMResult, 
 		}
 	}
 	return nil
+}
+
+// getRandomDelegate
+func (this *DAPoSService) getRandomDelegate(gossip *types.Gossip, delegateNodes []*types.Node) *types.Node {
+	if len(delegateNodes) == 0 {
+		return nil
+	}
+
+	// Get delegates that have not rumored?
+	delegatesNotRumored := make([]*types.Node, 0)
+	for _, node := range delegateNodes {
+		if gossip.ContainsRumor(node.Address) || node.Address == disgover.GetDisGoverService().ThisNode.Address {
+			continue
+		}
+		delegatesNotRumored = append(delegatesNotRumored, node)
+	}
+	if len(delegatesNotRumored) == 0 {
+		return nil
+	}
+
+	// Find random delegate.
+	rand.Seed(time.Now().UTC().UnixNano())
+	index := rand.Intn(len(delegatesNotRumored))
+	return delegatesNotRumored[index]
 }
