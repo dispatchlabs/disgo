@@ -152,10 +152,7 @@ func (this *DisGoverService) pingSeedNodes() {
 				this.ThisNode.Type = types.TypeDelegate
 			}
 		}
-		//if we are
-		if this.ThisNode.Type == types.TypeDelegate{
-			seedNode, err = this.peerPingGrpc(seedNode, this.ThisNode) // tell the seed
-		}
+		seedNode, err = this.peerPingGrpc(seedNode, this.ThisNode) // tell the seed
 		utils.Info(fmt.Sprintf("pinged seed [address=%s, ip:port=%s:%d]", seedNode.Address, seedNode.Endpoint.Host, seedNode.Endpoint.Port))
 	}
 

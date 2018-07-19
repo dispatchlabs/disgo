@@ -42,14 +42,16 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 	receipt := types.NewReceipt(types.RequestNewTransaction)
 
 	// Verify?
-	if !transaction.Verify() {
+	err := transaction.Verify()
+	if err != nil {
 		utils.Info(fmt.Sprintf("invalid transaction [hash=%s]", transaction.Hash))
 		receipt.Status = types.StatusInvalidTransaction
+		receipt.HumanReadableStatus = err.Error()
 		return receipt
 	}
 
 	// Duplicate transaction?
-	_, err := txn.Get([]byte(transaction.Key()))
+	_, err = txn.Get([]byte(transaction.Key()))
 	if err == nil {
 		utils.Info(fmt.Sprintf("duplicate transaction [hash=%s]", transaction.Hash))
 		receipt.Status = types.StatusDuplicateTransaction
@@ -125,8 +127,15 @@ func (this *DAPoSService) synchronizeGossip(gossip *types.Gossip) (*types.Gossip
 			didRumor = true
 		}
 	}
-	if !didRumor && gossip.Transaction.Verify() { // We don't want to propagate cryptographic lies.
-		synchronizedGossip.Rumors = append(gossip.Rumors, *types.NewRumor(types.GetAccount().PrivateKey, types.GetAccount().Address, gossip.Transaction.Hash))
+	if !didRumor {
+
+		// We don't want to propagate cryptographic lies.
+		err = gossip.Transaction.Verify()
+		if err == nil {
+			synchronizedGossip.Rumors = append(gossip.Rumors, *types.NewRumor(types.GetAccount().PrivateKey, types.GetAccount().Address, gossip.Transaction.Hash))
+		} else {
+			utils.Warn(err)
+		}
 	}
 	return synchronizedGossip, nil
 }
@@ -146,8 +155,22 @@ func (this *DAPoSService) gossipWorker() {
 
 				// Do we have 2/3 votes to add to queue?
 				if len(gossip.Rumors) >= len(delegateNodes)*2/3 {
-					this.transactionChan <- gossip
-					//TODO: broadcast
+					utils.Debug("inside 2/3rds")
+					txn := services.NewTxn(true)
+					defer txn.Discard()
+					// Has this transaction already been processed?
+					_, err := txn.Get([]byte(gossip.Transaction.Key()))
+					if err == nil {
+						utils.Debug("already in db")
+						return
+					}
+					//execute tx
+
+					this.transactionChan <- gossip //TODO: insert into queue
+					go this.broadcast(delegateNodes,gossip)
+					//broadcast tx
+
+					return
 				}
 
 				// Gossip to random delegate.
@@ -192,6 +215,7 @@ func (this *DAPoSService) transactionWorker() {
 		select {
 		case gossip = <-this.transactionChan:
 
+			utils.Debug("transactionworker")
 			// Get receipt.
 			var receipt *types.Receipt
 			value, err := types.ToReceiptFromCache(services.GetCache(),gossip.ReceiptId)
@@ -206,6 +230,7 @@ func (this *DAPoSService) transactionWorker() {
 
 			// TODO: Should we thread this?
 			// Execute.
+			utils.Debug("about to excecute")
 			executeTransaction(&gossip.Transaction, receipt, gossip)
 		}
 	}
@@ -218,12 +243,22 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	txn := services.NewTxn(true)
 	defer txn.Discard()
 
+	utils.Debug("executing transaction")
 	// Has this transaction already been processed?
 	_, err := txn.Get([]byte(transaction.Key()))
 	if err == nil {
 		return
 	}
 
+	utils.Debug("writing tx to db")
+	err = transaction.Set(txn,services.GetCache())
+	if err != nil {
+		utils.Error(err)
+		receipt.Status = types.StatusInternalError
+		receipt.HumanReadableStatus = err.Error()
+		receipt.Cache(services.GetCache())
+		return
+	}
 	// TODO: Should we verify the transaction again?
 
 	// Find/create fromAccount?
@@ -253,10 +288,21 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		}
 	}
 
-	if len(strings.TrimSpace(transaction.To)) == 0 &&
-		len(strings.TrimSpace(transaction.Code)) != 0 {
+	// Execute.
+	switch transaction.Type {
+	case types.TypeTransferTokens:
 
-		// Deploy Smart Contract
+		// Sufficient tokens?
+		if fromAccount.Balance.Int64() < transaction.Value {
+			utils.Error(fmt.Sprintf("insufficient tokens [hash=%s]", transaction.Hash))
+			receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInsufficientTokens)
+			return
+		}
+		fromAccount.Balance.SetInt64(fromAccount.Balance.Int64() - transaction.Value)
+		toAccount.Balance.SetInt64(toAccount.Balance.Int64() + transaction.Value)
+		utils.Info(fmt.Sprintf("transferred tokens [receiptId=%s hash=%s, rumors=%d]", receipt.Id, transaction.Hash, len(gossip.Rumors)))
+		break
+	case types.TypeDeploySmartContract:
 		dvmService := dvm.GetDVMService()
 		dvmResult, err := dvmService.DeploySmartContract(transaction)
 		if err != nil {
@@ -284,12 +330,8 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		}
 		receipt.ContractAddress = contractAccount.Address
 		utils.Info(fmt.Sprintf("deployed contract [receiptId=%s hash=%s, contractAddress=%s]", receipt.Id, transaction.Hash, contractAccount.Address))
-
-	} else if len(strings.TrimSpace(transaction.To)) != 0 &&
-		len(strings.TrimSpace(transaction.Abi)) != 0 &&
-		len(strings.TrimSpace(transaction.Method)) != 0 {
-
-		// Execute Smart Contract Method
+		break
+	case types.TypeExecuteSmartContract:
 		dvmService := dvm.GetDVMService()
 		dvmResult, err1 := dvmService.ExecuteSmartContract(transaction)
 		if err1 != nil {
@@ -306,36 +348,10 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		}
 		receipt.ContractAddress = transaction.To
 		utils.Info(fmt.Sprintf("executed contract [receiptId=%s hash=%s, contractAddress=%s]", receipt.Id, transaction.Hash, transaction.To))
-
-	} else {
-
-		//
-		// Check for a list of invalid cases
-		//
-
-		if len(strings.TrimSpace(transaction.To)) == 0 {
-			utils.Error(fmt.Sprintf("invalid transaction data [hash=%s]", transaction.Hash))
-			receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInvalidTransaction)
-			return
-		}
-
-		if strings.TrimSpace(transaction.From) == strings.TrimSpace(transaction.To) {
-			utils.Error(fmt.Sprintf("invalid transaction data [hash=%s]", transaction.Hash))
-			receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInvalidTransaction)
-			return
-		}
-
-		// Sufficient tokens?
-		if fromAccount.Balance.Int64() < transaction.Value {
-			utils.Error(fmt.Sprintf("insufficient tokens [hash=%s]", transaction.Hash))
-			receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInsufficientTokens)
-			return
-		}
-
-		// All seems valid - do the account adjustments
-		fromAccount.Balance.SetInt64(fromAccount.Balance.Int64() - transaction.Value)
-		toAccount.Balance.SetInt64(toAccount.Balance.Int64() + transaction.Value)
-		utils.Info(fmt.Sprintf("transferred tokens [receiptId=%s hash=%s, rumors=%d]", receipt.Id, transaction.Hash, len(gossip.Rumors)))
+	default:
+		utils.Error(fmt.Sprintf("invalid transaction type [hash=%s]", transaction.Hash))
+		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInvalidTransaction)
+		return
 	}
 
 	// Save fromAccount.
@@ -360,15 +376,6 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		return
 	}
 
-	// Save transaction.
-	err = transaction.Set(txn,services.GetCache())
-	if err != nil {
-		utils.Error(err)
-		receipt.Status = types.StatusInternalError
-		receipt.HumanReadableStatus = err.Error()
-		receipt.Cache(services.GetCache())
-		return
-	}
 
 	// Save receipt.
 	receipt.Status = types.StatusOk
@@ -479,4 +486,15 @@ func (this *DAPoSService) getRandomDelegate(gossip *types.Gossip, delegateNodes 
 	rand.Seed(time.Now().UTC().UnixNano())
 	index := rand.Intn(len(delegatesNotRumored))
 	return delegatesNotRumored[index]
+}
+
+func (this *DAPoSService)broadcast(delegateNodes []*types.Node,gossip *types.Gossip){
+	utils.Debug("broadcasting")
+	for _ , deli := range delegateNodes{
+		_, err := this.peerGossipGrpc(*deli, gossip)
+		if err != nil {
+			utils.Error(err)
+			continue
+		}
+	}
 }
