@@ -154,8 +154,22 @@ func (this *DAPoSService) gossipWorker() {
 				}
 
 				if len(gossip.Rumors) >= len(delegateNodes)*2/3 {
-					this.transactionChan <- gossip
-					//TODO: broadcast
+					utils.Debug("inside 2/3rds")
+					txn := services.NewTxn(true)
+					defer txn.Discard()
+					// Has this transaction already been processed?
+					_, err := txn.Get([]byte(gossip.Transaction.Key()))
+					if err == nil {
+						utils.Debug("already in db")
+						return
+					}
+					//execute tx
+
+					this.transactionChan <- gossip //TODO: insert into queue
+					go this.broadcast(delegateNodes,gossip)
+					//broadcast tx
+
+					return
 				}
 
 				// Gossip to random delegate.
@@ -211,6 +225,7 @@ func (this *DAPoSService) transactionWorker() {
 		select {
 		case gossip = <-this.transactionChan:
 
+			utils.Debug("transactionworker")
 			// Get receipt.
 			var receipt *types.Receipt
 			value, err := types.ToReceiptFromCache(services.GetCache(),gossip.ReceiptId)
@@ -225,6 +240,7 @@ func (this *DAPoSService) transactionWorker() {
 
 			// TODO: Should we thread this?
 			// Execute.
+			utils.Debug("about to excecute")
 			executeTransaction(&gossip.Transaction, receipt, gossip)
 		}
 	}
@@ -237,12 +253,22 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	txn := services.NewTxn(true)
 	defer txn.Discard()
 
+	utils.Debug("executing transaction")
 	// Has this transaction already been processed?
 	_, err := txn.Get([]byte(transaction.Key()))
 	if err == nil {
 		return
 	}
 
+	utils.Debug("writing tx to db")
+	err = transaction.Set(txn,services.GetCache())
+	if err != nil {
+		utils.Error(err)
+		receipt.Status = types.StatusInternalError
+		receipt.HumanReadableStatus = err.Error()
+		receipt.Cache(services.GetCache())
+		return
+	}
 	// TODO: Should we verify the transaction again?
 
 	// Find/create fromAccount?
@@ -360,15 +386,6 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		return
 	}
 
-	// Save transaction.
-	err = transaction.Set(txn,services.GetCache())
-	if err != nil {
-		utils.Error(err)
-		receipt.Status = types.StatusInternalError
-		receipt.HumanReadableStatus = err.Error()
-		receipt.Cache(services.GetCache())
-		return
-	}
 
 	// Save receipt.
 	receipt.Status = types.StatusOk
@@ -455,4 +472,15 @@ func processDVMResult(transaction *types.Transaction, dvmResult *dvm.DVMResult, 
 	}
 
 	return errorToReturn
+}
+
+func (this *DAPoSService)broadcast(delegateNodes []*types.Node,gossip *types.Gossip){
+	utils.Debug("broadcasting")
+	for _ , deli := range delegateNodes{
+		_, err := this.peerGossipGrpc(*deli, gossip)
+		if err != nil {
+			utils.Error(err)
+			continue
+		}
+	}
 }
