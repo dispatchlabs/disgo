@@ -154,10 +154,10 @@ func DeploySmartContract(delegateNode types.Node, privateKey string, from string
 }
 
 // ExecuteSmartContractTransaction
-func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey string, from string, to string, method string, params []interface{}) (*types.Receipt, error) {
+func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey string, from string, to string, abi string, method string, params []interface{}) (*types.Receipt, error) {
 
 	// Create execute smart contract transaction.
-	transaction, err := types.NewExecuteContractTransaction(privateKey, from, to, method, params, utils.ToMilliSeconds(time.Now()))
+	transaction, err := types.NewExecuteContractTransaction(privateKey, from, to, abi, method, params, utils.ToMilliSeconds(time.Now()))
 	if err != nil {
 		return nil, err
 	}

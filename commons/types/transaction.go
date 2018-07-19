@@ -362,6 +362,9 @@ func NewDeployContractTransaction(privateKey string, from string, code string, a
 	if abi == "" {
 		return nil, errors.Errorf("cannot have empty abi")
 	}
+	if code == "" {
+		return nil, errors.Errorf("cannot have empty code")
+	}
 	var err error
 	transaction := &Transaction{}
 	transaction.Type = TypeDeploySmartContract
@@ -385,7 +388,10 @@ func NewDeployContractTransaction(privateKey string, from string, code string, a
 }
 
 // NewExecuteContractTransaction -
-func NewExecuteContractTransaction(privateKey string, from string, to string, method string, params []interface{}, timeInMiliseconds int64) (*Transaction, error) {
+func NewExecuteContractTransaction(privateKey string, from string, to string, abi string, method string, params []interface{}, timeInMiliseconds int64) (*Transaction, error) {
+	if abi == "" {
+		return nil, errors.Errorf("cannot have empty abi")
+	}
 	if method == "" {
 		return nil, errors.Errorf("cannot have empty method")
 	}
@@ -394,6 +400,7 @@ func NewExecuteContractTransaction(privateKey string, from string, to string, me
 	transaction.Type = TypeExecuteSmartContract
 	transaction.From = from
 	transaction.To = to
+	transaction.Abi = abi
 	transaction.Method = method
 	transaction.Params = params
 	transaction.Time, err = checkTime(timeInMiliseconds)
