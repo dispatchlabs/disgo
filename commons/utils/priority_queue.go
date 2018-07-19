@@ -63,3 +63,6 @@ func (pq *PriorityQueue) Update(item *Item, value *interface{}, priority int64) 
 	heap.Fix(pq, item.Index)
 }
 
+//func Exists(int id) bool {
+//	rutrn map[id] != null
+//}

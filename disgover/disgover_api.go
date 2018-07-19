@@ -29,33 +29,30 @@
 package disgover
 
 import (
-	"errors"
+	//"errors"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/libp2p/go-libp2p-peer"
-	cache "github.com/patrickmn/go-cache"
 )
 
 // Find - Finds a node on the network, check internally then asks the peers if not found
 func (this *DisGoverService) Find(address string) (*types.Node, error) {
 
 	//first check cache
-	value, ok := services.GetCache().Get(address)
-	if ok {
-		node := value.(*types.Node)
+	node, err := types.ToNodeFromCache(services.GetCache(), address)
+	if err == nil{
 		return node, nil
 	}
 
 	//now check badger
 	txn := services.NewTxn(true)
 	defer txn.Discard()
-	node, _ := types.ToNodeByAddress(txn, address)
-	if node != nil {
+	node, _ = types.ToNodeByAddress(txn,address)
+	if node != nil{
 		return node, nil
 	}
 
@@ -67,20 +64,7 @@ func (this *DisGoverService) Find(address string) (*types.Node, error) {
 		node, err := types.ToNodeByAddress(txn, id)
 		return node, err
 	}
-
-	//peerID := kbucket.ConvertPeerID(peer.ID(this.ThisNode.Address))
-	//nearestpeer := this.kdht.NearestPeer(peerID)
-	//// Find node from peer seeds.
-	//for _, seedContact := range this.seedNodes {
-	//	if seedContact.Address == this.ThisNode.Address {
-	//		continue
-	//	}
-	//	node := this.peerFindGrpc(seedContact, address)
-	//	if node == nil {
-	//		continue
-	//	}
-	//}
-	err := errors.New("could not find")
+	err = types.ErrNotFound
 	return nil, err
 }
 
@@ -88,61 +72,48 @@ func (this *DisGoverService) Find(address string) (*types.Node, error) {
 func (this *DisGoverService) FindByType(tipe string) ([]*types.Node, error) {
 	utils.Info(fmt.Sprintf("finding %s nodes...", strings.ToLower(tipe)))
 
-	// TODO: We should put this in node.go and use table- and key- style keys.
-
 	var nodes []*types.Node
-
-	// 1st - Ask SEEDs for more stuff and merge/replace the result - done bye `addOrUpdatePeer()`
-	var haveToQueryForUpdates = false
-	var cachedItems = services.GetCache().Items()
-	for _, value := range cachedItems {
-		if reflect.TypeOf(value.Object) != reflect.TypeOf(&types.Node{}) {
-			continue
-		}
-		node := value.Object.(*types.Node)
-		if node.Type == types.TypeDelegate {
-			var fixedTempAddress = fmt.Sprintf("%s:%d", node.Endpoint.Host, node.Endpoint.Port)
-
-			if node.Address == fixedTempAddress {
-				haveToQueryForUpdates = true
-				break
-			}
+	//check our cache
+	cacheNodes, err := types.ToNodesByTypeFromCache(services.GetCache(),types.TypeDelegate)
+	if err != nil{
+		return nil, err
+	}
+	for _, node := range cacheNodes {
+		if node.Type == tipe {
+			nodes = append(nodes, node)
 		}
 	}
-
-	if haveToQueryForUpdates {
-		for _, seedNode := range this.seedNodes {
-			if seedNode.Address == this.ThisNode.Address {
+	//check our db
+	txn := services.NewTxn(false)
+	defer txn.Discard()
+	dbNodes, err := types.ToNodesByType(txn, tipe)
+	if err != nil{
+		return nil, err
+	}
+	for _, node := range dbNodes {
+		if node.Type == tipe {
+			nodes = append(nodes, node)
+		}
+	}
+	//check the seeds
+	for _, seedNode := range this.seedNodes {
+		//check if we are the seed
+		if seedNode.Address == this.ThisNode.Address {
 				continue
 			}
-
-			peerNodes, err := this.peerFindByTypeGrpc(seedNode, tipe)
-			if err != nil {
-				utils.Error(err)
-				continue
-			}
-			for _, node := range peerNodes {
+		peerNodes, err := this.peerFindByTypeGrpc(seedNode, tipe)
+		if err != nil {
+			utils.Error(err)
+			continue
+		}
+		for _, node := range peerNodes { //go through what seed gave us
+			if !containsNodeByEndpoint(nodes, node.Endpoint) { //if our list doesn't contain one of the seeds nodes
+				nodes = append(nodes, node) //add to our list
+				utils.Info("caching %s $s", tipe, node)
 				this.addOrUpdatePeer(node)
-			}
+				}
 		}
 	}
-
-	// 2nd - See what is in the cache - this includes recent data from SEEDs
-	cachedItems = services.GetCache().Items()
-	for _, value := range cachedItems {
-		if reflect.TypeOf(value.Object) != reflect.TypeOf(&types.Node{}) {
-			continue
-		}
-		node := value.Object.(*types.Node)
-		if node.Type == types.TypeDelegate {
-			if !containsNodeByEndpoint(nodes, node.Endpoint) {
-				nodes = append(nodes, node)
-			}
-		}
-	}
-
-	utils.Info(fmt.Sprintf("found %d %s nodes...", len(nodes), strings.ToLower(tipe)))
-
 	return nodes, nil
 }
 
@@ -194,30 +165,52 @@ func (this *DisGoverService) findViaPeers(idToFind string, sender *types.Node) (
 }
 */
 
-func (this *DisGoverService) addHelper(node *types.Node) (bool bool, err error) {
-
-	if len(strings.TrimSpace(node.Address)) <= 0 {
-		utils.Error(fmt.Sprintf("address is empty for: [%s : %d]", node.Endpoint.Host, node.Endpoint.Port))
-		return false, nil
+func (this *DisGoverService) addOrUpdatePeer(node *types.Node) (bool, error) {
+	var exist bool
+	search, err := this.Find(node.Address)
+	if err != nil {
+		if search == nil{
+			exist = false
+		}else{
+			utils.Error(err)
+			return false, err
+		}
+	}else{
+		exist = true
 	}
-
-	services.GetCache().Set(node.Address, node, cache.NoExpiration)
 	txn := services.NewTxn(true)
 	defer txn.Discard()
-	err = node.Set(txn)
-	if err != nil {
-		return false, err
-	}
-	this.kdht.Update(peer.ID(node.Address))
+	if exist == true{
+		ok, err := this.deletePeer(search)
+		if !ok {
+			return false, err
+		}
+		node.Cache(services.GetCache())
+		err = node.Set(txn,services.GetCache())
+		if err != nil {
+			return false, err
+		}
+		this.kdht.Update(peer.ID(node.Address))
 
-	return true, nil
+		return true, nil
+	}else{
+		node.Cache(services.GetCache())
+		err = node.Set(txn,services.GetCache())
+		if err != nil {
+			return false, err
+		}
+		this.kdht.Update(peer.ID(node.Address))
+
+		return true, nil
+	}
+
+	return false, err
 }
 
-func (this *DisGoverService) deletePeer(node *types.Node) (bool bool, err error) {
-	services.GetCache().Delete(node.Address)
+func (this *DisGoverService) deletePeer(node *types.Node) (bool, error) {
 	txn := services.NewTxn(true)
 	defer txn.Discard()
-	err = node.Delete(txn)
+	err := node.Unset(txn,services.GetCache())
 	if err != nil {
 		return false, err
 	}
@@ -225,35 +218,3 @@ func (this *DisGoverService) deletePeer(node *types.Node) (bool bool, err error)
 	return true, nil
 }
 
-func (this *DisGoverService) addOrUpdatePeer(node *types.Node) (bool bool, err error) {
-	var fixedTempAddress = fmt.Sprintf("%s:%d", node.Endpoint.Host, node.Endpoint.Port)
-
-	// Delete 1
-	oldNode, _ := this.Find(fixedTempAddress)
-	if oldNode != nil {
-		ok, err := this.deletePeer(oldNode)
-		if !ok {
-			return false, err
-		}
-	}
-
-	// Delete 1
-	oldNode, _ = this.Find(node.Address)
-	if oldNode != nil {
-		ok, err := this.deletePeer(oldNode)
-		if !ok {
-			return false, err
-		}
-	}
-
-	if len(strings.TrimSpace(node.Address)) <= 0 {
-		node.Address = fixedTempAddress
-	}
-
-	ok, err := this.addHelper(node)
-	if !ok {
-		return false, err
-	}
-
-	return true, nil
-}

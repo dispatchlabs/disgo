@@ -19,8 +19,12 @@ package types
 import (
 	"testing"
 	"encoding/json"
+	"time"
+	"reflect"
 )
 
+
+//recoverMe
 func recoverMe(t *testing.T) {
 	if r := recover(); r != nil {
 		// fmt.Println ("Recovered from: ", r)
@@ -28,6 +32,24 @@ func recoverMe(t *testing.T) {
 	}
 }
 
+//TestNodeCache
+func TestNodeCache(t *testing.T) {
+	node1:= &Node{}
+	node1.Endpoint =&Endpoint{}
+	node1.Endpoint.Host = "127.0.0.1"
+	node1.Endpoint.Port = 1975
+	node1.Address = "123"
+	node1.Cache(c, time.Second * 5)
+	testNode, err := ToNodeFromCache(c, node1.Address)
+	if err != nil {
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testNode, node1) == false{
+		t.Error("node1 not equal to testNode")
+	}
+}
+
+//TestEndPointSerialization
 func TestEndPointSerialization(t *testing.T) {
 
 	var ep Endpoint
@@ -57,6 +79,7 @@ func TestEndPointSerialization(t *testing.T) {
 
 }
 
+//TestNodeSerialization
 func TestNodeSerialization(t *testing.T) {
 	node1:= &Node{}
 	node1.Endpoint =&Endpoint{}
