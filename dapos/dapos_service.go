@@ -23,11 +23,10 @@ import (
 
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/services"
-	cache "github.com/patrickmn/go-cache"
 	"google.golang.org/grpc"
 
 	// "github.com/patrickmn/go-cache"
-	"github.com/processout/grpc-go-pool"
+
 	// "google.golang.org/grpc"
 
 	"os"
@@ -83,46 +82,55 @@ func (this *DAPoSService) Go(waitGroup *sync.WaitGroup) {
 	)
 }
 
-func (this *DAPoSService) setupConnectionPoolForPeer(node *types.Node) {
-	pool, err := grpcpool.New(func() (*grpc.ClientConn, error) {
-		clientConn, err := grpc.Dial(fmt.Sprintf("%s:%d", node.Endpoint.Host, node.Endpoint.Port), grpc.WithInsecure())
-		if err != nil {
-			utils.Error(err.Error())
-			return nil, err
-		}
-		return clientConn, nil
-	}, 10, 10, -1)
+// func (this *DAPoSService) setupConnectionPoolForPeer(node *types.Node) {
+// 	pool, err := grpcpool.New(func() (*grpc.ClientConn, error) {
+// 		clientConn, err := grpc.Dial(fmt.Sprintf("%s:%d", node.Endpoint.Host, node.Endpoint.Port), grpc.WithInsecure())
+// 		if err != nil {
+// 			utils.Error(err.Error())
+// 			return nil, err
+// 		}
+// 		return clientConn, nil
+// 	}, 10, 10, -1)
 
+// 	if err != nil {
+// 		utils.Error(err.Error())
+// 	}
+// 	services.GetCache().Set(fmt.Sprintf("dapos-grpc-pool-%s", node.Address), pool, cache.NoExpiration)
+// }
+
+func (this *DAPoSService) setupConnectionForPeer(node *types.Node) (*grpc.ClientConn, error) {
+	clientConn, err := grpc.Dial(fmt.Sprintf("%s:%d", node.Endpoint.Host, node.Endpoint.Port), grpc.WithInsecure())
 	if err != nil {
 		utils.Error(err.Error())
+		return nil, err
 	}
-	services.GetCache().Set(fmt.Sprintf("dapos-grpc-pool-%s", node.Address), pool, cache.NoExpiration)
+	return clientConn, nil
 }
 
 // OnEvent - Event to
 func (this *DAPoSService) disGoverServiceInitFinished() {
 
 	// Setup GRPC connection Pools
-	delegateNodes, err := types.ToNodesByTypeFromCache(services.GetCache(),types.TypeDelegate)
+	delegateNodes, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
 	if err != nil {
 		utils.Error(err)
 	}
 
-	var wg sync.WaitGroup
+	// var wg sync.WaitGroup
 	for _, delegateNode := range delegateNodes {
 		if delegateNode.Address == disgover.GetDisGoverService().ThisNode.Address {
 			continue
 		}
 
-		wg.Add(1)
+		// wg.Add(1)
 
-		go func(node *types.Node, wg *sync.WaitGroup) {
-			this.setupConnectionPoolForPeer(node)
-			wg.Done()
-		}(delegateNode, &wg)
+		// go func(node *types.Node, wg *sync.WaitGroup) {
+		// 	this.setupConnectionPoolForPeer(node)
+		// 	wg.Done()
+		// }(delegateNode, &wg)
 	}
 
-	wg.Wait()
+	// wg.Wait()
 
 	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
 		this.peerSynchronize()
@@ -153,12 +161,12 @@ func (this *DAPoSService) createGenesisTransactionAndAccount() error {
 	_, err = types.ToTransactionByKey(txn, []byte(transaction.Key()))
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
-			err = transaction.Set(txn,services.GetCache())
+			err = transaction.Set(txn, services.GetCache())
 			if err != nil {
 				return err
 			}
 			account := &types.Account{Address: transaction.To, Name: "Dispatch Labs", Balance: big.NewInt(transaction.Value), Updated: time.Now(), Created: time.Now()}
-			err = account.Set(txn,services.GetCache())
+			err = account.Set(txn, services.GetCache())
 			if err != nil {
 				return err
 			}

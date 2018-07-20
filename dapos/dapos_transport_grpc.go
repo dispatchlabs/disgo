@@ -26,8 +26,6 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/dapos/proto"
 	"github.com/dispatchlabs/disgo/disgover"
-	"github.com/pkg/errors"
-	"github.com/processout/grpc-go-pool"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -73,7 +71,7 @@ func (this *DAPoSService) peerSynchronize() {
 
 	// TODO: This should be done during elections.
 	// Find delegate nodes.
-	nodes, err := types.ToNodesByTypeFromCache(services.GetCache(),types.TypeDelegate)
+	nodes, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
 	if err != nil {
 		utils.Error(err)
 		return
@@ -158,7 +156,7 @@ func (this *DAPoSService) peerDelegateExecuteGrpc(tipe string, payload string) *
 
 	// TODO: This should be done during elections.
 	// Find delegate nodes.
-	nodes, err := types.ToNodesByTypeFromCache(services.GetCache(),types.TypeDelegate)
+	nodes, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
 	if err != nil {
 		utils.Error(err)
 		return types.NewReceiptWithError(tipe, err)
@@ -241,21 +239,22 @@ func (this *DAPoSService) GossipGrpc(context context.Context, request *proto.Req
 func (this *DAPoSService) peerGossipGrpc(node types.Node, gossip *types.Gossip) (*types.Gossip, error) {
 	utils.Debug(fmt.Sprintf("attempting to gossip with delegate [address=%s]", node.Address))
 
-	value, ok := services.GetCache().Get(fmt.Sprintf("dapos-grpc-pool-%s", node.Address))
-	// IF not found then setup one
-	if !ok {
-		this.setupConnectionPoolForPeer(&node)
-	}
-	value, ok = services.GetCache().Get(fmt.Sprintf("dapos-grpc-pool-%s", node.Address))
-	if !ok {
-		return nil, errors.New(fmt.Sprintf("unable to find GRPC pool for this delegate [address=%s]", node.Address))
-	}
+	// value, ok := services.GetCache().Get(fmt.Sprintf("dapos-grpc-pool-%s", node.Address))
+	// // IF not found then setup one
+	// if !ok {
+	// 	this.setupConnectionPoolForPeer(&node)
+	// }
+	// value, ok = services.GetCache().Get(fmt.Sprintf("dapos-grpc-pool-%s", node.Address))
+	// if !ok {
+	// 	return nil, errors.New(fmt.Sprintf("unable to find GRPC pool for this delegate [address=%s]", node.Address))
+	// }
 
-	pool := value.(*grpcpool.Pool)
-	clientConn, err := pool.Get(context.Background())
+	// pool := value.(*grpcpool.Pool)
+	// clientConn, err := pool.Get(context.Background())
+	clientConn, err := this.setupConnectionForPeer(&node)
 	defer clientConn.Close()
 
-	client := proto.NewDAPoSGrpcClient(clientConn.ClientConn)
+	client := proto.NewDAPoSGrpcClient(clientConn)
 	contextWithTimeout, cancel := context.WithTimeout(context.Background(), 2000*time.Millisecond)
 	defer cancel()
 
