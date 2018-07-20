@@ -156,11 +156,9 @@ func (this *DAPoSService) gossipWorker() {
 					utils.Error(err)
 					return
 				}
-				
+
 				// Do we have 2/3 of rumors?
 				if len(gossip.Rumors) >= len(delegateNodes) * 2/3 {
-					utils.Info(fmt.Sprintf("rumors=%d delegates=%d", len(gossip.Rumors), len(delegateNodes)))
-
 					this.transactionChan <- gossip //TODO: insert into queue
 				}
 
