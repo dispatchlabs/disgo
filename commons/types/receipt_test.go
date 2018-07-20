@@ -30,7 +30,7 @@ var testReceiptByte = []byte("{\"id\":\"60ef98ce-73b2-470e-ae92-4cd0a1eae0a3\",\
 func TestReceiptCache(t *testing.T) {
 	receipt := NewReceipt("test")
 	receipt.Cache(c, time.Second * 5)
-	testReceipt, err := ToReceiptFromCache(c, receipt.Id)
+	testReceipt, err := ToReceiptFromCache(c, receipt.TransactionHash)
 	if err != nil {
 		t.Error(err)
 	}
@@ -42,12 +42,6 @@ func TestReceiptCache(t *testing.T) {
 //TestNewReceipt
 func TestNewReceipt(t *testing.T) {
 	receipt := NewReceipt("test")
-	if receipt.Id == "" {
-		t.Errorf("NewReceipt returning invalid %s value: %s", "Id", receipt.Id)
-	}
-	if receipt.Type != "test" {
-		t.Errorf("NewReceipt returning invalid %s value: %s", "Type", receipt.Type)
-	}
 	if receipt.Status != "Pending" {
 		t.Errorf("NewReceipt returning invalid %s value: %s", "Status", receipt.Status)
 	}
@@ -58,20 +52,11 @@ func TestNewReceipt(t *testing.T) {
 	if receipt.HumanReadableStatus != "" {
 		t.Errorf("NewReceipt returning invalid %s value: %s", "HumanReadableStatus", receipt.HumanReadableStatus)
 	}
-	if receipt.Data != nil {
-		t.Errorf("NewReceipt returning invalid %s value: %s", "Data", receipt.Data)
-	}
 }
 
 //TestNewReceiptWithStatus
 func TestNewReceiptWithStatus(t *testing.T) {
 	receipt := NewReceiptWithStatus("test", "Pending", "Pending")
-	if receipt.Id == "" {
-		t.Errorf("NewReceiptWithStatus returning invalid %s value: %s", "Id", receipt.Id)
-	}
-	if receipt.Type != "test" {
-		t.Errorf("NewReceiptWithStatus returning invalid %s value: %s", "Type", receipt.Type)
-	}
 	if receipt.Status != "Pending" {
 		t.Errorf("NewReceiptWithStatus returning invalid %s value: %s", "Status", receipt.Status)
 	}
@@ -81,21 +66,12 @@ func TestNewReceiptWithStatus(t *testing.T) {
 	if time.Time.IsZero(receipt.Created) {
 		t.Error("NewReceiptWithStatus receipt.Created is empty")
 	}
-	if receipt.Data != nil {
-		t.Errorf("NewReceiptWithStatus returning invalid %s value: %s", "Data", receipt.Data)
-	}
 }
 
 //TestNewReceiptWithError
 func TestNewReceiptWithError(t *testing.T) {
 	err := errors.New("test error")
 	receipt := NewReceiptWithError("test", err)
-	if receipt.Id == "" {
-		t.Errorf("NewReceiptWithStatus returning invalid %s value: %s", "Id", receipt.Id)
-	}
-	if receipt.Type != "test" {
-		t.Errorf("NewReceiptWithStatus returning invalid %s value: %s", "Type", receipt.Type)
-	}
 	if receipt.Status != "InternalError" {
 		t.Errorf("NewReceiptWithStatus returning invalid %s value: %s", "Status", receipt.Status)
 	}
@@ -104,9 +80,6 @@ func TestNewReceiptWithError(t *testing.T) {
 	}
 	if time.Time.IsZero(receipt.Created) {
 		t.Error("NewReceiptWithStatus receipt.Created is empty")
-	}
-	if receipt.Data != nil {
-		t.Errorf("NewReceiptWithStatus returning invalid %s value: %s", "Data", receipt.Data)
 	}
 }
 
@@ -166,20 +139,11 @@ func TestReceiptSetStatusWithNewTransaction(t *testing.T) {
 
 //testReceiptStruct
 func testReceiptStruct(t *testing.T, receipt *Receipt) {
-	if receipt.Id != "60ef98ce-73b2-470e-ae92-4cd0a1eae0a3" {
-		t.Errorf("receipt.UnmarshalJSON returning invalid %s value: %s", "Id", receipt.Id)
-	}
-	if receipt.Type != "test" {
-		t.Errorf("receipt.UnmarshalJSON returning invalid %s value: %s", "Type", receipt.Type)
-	}
 	if receipt.Status != "Pending" {
 		t.Errorf("receipt.UnmarshalJSON returning invalid %s value: %s", "Status", receipt.Status)
 	}
 	if receipt.HumanReadableStatus != "Pending" {
 		t.Errorf("receipt.UnmarshalJSON returning invalid %s value: %s", "HumanReadableStatus", receipt.HumanReadableStatus)
-	}
-	if receipt.Data != "test data" {
-		t.Errorf("receipt.UnmarshalJSON returning invalid %s value: %s", "Data", receipt.Data)
 	}
 	d, _ := time.Parse(time.RFC3339, "2018-05-09T15:04:05Z")
 	if receipt.Created != d {

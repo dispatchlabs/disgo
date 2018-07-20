@@ -111,7 +111,7 @@ func TestPrintTransaction(t *testing.T) {
 	var tx, _ = NewTransferTokensTransaction(
 		privateKey,
 		from,
-		"",
+		"d5765c93699c96327753230ac3d78edb3b34236b",
 		1,
 		1,
 		theTime,
