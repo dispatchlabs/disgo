@@ -139,7 +139,7 @@ func (this *DAPoSService) disGoverServiceInitFinished() {
 
 	go this.gossipWorker()
 	go this.transactionWorker()
-	go this.queueWorker()
+	//go this.queueWorker()
 
 	utils.Events().Raise(Events.DAPoSServiceInitFinished)
 }

@@ -196,16 +196,16 @@ func (this *DAPoSService) gossipWorker() {
 	}
 }
 
-// queueWorker
-func (this *DAPoSService) queueWorker() {
-	var gossip *types.Gossip
-	for {
-		select {
-		case gossip = <-this.queueChan:
-			// TODO: Bob do your magic adding queue.
-		}
-	}
-}
+//// queueWorker
+//func (this *DAPoSService) queueWorker() {
+//	var gossip *types.Gossip
+//	for {
+//		select {
+//		case gossip = <-this.queueChan:
+//			// TODO: Bob do your magic adding queue.
+//		}
+//	}
+//}
 
 // gossipWorker - transfer tokens, deploy smart contract, and execution of smart contract.
 func (this *DAPoSService) transactionWorker() {

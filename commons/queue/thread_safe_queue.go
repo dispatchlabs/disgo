@@ -1,8 +1,7 @@
-package utils
+package queue
 
 import (
 	"container/heap"
-	"time"
 )
 
 // heapPopChanMsg - the message structure for a pop chan
@@ -27,7 +26,7 @@ var (
 
 // HeapPush - safely push item to a heap interface
 func HeapPush(h heap.Interface, x interface{}) {
-	time.Sleep(5 * time.Second)
+	//time.Sleep(5 * time.Second)
 	heapPushChan <- heapPushChanMsg{
 		h: h,
 		x: x,
@@ -45,20 +44,19 @@ func HeapPop(h heap.Interface) interface{} {
 }
 
 //stopWatchHeapOps - stop watching for heap operations
-func stopWatchHeapOps() {
+func StopWatchHeapOps() {
 	quitChan <- true
 }
 
 // watchHeapOps - watch for push/pops to our heap, and serializing the operations
 // with channels
-func watchHeapOps() chan bool {
+func WatchHeapOps() chan bool {
 	var quit = make(chan bool)
 	go func() {
 		for {
 			select {
 			case <-quit:
 				// TODO: update to quit gracefully
-				// TODO: maybe need to dump state somewhere?
 				return
 			case popMsg := <-heapPopChan:
 				popMsg.result <- heap.Pop(popMsg.h)

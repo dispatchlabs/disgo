@@ -1,23 +1,12 @@
-package utils
+package queue
 
 import (
 	"container/heap"
-	"sync"
+	"sort"
+	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
-var singleton sync.Once
-var instance *PriorityQueue
-
 type PriorityQueue []*Item
-
-func GetQueue() *PriorityQueue {
-	singleton.Do(func() {
-		initial := make(PriorityQueue, 0)
-		instance = &initial
-		heap.Init(instance)
-	})
-	return instance
-}
 
 // An Item is something we manage in a priority queue.
 type Item struct {
@@ -35,6 +24,7 @@ func (pq PriorityQueue) Less(i, j int) bool {
 }
 
 func (pq PriorityQueue) Swap(i, j int) {
+	utils.Debug("Swap() ", i, j)
 	pq[i], pq[j] = pq[j], pq[i]
 	pq[i].Index = i
 	pq[j].Index = j
@@ -63,6 +53,23 @@ func (pq *PriorityQueue) Update(item *Item, value *interface{}, priority int64) 
 	heap.Fix(pq, item.Index)
 }
 
-//func Exists(int id) bool {
-//	rutrn map[id] != null
-//}
+func (pq *PriorityQueue) DumpHighToLow() []*Item {
+	sort.Sort(pq)
+	return *pq
+}
+
+func (pq *PriorityQueue) DumpLowToHigh() []*Item {
+	sort.Sort(sort.Reverse(pq))
+	return *pq
+}
+
+// - Get the top Priority to support making decision on priority from calling code
+func (pq PriorityQueue) Peek() int64 {
+	utils.Debug("Peek()")
+	length := pq.Len()
+	utils.Debug("Peek --> &d", length)
+	if length > 0 {
+		return pq[length-1].Priority
+	}
+	return -1
+}
