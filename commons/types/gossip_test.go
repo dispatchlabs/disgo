@@ -26,8 +26,7 @@ import (
 //testMockNewGossip
 func testMockNewGossip(t *testing.T) (*Gossip, *Transaction) {
 	tx := testMockTransaction(t)
-	receipt := NewReceipt("test")
-	gossip := NewGossip(*tx, *receipt)
+	gossip := NewGossip(*tx)
 	return gossip, tx
 }
 
@@ -52,9 +51,9 @@ func TestGossipCache(t *testing.T) {
 
 //TestToGossipFromJson
 func TestToGossipFromJson(t *testing.T) {
-	receipt := NewReceipt(RequestNewTransaction)
+	//receipt := NewReceipt(RequestNewTransaction)
 	tx := testMockTransaction(t)
-	s := fmt.Sprintf(`{"ReceiptId":"%s","Transaction":%s,"Rumors":[]}`, receipt.Id, tx.String())
+	s := fmt.Sprintf(`{"Transaction":%s,"Rumors":[]}`, tx.String())
 	gossip, err := ToGossipFromJson([]byte(s))
 	if err != nil {
 		t.Fatalf("ToGossipFromJson returning error: %s", err)
@@ -83,7 +82,7 @@ func TestToJsonByGossip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ToJsonByGossip returning error: %s", err)
 	}
-	s := fmt.Sprintf(`{"ReceiptId":"%s","Transaction":%s,"Rumors":[]}`, gossip.ReceiptId, tx.String())
+	s := fmt.Sprintf(`{Transaction":%s,"Rumors":[]}`, tx.String())
 	if string(bytes) != s {
 		t.Errorf("ToJsonByGossip returning invalid value.\nG: %s\nE: %s", string(bytes), s)
 	}
@@ -147,7 +146,7 @@ func testGossipStruct(t *testing.T, gossip *Gossip, tx *Transaction) {
 	if gossip.Key() != fmt.Sprintf("table-gossip-%s", tx.Hash) {
 		t.Errorf("gossip.Key() returning invalid %s value: %s", "Key", gossip.Key())
 	}
-	s := fmt.Sprintf(`{"ReceiptId":"%s","Transaction":%s,"Rumors":[]}`, gossip.ReceiptId, tx.String())
+	s := fmt.Sprintf(`{"Transaction":%s,"Rumors":[]}`, tx.String())
 	if gossip.String() != s {
 		t.Errorf("gossip.String() returning invalid value.\nG: %s\nE: %s", gossip.String(), s)
 	}
