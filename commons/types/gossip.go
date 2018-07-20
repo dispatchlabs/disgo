@@ -36,8 +36,8 @@ func (this Gossip) Key() string {
 	return fmt.Sprintf("table-gossip-%s", this.Transaction.Hash)
 }
 
-//Cache
-func (this *Gossip) Cache(cache *cache.Cache,time_optional ...time.Duration){
+// Cache
+func (this *Gossip) Cache(cache *cache.Cache, time_optional ...time.Duration){
 	TTL := GossipTTL
 	if len(time_optional) > 0 {
 		TTL = time_optional[0]
@@ -55,7 +55,7 @@ func (this *Gossip) Persist(txn *badger.Txn) error{
 }
 
 // PersistAndCache
-func (this *Gossip) Set(txn *badger.Txn,cache *cache.Cache) error {
+func (this *Gossip) PersisteAndCache(txn *badger.Txn,cache *cache.Cache) error {
 	this.Cache(cache)
 	err := this.Persist(txn)
 	if err != nil {

@@ -294,9 +294,9 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			return
 		}
 
-		// PersistAndCache contract account.
+		// Persist contract account.
 		contractAccount := &types.Account{Address: hex.EncodeToString(dvmResult.ContractAddress[:]), Balance: big.NewInt(0), Updated: now, Created: now}
-		err = contractAccount.Set(txn, services.GetCache())
+		err = contractAccount.Persist(txn)
 		if err != nil {
 			utils.Error(err)
 			receipt.Status = types.StatusInternalError
@@ -374,7 +374,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	}
 
 	// Save gossip.
-	err = gossip.Set(txn, services.GetCache())
+	err = gossip.PersisteAndCache(txn, services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
