@@ -185,7 +185,7 @@ func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey string,
 	return receipt, nil
 }
 
-// GetStatus
+// GetReceipt
 func GetStatus(delegateNode types.Node, id string) (*types.Receipt, error) {
 
 	// Get status.

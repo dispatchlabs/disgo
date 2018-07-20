@@ -61,7 +61,7 @@ func (this *Page) Persist(txn *badger.Txn) error{
 	return nil
 }
 
-// Set
+// PersistAndCache
 func (this *Page) Set(txn *badger.Txn,cache *cache.Cache) error {
 	this.Cache(cache)
 	err := this.Persist(txn)

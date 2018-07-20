@@ -71,38 +71,26 @@ func (this *DAPoSService) SynchronizeGrpc(context.Context, *proto.Empty) (*proto
 func (this *DAPoSService) peerSynchronize() {
 	utils.Info("synchronizing DB with a delegate...")
 
-	// TODO: This should be done during elections.
 	// Find delegate nodes.
-	nodes, err := types.ToNodesByTypeFromCache(services.GetCache(),types.TypeDelegate)
+	delegates, err := types.ToNodesByTypeFromCache(services.GetCache(),types.TypeDelegate)
 	if err != nil {
 		utils.Error(err)
 		return
 	}
-	if len(nodes) == 0 {
+	if len(delegates) == 0 {
 		utils.Warn("unable to find a delegate to synchronize with")
 		return
 	}
-	for _, node := range nodes {
+	for _, delegate := range delegates {
 
-		// Check if it is the same node
-		if node.Address == disgover.GetDisGoverService().ThisNode.Address {
+		// Is this me?
+		if delegate.Address == disgover.GetDisGoverService().ThisNode.Address {
 			continue
 		}
-
-		foundNode, err := disgover.GetDisGoverService().Find(node.Address)
-		if err != nil {
-			utils.Warn(fmt.Sprintf("'%s' with [host=%s, port=%d]", node.Address, node.Endpoint.Host, node.Endpoint.Port), err)
-			continue
-		}
-
-		if foundNode == nil {
-			continue
-		}
-
 		// Connect to delegate.
-		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", foundNode.Endpoint.Host, foundNode.Endpoint.Port), grpc.WithInsecure())
+		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", delegate.Endpoint.Host, delegate.Endpoint.Port), grpc.WithInsecure())
 		if err != nil {
-			utils.Warn(fmt.Sprintf("unable to connect to delegate [host=%s, port=%d]", foundNode.Endpoint.Host, foundNode.Endpoint.Port), err)
+			utils.Warn(fmt.Sprintf("unable to connect to delegate [host=%s, port=%d]", delegate.Endpoint.Host, delegate.Endpoint.Port), err)
 			continue
 		}
 		defer conn.Close()
@@ -113,7 +101,7 @@ func (this *DAPoSService) peerSynchronize() {
 		// Synchronize
 		response, err := client.SynchronizeGrpc(contextWithTimeout, &proto.Empty{})
 		if err != nil {
-			utils.Warn(fmt.Sprintf("unable to synchronize with delegate [host=%s, port=%d]", foundNode.Endpoint.Host, foundNode.Endpoint.Port), err)
+			utils.Warn(fmt.Sprintf("unable to synchronize with delegate [host=%s, port=%d]", delegate.Endpoint.Host, delegate.Endpoint.Port), err)
 			continue
 		}
 		txn := services.NewTxn(true)
@@ -138,7 +126,7 @@ func (this *DAPoSService) ExecuteGrpc(context context.Context, request *proto.Re
 	case types.RequestGetAccount:
 		return &proto.Response{Payload: this.GetAccount(request.Payload).String()}, nil
 	case types.RequestGetStatus:
-		return &proto.Response{Payload: this.GetStatus(request.Payload).String()}, nil
+		return &proto.Response{Payload: this.GetReceipt(request.Payload).String()}, nil
 	case types.RequestNewTransaction:
 		transaction, err := types.ToTransactionFromJson([]byte(request.Payload))
 		if err != nil {
@@ -151,69 +139,6 @@ func (this *DAPoSService) ExecuteGrpc(context context.Context, request *proto.Re
 		return &proto.Response{Payload: this.GetTransactions().String()}, nil
 	}
 	return &proto.Response{Payload: types.NewReceiptWithStatus(request.Type, types.StatusInvalidRequest, "invalid request").String()}, nil
-}
-
-// peerDelegateExecuteGrpc
-func (this *DAPoSService) peerDelegateExecuteGrpc(tipe string, payload string) *types.Receipt {
-
-	// TODO: This should be done during elections.
-	// Find delegate nodes.
-	nodes, err := types.ToNodesByTypeFromCache(services.GetCache(),types.TypeDelegate)
-	if err != nil {
-		utils.Error(err)
-		return types.NewReceiptWithError(tipe, err)
-	}
-	if len(nodes) == 0 {
-		utils.Warn("unable to find a delegate to execute request")
-		return types.NewReceiptWithStatus(tipe, types.StatusUnableToFindDelegates, "unable to find any delegates")
-	}
-
-	for _, node := range nodes {
-
-		// Check if it is the same node
-		if node.Address == disgover.GetDisGoverService().ThisNode.Address {
-			continue
-		}
-
-		foundNode, err := disgover.GetDisGoverService().Find(node.Address)
-		if err != nil {
-			utils.Warn(fmt.Sprintf("'%s' with [host=%s, port=%d]", node.Address, node.Endpoint.Host, node.Endpoint.Port), err)
-			continue
-		}
-
-		if foundNode == nil {
-			continue
-		}
-
-		return this.peerExecuteGrpc(*foundNode, tipe, payload)
-	}
-
-	return types.NewReceiptWithStatus(tipe, types.StatusUnableToConnectToDelegate, "unable to connect to a delegate")
-}
-
-// remoteExecuteWithContact
-func (this *DAPoSService) peerExecuteGrpc(node types.Node, tipe string, payload string) *types.Receipt {
-
-	// Connect.
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", node.Endpoint.Host, node.Endpoint.Port), grpc.WithInsecure())
-	if err != nil {
-		return types.NewReceiptWithStatus(tipe, types.StatusUnableToConnectToDelegate, "unable to connect to a delegate")
-	}
-	defer conn.Close()
-	client := proto.NewDAPoSGrpcClient(conn)
-	contextWithTimeout, cancel := context.WithTimeout(context.Background(), 2000*time.Millisecond)
-	defer cancel()
-
-	// Remote execute.
-	response, err := client.ExecuteGrpc(contextWithTimeout, &proto.Request{Type: tipe, Payload: payload})
-	if err != nil {
-		return types.NewReceiptWithError(tipe, err)
-	}
-	receipt, err := types.ToReceiptFromJson([]byte(response.Payload))
-	if err != nil {
-		return types.NewReceiptWithStatus(tipe, types.StatusInternalError, err.Error())
-	}
-	return receipt
 }
 
 // Gossip

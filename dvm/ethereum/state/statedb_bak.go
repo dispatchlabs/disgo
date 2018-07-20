@@ -334,7 +334,7 @@ package state
 // 	self.journal.append(suicideChange{
 // 		account:     &addr,
 // 		prev:        stateObject.suicided,
-// 		prevbalance: new(big.Int).Set(stateObject.Balance()),
+// 		prevbalance: new(big.Int).PersistAndCache(stateObject.Balance()),
 // 	})
 // 	stateObject.markSuicided()
 // 	stateObject.data.Balance = new(big.Int)

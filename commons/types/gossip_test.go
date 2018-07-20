@@ -123,7 +123,7 @@ func TestToOldGossips(t *testing.T) {
 
 //TestGossipSet
 func TestGossipSet(t *testing.T) {
-	// TODO: Gossip.Set()
+	// TODO: Gossip.PersistAndCache()
 	t.Skip("Need a Badger DB mock")
 }
 

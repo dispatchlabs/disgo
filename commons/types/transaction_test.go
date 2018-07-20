@@ -576,7 +576,7 @@ func TestTransactionEquals(t *testing.T) {
 
 //TestTransactionSet
 func TestTransactionSet(t *testing.T) {
-	// TODO: Transaction.Set()
+	// TODO: Transaction.PersistAndCache()
 	t.Skip("Need a Badger DB mock")
 }
 

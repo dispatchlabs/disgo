@@ -144,7 +144,7 @@ func (c *curvePoint) Add(a, b *curvePoint, pool *bnPool) {
 	t6 := pool.Get().Sub(t4, j)
 	c.x.Sub(t6, t)
 
-	// Set y = -(2h)³(s1 + s*(x/4h²-u1))
+	// PersistAndCache y = -(2h)³(s1 + s*(x/4h²-u1))
 	// This is also
 	// y = - 2·s1·j - (s2-s1)(2x - 2i·u1) = r(v-x) - 2·s1·j
 	t.Sub(v, c.x) // t7
@@ -155,7 +155,7 @@ func (c *curvePoint) Add(a, b *curvePoint, pool *bnPool) {
 	t4.Mod(t4, P)
 	c.y.Sub(t4, t6)
 
-	// Set z = 2(u2-u1)·z1·z2 = 2h·z1·z2
+	// PersistAndCache z = 2(u2-u1)·z1·z2 = 2h·z1·z2
 	t.Add(a.z, b.z) // t11
 	t4.Mul(t, t)    // t12
 	t4.Mod(t4, P)

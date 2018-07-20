@@ -148,7 +148,7 @@ func TestToReceiptFromId(t *testing.T) {
 
 //TestReceiptSet
 func TestReceiptSet(t *testing.T) {
-	// TODO: Receipt.Set()
+	// TODO: Receipt.PersistAndCache()
 	t.Skip("Need a Badger DB mock")
 }
 

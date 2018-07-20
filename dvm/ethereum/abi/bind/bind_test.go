@@ -456,7 +456,7 @@ package bind
 // 			}
 // 			sim.Commit()
 
-// 			// Set the field with automatic estimation and check that it succeeds
+// 			// PersistAndCache the field with automatic estimation and check that it succeeds
 // 			if _, err := limiter.SetField(auth, "automatic"); err != nil {
 // 				t.Fatalf("Failed to call automatically gased transaction: %v", err)
 // 			}

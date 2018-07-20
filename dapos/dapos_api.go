@@ -26,265 +26,176 @@ import (
 )
 
 // GetDelegateNodes
-func (this *DAPoSService) GetDelegateNodes() *types.Receipt {
-	txn := services.NewTxn(true)
-	defer txn.Discard()
-	receipt := types.NewReceipt(types.RequestGetDelegates)
-	receipt.Status = types.StatusOk
+func (this *DAPoSService) GetDelegateNodes() *types.Response {
 
 	// Find nodes.
-	nodes, err := types.ToNodesByTypeFromCache(services.GetCache(),types.TypeDelegate)
+	nodes, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
 	if err != nil {
 		utils.Error(err)
-		receipt.SetInternalErrorWithNewTransaction(services.GetDb(), err)
-		return nil
+
+		return types.NewResponseWithError(err)
 	}
-	receipt.Data = nodes
-	err = receipt.Set(txn,services.GetCache()) // TODO: Should we store receipts?
-	if err != nil {
-		utils.Error(err)
-		receipt.SetInternalErrorWithNewTransaction(services.GetDb(), err)
-		return nil
-	}
-	err = txn.Commit(nil)
-	if err != nil {
-		utils.Error(err)
-		receipt.SetInternalErrorWithNewTransaction(services.GetDb(), err)
-		return nil
-	}
-	utils.Info(fmt.Sprintf("id=%s, type=%s, status=%s", receipt.Id, receipt.Type, receipt.Status))
-	utils.Info(receipt.String())
-	return receipt
+
+	// Create response.
+	response := types.NewResponse()
+	response.Data = nodes
+	utils.Info("GetDelegateNodes")
+
+	return response
 }
 
-// GetStatus
-func (this *DAPoSService) GetStatus(id string) *types.Receipt {
+// GetReceipt
+func (this *DAPoSService) GetReceipt(transactionHash string) *types.Response {
 	txn := services.NewTxn(false)
 	defer txn.Discard()
-	var receipt *types.Receipt
+	response := types.NewResponse()
 
 	// Delegate?
 	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
-		var err error
-		receipt, err = types.ToReceiptFromCache(services.GetCache(),id)
+		receipt, err := types.ToReceiptFromCache(services.GetCache(), transactionHash)
 		if err != nil {
-			receipt, err = types.ToReceiptFromId(txn, id)
+			receipt, err = types.ToReceiptFromTransactionHash(txn, transactionHash)
 			if err != nil {
 				if err == badger.ErrKeyNotFound {
-					receipt = types.NewReceiptWithStatus(types.RequestGetStatus, types.StatusNotFound, fmt.Sprintf("unable to find receipt [id=%s]", id))
+					response.Status = types.StatusNotFound
+					response.HumanReadableStatus = fmt.Sprintf("unable to find receipt [hash=%s]", transactionHash)
 				} else {
-					receipt = types.NewReceiptWithError(types.RequestGetStatus, err)
+					response.Status = types.StatusInternalError
+					response.HumanReadableStatus = err.Error()
 				}
+			} else {
+				response.Data = receipt
 			}
+		} else {
+			response.Data = receipt
 		}
 	} else {
-		receipt = this.peerDelegateExecuteGrpc(types.RequestGetStatus, id)
+		response.Status = types.StatusNotDelegate
+		response.HumanReadableStatus = "This node is not a delegate. Please select a delegate node."
 	}
-	utils.Info(fmt.Sprintf("id=%s, type=%s, status=%s", receipt.Id, receipt.Type, receipt.Status))
-	return receipt
+	utils.Info(fmt.Sprintf("GetAccount [hash=%s, status=%s]", transactionHash, response.Status))
+
+	return response
 }
 
 // GetAccount
-func (this *DAPoSService) GetAccount(address string) *types.Receipt {
+func (this *DAPoSService) GetAccount(address string) *types.Response {
 	txn := services.NewTxn(true)
 	defer txn.Discard()
-	var receipt *types.Receipt
+	response := types.NewResponse()
 
 	// Delegate?
 	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
-		receipt = types.NewReceipt(types.RequestGetAccount)
 		account, err := types.ToAccountByAddress(txn, address)
 		if err != nil {
 			if err == badger.ErrKeyNotFound {
-				receipt.Status = types.StatusNotFound
+				response.Status = types.StatusNotFound
 			} else {
-				receipt.Status = types.StatusInternalError
+				response.Status = types.StatusInternalError
 			}
 		} else {
-			receipt.Data = account
-			receipt.Status = types.StatusOk
+			response.Data = account
+			response.Status = types.StatusOk
 		}
 	} else {
-		receipt = this.peerDelegateExecuteGrpc(types.RequestGetAccount, address)
+		response.Status = types.StatusNotDelegate
+		response.HumanReadableStatus = "This node is not a delegate. Please select a delegate node."
 	}
+	utils.Info(fmt.Sprintf("GetAccount [address=%s, status=%s]", address, response.Status))
 
-	// Save receipt.
-	err := receipt.Set(txn,services.GetCache())
-	if err != nil {
-		utils.Error(err)
-	}
-	err = txn.Commit(nil)
-	if err != nil {
-		utils.Error(err)
-	}
-	utils.Info(fmt.Sprintf("id=%s, type=%s, status=%s", receipt.Id, receipt.Type, receipt.Status))
-	return receipt
-}
-
-// SetAccount
-func (this *DAPoSService) SetAccount(account types.Account, hash string, signature string) *types.Receipt {
-	txn := services.NewTxn(true)
-	defer txn.Discard()
-	var receipt *types.Receipt
-
-	/*
-
-			// Delegate?
-			if types.GetConfig().IsDelegate {
-				receipt = types.NewReceipt(types.RequestSetName)
-				persistedAccount, err := types.ToAccountByAddress(txn, account.Address)
-				if err != nil {
-					if err == badger.ErrKeyNotFound {
-
-					} else {
-						receipt.Status = types.StatusInternalError
-					}
-				} else {
-					persistedAccount.Name = account.Name
-					err := txn.Set([]byte(persistedAccount.Key()), []byte(persistedAccount.String()))
-					if err != nil {
-						utils.Error(err)
-					}
-					receipt.Data = persistedAccount
-					receipt.Status = types.StatusOk
-				}
-			} else {
-				receipt = this.peerDelegateExecuteGrpc(types.RequestSetName, account.String())
-			}
-		} else {
-			receipt = types.NewReceiptWithStatus(types.RequestSetName, types.StatusInvalidAddress, "invalid address")
-		}
-
-		// Save receipt.
-		err := receipt.Set(txn)
-		if err != nil {
-			utils.Error(err)
-		}
-		err = txn.Commit(nil)
-		if err != nil {
-			utils.Error(err)
-		}
-		utils.Info(fmt.Sprintf("id=%s, type=%s, status=%s", receipt.Id, receipt.Type, receipt.Status))
-	*/
-
-	return receipt
+	return response
 }
 
 // NewTransaction
-func (this *DAPoSService) NewTransaction(transaction *types.Transaction) *types.Receipt {
-	var receipt *types.Receipt
+func (this *DAPoSService) NewTransaction(transaction *types.Transaction) *types.Response {
+	response := types.NewResponse()
 
 	// Delegate?
 	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
-		receipt = this.startGossiping(transaction)
+		response = this.startGossiping(transaction)
 	} else {
-		receipt = this.peerDelegateExecuteGrpc(types.RequestNewTransaction, transaction.String())
+		response.Status = types.StatusNotDelegate
+		response.HumanReadableStatus = "This node is not a delegate. Please select a delegate node."
 	}
-	utils.Info(fmt.Sprintf("id=%s, type=%s, status=%s", receipt.Id, receipt.Type, receipt.Status))
-	return receipt
+
+	utils.Info(fmt.Sprintf("NewTransaction [hash=%s, status=%s]", transaction.Hash, response.Status))
+	return response
 }
 
 // GetTransactions
-func (this *DAPoSService) GetTransactions() *types.Receipt {
+func (this *DAPoSService) GetTransactions() *types.Response {
 	txn := services.NewTxn(true)
 	defer txn.Discard()
-	var receipt *types.Receipt
+	response := types.NewResponse()
 
 	// Delegate?
 	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
-		receipt = types.NewReceipt(types.RequestGetTransactions)
-		receipt.Status = types.StatusOk
 		var err error
-		receipt.Data, err = types.ToTransactions(txn)
+		response.Data, err = types.ToTransactions(txn)
 		if err != nil {
-			receipt.Status = types.StatusInternalError
-			receipt.HumanReadableStatus = err.Error()
+			response.Status = types.StatusInternalError
+			response.HumanReadableStatus = err.Error()
 		} else {
-			receipt.Status = types.StatusOk
+			response.Status = types.StatusOk
 		}
 	} else {
-		receipt = this.peerDelegateExecuteGrpc(types.RequestGetTransactions, "")
+		response.Status = types.StatusNotDelegate
+		response.HumanReadableStatus = "This node is not a delegate. Please select a delegate node."
 	}
 
-	// Save receipt.
-	err := receipt.Set(txn,services.GetCache())
-	if err != nil {
-		utils.Error(err)
-	}
-	err = txn.Commit(nil)
-	if err != nil {
-		utils.Error(err)
-	}
-	utils.Info(fmt.Sprintf("id=%s, type=%s, status=%s", receipt.Id, receipt.Type, receipt.Status))
-	return receipt
+	utils.Info(fmt.Sprintf("GetTransactions [status=%s]", response.Status))
+
+	return response
 }
 
 // GetTransactionsByFromAddress
-func (this *DAPoSService) GetTransactionsByFromAddress(address string) *types.Receipt {
+func (this *DAPoSService) GetTransactionsByFromAddress(address string) *types.Response {
 	txn := services.NewTxn(true)
 	defer txn.Discard()
-	var receipt *types.Receipt
+	response := types.NewResponse()
 
 	// Delegate?
 	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
-		receipt = types.NewReceipt(types.RequestGetTransactionsByFromAddress)
-		receipt.Status = types.StatusOk
 		var err error
-		receipt.Data, err = types.ToTransactionsByFromAddress(txn, address)
+		response.Data, err = types.ToTransactionsByFromAddress(txn, address)
 		if err != nil {
-			receipt.Status = types.StatusInternalError
-			receipt.HumanReadableStatus = err.Error()
+			response.Status = types.StatusInternalError
+			response.HumanReadableStatus = err.Error()
 		} else {
-			receipt.Status = types.StatusOk
+			response.Status = types.StatusOk
 		}
 	} else {
-		receipt = this.peerDelegateExecuteGrpc(types.RequestGetTransactionsByFromAddress, address)
+		response.Status = types.StatusNotDelegate
+		response.HumanReadableStatus = "This node is not a delegate. Please select a delegate node."
 	}
 
-	// Save receipt.
-	err := receipt.Set(txn,services.GetCache())
-	if err != nil {
-		utils.Error(err)
-	}
-	err = txn.Commit(nil)
-	if err != nil {
-		utils.Error(err)
-	}
-	utils.Info(fmt.Sprintf("id=%s, type=%s, status=%s", receipt.Id, receipt.Type, receipt.Status))
-	return receipt
+	utils.Info(fmt.Sprintf("GetTransactionsByFromAddress [address=%s, status=%s]", address, response.Status))
+
+	return response
 }
 
 // GetTransactionsByToAddress
-func (this *DAPoSService) GetTransactionsByToAddress(address string) *types.Receipt {
+func (this *DAPoSService) GetTransactionsByToAddress(address string) *types.Response {
 	txn := services.NewTxn(true)
 	defer txn.Discard()
-	var receipt *types.Receipt
+	response := types.NewResponse()
 
 	// Delegate?
 	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
-		receipt = types.NewReceipt(types.RequestGetTransactionsByToAddress)
-		receipt.Status = types.StatusOk
 		var err error
-		receipt.Data, err = types.ToTransactionsByToAddress(txn, address)
+		response.Data, err = types.ToTransactionsByToAddress(txn, address)
 		if err != nil {
-			receipt.Status = types.StatusInternalError
-			receipt.HumanReadableStatus = err.Error()
+			response.Status = types.StatusInternalError
+			response.HumanReadableStatus = err.Error()
 		} else {
-			receipt.Status = types.StatusOk
+			response.Status = types.StatusOk
 		}
 	} else {
-		receipt = this.peerDelegateExecuteGrpc(types.RequestGetTransactionsByToAddress, address)
+		response.Status = types.StatusNotDelegate
+		response.HumanReadableStatus = "This node is not a delegate. Please select a delegate node."
 	}
 
-	// Save receipt.
-	err := receipt.Set(txn,services.GetCache())
-	if err != nil {
-		utils.Error(err)
-	}
-	err = txn.Commit(nil)
-	if err != nil {
-		utils.Error(err)
-	}
-	utils.Info(fmt.Sprintf("id=%s, type=%s, status=%s", receipt.Id, receipt.Type, receipt.Status))
-	return receipt
+	utils.Info(fmt.Sprintf("GetTransactionsByToAddress [address=%s, status=%s]", address, response.Status))
+
+	return response
 }

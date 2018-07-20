@@ -27,7 +27,6 @@ import (
 
 // Gossip
 type Gossip struct {
-	ReceiptId   string
 	Transaction Transaction
 	Rumors      []Rumor
 }
@@ -55,7 +54,7 @@ func (this *Gossip) Persist(txn *badger.Txn) error{
 	return nil
 }
 
-// Set
+// PersistAndCache
 func (this *Gossip) Set(txn *badger.Txn,cache *cache.Cache) error {
 	this.Cache(cache)
 	err := this.Persist(txn)
@@ -75,7 +74,7 @@ func (this *Gossip) Unset(txn *badger.Txn,cache *cache.Cache) error {
 	return nil
 }
 
-
+// String
 func (this Gossip) String() string {
 	bytes, err := json.Marshal(this)
 	if err != nil {
@@ -125,13 +124,9 @@ func (this *Gossip) Refresh(txn *badger.Txn) error {
 	return nil
 }
 
-// String
-
-
 // NewGossip -
-func NewGossip(transaction Transaction, receipt Receipt) *Gossip {
+func NewGossip(transaction Transaction) *Gossip {
 	gossip := &Gossip{}
-	gossip.ReceiptId = receipt.Id
 	gossip.Transaction = transaction
 	gossip.Rumors = []Rumor{}
 	return gossip
@@ -222,26 +217,3 @@ func ToGossips(txn *badger.Txn) ([]*Gossip, error) {
 	}
 	return gossips, nil
 }
-
-func ToOldGossips(txn *badger.Txn) ([]*Gossip, error) {
-	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
-	defer iterator.Close()
-	prefix := []byte(fmt.Sprintf("table-post-gossip-"))
-	var gossips = make([]*Gossip, 0)
-	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
-		item := iterator.Item()
-		value, err := item.Value()
-		if err != nil {
-			utils.Error(err)
-			continue
-		}
-		gossip, err := ToGossipFromJson(value)
-		if err != nil {
-			utils.Error(err)
-			continue
-		}
-		gossips = append(gossips, gossip)
-	}
-	return gossips, nil
-}
-
