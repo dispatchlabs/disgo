@@ -102,6 +102,9 @@ func (this *DisGoverService) Go(waitGroup *sync.WaitGroup) {
 		}
 	}
 	for _, delegate := range delegates {
+		if delegate.Address == "" {
+			delegate.Address = fmt.Sprintf("%s-%d", delegate.Endpoint.Host, int(delegate.Endpoint.Port))
+		}
 		delegate.Cache(services.GetCache(), cache.NoExpiration)
 		if delegate.Address == this.ThisNode.Address {
 			this.ThisNode.Type = types.TypeDelegate
