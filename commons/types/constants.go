@@ -47,6 +47,7 @@ const (
 	StatusInvalidRequest               = "InvalidRequest"
 	StatusNotDelegate                  = "StatusNotDelegate"
 	StatusAlreadyProcessingTransaction = "StatusAlreadyProcessingTransaction"
+	StatusGossipingTimedOut            = "StatusGossipingTimedOut"
 	StatusInternalError                = "InternalError"
 )
 

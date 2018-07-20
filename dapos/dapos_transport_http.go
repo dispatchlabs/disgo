@@ -37,6 +37,7 @@ func (this *DAPoSService) WithHttp() *DAPoSService {
 	services.GetHttpRouter().HandleFunc("/v1/transactions/from/{address}", this.getTransactionsByFromAddressHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/transactions/to/{address}", this.getTransactionsByToAddressHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/transactions", this.newTransactionHandler).Methods("POST")
+	services.GetHttpRouter().HandleFunc("/v1/transactions/{hash}", this.getTransactionHandler).Methods("POST")
 	return this
 }
 
@@ -67,10 +68,12 @@ func (this *DAPoSService) getAccountHandler(responseWriter http.ResponseWriter, 
 	responseWriter.Write([]byte(response.String()))
 }
 
-// setAccountHandler
-func (this *DAPoSService) setAccountHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	// TODO: Call SetAccount.
+// getTransactionHandler
+func (this *DAPoSService) getTransactionHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	vars := mux.Vars(request)
+	response := this.GetTransaction(vars["hash"])
 	setHeaders(&responseWriter)
+	responseWriter.Write([]byte(response.String()))
 }
 
 // newTransactionHandler

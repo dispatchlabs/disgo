@@ -141,30 +141,48 @@ func (this *DAPoSService) gossipWorker() {
 		case gossip = <-this.gossipChan:
 
 			go func(theGossip *types.Gossip) {
-				delegateNodes, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
-				if err != nil {
-					utils.Error(err)
-				}
 
-				if len(gossip.Rumors) >= len(delegateNodes)*2/3 {
-					this.transactionChan <- gossip //TODO: insert into queue
+				// Gossip timeout?
+				elapsedMilliSeconds := utils.ToMilliSeconds(time.Now()) - gossip.Rumors[0].Time
+				if elapsedMilliSeconds > 1000 * 5 {
+					utils.Debug("gossip timed out")
+					// TODO: Update receipt timed out, but only if the transaction didn't get executed.
 					return
 				}
 
+				// Find nodes in cache?
+				delegateNodes, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
+				if err != nil {
+					utils.Error(err)
+					return
+				}
+
+				// Do we have 2/3 of rumors?
+				if len(gossip.Rumors) >= len(delegateNodes)*2/3 {
+					this.transactionChan <- gossip //TODO: insert into queue
+				}
+
+				// Did we already receive all the delegate's rumors?
+				if len(gossip.Rumors) == len(delegateNodes) {
+					utils.Warn("already received all rumors from delegates")
+					return
+				}
+
+				// Get random delegate?
 				node := this.getRandomDelegate(gossip, delegateNodes)
 				if node == nil {
-					utils.Debug("did not find any delegates to rumor with")
+					utils.Warn("did not find any delegates to rumor with")
 					return
 				}
 
 				// Peer gossip.
 				peerGossip, err := this.peerGossipGrpc(*node, gossip)
 				if err != nil {
-					utils.Error(err)
+					utils.Warn(err)
+					this.gossipChan <- gossip
 					return
 				}
 				this.gossipChan <- peerGossip
-				return
 			}(gossip)
 		}
 	}

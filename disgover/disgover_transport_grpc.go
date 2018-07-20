@@ -39,8 +39,6 @@ func (this *DisGoverService) WithGrpc() *DisGoverService {
 // PingSeedGrpc
 func (this *DisGoverService) PingSeedGrpc(ctx context.Context, node *proto.Node) (*proto.SeedResponse, error) {
 
-	utils.Info(this.ThisNode)
-
 	// Is this node a seed?
 	if this.ThisNode.Type != types.TypeSeed {
 		return nil, errors.New("you pinged a non-seed node")

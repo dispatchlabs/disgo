@@ -122,6 +122,34 @@ func (this *DAPoSService) NewTransaction(transaction *types.Transaction) *types.
 	return response
 }
 
+// GetTransaction
+func (this *DAPoSService) GetTransaction(hash string) *types.Response {
+	txn := services.NewTxn(true)
+	defer txn.Discard()
+	response := types.NewResponse()
+
+	// Delegate?
+	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
+		account, err := types.ToTransactionByKey(txn, []byte(hash))
+		if err != nil {
+			if err == badger.ErrKeyNotFound {
+				response.Status = types.StatusNotFound
+			} else {
+				response.Status = types.StatusInternalError
+			}
+		} else {
+			response.Data = account
+			response.Status = types.StatusOk
+		}
+	} else {
+		response.Status = types.StatusNotDelegate
+		response.HumanReadableStatus = "This node is not a delegate. Please select a delegate node."
+	}
+	utils.Info(fmt.Sprintf("GetTransaction [hash=%s, status=%s]", hash, response.Status))
+
+	return response
+}
+
 // GetTransactions
 func (this *DAPoSService) GetTransactions() *types.Response {
 	txn := services.NewTxn(true)

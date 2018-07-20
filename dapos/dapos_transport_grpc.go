@@ -26,8 +26,6 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/dapos/proto"
 	"github.com/dispatchlabs/disgo/disgover"
-	"github.com/pkg/errors"
-	"github.com/processout/grpc-go-pool"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -166,21 +164,14 @@ func (this *DAPoSService) GossipGrpc(context context.Context, request *proto.Req
 func (this *DAPoSService) peerGossipGrpc(node types.Node, gossip *types.Gossip) (*types.Gossip, error) {
 	utils.Debug(fmt.Sprintf("attempting to gossip with delegate [address=%s]", node.Address))
 
-	value, ok := services.GetCache().Get(fmt.Sprintf("dapos-grpc-pool-%s", node.Address))
-	// IF not found then setup one
-	if !ok {
-		this.setupConnectionPoolForPeer(&node)
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", node.Endpoint.Host, node.Endpoint.Port), grpc.WithInsecure())
+	if err != nil {
+		utils.Fatal(fmt.Sprintf("cannot dial seed [host=%s, port=%d]",  node.Endpoint.Host,  node.Endpoint.Port), err)
+		return nil, err
 	}
-	value, ok = services.GetCache().Get(fmt.Sprintf("dapos-grpc-pool-%s", node.Address))
-	if !ok {
-		return nil, errors.New(fmt.Sprintf("unable to find GRPC pool for this delegate [address=%s]", node.Address))
-	}
+	defer conn.Close()
 
-	pool := value.(*grpcpool.Pool)
-	clientConn, err := pool.Get(context.Background())
-	defer clientConn.Close()
-
-	client := proto.NewDAPoSGrpcClient(clientConn.ClientConn)
+	client := proto.NewDAPoSGrpcClient(conn)
 	contextWithTimeout, cancel := context.WithTimeout(context.Background(), 2000*time.Millisecond)
 	defer cancel()
 
