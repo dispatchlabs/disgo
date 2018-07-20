@@ -455,8 +455,6 @@ func (this Transaction) NewHash() (string, error) {
 		}
 	}
 	hash := crypto.NewHash(buffer.Bytes())
-	hashString := hex.EncodeToString(hash[:])
-	fmt.Printf("\n%v\nHash: %v\n\n", this.String(), hashString)
 	return hex.EncodeToString(hash[:]), nil
 }
 

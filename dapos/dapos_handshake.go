@@ -44,7 +44,7 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 	err := transaction.Verify()
 	if err != nil {
 		utils.Info(fmt.Sprintf("invalid transaction [hash=%s]", transaction.Hash))
-		return types.NewResponseWithError(err)
+		return types.NewResponseWithStatus(types.StatusInvalidTransaction, err.Error())
 	}
 
 	// Duplicate transaction?
@@ -156,22 +156,24 @@ func (this *DAPoSService) gossipWorker() {
 					utils.Error(err)
 					return
 				}
-
+				
 				// Do we have 2/3 of rumors?
-				if len(gossip.Rumors) >= len(delegateNodes)*2/3 {
+				if len(gossip.Rumors) >= len(delegateNodes) * 2/3 {
+					utils.Info(fmt.Sprintf("rumors=%d delegates=%d", len(gossip.Rumors), len(delegateNodes)))
+
 					this.transactionChan <- gossip //TODO: insert into queue
 				}
 
 				// Did we already receive all the delegate's rumors?
 				if len(gossip.Rumors) == len(delegateNodes) {
-					utils.Warn("already received all rumors from delegates")
+					utils.Debug("already received all rumors from delegates")
 					return
 				}
 
 				// Get random delegate?
 				node := this.getRandomDelegate(gossip, delegateNodes)
 				if node == nil {
-					utils.Warn("did not find any delegates to rumor with")
+					utils.Debug("did not find any delegates to rumor with")
 					return
 				}
 
