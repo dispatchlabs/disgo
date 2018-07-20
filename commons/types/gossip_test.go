@@ -82,7 +82,7 @@ func TestToJsonByGossip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ToJsonByGossip returning error: %s", err)
 	}
-	s := fmt.Sprintf(`{Transaction":%s,"Rumors":[]}`, tx.String())
+	s := fmt.Sprintf(`{"Transaction":%s,"Rumors":[]}`, tx.String())
 	if string(bytes) != s {
 		t.Errorf("ToJsonByGossip returning invalid value.\nG: %s\nE: %s", string(bytes), s)
 	}

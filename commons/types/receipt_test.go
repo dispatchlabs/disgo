@@ -23,7 +23,7 @@ import (
 	"reflect"
 )
 
-var testReceiptByte = []byte("{\"id\":\"60ef98ce-73b2-470e-ae92-4cd0a1eae0a3\",\"type\":\"test\",\"status\":\"Pending\",\"humanReadableStatus\":\"Pending\",\"data\":\"test data\",\"contractAddress\":\"\",\"contractResult\":[],\"created\":\"2018-05-09T15:04:05Z\"}")
+var testReceiptByte = []byte("{\"transactionHash\":\"test\",\"status\":\"Pending\",\"humanReadableStatus\":\"Pending\",\"data\":\"test data\",\"contractAddress\":\"\",\"contractResult\":[],\"created\":\"2018-05-09T15:04:05Z\"}")
 
 
 //TestReceiptCache
@@ -149,7 +149,7 @@ func testReceiptStruct(t *testing.T, receipt *Receipt) {
 	if receipt.Created != d {
 		t.Errorf("receipt.UnmarshalJSON returning invalid %s value: %s", "Created", receipt.Created.String())
 	}
-	if receipt.Key() != "table-receipt-60ef98ce-73b2-470e-ae92-4cd0a1eae0a3" {
+	if receipt.Key() != "table-receipt-test" {
 		t.Errorf("receipt.Key() returning invalid %s value: %s", "Key", receipt.Key())
 	}
 }
