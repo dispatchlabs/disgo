@@ -159,7 +159,8 @@ func (this *DAPoSService) gossipWorker() {
 
 				// Do we have 2/3 of rumors?
 				if len(gossip.Rumors) >= len(delegateNodes) * 2/3 {
-					this.transactionChan <- gossip //TODO: insert into queue
+					this.gossipQueue.Push(gossip)
+					//this.transactionChan <- gossip //TODO: insert into queue
 				}
 
 				// Did we already receive all the delegate's rumors?
@@ -217,8 +218,12 @@ func (this *DAPoSService) transactionWorker() {
 
 	var gossip *types.Gossip
 	for {
-		select {
-		case gossip = <-this.transactionChan:
+		if(this.gossipQueue.HasAvailable()) {
+			gossip = this.gossipQueue.Pop()
+		//}
+		//
+		//select {
+		//case gossip = <-this.transactionChan:
 
 			utils.Debug("transactionworker")
 			// Get receipt.

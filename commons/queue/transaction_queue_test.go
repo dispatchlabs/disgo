@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/dispatchlabs/disgo/commons/utils"
-	"time"
 )
 
 func TestTxQueue(t *testing.T) {
@@ -22,16 +20,16 @@ func TestTxQueue(t *testing.T) {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
-	testStart := utils.ToMilliSeconds(time.Now())
+	//testStart := utils.ToMilliSeconds(time.Now())
 	for {
 		if(txq.HasAvailable()) {
 			fmt.Printf("\n***** There is a record in the queue *****\n")
 			tx := txq.Pop()
 			fmt.Printf(tx.String())
 		} else {
-			if utils.ToMilliSeconds(time.Now()) - testStart > int64((testTime + 1) *1000) {
-				return
-			}
+			//if utils.ToMilliSeconds(time.Now()) - testStart > int64(5000) {
+				break
+			//}
 		}
 	}
 }

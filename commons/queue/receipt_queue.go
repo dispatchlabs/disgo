@@ -37,14 +37,14 @@ func (rtq *ReceiptQueue) Push(receipt *types.Receipt) {
 	if(rtq.Queue.Len() > 0) {
 		sort.Sort(rtq.Queue)
 	}
-	rtq.ExistsMap[receipt.Id] = true
+	rtq.ExistsMap[receipt.TransactionHash] = true
 }
 
 // - Push onto the queue and then resort (latest to earliest) also add to fast Exists map for quick checks
 func (rtq *ReceiptQueue) Pop() *types.Receipt {
 	itm := HeapPop(rtq.Queue).(*Item)
 	receipt := itm.Data.(*types.Receipt)
-	delete(rtq.ExistsMap, receipt.Id)
+	delete(rtq.ExistsMap, receipt.TransactionHash)
 	return receipt
 }
 
