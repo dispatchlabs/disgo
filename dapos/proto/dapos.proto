@@ -25,6 +25,5 @@ package proto;
 
  service DAPoSGrpc {
      rpc SynchronizeGrpc(Empty) returns (SynchronizeResponse) {}
-     rpc ExecuteGrpc(Request) returns (Response) {}
      rpc GossipGrpc(Request) returns (Response) {}
  }

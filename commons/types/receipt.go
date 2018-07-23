@@ -23,30 +23,26 @@ import (
 
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/utils"
-	"github.com/google/uuid"
 	"github.com/patrickmn/go-cache"
 )
 
-// Name
+// Receipt
 type Receipt struct {
-	Id                  string
-	Type                string
+	TransactionHash     string
 	Status              string
 	HumanReadableStatus string
-	Data                interface{}
 	ContractAddress     string
 	ContractResult      []interface{}
 	Created             time.Time
 }
 
-
 // Key
 func (this Receipt) Key() string {
-	return fmt.Sprintf("table-receipt-%s", this.Id)
+	return fmt.Sprintf("table-receipt-%s", this.TransactionHash)
 }
 
-//Cache
-func (this *Receipt) Cache(cache *cache.Cache,time_optional ...time.Duration){
+// Cache
+func (this *Receipt) Cache(cache *cache.Cache, time_optional ...time.Duration) {
 	TTL := ReceiptTTL
 	if len(time_optional) > 0 {
 		TTL = time_optional[0]
@@ -54,8 +50,8 @@ func (this *Receipt) Cache(cache *cache.Cache,time_optional ...time.Duration){
 	cache.Set(this.Key(), this, TTL)
 }
 
-//Persist
-func (this *Receipt) Persist(txn *badger.Txn) error{
+// Persist
+func (this *Receipt) Persist(txn *badger.Txn) error {
 	err := txn.Set([]byte(this.Key()), []byte(this.String()))
 	if err != nil {
 		return err
@@ -63,8 +59,8 @@ func (this *Receipt) Persist(txn *badger.Txn) error{
 	return nil
 }
 
-// Set
-func (this *Receipt) Set(txn *badger.Txn,cache *cache.Cache) error {
+// PersistAndCache
+func (this *Receipt) PersistAndCache(txn *badger.Txn, cache *cache.Cache) error {
 	this.Cache(cache)
 
 	err := this.Persist(txn)
@@ -75,7 +71,7 @@ func (this *Receipt) Set(txn *badger.Txn,cache *cache.Cache) error {
 }
 
 // Unset
-func (this *Receipt) Unset(txn *badger.Txn,cache *cache.Cache) error {
+func (this *Receipt) Unset(txn *badger.Txn, cache *cache.Cache) error {
 	cache.Delete(this.Key())
 	err := txn.Delete([]byte(this.Key()))
 	if err != nil {
@@ -91,20 +87,14 @@ func (this *Receipt) UnmarshalJSON(bytes []byte) error {
 	if error != nil {
 		return error
 	}
-	if jsonMap["id"] != nil {
-		this.Id = jsonMap["id"].(string)
-	}
-	if jsonMap["type"] != nil {
-		this.Type = jsonMap["type"].(string)
+	if jsonMap["transactionHash"] != nil {
+		this.TransactionHash = jsonMap["transactionHash"].(string)
 	}
 	if jsonMap["status"] != nil {
 		this.Status = jsonMap["status"].(string)
 	}
 	if jsonMap["humanReadableStatus"] != nil {
 		this.HumanReadableStatus = jsonMap["humanReadableStatus"].(string)
-	}
-	if jsonMap["data"] != nil {
-		this.Data = jsonMap["data"]
 	}
 	if jsonMap["contractAddress"] != nil && jsonMap["contractAddress"] != "" {
 		this.ContractAddress = jsonMap["contractAddress"].(string)
@@ -126,20 +116,16 @@ func (this *Receipt) UnmarshalJSON(bytes []byte) error {
 // MarshalJSON
 func (this Receipt) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Id                  string        `json:"id"`
-		Type                string        `json:"type"`
+		TransactionHash     string        `json:"transactionHash"`
 		Status              string        `json:"status"`
 		HumanReadableStatus string        `json:"humanReadableStatus,omitempty"`
-		Data                interface{}   `json:"data,omitempty"`
 		ContractAddress     string        `json:"contractAddress,omitempty"`
 		ContractResult      []interface{} `json:"contractResult,omitempty"`
 		Created             time.Time     `json:"created"`
 	}{
-		Id:                  this.Id,
-		Type:                this.Type,
+		TransactionHash:     this.TransactionHash,
 		Status:              this.Status,
 		HumanReadableStatus: this.HumanReadableStatus,
-		Data:                this.Data,
 		ContractAddress:     this.ContractAddress,
 		ContractResult:      this.ContractResult,
 		Created:             this.Created,
@@ -187,20 +173,19 @@ func (this *Receipt) SetStatusWithNewTransaction(db *badger.DB, status string) {
 	}
 }
 
-
 // NewReceipt
-func NewReceipt(tipe string) *Receipt {
-	return &Receipt{Id: uuid.New().String(), Type: tipe, Status: StatusPending, Created: time.Now()}
+func NewReceipt(transactionHash string) *Receipt {
+	return &Receipt{TransactionHash: transactionHash, Status: StatusPending, Created: time.Now()}
 }
 
 // NewReceiptWithStatus
-func NewReceiptWithStatus(tipe string, status string, humanReadableStatus string) *Receipt {
-	return &Receipt{Id: uuid.New().String(), Type: tipe, Status: status, HumanReadableStatus: humanReadableStatus, Created: time.Now()}
+func NewReceiptWithStatus(transactionHash string, status string, humanReadableStatus string) *Receipt {
+	return &Receipt{TransactionHash: transactionHash, Status: status, HumanReadableStatus: humanReadableStatus, Created: time.Now()}
 }
 
 // NewReceiptWithError
-func NewReceiptWithError(tipe string, err error) *Receipt {
-	return &Receipt{Id: uuid.New().String(), Type: tipe, Status: StatusInternalError, HumanReadableStatus: err.Error(), Created: time.Now()}
+func NewReceiptWithError(transactionHash string, err error) *Receipt {
+	return &Receipt{TransactionHash: transactionHash, Status: StatusInternalError, HumanReadableStatus: err.Error(), Created: time.Now()}
 }
 
 // ToReceiptFromJson
@@ -214,18 +199,18 @@ func ToReceiptFromJson(payload []byte) (*Receipt, error) {
 }
 
 // ToReceiptFromCache -
-func ToReceiptFromCache(cache *cache.Cache, id string) (*Receipt, error) {
-	value, ok :=cache.Get(fmt.Sprintf("table-receipt-%s", id))
-	if !ok{
+func ToReceiptFromCache(cache *cache.Cache, transactionHash string) (*Receipt, error) {
+	value, ok := cache.Get(fmt.Sprintf("table-receipt-%s", transactionHash))
+	if !ok {
 		return nil, ErrNotFound
 	}
 	receipt := value.(*Receipt)
 	return receipt, nil
 }
 
-// ToReceiptFromId
-func ToReceiptFromId(txn *badger.Txn, id string) (*Receipt, error) {
-	item, err := txn.Get([]byte("table-receipt-" + id))
+// ToReceiptFromTransactionHash
+func ToReceiptFromTransactionHash(txn *badger.Txn, transactionHash string) (*Receipt, error) {
+	item, err := txn.Get([]byte("table-receipt-" + transactionHash))
 	if err != nil {
 		return nil, err
 	}

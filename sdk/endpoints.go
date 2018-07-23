@@ -185,11 +185,11 @@ func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey string,
 	return receipt, nil
 }
 
-// GetStatus
-func GetStatus(delegateNode types.Node, id string) (*types.Receipt, error) {
+// GetReceipt
+func GetReceipt(delegateNode types.Node, hash string) (*types.Receipt, error) {
 
 	// Get status.
-	response, err := http.Get(fmt.Sprintf("http://%s:1975/v1/statuses/%s", delegateNode.Endpoint.Host, id))
+	response, err := http.Get(fmt.Sprintf("http://%s:1975/v1/receipts/%s", delegateNode.Endpoint.Host, hash))
 	if err != nil {
 		return nil, err
 	}

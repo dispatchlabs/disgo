@@ -143,7 +143,7 @@ func (f *Feed) Send(value interface{}) (nsent int) {
 	}
 	f.mu.Unlock()
 
-	// Set the sent value on all channels.
+	// PersistAndCache the sent value on all channels.
 	for i := firstSubSendCase; i < len(f.sendCases); i++ {
 		f.sendCases[i].Send = rvalue
 	}

@@ -36,56 +36,50 @@ import (
 )
 
 // startGossiping
-func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.Receipt {
+func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.Response {
 	txn := services.NewTxn(false)
 	defer txn.Discard()
-	receipt := types.NewReceipt(types.RequestNewTransaction)
 
 	// Verify?
 	err := transaction.Verify()
 	if err != nil {
 		utils.Info(fmt.Sprintf("invalid transaction [hash=%s]", transaction.Hash))
-		receipt.Status = types.StatusInvalidTransaction
-		receipt.HumanReadableStatus = err.Error()
-		return receipt
+		return types.NewResponseWithStatus(types.StatusInvalidTransaction, err.Error())
 	}
 
 	// Duplicate transaction?
 	_, err = txn.Get([]byte(transaction.Key()))
 	if err == nil {
 		utils.Info(fmt.Sprintf("duplicate transaction [hash=%s]", transaction.Hash))
-		receipt.Status = types.StatusDuplicateTransaction
-		return receipt
+		return types.NewResponseWithStatus(types.StatusDuplicateTransaction, "Duplicate transaction")
 	}
 	if err != badger.ErrKeyNotFound {
 		utils.Error(err)
-		receipt.Status = types.StatusInternalError
-		receipt.HumanReadableStatus = err.Error()
-		return receipt
+		return types.NewResponseWithError(err)
 	}
 
 	// TODO: Check minimum hertz, balance, and negative value!!!!!
 
 	// Are we already gossiping about this transaction?
-	_, err = types.ToTransactionFromCache(services.GetCache(),transaction.Hash)
-	if err == nil{
+	_, err = types.ToTransactionFromCache(services.GetCache(), transaction.Hash)
+	if err == nil {
 		utils.Info(fmt.Sprintf("already processing this transaction [hash=%s]", transaction.Hash))
-		receipt.Status = types.StatusAlreadyProcessingTransaction
-		return receipt
+		return types.NewResponseWithStatus(types.StatusAlreadyProcessingTransaction, "Transaction is already being processed")
 	}
 
 	// Cache receipt.
+	receipt := types.NewReceipt(transaction.Hash)
 	receipt.Cache(services.GetCache())
 
 	// Cache gossip with my rumor.
-	gossip := types.NewGossip(*transaction, *receipt)
+	gossip := types.NewGossip(*transaction)
 	rumor := types.NewRumor(types.GetAccount().PrivateKey, types.GetAccount().Address, transaction.Hash)
 	gossip.Rumors = append(gossip.Rumors, *rumor)
 	gossip.Cache(services.GetCache())
 
 	this.gossipChan <- gossip
 
-	return receipt
+	return types.NewResponseWithStatus(types.StatusPending, "Pending")
 }
 
 // Temp_ProcessTransaction -
@@ -99,16 +93,15 @@ func (this *DAPoSService) Temp_ProcessTransaction(gossip *types.Gossip) {
 func (this *DAPoSService) synchronizeGossip(gossip *types.Gossip) (*types.Gossip, error) {
 
 	// Get or set receipt?
-	_, err := types.ToReceiptFromCache(services.GetCache(),gossip.ReceiptId)
+	_, err := types.ToReceiptFromCache(services.GetCache(), gossip.Transaction.Hash)
 	if err != nil {
-		receipt := types.NewReceipt(types.RequestNewTransaction)
-		receipt.Id = gossip.ReceiptId
+		receipt := types.NewReceipt(gossip.Transaction.Hash)
 		receipt.Cache(services.GetCache())
 	}
 
-	// Set synchronizedGossip.
+	// PersistAndCache synchronizedGossip.
 	var synchronizedGossip *types.Gossip
-	ourGossip, err := types.ToGossipFromCache(services.GetCache(),gossip.Transaction.Hash)
+	ourGossip, err := types.ToGossipFromCache(services.GetCache(), gossip.Transaction.Hash)
 	if err != nil {
 		synchronizedGossip = gossip
 	} else {
@@ -148,64 +141,76 @@ func (this *DAPoSService) gossipWorker() {
 		case gossip = <-this.gossipChan:
 
 			go func(theGossip *types.Gossip) {
-				delegateNodes, err := types.ToNodesByTypeFromCache(services.GetCache(),types.TypeDelegate)
-				if err != nil {
-					utils.Error(err)
-				}
 
-				// Do we have 2/3 votes to add to queue?
-				if len(gossip.Rumors) >= len(delegateNodes)*2/3 {
-					utils.Debug("inside 2/3rds")
-					txn := services.NewTxn(true)
-					defer txn.Discard()
-					// Has this transaction already been processed?
-					_, err := txn.Get([]byte(gossip.Transaction.Key()))
-					if err == nil {
-						utils.Debug("already in db")
-						return
-					}
-					//execute tx
-
-					this.transactionChan <- gossip //TODO: insert into queue
-					go this.broadcast(delegateNodes,gossip)
-					//broadcast tx
-
+				// Gossip timeout?
+				elapsedMilliSeconds := utils.ToMilliSeconds(time.Now()) - gossip.Rumors[0].Time
+				if elapsedMilliSeconds > 1000 * 5 {
+					utils.Debug("gossip timed out")
+					// TODO: Update receipt timed out, but only if the transaction didn't get executed.
 					return
 				}
 
-				// Gossip to random delegate.
-				for i := 0; i < 2*len(delegateNodes); i++ { // TODO: the `2 * ...` is a random pick to kind of exaust the list
-					node := this.getRandomDelegate(gossip, delegateNodes)
-					if node == nil {
-						continue
-					}
-
-					// Peer gossip.
-					peerGossip, err := this.peerGossipGrpc(*node, gossip) // TODO: Maybe this should be a different channel????
-					if err != nil {
-						utils.Error(err)
-						continue
-					}
-					this.gossipChan <- peerGossip
-					break
+				// Find nodes in cache?
+				delegateNodes, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
+				if err != nil {
+					utils.Error(err)
+					return
 				}
-				//if I have the bookkeeper role add the tx to the queue channel for execution of TX:
 
+				// Do we have 2/3 of rumors?
+				if len(gossip.Rumors) >= len(delegateNodes) * 2/3 {
+					this.transactionChan <- gossip //TODO: insert into queue
+				}
+
+				// Did we already receive all the delegate's rumors?
+				if len(gossip.Rumors) == len(delegateNodes) {
+					utils.Debug("already received all rumors from delegates")
+					return
+				}
+
+				// Get random delegate?
+				node := this.getRandomDelegate(gossip, delegateNodes)
+				if node == nil {
+					utils.Debug("did not find any delegates to rumor with")
+					return
+				}
+
+				// Peer gossip.
+				peerGossip, err := this.peerGossipGrpc(*node, gossip)
+				if err != nil {
+					utils.Warn(err)
+					this.gossipChan <- gossip
+					return
+				}
+				this.gossipChan <- peerGossip
 			}(gossip)
 		}
 	}
 }
 
-//// queueWorker
-//func (this *DAPoSService) queueWorker() {
-//	var gossip *types.Gossip
-//	for {
-//		select {
-//		case gossip = <-this.queueChan:
-//			// TODO: Bob do your magic adding queue.
-//		}
-//	}
-//}
+// getRandomDelegate
+func (this *DAPoSService) getRandomDelegate(gossip *types.Gossip, delegateNodes []*types.Node) *types.Node {
+	if len(delegateNodes) == 0 {
+		return nil
+	}
+
+	// Get delegates that have not rumored?
+	delegatesNotRumored := make([]*types.Node, 0)
+	for _, node := range delegateNodes {
+		if gossip.ContainsRumor(node.Address) || node.Address == disgover.GetDisGoverService().ThisNode.Address {
+			continue
+		}
+		delegatesNotRumored = append(delegatesNotRumored, node)
+	}
+	if len(delegatesNotRumored) == 0 {
+		return nil
+	}
+
+	// Find random delegate.
+	rand.Seed(time.Now().UTC().UnixNano())
+	index := rand.Intn(len(delegatesNotRumored))
+	return delegatesNotRumored[index]
+}
 
 // gossipWorker - transfer tokens, deploy smart contract, and execution of smart contract.
 func (this *DAPoSService) transactionWorker() {
@@ -218,9 +223,9 @@ func (this *DAPoSService) transactionWorker() {
 			utils.Debug("transactionworker")
 			// Get receipt.
 			var receipt *types.Receipt
-			value, err := types.ToReceiptFromCache(services.GetCache(),gossip.ReceiptId)
+			value, err := types.ToReceiptFromCache(services.GetCache(), gossip.Transaction.Hash)
 			if err != nil {
-				utils.Error(fmt.Sprintf("receipt not found [id=%s]", gossip.ReceiptId))
+				utils.Error(fmt.Sprintf("receipt not found [hash=%s]", gossip.Transaction.Hash))
 				receipt = types.NewReceipt(types.RequestNewTransaction)
 				receipt.Status = types.StatusReceiptNotFound
 				receipt.Cache(services.GetCache())
@@ -249,17 +254,6 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	if err == nil {
 		return
 	}
-
-	utils.Debug("writing tx to db")
-	err = transaction.Set(txn,services.GetCache())
-	if err != nil {
-		utils.Error(err)
-		receipt.Status = types.StatusInternalError
-		receipt.HumanReadableStatus = err.Error()
-		receipt.Cache(services.GetCache())
-		return
-	}
-	// TODO: Should we verify the transaction again?
 
 	// Find/create fromAccount?
 	now := time.Now()
@@ -300,7 +294,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		}
 		fromAccount.Balance.SetInt64(fromAccount.Balance.Int64() - transaction.Value)
 		toAccount.Balance.SetInt64(toAccount.Balance.Int64() + transaction.Value)
-		utils.Info(fmt.Sprintf("transferred tokens [receiptId=%s hash=%s, rumors=%d]", receipt.Id, transaction.Hash, len(gossip.Rumors)))
+		utils.Info(fmt.Sprintf("transferred tokens [hash=%s, rumors=%d]", transaction.Hash, len(gossip.Rumors)))
 		break
 	case types.TypeDeploySmartContract:
 		dvmService := dvm.GetDVMService()
@@ -318,9 +312,9 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			return
 		}
 
-		// Set contract account.
+		// Persist contract account.
 		contractAccount := &types.Account{Address: hex.EncodeToString(dvmResult.ContractAddress[:]), Balance: big.NewInt(0), Updated: now, Created: now}
-		err = contractAccount.Set(txn, services.GetCache())
+		err = contractAccount.Persist(txn)
 		if err != nil {
 			utils.Error(err)
 			receipt.Status = types.StatusInternalError
@@ -329,7 +323,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			return
 		}
 		receipt.ContractAddress = contractAccount.Address
-		utils.Info(fmt.Sprintf("deployed contract [receiptId=%s hash=%s, contractAddress=%s]", receipt.Id, transaction.Hash, contractAccount.Address))
+		utils.Info(fmt.Sprintf("deployed contract [hash=%s, contractAddress=%s]", transaction.Hash, contractAccount.Address))
 		break
 	case types.TypeExecuteSmartContract:
 		dvmService := dvm.GetDVMService()
@@ -347,16 +341,26 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			return
 		}
 		receipt.ContractAddress = transaction.To
-		utils.Info(fmt.Sprintf("executed contract [receiptId=%s hash=%s, contractAddress=%s]", receipt.Id, transaction.Hash, transaction.To))
+		utils.Info(fmt.Sprintf("executed contract [hash=%s, contractAddress=%s]", transaction.Hash, transaction.To))
 	default:
 		utils.Error(fmt.Sprintf("invalid transaction type [hash=%s]", transaction.Hash))
 		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInvalidTransaction)
 		return
 	}
 
+	// Persist transaction
+	err = transaction.Persist(txn)
+	if err != nil {
+		utils.Error(err)
+		receipt.Status = types.StatusInternalError
+		receipt.HumanReadableStatus = err.Error()
+		receipt.Cache(services.GetCache())
+		return
+	}
+
 	// Save fromAccount.
 	fromAccount.Updated = now
-	err = fromAccount.Set(txn,services.GetCache())
+	err = fromAccount.Persist(txn)
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
@@ -367,7 +371,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 
 	// Save toAccount.
 	toAccount.Updated = now
-	err = toAccount.Set(txn,services.GetCache())
+	err = toAccount.Persist(txn)
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
@@ -376,11 +380,9 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		return
 	}
 
-
 	// Save receipt.
 	receipt.Status = types.StatusOk
-	receipt.Cache(services.GetCache())
-	err = receipt.Set(txn,services.GetCache())
+	err = receipt.PersistAndCache(txn, services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
@@ -390,7 +392,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	}
 
 	// Save gossip.
-	err = gossip.Set(txn,services.GetCache())
+	err = gossip.PersisteAndCache(txn, services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
@@ -462,39 +464,4 @@ func processDVMResult(transaction *types.Transaction, dvmResult *dvm.DVMResult, 
 	}
 
 	return errorToReturn
-}
-
-// getRandomDelegate
-func (this *DAPoSService) getRandomDelegate(gossip *types.Gossip, delegateNodes []*types.Node) *types.Node {
-	if len(delegateNodes) == 0 {
-		return nil
-	}
-
-	// Get delegates that have not rumored?
-	delegatesNotRumored := make([]*types.Node, 0)
-	for _, node := range delegateNodes {
-		if gossip.ContainsRumor(node.Address) || node.Address == disgover.GetDisGoverService().ThisNode.Address {
-			continue
-		}
-		delegatesNotRumored = append(delegatesNotRumored, node)
-	}
-	if len(delegatesNotRumored) == 0 {
-		return nil
-	}
-
-	// Find random delegate.
-	rand.Seed(time.Now().UTC().UnixNano())
-	index := rand.Intn(len(delegatesNotRumored))
-	return delegatesNotRumored[index]
-}
-
-func (this *DAPoSService)broadcast(delegateNodes []*types.Node,gossip *types.Gossip){
-	utils.Debug("broadcasting")
-	for _ , deli := range delegateNodes{
-		_, err := this.peerGossipGrpc(*deli, gossip)
-		if err != nil {
-			utils.Error(err)
-			continue
-		}
-	}
 }

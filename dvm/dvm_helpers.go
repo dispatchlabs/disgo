@@ -112,7 +112,7 @@ func (self *DVMService) applyTransaction(tx *commonTypes.Transaction, stateHelpe
 
 		stateHelper.to = receipt.ContractAddress
 	}
-	// Set the receipt logs and create a bloom for filtering
+	// PersistAndCache the receipt logs and create a bloom for filtering
 	receipt.Logs = stateHelper.ethStateDB.GetLogs(crypto.GetHashBytes(tx.Hash))
 	//receipt.Logs = s.was.state.Logs()
 	receipt.Bloom = ethTypes.CreateBloom(ethTypes.Receipts{receipt})
@@ -192,7 +192,7 @@ func (self *DVMService) call(tx *commonTypes.Transaction, callMsg ethTypes.Messa
 
 	stateHelper.to = receipt.ContractAddress
 	// }
-	// Set the receipt logs and create a bloom for filtering
+	// PersistAndCache the receipt logs and create a bloom for filtering
 	receipt.Logs = stateHelper.ethStateDB.GetLogs(crypto.GetHashBytes(tx.Hash))
 	receipt.Bloom = ethTypes.CreateBloom(ethTypes.Receipts{receipt})
 

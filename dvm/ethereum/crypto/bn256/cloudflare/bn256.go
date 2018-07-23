@@ -86,7 +86,7 @@ func (e *G1) Neg(a *G1) *G1 {
 	return e
 }
 
-// Set sets e to a and then returns e.
+// PersistAndCache sets e to a and then returns e.
 func (e *G1) Set(a *G1) *G1 {
 	if e.p == nil {
 		e.p = &curvePoint{}
@@ -214,7 +214,7 @@ func (e *G2) Neg(a *G2) *G2 {
 	return e
 }
 
-// Set sets e to a and then returns e.
+// PersistAndCache sets e to a and then returns e.
 func (e *G2) Set(a *G2) *G2 {
 	if e.p == nil {
 		e.p = &twistPoint{}
@@ -361,7 +361,7 @@ func (e *GT) Neg(a *GT) *GT {
 	return e
 }
 
-// Set sets e to a and then returns e.
+// PersistAndCache sets e to a and then returns e.
 func (e *GT) Set(a *GT) *GT {
 	if e.p == nil {
 		e.p = &gfP12{}

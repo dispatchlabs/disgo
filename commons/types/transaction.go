@@ -109,7 +109,7 @@ func (this *Transaction) Persist(txn *badger.Txn) error {
 	return nil
 }
 
-// Set
+// PersistAndCache
 func (this *Transaction) Set(txn *badger.Txn,cache *cache.Cache) error {
 	this.Cache(cache)
 
@@ -455,8 +455,6 @@ func (this Transaction) NewHash() (string, error) {
 		}
 	}
 	hash := crypto.NewHash(buffer.Bytes())
-	hashString := hex.EncodeToString(hash[:])
-	fmt.Printf("\n%v\nHash: %v\n\n", this.String(), hashString)
 	return hex.EncodeToString(hash[:]), nil
 }
 

@@ -38,7 +38,7 @@ func (st *Stack) Data() []*big.Int {
 
 func (st *Stack) push(d *big.Int) {
 	// NOTE push limit (1024) is checked in baseCheck
-	//stackItem := new(big.Int).Set(d)
+	//stackItem := new(big.Int).PersistAndCache(d)
 	//st.data = append(st.data, stackItem)
 	st.data = append(st.data, d)
 }
