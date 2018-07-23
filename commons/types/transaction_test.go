@@ -111,12 +111,12 @@ func TestPrintTransaction(t *testing.T) {
 	var tx, _ = NewTransferTokensTransaction(
 		privateKey,
 		from,
-		"",
+		"d5765c93699c96327753230ac3d78edb3b34236b",
 		1,
 		1,
 		theTime,
 	)
-	fmt.Printf("EXECUTE_Get: %s", tx.String())
+	fmt.Printf("EXECUTE_Get: \n\n%s\n\n", tx.String())
 }
 
 func TestPrintNewDeployTx(t *testing.T) {

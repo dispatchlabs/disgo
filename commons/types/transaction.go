@@ -572,6 +572,17 @@ func (this Transaction) String() string {
 	return string(bytes)
 }
 
+// String
+func (this Transaction) ToPrettyJson() string {
+	bytes, err := json.MarshalIndent(this, "", "  ")
+	if err != nil {
+		utils.Error("unable to marshal transaction", err)
+		return ""
+	}
+	return string(bytes)
+}
+
+
 // UnmarshalJSON
 func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 	var jsonMap map[string]interface{}
