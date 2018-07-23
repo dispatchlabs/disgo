@@ -13,18 +13,12 @@ message Node {
 	string   Type = 3;
 }
 
-message Request {
-	string Payload = 1;
-}
-
-message NodeList {
-	repeated Node Nodes = 1;
+message SeedResponse {
+	repeated Node Delegates = 1;
 }
 
 message Empty {}
 
 service DisgoverGrpc {
-	rpc PingGrpc(Node) returns (Node) {}
-	rpc FindGrpc(Request) returns (Node) {}
-	rpc FindByTypeGrpc(Request) returns (NodeList) {}
+	rpc PingSeedGrpc(Node) returns (SeedResponse) {}
 }

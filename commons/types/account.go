@@ -83,7 +83,7 @@ func (this *Account) Persist(txn *badger.Txn) error{
 	return nil
 }
 
-// Set
+// PersistAndCache
 func (this *Account) Set(txn *badger.Txn,cache *cache.Cache) error {
 	this.Cache(cache)
 	err := this.Persist(txn)
@@ -143,7 +143,7 @@ func (this *Account) UnmarshalJSON(bytes []byte) error {
 func (this Account) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Address    string    `json:"address"`
-		PrivateKey string    `json:"privateKey"`
+		PrivateKey string    `json:"privateKey,omitempty"`
 		Name       string    `json:"name"`
 		Balance    int64     `json:"balance"`
 		Updated    time.Time `json:"updated"`

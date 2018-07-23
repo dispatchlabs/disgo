@@ -95,7 +95,7 @@ func TestToAccountsByName(t *testing.T) {
 
 //TestAccountSet
 func TestAccountSet(t *testing.T) {
-	// TODO: account.Set()
+	// TODO: account.PersistAndCache()
 	t.Skip("Need a Badger DB mock")
 }
 

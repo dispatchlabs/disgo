@@ -27,6 +27,7 @@ import (
 	proto "github.com/dispatchlabs/disgo/disgover/proto"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"github.com/pkg/errors"
 )
 
 // WithGrpc - Runs the DisGover service with GRPC transport
@@ -35,131 +36,73 @@ func (this *DisGoverService) WithGrpc() *DisGoverService {
 	return this
 }
 
-// PingGrpc - Called when a PING call was made by a client
-func (this *DisGoverService) PingGrpc(ctx context.Context, node *proto.Node) (*proto.Node, error) {
+// PingSeedGrpc
+func (this *DisGoverService) PingSeedGrpc(ctx context.Context, node *proto.Node) (*proto.SeedResponse, error) {
+
+	// Is this node a seed?
+	if this.ThisNode.Type != types.TypeSeed {
+		return nil, errors.New("you pinged a non-seed node")
+	}
+
+	// Persist node.
+	txn := services.NewTxn(true)
+	defer txn.Discard()
 	domainNode := convertToDomain(node)
+	domainNode.Persist(txn)
 
-	this.addOrUpdatePeer(domainNode)
+	// Get cached delegates.
+	delegates, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
+	if err != nil {
+		return nil, err
+	}
+	var nodes = make([]*proto.Node, 0)
+	for _, delegate := range delegates {
+		nodes = append(nodes, convertToProto(delegate))
+	}
 
-	utils.Info(fmt.Sprintf("received ping [address=%s, ip=%s, port=%d]", node.Address, node.Endpoint.Host, node.Endpoint.Port))
-	return convertToProto(this.ThisNode), nil
+	utils.Info(fmt.Sprintf("received ping [address=%s, ip=%s, port=%d, delegates=%d]", node.Address, node.Endpoint.Host, node.Endpoint.Port, len(delegates)))
+
+	return &proto.SeedResponse{Delegates: nodes}, nil
 }
 
-// peerPingGrpc
-func (this *DisGoverService) peerPingGrpc(contactToPing *types.Node, sender *types.Node) (*types.Node, error) {
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", contactToPing.Endpoint.Host, contactToPing.Endpoint.Port), grpc.WithInsecure())
-	if err != nil {
-		utils.Fatal("cannot dial peer", err)
-		return nil, err
-	}
-	defer conn.Close()
-	client := proto.NewDisgoverGrpcClient(conn)
-	contactProto := convertToProto(sender)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	response, err := client.PingGrpc(ctx, contactProto)
-	if err != nil {
-		utils.Error(err)
-		return nil, err
-	}
-	defer conn.Close()
-
-	if response == nil {
-		utils.Error(fmt.Sprintf("uanble to pinge peer node [address=%s, ip:port=%s:%d]", response.Address, response.Endpoint.Host, response.Endpoint.Port))
-		return nil, nil
-	}
-
-	utils.Info(fmt.Sprintf("pinged peer node [address=%s, ip:port=%s:%d]", response.Address, response.Endpoint.Host, response.Endpoint.Port))
-
-	return convertToDomain(response), nil
-}
-
-// FindGrpc - Called when peerFindGrpc() is called by the client.
-func (this *DisGoverService) FindGrpc(ctx context.Context, request *proto.Request) (*proto.Node, error) {
-
-	// Find node by address?
-	node, err := this.Find(request.Payload)
-	if err != nil {
-		return nil, err
-	}
-	if node == nil {
-		return nil, types.ErrNotFound
-	}
-	return convertToProto(node), nil
-}
-
-// peerFindGrpc
-func (this *DisGoverService) peerFindGrpc(peerToAsk *types.Node, address string) *types.Node {
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", peerToAsk.Endpoint.Host, peerToAsk.Endpoint.Port), grpc.WithInsecure())
-	if err != nil {
-		utils.Error(err)
-	}
-	defer conn.Close()
-	contextWithTimeout, cancel := context.WithTimeout(context.Background(), 2000*time.Millisecond)
-	defer cancel()
-
-	client := proto.NewDisgoverGrpcClient(conn)
-	if err != nil {
-		utils.Error(err)
-		return nil
-	}
-	response, err := client.FindGrpc(contextWithTimeout, &proto.Request{Payload: address})
-	if err != nil {
-		if err != types.ErrNotFound {
-			utils.Error(err)
-		}
-		return nil
-	}
-	if response == nil {
-		return nil
-	}
-	return convertToDomain(response)
-}
-
-// FindByTypeGrpc
-func (this *DisGoverService) FindByTypeGrpc(context context.Context, request *proto.Request) (*proto.NodeList, error) {
-
-	// Find nodes.
-	nodes, err := this.FindByType(request.Payload)
-	if err != nil {
-		return nil, err
-	}
-
-	// Convert to domain.
-	protoNodes := make([]*proto.Node, 0)
-	for _, node := range nodes {
-		protoNodes = append(protoNodes, convertToProto(node))
-	}
-
-	return &proto.NodeList{Nodes: protoNodes}, nil
-}
-
-// peerFindByTypeGrpc
-func (this *DisGoverService) peerFindByTypeGrpc(peerToAsk *types.Node, tipe string) ([]*types.Node, error) {
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", peerToAsk.Endpoint.Host, peerToAsk.Endpoint.Port), grpc.WithInsecure())
-	if err != nil {
-		utils.Error(err)
-	}
-	defer conn.Close()
-	contextWithTimeout, cancel := context.WithTimeout(context.Background(), 2000*time.Millisecond)
-	defer cancel()
-
-	client := proto.NewDisgoverGrpcClient(conn)
-	if err != nil {
-		utils.Error(err)
-		return nil, err
-	}
-	response, err := client.FindByTypeGrpc(contextWithTimeout, &proto.Request{Payload: tipe})
-	if err != nil {
-		utils.Error(err)
-		return nil, err
-	}
+// peerPingSeedGrpc
+func (this *DisGoverService) peerPingSeedGrpc() ([]*types.Node, error) {
 
 	var nodes = make([]*types.Node, 0)
-	for _, node := range response.Nodes {
-		nodes = append(nodes, convertToDomain(node))
+	for _, seedEndpoint := range types.GetConfig().SeedEndpoints {
+		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", seedEndpoint.Host, seedEndpoint.Port), grpc.WithInsecure())
+		if err != nil {
+			utils.Fatal(fmt.Sprintf("cannot dial seed [host=%s, port=%d]", seedEndpoint.Host, seedEndpoint.Port), err)
+			return nil, err
+		}
+		defer conn.Close()
+		client := proto.NewDisgoverGrpcClient(conn)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		// Ping seed.
+		response, err := client.PingSeedGrpc(ctx, convertToProto(this.ThisNode))
+		if err != nil {
+			utils.Error(err)
+			return nil, err
+		}
+		defer conn.Close()
+
+		// Response?
+		if response == nil {
+			utils.Error("unable to ping seed node")
+			return nil, errors.New("unable to ping seed node")
+		}
+
+		utils.Info(fmt.Sprintf("pinged seed node [delegates=%d]", len(response.Delegates)))
+
+		for _, node := range response.Delegates {
+			nodes = append(nodes, convertToDomain(node))
+		}
+		return nodes, nil
 	}
-	return nodes, nil
+
+	return nil, errors.New("unable to ping any seed nodes")
 }
 
 /*
@@ -190,19 +133,3 @@ func convertToProto(node *types.Node) *proto.Node {
 		Type: node.Type,
 	}
 }
-
-// func getIpFromContext(ctx context.Context) string {
-// 	// grpcPeer "google.golang.org/grpc/peer"
-
-// 	thePeer, ok := grpcPeer.FromContext(ctx)
-// 	if !ok {
-// 		return nil, fmt.Errorf("Disgover-TRACE: failed to get peer from ctx")
-// 	}
-// 	if thePeer.Addr == net.Addr(nil) {
-// 		return nil, fmt.Errorf("Disgover-TRACE: failed to get peer address")
-// 	}
-
-// 	var peerAddressWithPort = thePeer.Addr.String()
-
-// 	return (peerAddressWithPort[0:strings.Index(peerAddressWithPort, ":")], "")
-// }

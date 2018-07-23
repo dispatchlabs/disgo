@@ -26,6 +26,8 @@ import (
 	"github.com/libp2p/go-libp2p-kbucket"
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-peerstore"
+	"github.com/dispatchlabs/disgo/commons/services"
+	"github.com/patrickmn/go-cache"
 )
 
 var disGoverServiceInstance *DisGoverService
@@ -45,31 +47,11 @@ var (
 // GetDisGoverService
 func GetDisGoverService() *DisGoverService {
 	disGoverServiceOnce.Do(func() {
-		thisNodeType := types.TypeNode
-
-		// Check if we are a SEED
-		for _, endpoint := range types.GetConfig().SeedEndpoints {
-			var portAndIP1 = fmt.Sprintf("%s:%d", endpoint.Host, endpoint.Port)
-			var portAndIP2 = fmt.Sprintf("%s:%d", types.GetConfig().GrpcEndpoint.Host, types.GetConfig().GrpcEndpoint.Port)
-
-			if portAndIP1 == portAndIP2 {
-				thisNodeType = types.TypeSeed
-				break
-			}
-		}
-
-		// If no seeds are specified then we are THE seed
-		if thisNodeType == types.TypeNode && len(types.GetConfig().SeedEndpoints) == 0 {
-			thisNodeType = types.TypeSeed
-		}
-
-		utils.Info(fmt.Sprintf("running as %s", thisNodeType))
-
 		disGoverServiceInstance = &DisGoverService{
 			ThisNode: &types.Node{
 				Address:  types.GetAccount().Address,
 				Endpoint: types.GetConfig().GrpcEndpoint,
-				Type:     thisNodeType,
+				Type:     types.TypeNode,
 			},
 			// lruCache: lCache,
 			kdht: kbucket.NewRoutingTable(
@@ -87,7 +69,6 @@ func GetDisGoverService() *DisGoverService {
 // DisGoverService
 type DisGoverService struct {
 	ThisNode  *types.Node
-	seedNodes []*types.Node
 	kdht      *kbucket.RoutingTable
 	running   bool
 }
@@ -100,70 +81,36 @@ func (this *DisGoverService) IsRunning() bool {
 // Go - Starts, Init and Runs the service
 func (this *DisGoverService) Go(waitGroup *sync.WaitGroup) {
 	this.running = true
-	utils.Info("running")
-	if this.ThisNode.Type == types.TypeSeed{
-		this.saveDelegatesFromConfigToCache()
+
+	// Check if we are a seed.
+	for _, seedEndpoint := range types.GetConfig().SeedEndpoints {
+		if seedEndpoint.Host == types.GetConfig().GrpcEndpoint.Host && seedEndpoint.Port == types.GetConfig().GrpcEndpoint.Port {
+			this.ThisNode.Type = types.TypeSeed
+			break
+		}
 	}
-	go this.pingSeedNodes()
-}
 
-// pingSeedNodes
-func (this *DisGoverService) pingSeedNodes() {
-	utils.Info("PING seed nodes...")
-
-	// Ping Seed List
-	for _, endpoint := range types.GetConfig().SeedEndpoints {
-		var seedNode *types.Node
-		var portAndIP1 = fmt.Sprintf("%s:%d", endpoint.Host, endpoint.Port)
-		var portAndIP2 = fmt.Sprintf("%s:%d", types.GetConfig().GrpcEndpoint.Host, types.GetConfig().GrpcEndpoint.Port)
-
-		// IF - WE are the seed then do nothing
-		if portAndIP1 == portAndIP2 {
-			continue
-		}
-
-		// ELSE - init a new object and query it
-		seedNode = &types.Node{
-			Address:  "",
-			Endpoint: endpoint,
-			Type:     types.TypeSeed,
-		}
-
+	// Cache delegates.
+	var delegates []*types.Node
+	if this.ThisNode.Type == types.TypeSeed {
+		delegates = types.GetConfig().Delegates
+	} else {
 		var err error
-		//seedNode, err = this.peerPingGrpc(seedNode, this.ThisNode)
-		//if err != nil {
-		//	utils.Error(err)
-		//	continue
-		//}
-		//add the seed nodes
-		this.seedNodes = append(this.seedNodes, seedNode)
-		this.addOrUpdatePeer(seedNode)
-
-		//ask them for delegates
-		delis, err := this.FindByType(types.TypeDelegate)
-		if err != nil{
-			utils.Error(err)
-			continue
+		delegates, err = this.peerPingSeedGrpc()
+		if err != nil {
+			utils.Fatal(err)
 		}
-		//check if we are one
-		for _, deli := range delis {
-			deliPortAndIP1 := fmt.Sprintf("%s:%d", deli.Endpoint.Host, deli.Endpoint.Port)
-			if deliPortAndIP1 == portAndIP2 {
-				this.ThisNode.Type = types.TypeDelegate
-			}
+	}
+	for _, delegate := range delegates {
+		if delegate.Address == "" {
+			delegate.Address = fmt.Sprintf("%s-%d", delegate.Endpoint.Host, int(delegate.Endpoint.Port))
 		}
-		seedNode, err = this.peerPingGrpc(seedNode, this.ThisNode) // tell the seed
-		utils.Info(fmt.Sprintf("pinged seed [address=%s, ip:port=%s:%d]", seedNode.Address, seedNode.Endpoint.Host, seedNode.Endpoint.Port))
+		delegate.Cache(services.GetCache(), cache.NoExpiration)
+		if delegate.Address == this.ThisNode.Address || fmt.Sprintf("%s-%d", delegate.Endpoint.Host, int(delegate.Endpoint.Port)) == fmt.Sprintf("%s-%d", this.ThisNode.Endpoint.Host, int(this.ThisNode.Endpoint.Port)) {
+			this.ThisNode.Type = types.TypeDelegate
+		}
 	}
 
+	utils.Info(fmt.Sprintf("running as %s", this.ThisNode.Type))
 	utils.Events().Raise(Events.DisGoverServiceInitFinished)
-	return
-}
-
-func (this *DisGoverService) saveDelegatesFromConfigToCache() {
-
-	for _, deli := range types.GetConfig().Delegates {
-		this.addOrUpdatePeer(deli)
-	}
-	this.addOrUpdatePeer(this.ThisNode)// TODO: should we be adding ourselves
 }

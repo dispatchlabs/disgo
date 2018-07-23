@@ -74,6 +74,13 @@ func ToPublicKey(hash []byte, signature []byte) ([]byte, error) {
 	return publicKey, nil
 }
 
+// ToAddress
+func ToAddress(publicKey []byte) []byte {
+	hash := NewHash(publicKey[1:])
+	address := hash[12:]
+	return address
+}
+
 // NewSignature
 func NewSignature(privateKey []byte, hash []byte) ([]byte, error) {
 	signature, err := secp256k1.Sign(hash, privateKey)
@@ -88,12 +95,6 @@ func VerifySignature(publicKey []byte, hash []byte, signature []byte) bool {
 	return secp256k1.VerifySignature(publicKey, hash, signature[:len(signature)-1])
 }
 
-// ToAddress
-func ToAddress(publicKey []byte) []byte {
-	hash := NewHash(publicKey[1:])
-	address := hash[12:]
-	return address
-}
 
 func ToBytesFromECDSAPublicKey(pub *ecdsa.PublicKey) []byte {
 	if pub == nil || pub.X == nil || pub.Y == nil {

@@ -28,7 +28,7 @@ func NewMemory() *Memory {
 	return &Memory{}
 }
 
-// Set sets offset + size to value
+// PersistAndCache sets offset + size to value
 func (m *Memory) Set(offset, size uint64, value []byte) {
 	// length of store may never be less than offset + size.
 	// The store should be resized PRIOR to setting the memory
