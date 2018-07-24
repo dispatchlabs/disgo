@@ -79,7 +79,7 @@ func (this *DisGoverService) IsRunning() bool {
 }
 
 // Go - Starts, Init and Runs the service
-func (this *DisGoverService) Go(waitGroup *sync.WaitGroup) {
+func (this *DisGoverService) Go() {
 	this.running = true
 
 	// Check if we are a seed.
@@ -105,10 +105,10 @@ func (this *DisGoverService) Go(waitGroup *sync.WaitGroup) {
 		if delegate.Address == "" {
 			delegate.Address = fmt.Sprintf("%s-%d", delegate.Endpoint.Host, int(delegate.Endpoint.Port))
 		}
-		delegate.Cache(services.GetCache(), cache.NoExpiration)
 		if delegate.Address == this.ThisNode.Address || fmt.Sprintf("%s-%d", delegate.Endpoint.Host, int(delegate.Endpoint.Port)) == fmt.Sprintf("%s-%d", this.ThisNode.Endpoint.Host, int(this.ThisNode.Endpoint.Port)) {
 			this.ThisNode.Type = types.TypeDelegate
 		}
+		delegate.Cache(services.GetCache(), cache.NoExpiration)
 	}
 
 	utils.Info(fmt.Sprintf("running as %s", this.ThisNode.Type))

@@ -65,7 +65,7 @@ func (this *DAPoSService) IsRunning() bool {
 }
 
 // Go -
-func (this *DAPoSService) Go(waitGroup *sync.WaitGroup) {
+func (this *DAPoSService) Go() {
 	this.running = true
 	utils.Info("running, waiting for delegates sync")
 
