@@ -61,7 +61,7 @@ func (this *HttpService) IsRunning() bool {
 }
 
 // Go -
-func (this *HttpService) Go(waitGroup *sync.WaitGroup) {
+func (this *HttpService) Go() {
 	this.running = true
 	listen := fmt.Sprintf("%s:%d", this.Endpoint.Host, this.Endpoint.Port)
 	utils.Info("listening on http://" + listen)
