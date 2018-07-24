@@ -25,9 +25,10 @@ import (
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	proto "github.com/dispatchlabs/disgo/disgover/proto"
+	cache "github.com/patrickmn/go-cache"
+	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"github.com/pkg/errors"
 )
 
 // WithGrpc - Runs the DisGover service with GRPC transport
@@ -44,17 +45,31 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, node *proto.Node)
 		return nil, errors.New("you pinged a non-seed node")
 	}
 
-	// Persist node.
+	// TODO: TEMP-Fix
+	node.Type = types.TypeDelegate
+
+	// Persist NEW Delegate
 	txn := services.NewTxn(true)
 	defer txn.Discard()
-	domainNode := convertToDomain(node)
-	domainNode.Persist(txn)
+
+	newOrUpdatedDelegate := convertToDomain(node)
+	newOrUpdatedDelegate.Persist(txn)                                   // Save to Badger
+	newOrUpdatedDelegate.Cache(services.GetCache(), cache.NoExpiration) // Save to Cache
+
+	// Drop OLD Delegate
+	txn2 := services.NewTxn(true)
+	defer txn2.Discard()
+
+	newOrUpdatedDelegate2 := convertToDomain(node)
+	newOrUpdatedDelegate2.Address = fmt.Sprintf("%s-%d", newOrUpdatedDelegate2.Endpoint.Host, int(newOrUpdatedDelegate2.Endpoint.Port))
+	newOrUpdatedDelegate2.Unset(txn2, services.GetCache())
 
 	// Get cached delegates.
 	delegates, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
 	if err != nil {
 		return nil, err
 	}
+
 	var nodes = make([]*proto.Node, 0)
 	for _, delegate := range delegates {
 		nodes = append(nodes, convertToProto(delegate))
