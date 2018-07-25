@@ -23,6 +23,36 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
+type Empty struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Empty) Reset()         { *m = Empty{} }
+func (m *Empty) String() string { return proto.CompactTextString(m) }
+func (*Empty) ProtoMessage()    {}
+func (*Empty) Descriptor() ([]byte, []int) {
+	return fileDescriptor_disgover_a6811bf8d9f5ed5a, []int{0}
+}
+func (m *Empty) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Empty.Unmarshal(m, b)
+}
+func (m *Empty) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Empty.Marshal(b, m, deterministic)
+}
+func (dst *Empty) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Empty.Merge(dst, src)
+}
+func (m *Empty) XXX_Size() int {
+	return xxx_messageInfo_Empty.Size(m)
+}
+func (m *Empty) XXX_DiscardUnknown() {
+	xxx_messageInfo_Empty.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Empty proto.InternalMessageInfo
+
 type Endpoint struct {
 	Host                 string   `protobuf:"bytes,1,opt,name=Host,proto3" json:"Host,omitempty"`
 	Port                 int64    `protobuf:"varint,2,opt,name=Port,proto3" json:"Port,omitempty"`
@@ -35,7 +65,7 @@ func (m *Endpoint) Reset()         { *m = Endpoint{} }
 func (m *Endpoint) String() string { return proto.CompactTextString(m) }
 func (*Endpoint) ProtoMessage()    {}
 func (*Endpoint) Descriptor() ([]byte, []int) {
-	return fileDescriptor_disgover_e3d49bf213c3e478, []int{0}
+	return fileDescriptor_disgover_a6811bf8d9f5ed5a, []int{1}
 }
 func (m *Endpoint) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Endpoint.Unmarshal(m, b)
@@ -82,7 +112,7 @@ func (m *Node) Reset()         { *m = Node{} }
 func (m *Node) String() string { return proto.CompactTextString(m) }
 func (*Node) ProtoMessage()    {}
 func (*Node) Descriptor() ([]byte, []int) {
-	return fileDescriptor_disgover_e3d49bf213c3e478, []int{1}
+	return fileDescriptor_disgover_a6811bf8d9f5ed5a, []int{2}
 }
 func (m *Node) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Node.Unmarshal(m, b)
@@ -123,79 +153,49 @@ func (m *Node) GetType() string {
 	return ""
 }
 
-type SeedResponse struct {
+type NodeList struct {
 	Delegates            []*Node  `protobuf:"bytes,1,rep,name=Delegates,proto3" json:"Delegates,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *SeedResponse) Reset()         { *m = SeedResponse{} }
-func (m *SeedResponse) String() string { return proto.CompactTextString(m) }
-func (*SeedResponse) ProtoMessage()    {}
-func (*SeedResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_disgover_e3d49bf213c3e478, []int{2}
+func (m *NodeList) Reset()         { *m = NodeList{} }
+func (m *NodeList) String() string { return proto.CompactTextString(m) }
+func (*NodeList) ProtoMessage()    {}
+func (*NodeList) Descriptor() ([]byte, []int) {
+	return fileDescriptor_disgover_a6811bf8d9f5ed5a, []int{3}
 }
-func (m *SeedResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_SeedResponse.Unmarshal(m, b)
+func (m *NodeList) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_NodeList.Unmarshal(m, b)
 }
-func (m *SeedResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_SeedResponse.Marshal(b, m, deterministic)
+func (m *NodeList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_NodeList.Marshal(b, m, deterministic)
 }
-func (dst *SeedResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_SeedResponse.Merge(dst, src)
+func (dst *NodeList) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_NodeList.Merge(dst, src)
 }
-func (m *SeedResponse) XXX_Size() int {
-	return xxx_messageInfo_SeedResponse.Size(m)
+func (m *NodeList) XXX_Size() int {
+	return xxx_messageInfo_NodeList.Size(m)
 }
-func (m *SeedResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_SeedResponse.DiscardUnknown(m)
+func (m *NodeList) XXX_DiscardUnknown() {
+	xxx_messageInfo_NodeList.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_SeedResponse proto.InternalMessageInfo
+var xxx_messageInfo_NodeList proto.InternalMessageInfo
 
-func (m *SeedResponse) GetDelegates() []*Node {
+func (m *NodeList) GetDelegates() []*Node {
 	if m != nil {
 		return m.Delegates
 	}
 	return nil
 }
 
-type Empty struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Empty) Reset()         { *m = Empty{} }
-func (m *Empty) String() string { return proto.CompactTextString(m) }
-func (*Empty) ProtoMessage()    {}
-func (*Empty) Descriptor() ([]byte, []int) {
-	return fileDescriptor_disgover_e3d49bf213c3e478, []int{3}
-}
-func (m *Empty) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Empty.Unmarshal(m, b)
-}
-func (m *Empty) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Empty.Marshal(b, m, deterministic)
-}
-func (dst *Empty) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Empty.Merge(dst, src)
-}
-func (m *Empty) XXX_Size() int {
-	return xxx_messageInfo_Empty.Size(m)
-}
-func (m *Empty) XXX_DiscardUnknown() {
-	xxx_messageInfo_Empty.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Empty proto.InternalMessageInfo
-
 func init() {
+	proto.RegisterType((*Empty)(nil), "disgover.Empty")
 	proto.RegisterType((*Endpoint)(nil), "disgover.Endpoint")
 	proto.RegisterType((*Node)(nil), "disgover.Node")
-	proto.RegisterType((*SeedResponse)(nil), "disgover.SeedResponse")
-	proto.RegisterType((*Empty)(nil), "disgover.Empty")
+	proto.RegisterType((*NodeList)(nil), "disgover.NodeList")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -210,7 +210,8 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type DisgoverGrpcClient interface {
-	PingSeedGrpc(ctx context.Context, in *Node, opts ...grpc.CallOption) (*SeedResponse, error)
+	PingSeedGrpc(ctx context.Context, in *Node, opts ...grpc.CallOption) (*NodeList, error)
+	UpdateGrpc(ctx context.Context, in *NodeList, opts ...grpc.CallOption) (*Empty, error)
 }
 
 type disgoverGrpcClient struct {
@@ -221,9 +222,18 @@ func NewDisgoverGrpcClient(cc *grpc.ClientConn) DisgoverGrpcClient {
 	return &disgoverGrpcClient{cc}
 }
 
-func (c *disgoverGrpcClient) PingSeedGrpc(ctx context.Context, in *Node, opts ...grpc.CallOption) (*SeedResponse, error) {
-	out := new(SeedResponse)
+func (c *disgoverGrpcClient) PingSeedGrpc(ctx context.Context, in *Node, opts ...grpc.CallOption) (*NodeList, error) {
+	out := new(NodeList)
 	err := c.cc.Invoke(ctx, "/disgover.DisgoverGrpc/PingSeedGrpc", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *disgoverGrpcClient) UpdateGrpc(ctx context.Context, in *NodeList, opts ...grpc.CallOption) (*Empty, error) {
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, "/disgover.DisgoverGrpc/UpdateGrpc", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +242,8 @@ func (c *disgoverGrpcClient) PingSeedGrpc(ctx context.Context, in *Node, opts ..
 
 // DisgoverGrpcServer is the server API for DisgoverGrpc service.
 type DisgoverGrpcServer interface {
-	PingSeedGrpc(context.Context, *Node) (*SeedResponse, error)
+	PingSeedGrpc(context.Context, *Node) (*NodeList, error)
+	UpdateGrpc(context.Context, *NodeList) (*Empty, error)
 }
 
 func RegisterDisgoverGrpcServer(s *grpc.Server, srv DisgoverGrpcServer) {
@@ -257,6 +268,24 @@ func _DisgoverGrpc_PingSeedGrpc_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DisgoverGrpc_UpdateGrpc_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NodeList)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DisgoverGrpcServer).UpdateGrpc(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/disgover.DisgoverGrpc/UpdateGrpc",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DisgoverGrpcServer).UpdateGrpc(ctx, req.(*NodeList))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _DisgoverGrpc_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "disgover.DisgoverGrpc",
 	HandlerType: (*DisgoverGrpcServer)(nil),
@@ -265,28 +294,33 @@ var _DisgoverGrpc_serviceDesc = grpc.ServiceDesc{
 			MethodName: "PingSeedGrpc",
 			Handler:    _DisgoverGrpc_PingSeedGrpc_Handler,
 		},
+		{
+			MethodName: "UpdateGrpc",
+			Handler:    _DisgoverGrpc_UpdateGrpc_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "disgover.proto",
 }
 
-func init() { proto.RegisterFile("disgover.proto", fileDescriptor_disgover_e3d49bf213c3e478) }
+func init() { proto.RegisterFile("disgover.proto", fileDescriptor_disgover_a6811bf8d9f5ed5a) }
 
-var fileDescriptor_disgover_e3d49bf213c3e478 = []byte{
-	// 226 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x5c, 0x90, 0x41, 0x4b, 0x03, 0x31,
-	0x10, 0x85, 0x5d, 0xb7, 0xda, 0x76, 0xba, 0xf4, 0x30, 0x07, 0x09, 0x9e, 0x4a, 0x4e, 0x7b, 0x90,
-	0x3d, 0xc4, 0x8b, 0x07, 0x2f, 0x42, 0x8b, 0x3d, 0x49, 0x89, 0xfe, 0x01, 0x35, 0xc3, 0xb2, 0xa0,
-	0x99, 0x90, 0x04, 0xa1, 0xff, 0x5e, 0x12, 0x77, 0x8d, 0xf6, 0xf6, 0x5e, 0x32, 0xf3, 0xbe, 0xc7,
-	0xc0, 0xda, 0x0c, 0xa1, 0xe7, 0x2f, 0xf2, 0x9d, 0xf3, 0x1c, 0x19, 0x17, 0x93, 0x97, 0x0a, 0x16,
-	0x3b, 0x6b, 0x1c, 0x0f, 0x36, 0x22, 0xc2, 0x6c, 0xcf, 0x21, 0x8a, 0x6a, 0x53, 0xb5, 0x4b, 0x9d,
-	0x75, 0x7a, 0x3b, 0xb0, 0x8f, 0xe2, 0x7c, 0x53, 0xb5, 0xb5, 0xce, 0x5a, 0x1a, 0x98, 0x3d, 0xb1,
-	0x21, 0x14, 0x30, 0x7f, 0x30, 0xc6, 0x53, 0x08, 0xe3, 0xca, 0x64, 0xb1, 0x2b, 0xa9, 0x79, 0x73,
-	0xa5, 0xb0, 0xfb, 0xad, 0x30, 0xfd, 0xe8, 0x7f, 0xe4, 0x97, 0xa3, 0x23, 0x51, 0xff, 0x90, 0x93,
-	0x96, 0xf7, 0xd0, 0x3c, 0x13, 0x19, 0x4d, 0xc1, 0xb1, 0x0d, 0x84, 0x37, 0xb0, 0xdc, 0xd2, 0x07,
-	0xf5, 0xaf, 0x91, 0x12, 0xaf, 0x6e, 0x57, 0x6a, 0x5d, 0x42, 0x53, 0x21, 0x5d, 0x06, 0xe4, 0x1c,
-	0x2e, 0x76, 0x9f, 0x2e, 0x1e, 0xd5, 0x1e, 0x9a, 0xed, 0x38, 0xf4, 0xe8, 0xdd, 0x3b, 0xde, 0x41,
-	0x73, 0x18, 0x6c, 0x9f, 0xa2, 0xb3, 0x3f, 0xc9, 0xb8, 0xbe, 0x2a, 0xfe, 0x2f, 0x5e, 0x9e, 0xbd,
-	0x5d, 0xe6, 0xdb, 0xdd, 0x7e, 0x07, 0x00, 0x00, 0xff, 0xff, 0xc9, 0x43, 0x47, 0xe9, 0x4d, 0x01,
-	0x00, 0x00,
+var fileDescriptor_disgover_a6811bf8d9f5ed5a = []byte{
+	// 241 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x90, 0x41, 0x4b, 0xc3, 0x40,
+	0x10, 0x85, 0x1b, 0x53, 0x6d, 0x3a, 0x2d, 0x15, 0xe6, 0x14, 0x7a, 0x2a, 0x7b, 0xca, 0x41, 0x72,
+	0x48, 0x3d, 0x78, 0x15, 0x5a, 0xf4, 0x20, 0x52, 0xa2, 0xfe, 0x80, 0xea, 0x0c, 0x61, 0x41, 0xb3,
+	0xcb, 0xee, 0x20, 0xe4, 0xdf, 0xcb, 0xae, 0x8d, 0x31, 0xe2, 0xed, 0xbd, 0xcc, 0x7b, 0xf3, 0x65,
+	0x07, 0x56, 0xa4, 0x7d, 0x63, 0x3e, 0xd9, 0x95, 0xd6, 0x19, 0x31, 0x98, 0xf5, 0x5e, 0xcd, 0xe0,
+	0x7c, 0xff, 0x61, 0xa5, 0x53, 0x15, 0x64, 0xfb, 0x96, 0xac, 0xd1, 0xad, 0x20, 0xc2, 0xf4, 0xde,
+	0x78, 0xc9, 0x93, 0x4d, 0x52, 0xcc, 0xeb, 0xa8, 0xc3, 0xb7, 0x83, 0x71, 0x92, 0x9f, 0x6d, 0x92,
+	0x22, 0xad, 0xa3, 0x56, 0x04, 0xd3, 0x47, 0x43, 0x8c, 0x39, 0xcc, 0x6e, 0x89, 0x1c, 0x7b, 0x7f,
+	0xaa, 0xf4, 0x16, 0xcb, 0x61, 0x6b, 0x6c, 0x2e, 0x2a, 0x2c, 0x7f, 0xfe, 0xa5, 0x9f, 0xd4, 0x23,
+	0xf2, 0x73, 0x67, 0x39, 0x4f, 0xbf, 0xc9, 0x41, 0xab, 0x1b, 0xc8, 0x02, 0xe5, 0x41, 0x7b, 0xc1,
+	0x2b, 0x98, 0xef, 0xf8, 0x9d, 0x9b, 0xa3, 0x70, 0x60, 0xa5, 0xc5, 0xa2, 0x5a, 0x0d, 0x0b, 0x43,
+	0xac, 0x1e, 0x02, 0x55, 0x07, 0xcb, 0xdd, 0x69, 0x76, 0xe7, 0xec, 0x1b, 0x5e, 0xc3, 0xf2, 0xa0,
+	0xdb, 0xe6, 0x89, 0x99, 0xa2, 0xff, 0x53, 0x5d, 0xe3, 0xd8, 0x07, 0xa2, 0x9a, 0xe0, 0x16, 0xe0,
+	0xc5, 0xd2, 0x51, 0x38, 0x76, 0xfe, 0xc9, 0xac, 0x2f, 0x7f, 0xbd, 0x29, 0x1e, 0x73, 0xf2, 0x7a,
+	0x11, 0x0f, 0xbd, 0xfd, 0x0a, 0x00, 0x00, 0xff, 0xff, 0x63, 0x14, 0x81, 0x5a, 0x7a, 0x01, 0x00,
+	0x00,
 }

@@ -392,7 +392,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	}
 
 	// Save gossip.
-	err = gossip.PersisteAndCache(txn, services.GetCache())
+	err = gossip.PersistAndCache(txn, services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError

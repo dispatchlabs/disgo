@@ -55,7 +55,7 @@ func (this *Gossip) Persist(txn *badger.Txn) error{
 }
 
 // PersistAndCache
-func (this *Gossip) PersisteAndCache(txn *badger.Txn,cache *cache.Cache) error {
+func (this *Gossip) PersistAndCache(txn *badger.Txn,cache *cache.Cache) error {
 	this.Cache(cache)
 	err := this.Persist(txn)
 	if err != nil {

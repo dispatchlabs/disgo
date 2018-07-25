@@ -2,6 +2,9 @@ syntax = "proto3";
 
 package disgover;
 
+message Empty {
+}
+
 message Endpoint {
 	string Host = 1;
 	int64 Port = 2;
@@ -13,12 +16,11 @@ message Node {
 	string   Type = 3;
 }
 
-message SeedResponse {
+message NodeList {
 	repeated Node Delegates = 1;
 }
 
-message Empty {}
-
 service DisgoverGrpc {
-	rpc PingSeedGrpc(Node) returns (SeedResponse) {}
+	rpc PingSeedGrpc(Node) returns (NodeList) {}
+	rpc UpdateGrpc(NodeList) returns (Empty) {}
 }
