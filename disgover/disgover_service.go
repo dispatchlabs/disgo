@@ -21,12 +21,12 @@ import (
 	"sync"
 
 	//"github.com/dispatchlabs/disgo/commons/services"
+	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/libp2p/go-libp2p-kbucket"
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-peerstore"
-	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/patrickmn/go-cache"
 )
 
@@ -68,9 +68,9 @@ func GetDisGoverService() *DisGoverService {
 
 // DisGoverService
 type DisGoverService struct {
-	ThisNode  *types.Node
-	kdht      *kbucket.RoutingTable
-	running   bool
+	ThisNode *types.Node
+	kdht     *kbucket.RoutingTable
+	running  bool
 }
 
 // IsRunning - Returns the status if service is running
@@ -84,10 +84,14 @@ func (this *DisGoverService) Go() {
 
 	// Check if we are a seed.
 	for _, seedEndpoint := range types.GetConfig().SeedEndpoints {
-		if seedEndpoint.Host == types.GetConfig().GrpcEndpoint.Host && seedEndpoint.Port == types.GetConfig().GrpcEndpoint.Port {
+		if seedEndpoint.Host == types.GetConfig().GrpcEndpoint.Host &&
+			seedEndpoint.Port == types.GetConfig().GrpcEndpoint.Port {
 			this.ThisNode.Type = types.TypeSeed
 			break
 		}
+	}
+	if types.GetConfig().SeedEndpoints == nil || len(types.GetConfig().SeedEndpoints) == 0 {
+		this.ThisNode.Type = types.TypeSeed
 	}
 
 	// Cache delegates.
