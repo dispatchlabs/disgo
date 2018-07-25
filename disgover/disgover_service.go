@@ -21,12 +21,12 @@ import (
 	"sync"
 
 	//"github.com/dispatchlabs/disgo/commons/services"
+	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/libp2p/go-libp2p-kbucket"
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-peerstore"
-	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/patrickmn/go-cache"
 )
 
@@ -51,7 +51,7 @@ func GetDisGoverService() *DisGoverService {
 			ThisNode: &types.Node{
 				Address:  types.GetAccount().Address,
 				Endpoint: types.GetConfig().GrpcEndpoint,
-				Type:     types.TypeNode,
+				Type:     types.TypeDelegate,
 			},
 			// lruCache: lCache,
 			kdht: kbucket.NewRoutingTable(
@@ -68,9 +68,9 @@ func GetDisGoverService() *DisGoverService {
 
 // DisGoverService
 type DisGoverService struct {
-	ThisNode  *types.Node
-	kdht      *kbucket.RoutingTable
-	running   bool
+	ThisNode *types.Node
+	kdht     *kbucket.RoutingTable
+	running  bool
 }
 
 // IsRunning - Returns the status if service is running
@@ -89,26 +89,20 @@ func (this *DisGoverService) Go() {
 			break
 		}
 	}
+	if types.GetConfig().SeedEndpoints == nil || len(types.GetConfig().SeedEndpoints) == 0 {
+		this.ThisNode.Type = types.TypeSeed
+	}
 
 	// Cache delegates.
-	var delegates []*types.Node
-	if this.ThisNode.Type == types.TypeSeed {
-		delegates = types.GetConfig().Delegates
-	} else {
-		var err error
-		delegates, err = this.peerPingSeedGrpc()
+	if this.ThisNode.Type == types.TypeDelegate {
+		delegates, err := this.peerPingSeedGrpc()
 		if err != nil {
 			utils.Fatal(err)
 		}
-	}
-	for _, delegate := range delegates {
-		if delegate.Address == "" {
-			delegate.Address = fmt.Sprintf("%s-%d", delegate.Endpoint.Host, int(delegate.Endpoint.Port))
+
+		for _, delegate := range delegates {
+			delegate.Cache(services.GetCache(), cache.NoExpiration)
 		}
-		if delegate.Address == this.ThisNode.Address || fmt.Sprintf("%s-%d", delegate.Endpoint.Host, int(delegate.Endpoint.Port)) == fmt.Sprintf("%s-%d", this.ThisNode.Endpoint.Host, int(this.ThisNode.Endpoint.Port)) {
-			this.ThisNode.Type = types.TypeDelegate
-		}
-		delegate.Cache(services.GetCache(), cache.NoExpiration)
 	}
 
 	utils.Info(fmt.Sprintf("running as %s", this.ThisNode.Type))

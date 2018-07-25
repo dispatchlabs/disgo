@@ -25,10 +25,10 @@ import (
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	proto "github.com/dispatchlabs/disgo/disgover/proto"
-	cache "github.com/patrickmn/go-cache"
+	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"github.com/pkg/errors"
+	"github.com/patrickmn/go-cache"
 )
 
 // WithGrpc - Runs the DisGover service with GRPC transport
@@ -38,31 +38,17 @@ func (this *DisGoverService) WithGrpc() *DisGoverService {
 }
 
 // PingSeedGrpc
-func (this *DisGoverService) PingSeedGrpc(ctx context.Context, node *proto.Node) (*proto.SeedResponse, error) {
+func (this *DisGoverService) PingSeedGrpc(ctx context.Context, node *proto.Node) (*proto.NodeList, error) {
 
 	// Is this node a seed?
 	if this.ThisNode.Type != types.TypeSeed {
 		return nil, errors.New("you pinged a non-seed node")
 	}
 
-	// TODO: TEMP-Fix
-	node.Type = types.TypeDelegate
-
-	// Persist NEW Delegate
+	// Persist and cache  delegate.
 	txn := services.NewTxn(true)
 	defer txn.Discard()
-
-	newOrUpdatedDelegate := convertToDomain(node)
-	newOrUpdatedDelegate.Persist(txn)                                   // Save to Badger
-	newOrUpdatedDelegate.Cache(services.GetCache(), cache.NoExpiration) // Save to Cache
-
-	// Drop OLD Delegate
-	txn2 := services.NewTxn(true)
-	defer txn2.Discard()
-
-	newOrUpdatedDelegate2 := convertToDomain(node)
-	newOrUpdatedDelegate2.Address = fmt.Sprintf("%s-%d", newOrUpdatedDelegate2.Endpoint.Host, int(newOrUpdatedDelegate2.Endpoint.Port))
-	newOrUpdatedDelegate2.Unset(txn2, services.GetCache())
+	convertToDomain(node).PersistAndCache(txn, services.GetCache())
 
 	// Get cached delegates.
 	delegates, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
@@ -77,13 +63,16 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, node *proto.Node)
 
 	utils.Info(fmt.Sprintf("received ping [address=%s, ip=%s, port=%d, delegates=%d]", node.Address, node.Endpoint.Host, node.Endpoint.Port, len(delegates)))
 
-	return &proto.SeedResponse{Delegates: nodes}, nil
+	// Update all peers.
+	this.peerUpdateGrpc()
+
+	return &proto.NodeList{Delegates: nodes}, nil
 }
 
 // peerPingSeedGrpc
 func (this *DisGoverService) peerPingSeedGrpc() ([]*types.Node, error) {
 
-	var nodes = make([]*types.Node, 0)
+	var delegates = make([]*types.Node, 0)
 	for _, seedEndpoint := range types.GetConfig().SeedEndpoints {
 		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", seedEndpoint.Host, seedEndpoint.Port), grpc.WithInsecure())
 		if err != nil {
@@ -111,13 +100,58 @@ func (this *DisGoverService) peerPingSeedGrpc() ([]*types.Node, error) {
 
 		utils.Info(fmt.Sprintf("pinged seed node [delegates=%d]", len(response.Delegates)))
 
-		for _, node := range response.Delegates {
-			nodes = append(nodes, convertToDomain(node))
+		for _, delegate := range response.Delegates {
+			delegates = append(delegates, convertToDomain(delegate))
 		}
-		return nodes, nil
+		return delegates, nil
 	}
 
-	return nil, errors.New("unable to ping any seed nodes")
+	return nil, errors.New("unable to ping any seed delegates")
+}
+
+// UpdateGrpc
+func (this *DisGoverService) UpdateGrpc(ctx context.Context, nodeList *proto.NodeList) (*proto.Empty, error) {
+
+	// Cache delegates.
+	for _, delegate := range nodeList.Delegates {
+		convertToDomain(delegate).Cache(services.GetCache(), cache.NoExpiration)
+	}
+
+	utils.Info(fmt.Sprintf("delegates updated [count=%d]", len(nodeList.Delegates)))
+
+	return &proto.Empty{}, nil
+}
+
+// peerUpdateGrpc
+func (this *DisGoverService) peerUpdateGrpc() {
+
+	// Get delegates in cache.
+	delegates, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
+	if err != nil {
+		utils.Fatal(err)
+	}
+	var protoDelegates = make([]*proto.Node, 0)
+	for _, delegate := range delegates {
+		protoDelegates = append(protoDelegates, convertToProto(delegate))
+	}
+
+	for _, delegate := range delegates {
+		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", delegate.Endpoint.Host, delegate.Endpoint.Port), grpc.WithInsecure())
+		if err != nil {
+			utils.Fatal(fmt.Sprintf("cannot dial node [host=%s, port=%d]", delegate.Endpoint.Host, delegate.Endpoint.Port), err)
+			continue
+		}
+		client := proto.NewDisgoverGrpcClient(conn)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
+		// Update.
+		_, err = client.UpdateGrpc(ctx, &proto.NodeList{Delegates: protoDelegates})
+		if err != nil {
+			utils.Error(err)
+		}
+		conn.Close()
+		cancel()
+	}
 }
 
 /*
