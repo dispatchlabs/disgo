@@ -59,13 +59,9 @@ func (this *DbService) IsRunning() bool {
 }
 
 // Go
-func (this *DbService) Go(waitGroup *sync.WaitGroup) {
+func (this *DbService) Go() {
 	this.running = true
-
 	utils.Events().Raise(Events.DbServiceInitFinished)
-
-	// QUESTION: why do we need this wait here if `server.go` in disgo has this
-	waitGroup.Wait()
 }
 
 // openDb

@@ -52,7 +52,7 @@ func (this *GrpcService) IsRunning() bool {
 }
 
 // Go
-func (this *GrpcService) Go(waitGroup *sync.WaitGroup) {
+func (this *GrpcService) Go() {
 	this.running = true
 	listener, error := net.Listen("tcp", ":"+strconv.Itoa(this.Port))
 	if error != nil {
