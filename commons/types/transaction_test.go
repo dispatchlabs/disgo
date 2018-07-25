@@ -100,7 +100,7 @@ func TestNewHash(t *testing.T) {
 	}
 }
 
-//TestBadKeyTransaction
+//TestPrintTransaction --helper test to print out a fresh transaction
 func TestPrintTransaction(t *testing.T) {
 	var privateKey = "0f86ea981203b26b5b8244c8f661e30e5104555068a4bd168d3e3015db9bb25a"
 	var from = "3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c"
@@ -116,7 +116,7 @@ func TestPrintTransaction(t *testing.T) {
 		1,
 		theTime,
 	)
-	fmt.Printf("EXECUTE_Get: \n\n%s\n\n", tx.String())
+	fmt.Printf("EXECUTE_Get: \n\n%s\n\n", tx.ToPrettyJson())
 }
 
 func TestPrintNewDeployTx(t *testing.T) {

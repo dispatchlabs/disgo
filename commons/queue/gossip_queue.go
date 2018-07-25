@@ -10,7 +10,6 @@ package queue
 import (
 	"container/heap"
 	"github.com/dispatchlabs/disgo/commons/types"
-	"time"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"sort"
 )
@@ -32,6 +31,7 @@ func NewGossipQueue(lockTimeInSeconds int) *GossipQueue {
 
 // - Push onto the queue and then resort (latest to earliest) also add to fast Exists map for quick checks
 func (gq *GossipQueue) Push(gossip *types.Gossip) {
+	utils.Debug("GossipQueue --> Push")
 	itm := Item{gossip, gossip.Transaction.Time, gq.Queue.Len()+1}
 	HeapPush(gq.Queue, &itm)
 	if(gq.Queue.Len() > 0) {
@@ -42,6 +42,8 @@ func (gq *GossipQueue) Push(gossip *types.Gossip) {
 
 // - Push onto the queue and then resort (latest to earliest) also add to fast Exists map for quick checks
 func (gq *GossipQueue) Pop() *types.Gossip {
+	utils.Debug("GossipQueue --> Pop")
+
 	itm := HeapPop(gq.Queue).(*Item)
 	gossip := itm.Data.(*types.Gossip)
 	delete(gq.ExistsMap, gossip.Transaction.Hash)
@@ -51,7 +53,8 @@ func (gq *GossipQueue) Pop() *types.Gossip {
 // - Check to see if there is an item in the queue that is older than the LockTime
 func (gq GossipQueue) HasAvailable() bool {
 	timestamp := gq.Queue.Peek()
-	if timestamp != -1 && utils.ToMilliSeconds(time.Now()) - timestamp > gq.LockTime {
+	//if timestamp != -1 && utils.ToMilliSeconds(time.Now()) - timestamp > gq.LockTime {
+	if timestamp != -1 {
 		return true
 	}
 	return false

@@ -65,9 +65,8 @@ func (pq *PriorityQueue) DumpLowToHigh() []*Item {
 
 // - Get the top Priority to support making decision on priority from calling code
 func (pq PriorityQueue) Peek() int64 {
-	utils.Debug("Peek()")
 	length := pq.Len()
-	utils.Debug("Peek --> &d", length)
+	utils.Debug("Peek --> %d", length)
 	if length > 0 {
 		return pq[length-1].Priority
 	}

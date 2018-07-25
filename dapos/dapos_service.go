@@ -52,7 +52,7 @@ func GetDAPoSService() *DAPoSService {
 			running: false,
 			gossipChan: make(chan *types.Gossip, 1000),
 			queueChan: make(chan *types.Gossip, 1000),
-			//transactionChan: make(chan *types.Gossip, 1000)
+			timoutChan: make(chan bool, 1000),
 			gossipQueue: queue.NewGossipQueue(10),
 		} // TODO: What should this be?
 	})
@@ -64,7 +64,7 @@ type DAPoSService struct {
 	running         bool
 	gossipChan      chan *types.Gossip
 	queueChan      	chan *types.Gossip
-	//transactionChan chan *types.Gossip
+	timoutChan 		chan bool
 	gossipQueue 	*queue.GossipQueue
 }
 
