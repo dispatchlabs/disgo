@@ -231,7 +231,6 @@ func (this *DAPoSService) transactionWorker() {
 }
 
 func (this *DAPoSService) doWork() {
-
 	var gossip *types.Gossip
 
 	if(this.gossipQueue.HasAvailable()) {
@@ -249,6 +248,7 @@ func (this *DAPoSService) doWork() {
 				return
 			}
 			receipt = value
+			receipt.Created = time.Now()
 
 			executeTransaction(&gossip.Transaction, receipt, gossip)
 	}
