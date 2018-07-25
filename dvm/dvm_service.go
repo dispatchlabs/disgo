@@ -56,9 +56,8 @@ func (dvm *DVMService) IsRunning() bool {
 }
 
 // Go -
-func (dvm *DVMService) Go(waitGroup *sync.WaitGroup) {
+func (dvm *DVMService) Go() {
 	dvm.running = true
 	utils.Info("running")
-
 	utils.Events().Raise(Events.DVMServiceInitFinished)
 }

@@ -167,8 +167,6 @@ func (this *DAPoSService) gossipWorker() {
 							this.timoutChan <- true
 						}()
 					}
-
-					//this.transactionChan <- gossip //TODO: insert into queue
 				}
 
 				// Did we already receive all the delegate's rumors?
