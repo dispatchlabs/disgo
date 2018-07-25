@@ -51,7 +51,7 @@ func GetDisGoverService() *DisGoverService {
 			ThisNode: &types.Node{
 				Address:  types.GetAccount().Address,
 				Endpoint: types.GetConfig().GrpcEndpoint,
-				Type:     types.TypeNode,
+				Type:     types.TypeDelegate,
 			},
 			// lruCache: lCache,
 			kdht: kbucket.NewRoutingTable(
@@ -84,8 +84,7 @@ func (this *DisGoverService) Go() {
 
 	// Check if we are a seed.
 	for _, seedEndpoint := range types.GetConfig().SeedEndpoints {
-		if seedEndpoint.Host == types.GetConfig().GrpcEndpoint.Host &&
-			seedEndpoint.Port == types.GetConfig().GrpcEndpoint.Port {
+		if seedEndpoint.Host == types.GetConfig().GrpcEndpoint.Host && seedEndpoint.Port == types.GetConfig().GrpcEndpoint.Port {
 			this.ThisNode.Type = types.TypeSeed
 			break
 		}
@@ -95,24 +94,15 @@ func (this *DisGoverService) Go() {
 	}
 
 	// Cache delegates.
-	var delegates []*types.Node
-	if this.ThisNode.Type == types.TypeSeed {
-		delegates = types.GetConfig().Delegates
-	} else {
-		var err error
-		delegates, err = this.peerPingSeedGrpc()
+	if this.ThisNode.Type == types.TypeDelegate {
+		delegates, err := this.peerPingSeedGrpc()
 		if err != nil {
 			utils.Fatal(err)
 		}
-	}
-	for _, delegate := range delegates {
-		if delegate.Address == "" {
-			delegate.Address = fmt.Sprintf("%s-%d", delegate.Endpoint.Host, int(delegate.Endpoint.Port))
+
+		for _, delegate := range delegates {
+			delegate.Cache(services.GetCache(), cache.NoExpiration)
 		}
-		if delegate.Address == this.ThisNode.Address || fmt.Sprintf("%s-%d", delegate.Endpoint.Host, int(delegate.Endpoint.Port)) == fmt.Sprintf("%s-%d", this.ThisNode.Endpoint.Host, int(this.ThisNode.Endpoint.Port)) {
-			this.ThisNode.Type = types.TypeDelegate
-		}
-		delegate.Cache(services.GetCache(), cache.NoExpiration)
 	}
 
 	utils.Info(fmt.Sprintf("running as %s", this.ThisNode.Type))
