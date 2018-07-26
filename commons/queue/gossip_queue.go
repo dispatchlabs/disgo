@@ -11,7 +11,6 @@ import (
 	"container/heap"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
-	"sort"
 )
 
 type GossipQueue struct {
@@ -34,18 +33,16 @@ func (gq *GossipQueue) Push(gossip *types.Gossip) {
 	utils.Debug("GossipQueue --> Push")
 	itm := Item{gossip, gossip.Transaction.Time, gq.Queue.Len()+1}
 	HeapPush(gq.Queue, &itm)
-	if(gq.Queue.Len() > 0) {
-		sort.Sort(gq.Queue)
-	}
 	gq.ExistsMap[gossip.Transaction.Hash] = true
 }
 
 // - Push onto the queue and then resort (latest to earliest) also add to fast Exists map for quick checks
 func (gq *GossipQueue) Pop() *types.Gossip {
-	utils.Debug("GossipQueue --> Pop")
+	utils.Debug("GossipQueue --> Pop: ")
 
 	itm := HeapPop(gq.Queue).(*Item)
 	gossip := itm.Data.(*types.Gossip)
+	utils.Debug("GossipQueue --> Pop: %v", gossip.Transaction.ToTime())
 	delete(gq.ExistsMap, gossip.Transaction.Hash)
 	return gossip
 }

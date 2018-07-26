@@ -12,7 +12,6 @@ import (
 	"github.com/dispatchlabs/disgo/commons/types"
 	"time"
 	"github.com/dispatchlabs/disgo/commons/utils"
-	"sort"
 )
 
 type ReceiptQueue struct {
@@ -34,9 +33,6 @@ func NewReceiptQueue(lockTimeInSeconds int) *ReceiptQueue {
 func (rtq *ReceiptQueue) Push(receipt *types.Receipt) {
 	itm := Item{receipt, receipt.Created.UnixNano(), rtq.Queue.Len()+1}
 	HeapPush(rtq.Queue, &itm)
-	if(rtq.Queue.Len() > 0) {
-		sort.Sort(rtq.Queue)
-	}
 	rtq.ExistsMap[receipt.TransactionHash] = true
 }
 
