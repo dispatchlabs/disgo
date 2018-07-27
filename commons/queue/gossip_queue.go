@@ -16,16 +16,15 @@ import (
 type GossipQueue struct {
 	Queue 		*PriorityQueue
 	ExistsMap 	map[string]bool
-	LockTime    int64
 }
 
 // need to figure out best way to implement the lock time
-func NewGossipQueue(lockTimeInSeconds int) *GossipQueue {
+func NewGossipQueue() *GossipQueue {
 	gq := make(PriorityQueue, 0)
 	heap.Init(&gq)
 	WatchHeapOps()
 	exists := make(map[string]bool)
-	return &GossipQueue{&gq, exists, int64(lockTimeInSeconds * 1000)}
+	return &GossipQueue{&gq, exists}
 }
 
 // - Push onto the queue and then resort (latest to earliest) also add to fast Exists map for quick checks
