@@ -140,7 +140,7 @@ func (this *DAPoSService) gossipWorker() {
 		select {
 		case gossip = <-this.gossipChan:
 
-			go func(theGossip *types.Gossip) {
+			go func(gossip *types.Gossip) {
 
 				// Gossip timeout?
 				elapsedMilliSeconds := utils.ToMilliSeconds(time.Now()) - gossip.Rumors[0].Time
