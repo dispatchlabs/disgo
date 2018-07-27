@@ -62,16 +62,16 @@ func (this Account) NameKey() string {
 }
 
 //Cache
-func (this *Account) Cache(cache *cache.Cache, time_optional ...time.Duration){
+func (this *Account) Cache(cache *cache.Cache, time_optional ...time.Duration) {
 	TTL := AccountTTL
 	if len(time_optional) > 0 {
 		TTL = time_optional[0]
 	}
-	cache.Set(this.Key(), this,TTL)
+	cache.Set(this.Key(), this, TTL)
 }
 
 //Persist
-func (this *Account) Persist(txn *badger.Txn) error{
+func (this *Account) Persist(txn *badger.Txn) error {
 	err := txn.Set([]byte(this.Key()), []byte(this.String()))
 	if err != nil {
 		return err
@@ -84,7 +84,7 @@ func (this *Account) Persist(txn *badger.Txn) error{
 }
 
 // PersistAndCache
-func (this *Account) Set(txn *badger.Txn,cache *cache.Cache) error {
+func (this *Account) Set(txn *badger.Txn, cache *cache.Cache) error {
 	this.Cache(cache)
 	err := this.Persist(txn)
 	if err != nil {
@@ -195,7 +195,7 @@ func ToAccountFromJson(payload []byte) (*Account, error) {
 // ToAccountFromCache -
 func ToAccountFromCache(cache *cache.Cache, address string) (*Account, error) {
 	value, ok := cache.Get(fmt.Sprintf("table-account-%s", address))
-	if !ok{
+	if !ok {
 		return nil, ErrNotFound
 	}
 	account := value.(*Account)
@@ -266,7 +266,7 @@ func readAccountFile(name_optional ...string) *Account {
 	if len(name_optional) > 0 {
 		name = name_optional[0]
 	}
-	fileName := utils.GetDisgoDir() + string(os.PathSeparator) + name
+	fileName := utils.GetConfigDir() + string(os.PathSeparator) + name
 	if !utils.Exists(fileName) {
 		publicKey, privateKey := crypto.GenerateKeyPair()
 		address := crypto.ToAddress(publicKey)
@@ -315,14 +315,14 @@ func writeAccountFile(bytes []byte, name_optional ...string) {
 	if len(name_optional) > 0 {
 		name = name_optional[0]
 	}
-	if !utils.Exists(utils.GetDisgoDir()) {
-		err := os.MkdirAll(utils.GetDisgoDir(), 0755)
+	if !utils.Exists(utils.GetConfigDir()) {
+		err := os.MkdirAll(utils.GetConfigDir(), 0755)
 		if err != nil {
-			utils.Error(fmt.Sprintf("unable to create %s directory", utils.GetDisgoDir()), err)
+			utils.Error(fmt.Sprintf("unable to create %s directory", utils.GetConfigDir()), err)
 			os.Exit(1)
 		}
 	}
-	fileName := utils.GetDisgoDir() + string(os.PathSeparator) + name
+	fileName := utils.GetConfigDir() + string(os.PathSeparator) + name
 	file, err := os.Create(fileName)
 	defer file.Close()
 	if err != nil {

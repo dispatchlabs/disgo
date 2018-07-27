@@ -161,8 +161,8 @@ func checkError(err error) {
 }
 
 func loadKeys() ([]byte, []byte, error) {
-	privateKeyFile := utils.GetDisgoDir() + string(os.PathSeparator) + "key"
-	publicKeyFile := utils.GetDisgoDir() + string(os.PathSeparator) + "key.pub"
+	privateKeyFile := utils.GetConfigDir() + string(os.PathSeparator) + "key"
+	publicKeyFile := utils.GetConfigDir() + string(os.PathSeparator) + "key.pub"
 
 	if _, err := os.Stat(privateKeyFile); os.IsNotExist(err) {
 		reader := rand.Reader

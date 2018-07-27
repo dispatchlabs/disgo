@@ -97,7 +97,8 @@ func (this *DisGoverService) Go() {
 	if this.ThisNode.Type == types.TypeDelegate {
 		delegates, err := this.peerPingSeedGrpc()
 		if err != nil {
-			utils.Fatal(err)
+			services.GetDbService().Close()
+			utils.Fatal("unable to connect to seed node...please try again later")
 		}
 
 		for _, delegate := range delegates {

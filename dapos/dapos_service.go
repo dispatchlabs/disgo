@@ -22,7 +22,6 @@ import (
 
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/services"
-	"os"
 	"time"
 
 	"github.com/dispatchlabs/disgo/commons/types"
@@ -85,9 +84,8 @@ func (this *DAPoSService) disGoverServiceInitFinished() {
 	// Create genesis transaction.
 	err := this.createGenesisTransactionAndAccount()
 	if err != nil {
+		services.GetDbService().Close()
 		utils.Fatal("unable to create genesis block", err)
-		os.Exit(1)
-		return
 	}
 
 	go this.gossipWorker()
