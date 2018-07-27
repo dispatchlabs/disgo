@@ -142,6 +142,15 @@ func (this Receipt) String() string {
 	return string(bytes)
 }
 
+func (this Receipt) ToPrettyJson() string {
+	bytes, err := json.MarshalIndent(this, "", "   ")
+	if err != nil {
+		utils.Error("unable to marshal receipt", err)
+		return ""
+	}
+	return string(bytes)
+}
+
 // SetInternalErrorWithNewTransaction
 func (this *Receipt) SetInternalErrorWithNewTransaction(db *badger.DB, err error) {
 	txn := db.NewTransaction(true)

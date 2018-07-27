@@ -19,7 +19,8 @@ type Item struct {
 func (pq PriorityQueue) Len() int { return len(pq) }
 
 func (pq PriorityQueue) Less(i, j int) bool {
-	// We want Pop to give us the lowest, not lowest, priority so we use greater than here.
+	//we are using this for timestamp, where oldest has the highest priority
+	//so lowest numeric value is highest priority
 	return pq[j].Priority > pq[i].Priority
 }
 
