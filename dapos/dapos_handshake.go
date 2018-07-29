@@ -159,7 +159,14 @@ func (this *DAPoSService) gossipWorker() {
 
 				// Do we have 2/3 of rumors?
 				if len(gossip.Rumors) >= len(delegateNodes) * 2/3 {
-					this.transactionChan <- gossip //TODO: insert into queue
+					if !this.gossipQueue.Exists(gossip.Transaction.Hash) {
+						this.gossipQueue.Push(gossip)
+
+						go func() {
+							time.Sleep(5 * time.Second)
+							this.timoutChan <- true
+						}()
+					}
 				}
 
 				// Did we already receive all the delegate's rumors?
@@ -215,10 +222,19 @@ func (this *DAPoSService) getRandomDelegate(gossip *types.Gossip, delegateNodes 
 // gossipWorker - transfer tokens, deploy smart contract, and execution of smart contract.
 func (this *DAPoSService) transactionWorker() {
 
-	var gossip *types.Gossip
 	for {
 		select {
-		case gossip = <-this.transactionChan:
+			case <-this.timoutChan:
+				this.doWork()
+		}
+	}
+}
+
+func (this *DAPoSService) doWork() {
+	var gossip *types.Gossip
+
+	if(this.gossipQueue.HasAvailable()) {
+			gossip = this.gossipQueue.Pop()
 
 			utils.Debug("transactionworker")
 			// Get receipt.
@@ -229,20 +245,18 @@ func (this *DAPoSService) transactionWorker() {
 				receipt = types.NewReceipt(types.RequestNewTransaction)
 				receipt.Status = types.StatusReceiptNotFound
 				receipt.Cache(services.GetCache())
-				continue
+				return
 			}
 			receipt = value
+			receipt.Created = time.Now()
 
-			// TODO: Should we thread this?
-			// Execute.
-			utils.Debug("about to excecute")
 			executeTransaction(&gossip.Transaction, receipt, gossip)
-		}
 	}
 }
 
 // executeTransaction
 func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, gossip *types.Gossip) {
+	utils.Debug("executeTransaction --> %s", transaction.Hash)
 	services.Lock(transaction.Hash)
 	defer services.Unlock(transaction.Hash)
 	txn := services.NewTxn(true)

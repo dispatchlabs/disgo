@@ -29,7 +29,7 @@ import (
 
 // Node - Is the DisGover's notion of what a node is
 type Node struct {
-	Address  string    `json:"address"`
+	Address  string    `json:"address,omitempty"`
 	Endpoint *Endpoint `json:"endpoint"`
 	Type     string    `json:"type"`
 }
