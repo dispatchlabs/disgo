@@ -171,7 +171,8 @@ func (this *DAPoSService) gossipWorker() {
 				// Get random delegate?
 				node := this.getRandomDelegate(gossip, delegateNodes)
 				if node == nil {
-					utils.Debug("did not find any delegates to rumor with")
+					utils.Warn("did not find any delegates to rumor with")
+					this.gossipChan <- gossip
 					return
 				}
 
