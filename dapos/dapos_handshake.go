@@ -145,7 +145,7 @@ func (this *DAPoSService) gossipWorker() {
 				// Gossip timeout?
 				elapsedMilliSeconds := utils.ToMilliSeconds(time.Now()) - gossip.Rumors[0].Time
 				if elapsedMilliSeconds > 1000 * 5 {
-					utils.Debug("gossip timed out")
+					utils.Warn("gossip timed out")
 					// TODO: Update receipt timed out, but only if the transaction didn't get executed.
 					return
 				}
