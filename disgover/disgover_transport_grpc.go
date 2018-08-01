@@ -57,7 +57,7 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, node *proto.Node)
 			// Is the address valid?
 			err := domainNode.Verify()
 			if err != nil {
-				utils.Warn(err)
+				utils.Warn("unable to verify delegate's address from hash and signature", err)
 			} else {
 				domainNode.Type = types.TypeDelegate
 			}
