@@ -34,11 +34,12 @@ import (
 
 // Node - Is the DisGover's notion of what a node is
 type Node struct {
-	Hash      string    `json:"hash"`
-	Address   string    `json:"address"`
-	Signature string    `json:"signature"`
-	Endpoint  *Endpoint `json:"endpoint"`
-	Type      string    `json:"type"`
+	Hash         string    `json:"hash"`
+	Address      string    `json:"address"`
+	Signature    string    `json:"signature"`
+	GrpcEndpoint *Endpoint `json:"grpcEndpoint"`
+	HttpEndpoint *Endpoint `json:"httpEndpoint"`
+	Type         string    `json:"type"`
 }
 
 // Key

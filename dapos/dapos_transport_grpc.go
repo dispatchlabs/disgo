@@ -86,9 +86,9 @@ func (this *DAPoSService) peerSynchronize() {
 			continue
 		}
 		// Connect to delegate.
-		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", delegate.Endpoint.Host, delegate.Endpoint.Port), grpc.WithInsecure())
+		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), grpc.WithInsecure())
 		if err != nil {
-			utils.Warn(fmt.Sprintf("unable to connect to delegate [host=%s, port=%d]", delegate.Endpoint.Host, delegate.Endpoint.Port), err)
+			utils.Warn(fmt.Sprintf("unable to connect to delegate [host=%s, port=%d]", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), err)
 			continue
 		}
 		defer conn.Close()
@@ -99,7 +99,7 @@ func (this *DAPoSService) peerSynchronize() {
 		// Synchronize
 		response, err := client.SynchronizeGrpc(contextWithTimeout, &proto.Empty{})
 		if err != nil {
-			utils.Warn(fmt.Sprintf("unable to synchronize with delegate [host=%s, port=%d]", delegate.Endpoint.Host, delegate.Endpoint.Port), err)
+			utils.Warn(fmt.Sprintf("unable to synchronize with delegate [host=%s, port=%d]", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), err)
 			continue
 		}
 		txn := services.NewTxn(true)
@@ -164,9 +164,9 @@ func (this *DAPoSService) GossipGrpc(context context.Context, request *proto.Req
 func (this *DAPoSService) peerGossipGrpc(node types.Node, gossip *types.Gossip) (*types.Gossip, error) {
 	utils.Debug(fmt.Sprintf("attempting to gossip with delegate [address=%s]", node.Address))
 
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", node.Endpoint.Host, node.Endpoint.Port), grpc.WithInsecure())
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", node.GrpcEndpoint.Host, node.GrpcEndpoint.Port), grpc.WithInsecure())
 	if err != nil {
-		utils.Fatal(fmt.Sprintf("cannot dial seed [host=%s, port=%d]",  node.Endpoint.Host,  node.Endpoint.Port), err)
+		utils.Fatal(fmt.Sprintf("cannot dial seed [host=%s, port=%d]",  node.GrpcEndpoint.Host,  node.GrpcEndpoint.Port), err)
 		return nil, err
 	}
 	defer conn.Close()

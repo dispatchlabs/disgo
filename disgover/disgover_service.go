@@ -50,7 +50,8 @@ func GetDisGoverService() *DisGoverService {
 		disGoverServiceInstance = &DisGoverService{
 			ThisNode: &types.Node{
 				Address:  types.GetAccount().Address,
-				Endpoint: types.GetConfig().GrpcEndpoint,
+				GrpcEndpoint: types.GetConfig().GrpcEndpoint,
+				HttpEndpoint: types.GetConfig().HttpEndpoint,
 				Type:     types.TypeNode,
 			},
 			// lruCache: lCache,
