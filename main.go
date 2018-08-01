@@ -19,9 +19,21 @@ package main
 import (
 	"github.com/dispatchlabs/disgo/bootstrap"
 	"github.com/dispatchlabs/disgo/commons/utils"
-)
+				"github.com/dispatchlabs/disgo/commons/types"
+	)
 
 func main() {
+
+	privateKey := "2ce5279c21e080250d152054d448e90d2952fec5fd0bccaa1d7c9886d40b45cc"
+	from := "dbae0d9e9b819c41ab7801a748f9c928fc9cf317"
+
+
+	//privateKey string, from, to string, value string, hertz int64, timeInMiliseconds int64
+
+	t, _ := types.NewTransferTokensTransaction(privateKey, from, "3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c", "10000000", 0, 0)
+	s := t.String()
+
+	utils.Info(s)
 	utils.InitMainPackagePath()
 	utils.InitializeLogger()
 	server := bootstrap.NewServer()

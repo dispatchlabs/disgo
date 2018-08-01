@@ -51,7 +51,7 @@ func GetDisGoverService() *DisGoverService {
 			ThisNode: &types.Node{
 				Address:  types.GetAccount().Address,
 				Endpoint: types.GetConfig().GrpcEndpoint,
-				Type:     types.TypeDelegate,
+				Type:     types.TypeNode,
 			},
 			// lruCache: lCache,
 			kdht: kbucket.NewRoutingTable(
@@ -61,6 +61,21 @@ func GetDisGoverService() *DisGoverService {
 				peerstore.NewMetrics(),
 			),
 			running: false,
+		}
+
+		// Set hash.
+		var err error
+		disGoverServiceInstance.ThisNode.Hash, err = disGoverServiceInstance.ThisNode.NewHash()
+		if err != nil {
+			services.GetDbService().Close()
+			utils.Fatal(err)
+		}
+
+		// Set signature.
+		disGoverServiceInstance.ThisNode.Signature, err = disGoverServiceInstance.ThisNode.NewSignature(types.GetAccount().PrivateKey)
+		if err != nil {
+			services.GetDbService().Close()
+			utils.Fatal(err)
 		}
 	})
 	return disGoverServiceInstance
@@ -93,16 +108,18 @@ func (this *DisGoverService) Go() {
 		this.ThisNode.Type = types.TypeSeed
 	}
 
-	// Cache delegates.
-	if this.ThisNode.Type == types.TypeDelegate {
+	// Cache delegates?
+	if this.ThisNode.Type != types.TypeSeed {
 		delegates, err := this.peerPingSeedGrpc()
 		if err != nil {
 			services.GetDbService().Close()
-			utils.Fatal("unable to connect to seed node...please try again later")
+			utils.Fatal("unable to connect to seed node (seed.dispatchlabs.io)...please try again later")
 		}
-
 		for _, delegate := range delegates {
 			delegate.Cache(services.GetCache(), cache.NoExpiration)
+			if delegate.Address == this.ThisNode.Address {
+				this.ThisNode.Type = delegate.Type
+			}
 		}
 	}
 

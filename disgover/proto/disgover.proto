@@ -11,9 +11,11 @@ message Endpoint {
 }
 
 message Node {
-	string 	 Address = 1;
-	Endpoint Endpoint = 2;
-	string   Type = 3;
+    string   Hash = 1;
+	string 	 Address = 2;
+	string   Signature = 3;
+	Endpoint Endpoint = 4;
+	string   Type = 5;
 }
 
 message NodeList {
@@ -21,6 +23,6 @@ message NodeList {
 }
 
 service DisgoverGrpc {
-	rpc PingSeedGrpc(Node, string) returns (NodeList) {}
+	rpc PingSeedGrpc(Node) returns (NodeList) {}
 	rpc UpdateGrpc(NodeList) returns (Empty) {}
 }

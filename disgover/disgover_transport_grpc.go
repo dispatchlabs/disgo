@@ -45,10 +45,26 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, node *proto.Node)
 		return nil, errors.New("you pinged a non-seed node")
 	}
 
-	// Persist and cache  delegate.
+	// Persist and cache node.
 	txn := services.NewTxn(true)
 	defer txn.Discard()
-	convertToDomain(node).PersistAndCache(txn, services.GetCache())
+	domainNode := convertToDomain(node)
+	for _, delegateAddress := range types.GetConfig().DelegateAddresses {
+
+		// Is this a delegate node?
+		if delegateAddress == domainNode.Address {
+
+			// Is the address valid?
+			err := domainNode.Verify()
+			if err != nil {
+				utils.Warn(err)
+			} else {
+				domainNode.Type = types.TypeDelegate
+			}
+			break
+		}
+	}
+	domainNode.PersistAndCache(txn, services.GetCache(), cache.NoExpiration)
 
 	// Get cached delegates.
 	delegates, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
@@ -159,7 +175,9 @@ func (this *DisGoverService) peerUpdateGrpc() {
  */
 func convertToDomain(node *proto.Node) *types.Node {
 	return &types.Node{
-		Address: node.Address,
+		Hash:      node.Hash,
+		Address:   node.Address,
+		Signature: node.Signature,
 		Endpoint: &types.Endpoint{
 			Host: node.Endpoint.Host,
 			Port: node.Endpoint.Port,
@@ -174,7 +192,9 @@ func convertToProto(node *types.Node) *proto.Node {
 		return nil
 	}
 	return &proto.Node{
-		Address: node.Address,
+		Hash:      node.Hash,
+		Address:   node.Address,
+		Signature: node.Signature,
 		Endpoint: &proto.Endpoint{
 			Host: node.Endpoint.Host,
 			Port: node.Endpoint.Port,

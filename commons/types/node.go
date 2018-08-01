@@ -75,8 +75,8 @@ func (this *Node) Persist(txn *badger.Txn) error {
 }
 
 // PersistAndCache
-func (this *Node) PersistAndCache(txn *badger.Txn, cache *cache.Cache) error {
-	this.Cache(cache)
+func (this *Node) PersistAndCache(txn *badger.Txn, cache *cache.Cache, ttl time.Duration) error {
+	this.Cache(cache, ttl)
 	return this.Persist(txn)
 }
 

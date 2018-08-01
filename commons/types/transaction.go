@@ -77,7 +77,7 @@ func (this Transaction) ToKey() string {
 }
 
 //Cache
-func (this *Transaction) Cache(cache *cache.Cache, time_optional ...time.Duration){
+func (this *Transaction) Cache(cache *cache.Cache, time_optional ...time.Duration) {
 	TTL := TransactionTTL
 	if len(time_optional) > 0 {
 		TTL = time_optional[0]
@@ -111,7 +111,7 @@ func (this *Transaction) Persist(txn *badger.Txn) error {
 }
 
 // PersistAndCache
-func (this *Transaction) Set(txn *badger.Txn,cache *cache.Cache) error {
+func (this *Transaction) Set(txn *badger.Txn, cache *cache.Cache) error {
 	this.Cache(cache)
 
 	err := this.Persist(txn)
@@ -121,12 +121,10 @@ func (this *Transaction) Set(txn *badger.Txn,cache *cache.Cache) error {
 	return nil
 }
 
-
 // GetHashBytes
 func (this Transaction) GetHashBytes() crypto.HashBytes {
 	return crypto.GetHashBytes(this.Hash)
 }
-
 
 // ToTime
 func (this Transaction) ToTime() time.Time {
@@ -170,7 +168,6 @@ func (this Transaction) CalculateHash() []byte {
 	return hash[:]
 }
 
-
 // ToTransactionFromJson -
 func ToTransactionFromJson(payload []byte) (*Transaction, error) {
 	transaction := &Transaction{}
@@ -183,8 +180,8 @@ func ToTransactionFromJson(payload []byte) (*Transaction, error) {
 
 // ToTransactionFromCache -
 func ToTransactionFromCache(cache *cache.Cache, hash string) (*Transaction, error) {
-	value, ok :=cache.Get(fmt.Sprintf("table-transaction-%s", hash))
-	if !ok{
+	value, ok := cache.Get(fmt.Sprintf("table-transaction-%s", hash))
+	if !ok {
 		return nil, ErrNotFound
 	}
 	transaction := value.(*Transaction)
@@ -485,7 +482,7 @@ func (this *Transaction) NewSignature(privateKey string) (string, error) {
 
 // Verify
 func (this Transaction) Verify() error {
-	if len(this.Hash) != crypto.HashLength*2  {
+	if len(this.Hash) != crypto.HashLength*2 {
 		return errors.New("invalid hash")
 	}
 	if len(this.From) != crypto.AddressLength*2 {
@@ -564,7 +561,6 @@ func (this Transaction) Verify() error {
 
 	return nil
 }
-
 
 // String
 func (this Transaction) String() string {
@@ -689,17 +685,17 @@ func (this Transaction) MarshalJSON() ([]byte, error) {
 		Hash      string        `json:"hash"`
 		Type      byte          `json:"type"`
 		From      string        `json:"from"`
-		To        string        `json:"to"`
-		Value     string         `json:"value"`
-		Code      string        `json:"code"`
-		Abi       string        `json:"abi"`
-		Method    string        `json:"method"`
-		Params    []interface{} `json:"params"`
+		To        string        `json:"to,omitempty"`
+		Value     string        `json:"value,omitempty"`
+		Code      string        `json:"code,omitempty"`
+		Abi       string        `json:"abi,omitempty"`
+		Method    string        `json:"method,omitempty"`
+		Params    []interface{} `json:"params,omitempty"`
 		Time      int64         `json:"time"`
 		Signature string        `json:"signature"`
 		Hertz     int64         `json:"hertz"`
-		FromName  string        `json:"fromName"`
-		ToName    string        `json:"toName"`
+		FromName  string        `json:"fromName,omitempty"`
+		ToName    string        `json:"toName,omitempty"`
 	}{
 		Hash:      this.Hash,
 		Type:      this.Type,
