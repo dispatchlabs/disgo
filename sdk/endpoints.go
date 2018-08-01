@@ -55,7 +55,7 @@ func GetDelegates() ([]types.Node, error) {
 func GetAccount(delegateNode types.Node, address string) (*types.Account, error) {
 
 	// Get account
-	response, err := http.Get(fmt.Sprintf("http://%s:1975/v1/accounts/%s", delegateNode.HttpEndpoint.Host, address))
+	response, err := http.Get(fmt.Sprintf("http://%s:%d/v1/accounts/%s", delegateNode.HttpEndpoint.Host, delegateNode.HttpEndpoint.Port, address))
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func GetAccount(delegateNode types.Node, address string) (*types.Account, error)
 }
 
 // TransferTokens
-func TransferTokens(delegateNode types.Node, privateKey string, from string, to string, tokens string) (*types.Receipt, error) {
+func TransferTokens(delegateNode types.Node, privateKey string, from string, to string, tokens int64) (*types.Receipt, error) {
 
 	// Create transfer tokens transaction.
 	transaction, err := types.NewTransferTokensTransaction(privateKey, from, to, tokens, 0, utils.ToMilliSeconds(time.Now()))
@@ -99,7 +99,7 @@ func TransferTokens(delegateNode types.Node, privateKey string, from string, to 
 	}
 
 	// Post transaction.
-	response, err := http.Post(fmt.Sprintf("http://%s:1975/v1/transactions", delegateNode.HttpEndpoint.Host), "application/json", bytes.NewBuffer([]byte(transaction.String())))
+	response, err := http.Post(fmt.Sprintf("http://%s:%d/v1/transactions", delegateNode.HttpEndpoint.Host, delegateNode.HttpEndpoint.Port), "application/json", bytes.NewBuffer([]byte(transaction.String())))
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +131,7 @@ func DeploySmartContract(delegateNode types.Node, privateKey string, from string
 	}
 
 	// Post transaction.
-	response, err := http.Post(fmt.Sprintf("http://%s:1975/v1/transactions", delegateNode.HttpEndpoint.Host), "application/json", bytes.NewBuffer([]byte(transaction.String())))
+	response, err := http.Post(fmt.Sprintf("http://%s:%d/v1/transactions", delegateNode.HttpEndpoint.Host, delegateNode.HttpEndpoint.Port), "application/json", bytes.NewBuffer([]byte(transaction.String())))
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +163,7 @@ func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey string,
 	}
 
 	// pos transaction.
-	response, err := http.Post(fmt.Sprintf("http://%s:1975/v1/transactions", delegateNode.HttpEndpoint.Host), "application/json", bytes.NewBuffer([]byte(transaction.String())))
+	response, err := http.Post(fmt.Sprintf("http://%s:%d/v1/transactions", delegateNode.HttpEndpoint.Host, delegateNode.HttpEndpoint.Port), "application/json", bytes.NewBuffer([]byte(transaction.String())))
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +189,7 @@ func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey string,
 func GetReceipt(delegateNode types.Node, hash string) (*types.Receipt, error) {
 
 	// Get status.
-	response, err := http.Get(fmt.Sprintf("http://%s:1975/v1/receipts/%s", delegateNode.HttpEndpoint.Host, hash))
+	response, err := http.Get(fmt.Sprintf("http://%s:%d/v1/receipts/%s", delegateNode.HttpEndpoint.Host, delegateNode.HttpEndpoint.Port, hash))
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +215,7 @@ func GetReceipt(delegateNode types.Node, hash string) (*types.Receipt, error) {
 func GetTransactionsSent(delegateNode types.Node, address string) ([]types.Transaction, error) {
 
 	// Get sent transaction.
-	response, err := http.Get(fmt.Sprintf("http://%s:1975/v1/transactions/from/%s", delegateNode.HttpEndpoint.Host, address))
+	response, err := http.Get(fmt.Sprintf("http://%s:%d/v1/transactions/from/%s", delegateNode.HttpEndpoint.Host, delegateNode.HttpEndpoint.Port, address))
 	if err != nil {
 		return nil, err
 	}
@@ -253,7 +253,7 @@ func GetTransactionsSent(delegateNode types.Node, address string) ([]types.Trans
 func GetTransactionsReceived(delegateNode types.Node, address string) ([]types.Transaction, error) {
 
 	// Get received transactions.
-	response, err := http.Get(fmt.Sprintf("http://%s:1975/v1/transactions/to/%s", delegateNode.HttpEndpoint.Host, address))
+	response, err := http.Get(fmt.Sprintf("http://%s:%d/v1/transactions/to/%s", delegateNode.HttpEndpoint.Host, delegateNode.HttpEndpoint.Port, address))
 	if err != nil {
 		return nil, err
 	}

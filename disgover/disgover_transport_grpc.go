@@ -76,7 +76,7 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, node *proto.Node)
 	for _, delegate := range delegates {
 		nodes = append(nodes, convertToProto(delegate))
 	}
-		//TODO: grpc endpoint?
+	//TODO: grpc endpoint?
 	utils.Info(fmt.Sprintf("received ping [address=%s, ip=%s, port=%d, delegates=%d]", node.Address, node.GrpcEndpoint.Host, node.GrpcEndpoint.Port, len(delegates)))
 
 	// Update all peers.
@@ -175,15 +175,9 @@ func (this *DisGoverService) peerUpdateGrpc() {
  */
 func convertToDomain(node *proto.Node) *types.Node {
 	return &types.Node{
-<<<<<<< HEAD
 		Hash:      node.Hash,
 		Address:   node.Address,
 		Signature: node.Signature,
-		Endpoint: &types.Endpoint{
-			Host: node.Endpoint.Host,
-			Port: node.Endpoint.Port,
-=======
-		Address: node.Address,
 		GrpcEndpoint: &types.Endpoint{
 			Host: node.GrpcEndpoint.Host,
 			Port: node.GrpcEndpoint.Port, //TODO: grpc endpoint?
@@ -191,7 +185,6 @@ func convertToDomain(node *proto.Node) *types.Node {
 		HttpEndpoint: &types.Endpoint{
 			Host: node.HttpEndpoint.Host,
 			Port: node.HttpEndpoint.Port,
->>>>>>> DG-699
 		},
 		Type: node.Type,
 	}
@@ -203,15 +196,9 @@ func convertToProto(node *types.Node) *proto.Node {
 		return nil
 	}
 	return &proto.Node{
-<<<<<<< HEAD
 		Hash:      node.Hash,
 		Address:   node.Address,
 		Signature: node.Signature,
-		Endpoint: &proto.Endpoint{
-			Host: node.Endpoint.Host,
-			Port: node.Endpoint.Port,
-=======
-		Address: node.Address,
 		GrpcEndpoint: &proto.Endpoint{
 			Host: node.GrpcEndpoint.Host,
 			Port: node.GrpcEndpoint.Port,
@@ -219,7 +206,6 @@ func convertToProto(node *types.Node) *proto.Node {
 		HttpEndpoint: &proto.Endpoint{
 			Host: node.HttpEndpoint.Host,
 			Port: node.HttpEndpoint.Port,
->>>>>>> DG-699
 		},
 		Type: node.Type,
 	}

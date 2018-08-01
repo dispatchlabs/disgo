@@ -26,11 +26,8 @@ import (
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/disgover"
-<<<<<<< HEAD
-	"github.com/dispatchlabs/disgo/commons/math"
-=======
 	"github.com/dispatchlabs/disgo/commons/queue"
->>>>>>> DG-699
+	"math/big"
 )
 
 var daposServiceInstance *DAPoSService
@@ -122,7 +119,7 @@ func (this *DAPoSService) createGenesisTransactionAndAccount() error {
 			if err != nil {
 				return err
 			}
-			account := &types.Account{Address: transaction.To, Name: "Dispatch Labs", Balance: math.MustParseBig256(transaction.Value), Updated: time.Now(), Created: time.Now()}
+			account := &types.Account{Address: transaction.To, Name: "Dispatch Labs", Balance: big.NewInt(transaction.Value), Updated: time.Now(), Created: time.Now()}
 			err = account.Set(txn,services.GetCache())
 			if err != nil {
 				return err

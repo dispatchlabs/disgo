@@ -14,6 +14,7 @@
  *    You should have received a copy of the GNU General Public License
  *    along with the Disgo-Commons library.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 // Package types package contains the Properties structure that defines the system properties
 // used by the system to initialize communication and set the state for some objects.
 package types
@@ -36,6 +37,7 @@ type Config struct {
 	GrpcEndpoint       *Endpoint   `json:"grpcEndpoint"`
 	GrpcTimeout        int         `json:"grpcTimeout"`
 	SeedEndpoints      []*Endpoint `json:"seedEndpoints"`
+	SeedAddresses      []string    `json:"seedAddresses"`
 	DelegateAddresses  []string    `json:"delegateAddresses"`
 	UseQuantumEntropy  bool        `json:"useQuantumEntropy"`
 	GenesisTransaction string      `json:"genesisTransaction"`
@@ -70,7 +72,7 @@ func GetConfig() *Config {
 					Port: 1973,
 				},
 			},
-			GenesisTransaction: `{"hash":"56c723b72be5bc3b13b25bbbbe8bae62e3f3793406f1248743d2b011953514dd","type":0,"from":"dbae0d9e9b819c41ab7801a748f9c928fc9cf317","to":"3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c","value":"10000000","time":0,"signature":"d686befb458e45ae1f968475af1bee9a2e1bf01db100b80fa2a08ef855ef7aed174fd9b052083cbcb1c3395663ade9274bf1f4057dd7a0e286e13eb862c978bc00","hertz":0}`,
+			GenesisTransaction: `{"hash":"a48ff2bd1fb99d9170e2bae2f4ed94ed79dbc8c1002986f8054a369655e29276","type":0,"from":"e6098cc0d5c20c6c31c4d69f0201a02975264e94","to":"3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c","value":10000000,"data":"","time":0,"signature":"03c1fdb91cd10aa441e0025dd21def5ebe045762c1eeea0f6a3f7e63b27deb9c40e08b656a744f6c69c55f7cb41751eebd49c1eedfbd10b861834f0352c510b200","hertz":0,"fromName":"","toName":""}`,
 		}
 		var configFileName = utils.GetConfigDir() + string(os.PathSeparator) + "config.json"
 		if utils.Exists(configFileName) {
@@ -102,7 +104,3 @@ func GetConfig() *Config {
 
 	return configInstance
 }
-
-
-
-
