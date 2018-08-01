@@ -33,6 +33,7 @@ import (
 
 	"github.com/dispatchlabs/disgo/dvm"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
+	"github.com/dispatchlabs/disgo/commons/math"
 )
 
 // startGossiping
@@ -288,13 +289,15 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	case types.TypeTransferTokens:
 
 		// Sufficient tokens?
-		if fromAccount.Balance.Int64() < transaction.Value {
+		value := math.MustParseBig256(transaction.Value)
+		if fromAccount.Balance.Int64() < value.Int64() {
 			utils.Error(fmt.Sprintf("insufficient tokens [hash=%s]", transaction.Hash))
 			receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInsufficientTokens)
 			return
 		}
-		fromAccount.Balance.SetInt64(fromAccount.Balance.Int64() - transaction.Value)
-		toAccount.Balance.SetInt64(toAccount.Balance.Int64() + transaction.Value)
+		fromAccount.Balance.SetInt64(fromAccount.Balance.Int64() - value.Int64()) // TODO: What if the number id bigger than int64?
+		toAccount.Balance.SetInt64(toAccount.Balance.Int64() + value.Int64())
+		toAccount.Balance.SetInt64(toAccount.Balance.Int64() + value.Int64())
 		utils.Info(fmt.Sprintf("transferred tokens [hash=%s, rumors=%d]", transaction.Hash, len(gossip.Rumors)))
 		break
 	case types.TypeDeploySmartContract:

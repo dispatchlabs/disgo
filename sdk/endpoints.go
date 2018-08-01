@@ -90,7 +90,7 @@ func GetAccount(delegateNode types.Node, address string) (*types.Account, error)
 }
 
 // TransferTokens
-func TransferTokens(delegateNode types.Node, privateKey string, from string, to string, tokens int64) (*types.Receipt, error) {
+func TransferTokens(delegateNode types.Node, privateKey string, from string, to string, tokens string) (*types.Receipt, error) {
 
 	// Create transfer tokens transaction.
 	transaction, err := types.NewTransferTokensTransaction(privateKey, from, to, tokens, 0, utils.ToMilliSeconds(time.Now()))

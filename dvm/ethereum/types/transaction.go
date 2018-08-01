@@ -30,6 +30,7 @@ import (
 	//"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/types"
+	"github.com/dispatchlabs/disgo/commons/math"
 )
 
 //go:generate gencodec -type txdata -field-override txdataMarshaling -out gen_tx_json.go
@@ -237,7 +238,7 @@ func AsMessage(tx *types.Transaction, gasLimit uint64) Message {
 			gasPrice:   price,
 			to:         nil,
 			from:       crypto.GetAddressBytes(tx.From),
-			amount:     big.NewInt(tx.Value),
+			amount:     math.MustParseBig256(tx.Value),
 			data:       common.FromHex(tx.Code), // tx.Code,
 			checkNonce: false,
 		}
@@ -249,7 +250,7 @@ func AsMessage(tx *types.Transaction, gasLimit uint64) Message {
 			gasPrice:   price,
 			to:         &to,
 			from:       crypto.GetAddressBytes(tx.From),
-			amount:     big.NewInt(tx.Value),
+			amount:     math.MustParseBig256(tx.Value),
 			data:       common.FromHex(tx.Code), // tx.Code,
 			checkNonce: false,
 		}

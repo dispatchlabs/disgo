@@ -21,6 +21,6 @@ message NodeList {
 }
 
 service DisgoverGrpc {
-	rpc PingSeedGrpc(Node) returns (NodeList) {}
+	rpc PingSeedGrpc(Node, string) returns (NodeList) {}
 	rpc UpdateGrpc(NodeList) returns (Empty) {}
 }

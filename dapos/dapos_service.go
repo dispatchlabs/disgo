@@ -17,7 +17,6 @@
 package dapos
 
 import (
-	"math/big"
 	"sync"
 
 	"github.com/dgraph-io/badger"
@@ -27,6 +26,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/disgover"
+	"github.com/dispatchlabs/disgo/commons/math"
 )
 
 var daposServiceInstance *DAPoSService
@@ -109,7 +109,7 @@ func (this *DAPoSService) createGenesisTransactionAndAccount() error {
 			if err != nil {
 				return err
 			}
-			account := &types.Account{Address: transaction.To, Name: "Dispatch Labs", Balance: big.NewInt(transaction.Value), Updated: time.Now(), Created: time.Now()}
+			account := &types.Account{Address: transaction.To, Name: "Dispatch Labs", Balance: math.MustParseBig256(transaction.Value), Updated: time.Now(), Created: time.Now()}
 			err = account.Set(txn,services.GetCache())
 			if err != nil {
 				return err

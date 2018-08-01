@@ -283,28 +283,24 @@ func readAccountFile(name_optional ...string) *Account {
 		var jsonMap map[string]interface{}
 		err := json.Unmarshal([]byte(account.String()), &jsonMap)
 		if err != nil {
-			utils.Error("unable to create account", err)
-			os.Exit(1)
+			utils.Fatal("unable to create account", err)
 		}
 
 		jsonMap["privateKey"] = account.PrivateKey
 
 		bytes, err := json.Marshal(jsonMap)
 		if err != nil {
-			utils.Error("unable to create account", err)
-			os.Exit(1)
+			utils.Fatal("unable to create account", err)
 		}
 		writeAccountFile(bytes, name)
 	}
 	bytes, err := ioutil.ReadFile(fileName)
 	if err != nil {
-		utils.Error("unable to read account.json", err)
-		os.Exit(1)
+		utils.Fatal("unable to read account.json", err)
 	}
 	account, err := ToAccountFromJson(bytes)
 	if err != nil {
-		utils.Error("unable to read account.json", err)
-		os.Exit(1)
+		utils.Fatal("unable to read account.json", err)
 	}
 	return account
 }
@@ -318,16 +314,14 @@ func writeAccountFile(bytes []byte, name_optional ...string) {
 	if !utils.Exists(utils.GetConfigDir()) {
 		err := os.MkdirAll(utils.GetConfigDir(), 0755)
 		if err != nil {
-			utils.Error(fmt.Sprintf("unable to create %s directory", utils.GetConfigDir()), err)
-			os.Exit(1)
+			utils.Fatal(fmt.Sprintf("unable to create %s directory", utils.GetConfigDir()), err)
 		}
 	}
 	fileName := utils.GetConfigDir() + string(os.PathSeparator) + name
 	file, err := os.Create(fileName)
 	defer file.Close()
 	if err != nil {
-		utils.Error(fmt.Sprintf("unable to write %s", fileName), err)
-		os.Exit(1)
+		utils.Fatal(fmt.Sprintf("unable to write %s", fileName), err)
 	}
 	fmt.Fprintf(file, string(bytes))
 }

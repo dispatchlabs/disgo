@@ -30,6 +30,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/pkg/errors"
 	"github.com/patrickmn/go-cache"
+	"strings"
 )
 
 // Transaction - The transaction info
@@ -38,7 +39,7 @@ type Transaction struct {
 	Type      byte
 	From      string
 	To        string
-	Value     int64
+	Value     string
 	Code      string
 	Abi       string
 	Method    string
@@ -335,7 +336,7 @@ func ToTransactionByKey(txn *badger.Txn, key []byte) (*Transaction, error) {
 }
 
 // NewTransferTokensTransaction -
-func NewTransferTokensTransaction(privateKey string, from, to string, value, hertz, timeInMiliseconds int64) (*Transaction, error) {
+func NewTransferTokensTransaction(privateKey string, from, to string, value string, hertz int64, timeInMiliseconds int64) (*Transaction, error) {
 	var err error
 	transaction := &Transaction{}
 	transaction.Type = TypeTransferTokens
@@ -430,6 +431,11 @@ func (this Transaction) NewHash() (string, error) {
 		utils.Error("unable decode to", err)
 		return "", err
 	}
+	valueBytes, err := hex.DecodeString(this.Value)
+	if err != nil {
+		utils.Error("unable decode value", err)
+		return "", err
+	}
 	codeBytes, err := hex.DecodeString(this.Code)
 	if err != nil {
 		utils.Error("unable decode code", err)
@@ -439,7 +445,7 @@ func (this Transaction) NewHash() (string, error) {
 		this.Type,
 		fromBytes,
 		toBytes,
-		this.Value,
+		valueBytes,
 		codeBytes,
 		[]byte(this.Abi),
 		[]byte(this.Method),
@@ -498,7 +504,7 @@ func (this Transaction) Verify() error {
 		if len(this.To) != crypto.AddressLength*2 {
 			return errors.New("invalid to address")
 		}
-		if this.Value <= 0 {
+		if this.Value == "" || strings.HasPrefix(this.Value, "-") || strings.HasPrefix(this.Value, "0") {
 			return errors.New("invalid value")
 		}
 		break
@@ -602,19 +608,12 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		if !ok {
 			return errors.Errorf("value for field 'to' must be a string")
 		}
-		if jsonMap["code"] != nil {
-			code := jsonMap["code"].(string)
-			if len(this.To) == 0 && len(code) == 0 {
-				return errors.Errorf("value for field 'to' is invalid")
-			}
-		}
 	}
 	if jsonMap["value"] != nil {
-		val, ok := jsonMap["value"].(float64)
+		this.Value, ok = jsonMap["value"].(string)
 		if !ok {
-			return errors.Errorf("value for field 'value' must be a number")
+			return errors.Errorf("value for field 'value' must be a string")
 		}
-		this.Value = int64(val)
 	}
 	if jsonMap["code"] != nil {
 		this.Code, ok = jsonMap["code"].(string)
@@ -691,7 +690,7 @@ func (this Transaction) MarshalJSON() ([]byte, error) {
 		Type      byte          `json:"type"`
 		From      string        `json:"from"`
 		To        string        `json:"to"`
-		Value     int64         `json:"value"`
+		Value     string         `json:"value"`
 		Code      string        `json:"code"`
 		Abi       string        `json:"abi"`
 		Method    string        `json:"method"`
