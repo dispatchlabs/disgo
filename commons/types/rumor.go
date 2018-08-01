@@ -24,6 +24,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"time"
+	"sort"
 )
 
 // Rumor
@@ -212,4 +213,41 @@ func NewRumor(privateKey string, address string, transactionHash string) *Rumor 
 
 	rumor.Signature = hex.EncodeToString(signature)
 	return rumor
+}
+
+
+type RumorsSorter struct {
+	Rumors  []Rumor
+}
+
+// Len is part of sort.Interface.
+func (this RumorsSorter) Len() int {
+	return len(this.Rumors)
+}
+
+// Swap is part of sort.Interface.
+func (this RumorsSorter) Swap(i, j int) {
+	this.Rumors[i], this.Rumors[j] = this.Rumors[j], this.Rumors[i]
+}
+
+// Less is part of sort.Interface. It is implemented by calling the "by" closure in the sorter.
+func (this RumorsSorter) Less(i, j int) bool {
+	return this.Rumors[i].Time < this.Rumors[j].Time
+}
+
+func ValidateTimeDelta(rumors []Rumor) bool {
+	rumorSorter := RumorsSorter{rumors}
+	sort.Sort(rumorSorter)
+	len := rumorSorter.Len()
+	if utils.ToMilliSeconds(time.Now()) - rumorSorter.Rumors[len-1].Time > 300 {
+		return false
+	}
+	if len > 1 {
+		for i := 1; i < len; i++ {
+			if rumorSorter.Rumors[i].Time - rumorSorter.Rumors[i-1].Time > 300 {
+				return false
+			}
+		}
+	}
+	return true
 }

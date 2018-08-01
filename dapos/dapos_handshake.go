@@ -143,12 +143,20 @@ func (this *DAPoSService) gossipWorker() {
 			go func(gossip *types.Gossip) {
 
 				// Gossip timeout?
-				elapsedMilliSeconds := utils.ToMilliSeconds(time.Now()) - gossip.Rumors[0].Time
-				if elapsedMilliSeconds > 1000 * 5 {
-					utils.Debug("gossip timed out")
+				if len(gossip.Rumors) > 1 {
+					if !types.ValidateTimeDelta(gossip.Rumors) {
+						utils.Warn("The rumors have an invalid time delta (greater than 300 milliseconds")
+						//ignore this gossip's rumors and hopefully still hit 2/3 from well timed gossip, but keep listening
+						return
+					}
 					// TODO: Update receipt timed out, but only if the transaction didn't get executed.
-					return
 				}
+				//elapsedMilliSeconds := utils.ToMilliSeconds(time.Now()) - gossip.Rumors[0].Time
+				//if elapsedMilliSeconds > 1000 * 5 {
+				//	utils.Debug("gossip timed out")
+				//	// TODO: Update receipt timed out, but only if the transaction didn't get executed.
+				//	return
+				//}
 
 				// Find nodes in cache?
 				delegateNodes, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
