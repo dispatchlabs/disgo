@@ -30,7 +30,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/pkg/errors"
 	"github.com/patrickmn/go-cache"
-)
+	)
 
 // Transaction - The transaction info
 type Transaction struct {
@@ -198,13 +198,11 @@ func ToTransactions(txn *badger.Txn) ([]*Transaction, error) {
 		item := iterator.Item()
 		value, err := item.Value()
 		if err != nil {
-			utils.Error(err)
-			continue
+			return nil, err
 		}
 		transaction, err := ToTransactionFromJson(value)
 		if err != nil {
-			utils.Error(err)
-			continue
+			return nil, err
 		}
 		transaction.setTransients(txn)
 		transactions = append(transactions, transaction)
@@ -223,13 +221,11 @@ func ToTransactionsByFromAddress(txn *badger.Txn, address string) ([]*Transactio
 		item := iterator.Item()
 		value, err := item.Value()
 		if err != nil {
-			utils.Error(err)
-			continue
+			return nil, err
 		}
 		transaction, err := ToTransactionByKey(txn, value)
 		if err != nil {
-			utils.Error(err)
-			continue
+			return nil, err
 		}
 		transaction.setTransients(txn)
 		transactions = append(transactions, transaction)
@@ -248,13 +244,11 @@ func ToTransactionsByToAddress(txn *badger.Txn, address string) ([]*Transaction,
 		item := iterator.Item()
 		value, err := item.Value()
 		if err != nil {
-			utils.Error(err)
-			continue
+			return nil, err
 		}
 		transaction, err := ToTransactionByKey(txn, value)
 		if err != nil {
-			utils.Error(err)
-			continue
+			return nil, err
 		}
 		transaction.setTransients(txn)
 		transactions = append(transactions, transaction)
@@ -273,18 +267,34 @@ func ToTransactionsByType(txn *badger.Txn, tipe byte) ([]*Transaction, error) {
 		item := iterator.Item()
 		value, err := item.Value()
 		if err != nil {
-			utils.Error(err)
-			continue
+			return nil, err
 		}
 		transaction, err := ToTransactionByKey(txn, value)
 		if err != nil {
-			utils.Error(err)
-			continue
+			return nil, err
 		}
 		transaction.setTransients(txn)
 		transactions = append(transactions, transaction)
 	}
 	return transactions, nil
+}
+
+// ToTransactionByHash
+func ToTransactionByHash(txn *badger.Txn, hash string) (*Transaction, error) {
+	item, err := txn.Get([]byte(fmt.Sprintf("table-transaction-%s", hash)))
+	if err != nil {
+		return nil, err
+	}
+	value, err := item.Value()
+	if err != nil {
+		return nil, err
+	}
+	transaction, err := ToTransactionFromJson(value)
+	if err != nil {
+		return nil, err
+	}
+	transaction.setTransients(txn)
+	return transaction, err
 }
 
 // ToTransactionByKey
@@ -643,24 +653,6 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 			return errors.Errorf("value for field 'hertz' must be a number")
 		}
 		this.Hertz = int64(hertz)
-	}
-	if jsonMap["receipt"] != nil {
-		this.Receipt, ok = jsonMap["receipt"].(Receipt)
-		if !ok {
-			return errors.Errorf("value for field 'receipt' must be a Receipt object")
-		}
-	}
-	if jsonMap["fromName"] != nil {
-		this.FromName, ok = jsonMap["fromName"].(string)
-		if !ok {
-			return errors.Errorf("value for field 'fromName' must be a string")
-		}
-	}
-	if jsonMap["toName"] != nil {
-		this.ToName, ok = jsonMap["toName"].(string)
-		if !ok {
-			return errors.Errorf("value for field 'toName' must be a string")
-		}
 	}
 	return nil
 }

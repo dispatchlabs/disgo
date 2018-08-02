@@ -150,7 +150,7 @@ func (this Account) MarshalJSON() ([]byte, error) {
 		PrivateKey      string    `json:"privateKey,omitempty"`
 		Name            string    `json:"name"`
 		Balance         int64     `json:"balance"`
-		TransactionHash string    `json:"transactionHash"`
+		TransactionHash string    `json:"transactionHash,omitempty"`
 		Updated         time.Time `json:"updated"`
 		Created         time.Time `json:"created"`
 		Nonce           uint64    `json:"nonce"`

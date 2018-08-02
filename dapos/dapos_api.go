@@ -87,15 +87,49 @@ func (this *DAPoSService) NewTransaction(transaction *types.Transaction) *types.
 	return response
 }
 
-// GetTransaction
-func (this *DAPoSService) GetTransaction(hash string) *types.Response {
-	txn := services.NewTxn(true)
+// GetReceipt
+func (this *DAPoSService) GetReceipt(transactionHash string) *types.Response {
+	txn := services.NewTxn(false)
 	defer txn.Discard()
 	response := types.NewResponse()
 
 	// Delegate?
 	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
-		account, err := types.ToTransactionByKey(txn, []byte(hash))
+		receipt, err := types.ToReceiptFromCache(services.GetCache(), transactionHash)
+		if err != nil {
+			receipt, err = types.ToReceiptFromTransactionHash(txn, transactionHash)
+			if err != nil {
+				if err == badger.ErrKeyNotFound {
+					response.Status = types.StatusNotFound
+					response.HumanReadableStatus = fmt.Sprintf("unable to find receipt [hash=%s]", transactionHash)
+				} else {
+					response.Status = types.StatusInternalError
+					response.HumanReadableStatus = err.Error()
+				}
+			} else {
+				response.Data = receipt
+			}
+		} else {
+			response.Data = receipt
+		}
+	} else {
+		response.Status = types.StatusNotDelegate
+		response.HumanReadableStatus = "This node is not a delegate. Please select a delegate node."
+	}
+	utils.Info(fmt.Sprintf("retrieved receipt [hash=%s, status=%s]", transactionHash, response.Status))
+
+	return response
+}
+
+// GetTransaction
+func (this *DAPoSService) GetTransaction(hash string) *types.Response {
+	txn := services.NewTxn(false)
+	defer txn.Discard()
+	response := types.NewResponse()
+
+	// Delegate?
+	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
+		transaction, err := types.ToTransactionByHash(txn, hash)
 		if err != nil {
 			if err == badger.ErrKeyNotFound {
 				response.Status = types.StatusNotFound
@@ -103,7 +137,7 @@ func (this *DAPoSService) GetTransaction(hash string) *types.Response {
 				response.Status = types.StatusInternalError
 			}
 		} else {
-			response.Data = account
+			response.Data = transaction
 			response.Status = types.StatusOk
 		}
 	} else {
