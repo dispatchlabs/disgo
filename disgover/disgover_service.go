@@ -28,6 +28,9 @@ import (
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-peerstore"
 	"github.com/patrickmn/go-cache"
+	"time"
+	"os"
+	"io/ioutil"
 )
 
 var disGoverServiceInstance *DisGoverService
@@ -49,11 +52,12 @@ func GetDisGoverService() *DisGoverService {
 	disGoverServiceOnce.Do(func() {
 		disGoverServiceInstance = &DisGoverService{
 			ThisNode: &types.Node{
-				Address:  types.GetAccount().Address,
+				Address:      types.GetAccount().Address,
 				GrpcEndpoint: types.GetConfig().GrpcEndpoint,
 				HttpEndpoint: types.GetConfig().HttpEndpoint,
-				Type:     types.TypeNode,
+				Type:         types.TypeNode,
 			},
+			SeedNodes: make([]types.Node, 0),
 			// lruCache: lCache,
 			kdht: kbucket.NewRoutingTable(
 				1000,
@@ -84,9 +88,10 @@ func GetDisGoverService() *DisGoverService {
 
 // DisGoverService
 type DisGoverService struct {
-	ThisNode *types.Node
-	kdht     *kbucket.RoutingTable
-	running  bool
+	ThisNode      *types.Node
+	SeedNodes    []types.Node
+	kdht          *kbucket.RoutingTable
+	running       bool
 }
 
 // IsRunning - Returns the status if service is running
@@ -124,6 +129,45 @@ func (this *DisGoverService) Go() {
 		}
 	}
 
+	// Start update thread.
+	if this.ThisNode.Type == types.TypeSeed {
+		go this.updateWorker()
+	}
+
 	utils.Info(fmt.Sprintf("running as %s", this.ThisNode.Type))
 	utils.Events().Raise(Events.DisGoverServiceInitFinished)
+}
+
+// updateWorker
+func (this DisGoverService) updateWorker() {
+	for {
+		timer := time.NewTimer(30 * time.Second)
+		select {
+		case <-timer.C:
+
+			// Is there a software update?
+			fileName := "." + string(os.PathSeparator) + "update" + string(os.PathSeparator) + "disgo"
+			if !utils.Exists(fileName) {
+				continue
+			}
+
+			utils.Info("software update found")
+
+			// Read file?
+			bytes, err := ioutil.ReadFile(fileName)
+			if err != nil {
+				utils.Error(fmt.Sprintf("unable to load file %s", fileName), err)
+				continue
+			}
+
+			// Update software.
+			this.peerUpdateSoftwareGrpc(bytes)
+
+			// Delete file.
+			err = os.Remove(fileName)
+			if err != nil {
+				utils.Warn(fmt.Sprintf("unable to delete file %s", fileName), err)
+			}
+		}
+	}
 }

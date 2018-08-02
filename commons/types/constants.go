@@ -21,17 +21,6 @@ import (
 	"time"
 )
 
-// Requests
-const (
-	RequestGetStatus                    = "GetReceipt"
-	RequestGetDelegates                 = "GetDelegates"
-	RequestGetAccount                   = "GetAccount"
-	RequestNewTransaction               = "NewTransaction"
-	RequestGetTransactions              = "GetTransactions"
-	RequestGetTransactionsByFromAddress = "GetTransactionsByFromAddress"
-	RequestGetTransactionsByToAddress   = "GetTransactionsByToAddress"
-)
-
 // Statuses
 const (
 	StatusPending                      = "Pending"
@@ -41,13 +30,10 @@ const (
 	StatusInvalidTransaction           = "InvalidTransaction"
 	StatusInsufficientTokens           = "InsufficientTokens"
 	StatusDuplicateTransaction         = "DuplicateTransaction"
-	StatusUnableToConnectToDelegate    = "UnableToConnectToDelegate"
-	StatusUnableToFindDelegates        = "StatusUnableToFindDelegates"
-	StatusUnableToExecuteDelegate      = "UnableToExecuteDelegate"
-	StatusInvalidRequest               = "InvalidRequest"
 	StatusNotDelegate                  = "StatusNotDelegate"
 	StatusAlreadyProcessingTransaction = "StatusAlreadyProcessingTransaction"
 	StatusGossipingTimedOut            = "StatusGossipingTimedOut"
+	StatusJsonParseError               = "StatusJsonParseError"
 	StatusInternalError                = "InternalError"
 )
 

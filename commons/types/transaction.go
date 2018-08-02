@@ -45,9 +45,10 @@ type Transaction struct {
 	Params    []interface{}
 	Time      int64 // Milliseconds
 	Signature string
-	Hertz     int64  //our version of Gas
-	FromName  string // Transient
-	ToName    string // Transient
+	Hertz     int64   //our version of Gas
+	Receipt   Receipt // Transient
+	FromName  string  // Transient
+	ToName    string  // Transient
 }
 
 // Key
@@ -205,14 +206,7 @@ func ToTransactions(txn *badger.Txn) ([]*Transaction, error) {
 			utils.Error(err)
 			continue
 		}
-		fromAccount, err := ToAccountByAddress(txn, transaction.From)
-		if err == nil {
-			transaction.FromName = fromAccount.Name
-		}
-		toAccount, err := ToAccountByAddress(txn, transaction.To)
-		if err == nil {
-			transaction.ToName = toAccount.Name
-		}
+		transaction.setTransients(txn)
 		transactions = append(transactions, transaction)
 	}
 	SortByTime(transactions, false)
@@ -237,14 +231,7 @@ func ToTransactionsByFromAddress(txn *badger.Txn, address string) ([]*Transactio
 			utils.Error(err)
 			continue
 		}
-		fromAccount, err := ToAccountByAddress(txn, transaction.From)
-		if err == nil {
-			transaction.FromName = fromAccount.Name
-		}
-		toAccount, err := ToAccountByAddress(txn, transaction.To)
-		if err == nil {
-			transaction.ToName = toAccount.Name
-		}
+		transaction.setTransients(txn)
 		transactions = append(transactions, transaction)
 	}
 	SortByTime(transactions, false)
@@ -269,14 +256,7 @@ func ToTransactionsByToAddress(txn *badger.Txn, address string) ([]*Transaction,
 			utils.Error(err)
 			continue
 		}
-		fromAccount, err := ToAccountByAddress(txn, transaction.From)
-		if err == nil {
-			transaction.FromName = fromAccount.Name
-		}
-		toAccount, err := ToAccountByAddress(txn, transaction.To)
-		if err == nil {
-			transaction.ToName = toAccount.Name
-		}
+		transaction.setTransients(txn)
 		transactions = append(transactions, transaction)
 	}
 	SortByTime(transactions, false)
@@ -301,14 +281,7 @@ func ToTransactionsByType(txn *badger.Txn, tipe byte) ([]*Transaction, error) {
 			utils.Error(err)
 			continue
 		}
-		fromAccount, err := ToAccountByAddress(txn, transaction.From)
-		if err == nil {
-			transaction.FromName = fromAccount.Name
-		}
-		toAccount, err := ToAccountByAddress(txn, transaction.To)
-		if err == nil {
-			transaction.ToName = toAccount.Name
-		}
+		transaction.setTransients(txn)
 		transactions = append(transactions, transaction)
 	}
 	return transactions, nil
@@ -328,6 +301,7 @@ func ToTransactionByKey(txn *badger.Txn, key []byte) (*Transaction, error) {
 	if err != nil {
 		return nil, err
 	}
+	transaction.setTransients(txn)
 	return transaction, err
 }
 
@@ -670,6 +644,12 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		}
 		this.Hertz = int64(hertz)
 	}
+	if jsonMap["receipt"] != nil {
+		this.Receipt, ok = jsonMap["receipt"].(Receipt)
+		if !ok {
+			return errors.Errorf("value for field 'receipt' must be a Receipt object")
+		}
+	}
 	if jsonMap["fromName"] != nil {
 		this.FromName, ok = jsonMap["fromName"].(string)
 		if !ok {
@@ -700,6 +680,7 @@ func (this Transaction) MarshalJSON() ([]byte, error) {
 		Time      int64         `json:"time"`
 		Signature string        `json:"signature"`
 		Hertz     int64         `json:"hertz"`
+		Receipt   Receipt       `json:"receipt,omitempty"`
 		FromName  string        `json:"fromName,omitempty"`
 		ToName    string        `json:"toName,omitempty"`
 	}{
@@ -715,6 +696,7 @@ func (this Transaction) MarshalJSON() ([]byte, error) {
 		Time:      this.Time,
 		Signature: this.Signature,
 		Hertz:     this.Hertz,
+		Receipt:   this.Receipt,
 		FromName:  this.FromName,
 		ToName:    this.ToName,
 	})
@@ -736,4 +718,20 @@ func checkTime(txTime int64) (int64, error) {
 	//TODO: Talking with Avery, should be related to page TS limits.  This will not be the appropriate place for the check but will suffice for the moment.
 
 	return txTime, nil
+}
+
+// setTransients
+func (this *Transaction) setTransients(txn *badger.Txn) {
+	fromAccount, err := ToAccountByAddress(txn, this.From)
+	if err == nil {
+		this.FromName = fromAccount.Name
+	}
+	toAccount, err := ToAccountByAddress(txn, this.To)
+	if err == nil {
+		this.ToName = toAccount.Name
+	}
+	receipt, err := ToReceiptFromTransactionHash(txn, this.Hash)
+	if err == nil {
+		this.Receipt = *receipt
+	}
 }

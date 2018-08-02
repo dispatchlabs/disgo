@@ -33,7 +33,7 @@ import (
 
 	"github.com/dispatchlabs/disgo/dvm"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
-	)
+)
 
 // startGossiping
 func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.Response {
@@ -144,7 +144,7 @@ func (this *DAPoSService) gossipWorker() {
 
 				// Gossip timeout?
 				elapsedMilliSeconds := utils.ToMilliSeconds(time.Now()) - gossip.Rumors[0].Time
-				if elapsedMilliSeconds > 1000 * 5 {
+				if elapsedMilliSeconds > 1000*5 {
 					utils.Warn("gossip timed out")
 					// TODO: Update receipt timed out, but only if the transaction didn't get executed.
 					return
@@ -158,7 +158,7 @@ func (this *DAPoSService) gossipWorker() {
 				}
 
 				// Do we have 2/3 of rumors?
-				if len(gossip.Rumors) >= len(delegateNodes) * 2/3 {
+				if len(gossip.Rumors) >= len(delegateNodes)*2/3 {
 					if !this.gossipQueue.Exists(gossip.Transaction.Hash) {
 						this.gossipQueue.Push(gossip)
 
@@ -225,8 +225,8 @@ func (this *DAPoSService) transactionWorker() {
 
 	for {
 		select {
-			case <-this.timoutChan:
-				this.doWork()
+		case <-this.timoutChan:
+			this.doWork()
 		}
 	}
 }
@@ -234,24 +234,24 @@ func (this *DAPoSService) transactionWorker() {
 func (this *DAPoSService) doWork() {
 	var gossip *types.Gossip
 
-	if(this.gossipQueue.HasAvailable()) {
-			gossip = this.gossipQueue.Pop()
+	if (this.gossipQueue.HasAvailable()) {
+		gossip = this.gossipQueue.Pop()
 
-			utils.Debug("transactionworker")
-			// Get receipt.
-			var receipt *types.Receipt
-			value, err := types.ToReceiptFromCache(services.GetCache(), gossip.Transaction.Hash)
-			if err != nil {
-				utils.Error(fmt.Sprintf("receipt not found [hash=%s]", gossip.Transaction.Hash))
-				receipt = types.NewReceipt(types.RequestNewTransaction)
-				receipt.Status = types.StatusReceiptNotFound
-				receipt.Cache(services.GetCache())
-				return
-			}
-			receipt = value
-			receipt.Created = time.Now()
+		utils.Debug("transactionworker")
+		// Get receipt.
+		var receipt *types.Receipt
+		value, err := types.ToReceiptFromCache(services.GetCache(), gossip.Transaction.Hash)
+		if err != nil {
+			utils.Error(fmt.Sprintf("receipt not found [hash=%s]", gossip.Transaction.Hash))
+			receipt = types.NewReceipt(gossip.Transaction.Hash)
+			receipt.Status = types.StatusReceiptNotFound
+			receipt.Cache(services.GetCache())
+			return
+		}
+		receipt = value
+		receipt.Created = time.Now()
 
-			executeTransaction(&gossip.Transaction, receipt, gossip)
+		executeTransaction(&gossip.Transaction, receipt, gossip)
 	}
 }
 
@@ -328,7 +328,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		}
 
 		// Persist contract account.
-		contractAccount := &types.Account{Address: hex.EncodeToString(dvmResult.ContractAddress[:]), Balance: big.NewInt(0), Updated: now, Created: now}
+		contractAccount := &types.Account{Address: hex.EncodeToString(dvmResult.ContractAddress[:]), Balance: big.NewInt(0), TransactionHash: transaction.Hash, Updated: now, Created: now}
 		err = contractAccount.Persist(txn)
 		if err != nil {
 			utils.Error(err)

@@ -38,12 +38,13 @@ var accountOnce sync.Once
 
 // Account
 type Account struct {
-	Address    string
-	PrivateKey string
-	Name       string
-	Balance    *big.Int
-	Updated    time.Time
-	Created    time.Time
+	Address         string
+	PrivateKey      string
+	Name            string
+	Balance         *big.Int
+	TransactionHash string // Smart contract
+	Updated         time.Time
+	Created         time.Time
 
 	// From Ethereum Account
 	Nonce    uint64
@@ -112,6 +113,9 @@ func (this *Account) UnmarshalJSON(bytes []byte) error {
 	if jsonMap["balance"] != nil {
 		this.Balance = big.NewInt(int64(jsonMap["balance"].(float64)))
 	}
+	if jsonMap["transactionHash"] != nil {
+		this.TransactionHash = jsonMap["transactionHash"].(string)
+	}
 	if jsonMap["updated"] != nil {
 		updated, err := time.Parse(time.RFC3339, jsonMap["updated"].(string))
 		if err != nil {
@@ -142,23 +146,25 @@ func (this *Account) UnmarshalJSON(bytes []byte) error {
 // MarshalJSON
 func (this Account) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Address    string    `json:"address"`
-		PrivateKey string    `json:"privateKey,omitempty"`
-		Name       string    `json:"name"`
-		Balance    int64     `json:"balance"`
-		Updated    time.Time `json:"updated"`
-		Created    time.Time `json:"created"`
-		Nonce      uint64    `json:"nonce"`
+		Address         string    `json:"address"`
+		PrivateKey      string    `json:"privateKey,omitempty"`
+		Name            string    `json:"name"`
+		Balance         int64     `json:"balance"`
+		TransactionHash string    `json:"transactionHash"`
+		Updated         time.Time `json:"updated"`
+		Created         time.Time `json:"created"`
+		Nonce           uint64    `json:"nonce"`
 		// Root       string    `json:"root"`
 		// CodeHash   string    `json:"codehash"`
 	}{
-		Address:    this.Address,
-		PrivateKey: this.PrivateKey,
-		Name:       this.Name,
-		Balance:    this.Balance.Int64(),
-		Updated:    this.Updated,
-		Created:    this.Created,
-		Nonce:      this.Nonce,
+		Address:         this.Address,
+		PrivateKey:      this.PrivateKey,
+		Name:            this.Name,
+		Balance:         this.Balance.Int64(),
+		TransactionHash: this.TransactionHash,
+		Updated:         this.Updated,
+		Created:         this.Created,
+		Nonce:           this.Nonce,
 		// Root:       crypto.Encode(this.Root.Bytes()),
 		// CodeHash:   crypto.Encode(this.CodeHash),
 	})
