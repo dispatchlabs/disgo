@@ -2,7 +2,6 @@ package queue
 
 import (
 	"container/heap"
-	"sort"
 	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
@@ -54,13 +53,7 @@ func (pq *PriorityQueue) Update(item *Item, value *interface{}, priority int64) 
 	heap.Fix(pq, item.Index)
 }
 
-func (pq *PriorityQueue) DumpHighToLow() []*Item {
-	sort.Sort(pq)
-	return *pq
-}
-
-func (pq *PriorityQueue) DumpLowToHigh() []*Item {
-	sort.Sort(sort.Reverse(pq))
+func (pq *PriorityQueue) Dump() []*Item {
 	return *pq
 }
 

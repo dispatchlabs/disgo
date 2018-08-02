@@ -101,8 +101,9 @@ func (m *Endpoint) GetPort() int64 {
 
 type Node struct {
 	Address              string    `protobuf:"bytes,1,opt,name=Address,proto3" json:"Address,omitempty"`
-	Endpoint             *Endpoint `protobuf:"bytes,2,opt,name=Endpoint,proto3" json:"Endpoint,omitempty"`
-	Type                 string    `protobuf:"bytes,3,opt,name=Type,proto3" json:"Type,omitempty"`
+	GrpcEndpoint         *Endpoint `protobuf:"bytes,2,opt,name=GrpcEndpoint,proto3" json:"GrpcEndpoint,omitempty"`
+	HttpEndpoint		 *Endpoint `protobuf:"bytes,3,opt,name=HttpEndpoint,proto3" json:"HttpEndpoint,omitempty"`
+	Type                 string    `protobuf:"bytes,4,opt,name=Type,proto3" json:"Type,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
 	XXX_unrecognized     []byte    `json:"-"`
 	XXX_sizecache        int32     `json:"-"`
@@ -141,7 +142,8 @@ func (m *Node) GetAddress() string {
 
 func (m *Node) GetEndpoint() *Endpoint {
 	if m != nil {
-		return m.Endpoint
+		//TODO: which end point? (note this is a proto file)
+		return m.GrpcEndpoint
 	}
 	return nil
 }

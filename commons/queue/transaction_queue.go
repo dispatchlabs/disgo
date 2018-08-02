@@ -17,7 +17,7 @@ import (
 
 type TransactionQueue struct {
 	Queue 		*PriorityQueue
-	ExistsMap 	map[string]bool
+	ExistsMap 	*ExistsMap
 	LockTime    int64
 }
 
@@ -26,8 +26,7 @@ func NewTransactionQueue(lockTimeInSeconds int) *TransactionQueue {
 	txq := make(PriorityQueue, 0)
 	heap.Init(&txq)
 	WatchHeapOps()
-	exists := make(map[string]bool)
-	return &TransactionQueue{&txq, exists, int64(lockTimeInSeconds * 1000)}
+	return &TransactionQueue{&txq, NewExistsMap(), int64(lockTimeInSeconds * 1000)}
 }
 
 // - Push onto the queue and then resort (latest to earliest) also add to fast Exists map for quick checks
@@ -37,14 +36,14 @@ func (txq *TransactionQueue) Push(tx *types.Transaction) {
 	if(txq.Queue.Len() > 0) {
 		sort.Sort(txq.Queue)
 	}
-	txq.ExistsMap[tx.Hash] = true
+	txq.ExistsMap.Put(tx.Hash)
 }
 
 // - Push onto the queue and then resort (latest to earliest) also add to fast Exists map for quick checks
 func (txq *TransactionQueue) Pop() *types.Transaction {
 	itm := HeapPop(txq.Queue).(*Item)
 	tx := itm.Data.(*types.Transaction)
-	delete(txq.ExistsMap, tx.Hash)
+	txq.ExistsMap.Delete(tx.Hash)
 	return tx
 }
 
@@ -59,7 +58,7 @@ func (txq TransactionQueue) HasAvailable() bool {
 
 // - Check to see if the current transaction Hash is in the exists map
 func (txq TransactionQueue) Exists(key string) bool {
-	return txq.ExistsMap[key] == true
+	return txq.ExistsMap.Exists(key)
 }
 
 // - Dump returns the contents of the queue from oldest to newest (the order they are constantly sorted to)
