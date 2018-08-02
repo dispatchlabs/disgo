@@ -38,6 +38,7 @@ const (
 	StatusOk                           = "Ok"
 	StatusNotFound                     = "NotFound"
 	StatusReceiptNotFound              = "StatusReceiptNotFound"
+	StatusTransactionTimeOut           = "StatusTransactionTimeOut"
 	StatusInvalidTransaction           = "InvalidTransaction"
 	StatusInsufficientTokens           = "InsufficientTokens"
 	StatusDuplicateTransaction         = "DuplicateTransaction"

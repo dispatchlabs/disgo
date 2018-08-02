@@ -46,6 +46,11 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 		utils.Info(fmt.Sprintf("invalid transaction [hash=%s]", transaction.Hash))
 		return types.NewResponseWithStatus(types.StatusInvalidTransaction, err.Error())
 	}
+	elapsedMilliSeconds := utils.ToMilliSeconds(time.Now()) - transaction.Time
+	if elapsedMilliSeconds > 1000 {
+		utils.Error(fmt.Sprintf("Timed out [hash=%s]", transaction.Hash))
+		return types.NewResponseWithStatus(types.StatusTransactionTimeOut, "Transaction was received later than 1 second limit")
+	}
 
 	// Duplicate transaction?
 	_, err = txn.Get([]byte(transaction.Key()))
@@ -58,7 +63,7 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 		return types.NewResponseWithError(err)
 	}
 
-	// TODO: Check minimum hertz, balance, and negative value!!!!!
+	// TODO: Check minimum hertz
 
 	// Are we already gossiping about this transaction?
 	_, err = types.ToTransactionFromCache(services.GetCache(), transaction.Hash)
@@ -68,6 +73,7 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 	}
 
 	// Cache receipt.
+	utils.Info("Cache receipt")
 	receipt := types.NewReceipt(transaction.Hash)
 	receipt.Cache(services.GetCache())
 
@@ -151,7 +157,7 @@ func (this *DAPoSService) gossipWorker() {
 					}
 					// TODO: Update receipt timed out, but only if the transaction didn't get executed.
 				}
-				//elapsedMilliSeconds := utils.ToMilliSeconds(time.Now()) - gossip.Rumors[0].Time
+
 				//if elapsedMilliSeconds > 1000 * 5 {
 				//	utils.Debug("gossip timed out")
 				//	// TODO: Update receipt timed out, but only if the transaction didn't get executed.

@@ -239,10 +239,13 @@ func ValidateTimeDelta(rumors []Rumor) bool {
 	rumorSorter := RumorsSorter{rumors}
 	sort.Sort(rumorSorter)
 	len := rumorSorter.Len()
-	if utils.ToMilliSeconds(time.Now()) - rumorSorter.Rumors[len-1].Time > 300 {
+
+	now := utils.ToMilliSeconds(time.Now())
+	if  now - rumorSorter.Rumors[len-1].Time > 300 {
 		return false
 	}
 	if len > 1 {
+
 		for i := 1; i < len; i++ {
 			if rumorSorter.Rumors[i].Time - rumorSorter.Rumors[i-1].Time > 300 {
 				return false
