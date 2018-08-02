@@ -11,16 +11,27 @@ message Endpoint {
 }
 
 message Node {
-	string 	 Address = 1;
-	Endpoint Endpoint = 2;
-	string   Type = 3;
+    string   Hash = 1;
+	string 	 Address = 2;
+	string   Signature = 3;
+	Endpoint GrpcEndpoint = 4;
+	Endpoint HttpEndpoint = 5;
+	string   Type = 6;
 }
 
-message NodeList {
-	repeated Node Delegates = 1;
+message NodeInfo {
+    Node          SeedNode = 1;
+	repeated Node Delegates = 2;
+}
+
+message SoftwareUpdate {
+    Node          SeedNode = 1;
+    bytes         Software = 2;
+
 }
 
 service DisgoverGrpc {
-	rpc PingSeedGrpc(Node) returns (NodeList) {}
-	rpc UpdateGrpc(NodeList) returns (Empty) {}
+	rpc PingSeedGrpc(Node) returns (NodeInfo) {}
+	rpc UpdateGrpc(NodeInfo) returns (Empty) {}
+    rpc UpdateSoftwareGrpc(SoftwareUpdate) returns (Empty) {}
 }

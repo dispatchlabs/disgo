@@ -19,9 +19,24 @@ package main
 import (
 	"github.com/dispatchlabs/disgo/bootstrap"
 	"github.com/dispatchlabs/disgo/commons/utils"
-)
+	)
 
 func main() {
+
+
+	//
+	//delegates, _ := sdk.GetDelegates()
+	//
+	//t, err := sdk.GetTransaction(delegates[0], "eb7e9336d3110dde9dc6c971b8a9e6e7504e43965193f2a6fb3d2b6d69e55e9d")
+	//if err != nil {
+	//	utils.Error(err)
+	//	return
+	//}
+	//
+	//utils.Info(t.String())
+
+
+
 	utils.InitMainPackagePath()
 	utils.InitializeLogger()
 	server := bootstrap.NewServer()

@@ -25,13 +25,21 @@ import (
 	"time"
 	//"reflect"
 	"strings"
+	"encoding/hex"
+	"bytes"
+	"encoding/binary"
+	"github.com/dispatchlabs/disgo/commons/crypto"
+	"errors"
 )
 
 // Node - Is the DisGover's notion of what a node is
 type Node struct {
-	Address  string    `json:"address,omitempty"`
-	Endpoint *Endpoint `json:"endpoint"`
-	Type     string    `json:"type"`
+	Hash         string    `json:"hash"`
+	Address      string    `json:"address"`
+	Signature    string    `json:"signature"`
+	GrpcEndpoint *Endpoint `json:"grpcEndpoint"`
+	HttpEndpoint *Endpoint `json:"httpEndpoint"`
+	Type         string    `json:"type"`
 }
 
 // Key
@@ -68,8 +76,8 @@ func (this *Node) Persist(txn *badger.Txn) error {
 }
 
 // PersistAndCache
-func (this *Node) PersistAndCache(txn *badger.Txn, cache *cache.Cache) error {
-	this.Cache(cache)
+func (this *Node) PersistAndCache(txn *badger.Txn, cache *cache.Cache, ttl time.Duration) error {
+	this.Cache(cache, ttl)
 	return this.Persist(txn)
 }
 
@@ -91,6 +99,87 @@ func (this Node) String() string {
 		return ""
 	}
 	return string(bytes)
+}
+
+// NewHash
+func (this Node) NewHash() (string, error) {
+	addressBytes, err := hex.DecodeString(this.Address)
+	if err != nil {
+		utils.Error("unable decode address", err)
+		return "", err
+	}
+	var values = []interface{}{
+		addressBytes,
+	}
+	buffer := new(bytes.Buffer)
+	for _, value := range values {
+		err := binary.Write(buffer, binary.LittleEndian, value)
+		if err != nil {
+			utils.Error("unable to write node bytes to buffer", err)
+			return "", err
+		}
+	}
+	hash := crypto.NewHash(buffer.Bytes())
+	return hex.EncodeToString(hash[:]), nil
+}
+
+// NewSignature
+func (this Node) NewSignature(privateKey string) (string, error) {
+	hashBytes, err := hex.DecodeString(this.Hash)
+	if err != nil {
+		utils.Error("unable to decode hash", err)
+		return "", err
+	}
+	privateKeyBytes, err := hex.DecodeString(privateKey)
+	if err != nil {
+		utils.Error("unable to decode privateKey", err)
+		return "", err
+	}
+	signatureBytes, err := crypto.NewSignature(privateKeyBytes, hashBytes)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(signatureBytes), nil
+}
+
+// Verify
+func (this Node) Verify() error {
+
+	// Hash ok?
+	hash, err := this.NewHash()
+	if err != nil {
+		return errors.New("unable to compute hash")
+	}
+	if this.Hash != hash {
+		return errors.New("invalid hash")
+	}
+
+	hashBytes, err := hex.DecodeString(this.Hash)
+	if err != nil {
+		utils.Error("unable to decode hash", err)
+		return errors.New("unable to decode hash")
+	}
+	signatureBytes, err := hex.DecodeString(this.Signature)
+	if err != nil {
+		utils.Error("unable to decode signature", err)
+		return errors.New("unable to decode signature")
+	}
+	publicKeyBytes, err := crypto.ToPublicKey(hashBytes, signatureBytes)
+	if err != nil {
+		utils.Error("unable to generate public key from hash and signature", err)
+		return errors.New("unable to generate public key from hash and signature")
+	}
+
+	// Derived address from publicKeyBytes match from?
+	address := hex.EncodeToString(crypto.ToAddress(publicKeyBytes))
+	if address != this.Address {
+		return errors.New("node address does not match the computed address from hash and signature")
+	}
+	if !crypto.VerifySignature(publicKeyBytes, hashBytes, signatureBytes) {
+		return errors.New("invalid signature")
+	}
+
+	return nil
 }
 
 // ToTransactionFromJson -
