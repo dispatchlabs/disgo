@@ -52,14 +52,6 @@ func (this *DAPoSService) getDelegatesHandler(responseWriter http.ResponseWriter
 	responseWriter.Write([]byte(this.GetDelegateNodes().String()))
 }
 
-// getReceiptHandler
-func (this *DAPoSService) getReceiptHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	vars := mux.Vars(request)
-	response := this.GetReceipt(vars["hash"])
-	setHeaders(&responseWriter)
-	responseWriter.Write([]byte(response.String()))
-}
-
 // getAccountHandler
 func (this *DAPoSService) getAccountHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
