@@ -61,13 +61,13 @@ func startListening(pq *PriorityQueue) {
 	wg.Wait()
 }
 
-func Test(t *testing.T) {
+func TestQueue(t *testing.T) {
 	pq := make(PriorityQueue, 0)
 	heap.Init(&pq)
 	WatchHeapOps()
 
 	CreateMockTransactions(&pq,5)
-	items := pq.DumpLowToHigh()
+	items := pq.Dump()
 	for _, itm := range items {
 		var tx *types.Transaction
 		tx = itm.Data.(*types.Transaction)

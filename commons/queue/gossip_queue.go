@@ -15,7 +15,7 @@ import (
 
 type GossipQueue struct {
 	Queue 		*PriorityQueue
-	ExistsMap 	map[string]bool
+	ExistsMap 	*ExistsMap
 }
 
 // need to figure out best way to implement the lock time
@@ -23,8 +23,7 @@ func NewGossipQueue() *GossipQueue {
 	gq := make(PriorityQueue, 0)
 	heap.Init(&gq)
 	WatchHeapOps()
-	exists := make(map[string]bool)
-	return &GossipQueue{&gq, exists}
+	return &GossipQueue{&gq, NewExistsMap()}
 }
 
 // - Push onto the queue and then resort (latest to earliest) also add to fast Exists map for quick checks
@@ -32,7 +31,7 @@ func (gq *GossipQueue) Push(gossip *types.Gossip) {
 	utils.Debug("GossipQueue --> Push")
 	itm := Item{gossip, gossip.Transaction.Time, gq.Queue.Len()+1}
 	HeapPush(gq.Queue, &itm)
-	gq.ExistsMap[gossip.Transaction.Hash] = true
+	gq.ExistsMap.Put(gossip.Transaction.Hash)
 }
 
 // - Push onto the queue and then resort (latest to earliest) also add to fast Exists map for quick checks
@@ -42,7 +41,7 @@ func (gq *GossipQueue) Pop() *types.Gossip {
 	itm := HeapPop(gq.Queue).(*Item)
 	gossip := itm.Data.(*types.Gossip)
 	utils.Debug("GossipQueue --> Pop: %v", gossip.Transaction.ToTime())
-	delete(gq.ExistsMap, gossip.Transaction.Hash)
+	gq.ExistsMap.Delete(gossip.Transaction.Hash)
 	return gossip
 }
 
@@ -58,7 +57,7 @@ func (gq GossipQueue) HasAvailable() bool {
 
 // - Check to see if the current Gossip Hash is in the exists map
 func (gq GossipQueue) Exists(key string) bool {
-	return gq.ExistsMap[key] == true
+	return gq.ExistsMap.Exists(key)
 }
 
 // - Dump returns the contents of the queue from oldest to newest (the order they are constantly sorted to)
