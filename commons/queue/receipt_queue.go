@@ -16,7 +16,7 @@ import (
 
 type ReceiptQueue struct {
 	Queue 		*PriorityQueue
-	ExistsMap 	map[string]bool
+	ExistsMap 	*ExistsMap
 	LockTime    int64
 }
 
@@ -25,22 +25,21 @@ func NewReceiptQueue(lockTimeInSeconds int) *ReceiptQueue {
 	rtq := make(PriorityQueue, 0)
 	heap.Init(&rtq)
 	WatchHeapOps()
-	exists := make(map[string]bool)
-	return &ReceiptQueue{&rtq, exists, int64(lockTimeInSeconds * 1000)}
+	return &ReceiptQueue{&rtq, NewExistsMap(), int64(lockTimeInSeconds * 1000)}
 }
 
 // - Push onto the queue and then resort (latest to earliest) also add to fast Exists map for quick checks
 func (rtq *ReceiptQueue) Push(receipt *types.Receipt) {
 	itm := Item{receipt, receipt.Created.UnixNano(), rtq.Queue.Len()+1}
 	HeapPush(rtq.Queue, &itm)
-	rtq.ExistsMap[receipt.TransactionHash] = true
+	rtq.ExistsMap.Put(receipt.TransactionHash)
 }
 
 // - Push onto the queue and then resort (latest to earliest) also add to fast Exists map for quick checks
 func (rtq *ReceiptQueue) Pop() *types.Receipt {
 	itm := HeapPop(rtq.Queue).(*Item)
 	receipt := itm.Data.(*types.Receipt)
-	delete(rtq.ExistsMap, receipt.TransactionHash)
+	rtq.ExistsMap.Exists(receipt.TransactionHash)
 	return receipt
 }
 
@@ -55,7 +54,7 @@ func (rtq ReceiptQueue) HasAvailable() bool {
 
 // - Check to see if the current transaction Hash is in the exists map
 func (rtq ReceiptQueue) Exists(key string) bool {
-	return rtq.ExistsMap[key] == true
+	return rtq.ExistsMap.Exists(key)
 }
 
 // - Dump returns the contents of the queue from oldest to newest (the order they are constantly sorted to)
