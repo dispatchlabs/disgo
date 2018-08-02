@@ -34,6 +34,7 @@ func (this *DAPoSService) WithHttp() *DAPoSService {
 	services.GetHttpRouter().HandleFunc("/v1/receipts/{hash}", this.getReceiptHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/accounts/{address}", this.getAccountHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/transactions", this.getTransactionsHandler).Methods("GET")
+	services.GetHttpRouter().HandleFunc("/v1/queue", this.getQueueHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/transactions/from/{address}", this.getTransactionsByFromAddressHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/transactions/to/{address}", this.getTransactionsByToAddressHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/transactions", this.newTransactionHandler).Methods("POST")
@@ -119,3 +120,11 @@ func (this *DAPoSService) getTransactionsHandler(responseWriter http.ResponseWri
 	setHeaders(&responseWriter)
 	responseWriter.Write([]byte(response.String()))
 }
+
+// getReceiptHandler
+func (this *DAPoSService) getQueueHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	response := this.DumpQueue()
+	setHeaders(&responseWriter)
+	responseWriter.Write([]byte(response.String()))
+}
+

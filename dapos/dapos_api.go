@@ -238,3 +238,9 @@ func (this *DAPoSService) GetTransactionsByToAddress(address string) *types.Resp
 
 	return response
 }
+
+func (this *DAPoSService) DumpQueue() *types.Response {
+	response := types.NewResponse()
+	response.Data = this.gossipQueue.Dump()
+	return response
+}
