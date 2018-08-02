@@ -36,7 +36,7 @@ func (this *DisGoverService) pingPongHandler(responseWriter http.ResponseWriter,
 	responseWriter.Write([]byte(fmt.Sprintf(
 		"PONG-From: %s @ %s:%d",
 		this.ThisNode.Address,
-		this.ThisNode.Endpoint.Host,
-		this.ThisNode.Endpoint.Port,
+		this.ThisNode.HttpEndpoint.Host,
+		this.ThisNode.HttpEndpoint.Port,
 	)))
 }

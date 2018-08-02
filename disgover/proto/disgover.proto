@@ -12,7 +12,8 @@ message Endpoint {
 
 message Node {
 	string 	 Address = 1;
-	Endpoint Endpoint = 2;
+	Endpoint GrpcEndpoint = 2;
+	Endpoint HttpEndpoint = 3;
 	string   Type = 3;
 }
 
