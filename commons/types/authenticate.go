@@ -61,21 +61,6 @@ func (this Authenticate) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func NewAuthenticate() (*Authenticate, error) {
-	authenticate := &Authenticate{Time: utils.ToMicroSeconds(time.Now())}
-
-	// Set hash.
-	var err error
-	authenticate.Hash, err = authenticate.NewHash()
-	if err != nil {
-		return nil, err
-	}
-
-	// Set signature.
-
-	return authenticate, nil
-}
-
 // NewHash
 func (this Authenticate) NewHash() (string, error) {
 	var values = []interface{}{
@@ -112,8 +97,37 @@ func (this Authenticate) NewSignature(privateKey string) (string, error) {
 	return hex.EncodeToString(signatureBytes), nil
 }
 
+// GetAddress
+func (this Authenticate) GetAddress() (string, error) {
+
+	hashBytes, err := hex.DecodeString(this.Hash)
+	if err != nil {
+		utils.Error("unable to decode hash", err)
+		return "", errors.New("unable to decode hash")
+	}
+	signatureBytes, err := hex.DecodeString(this.Signature)
+	if err != nil {
+		utils.Error("unable to decode signature", err)
+		return "", errors.New("unable to decode signature")
+	}
+	publicKeyBytes, err := crypto.ToPublicKey(hashBytes, signatureBytes)
+	if err != nil {
+		utils.Error("unable to generate public key from hash and signature", err)
+		return "", errors.New("unable to generate public key from hash and signature")
+	}
+
+	// Compute address.
+	return hex.EncodeToString(crypto.ToAddress(publicKeyBytes)), nil
+}
+
 // Verify
-func (this Node) Verify() error {
+func (this Authenticate) Verify(address string) error {
+
+	// Time out?
+	elapsedMilliSeconds := utils.ToMilliSeconds(time.Now()) - this.Time
+	if elapsedMilliSeconds > 1500 {
+		return errors.New("timed out")
+	}
 
 	// Hash ok?
 	hash, err := this.NewHash()
@@ -123,7 +137,6 @@ func (this Node) Verify() error {
 	if this.Hash != hash {
 		return errors.New("invalid hash")
 	}
-
 	hashBytes, err := hex.DecodeString(this.Hash)
 	if err != nil {
 		utils.Error("unable to decode hash", err)
@@ -141,8 +154,8 @@ func (this Node) Verify() error {
 	}
 
 	// Derived address from publicKeyBytes match from?
-	address := hex.EncodeToString(crypto.ToAddress(publicKeyBytes))
-	if address != this.Address {
+	computedAddress := hex.EncodeToString(crypto.ToAddress(publicKeyBytes))
+	if computedAddress != address {
 		return errors.New("node address does not match the computed address from hash and signature")
 	}
 	if !crypto.VerifySignature(publicKeyBytes, hashBytes, signatureBytes) {
@@ -150,4 +163,24 @@ func (this Node) Verify() error {
 	}
 
 	return nil
+}
+
+// NewAuthenticate
+func NewAuthenticate() (*Authenticate, error) {
+	authenticate := &Authenticate{Time: utils.ToMicroSeconds(time.Now())}
+
+	// Set hash.
+	var err error
+	authenticate.Hash, err = authenticate.NewHash()
+	if err != nil {
+		return nil, err
+	}
+
+	// Set signature.
+	authenticate.Signature, err = authenticate.NewSignature(GetAccount().PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return authenticate, nil
 }

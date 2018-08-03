@@ -33,7 +33,7 @@ func (m *Empty) Reset()         { *m = Empty{} }
 func (m *Empty) String() string { return proto.CompactTextString(m) }
 func (*Empty) ProtoMessage()    {}
 func (*Empty) Descriptor() ([]byte, []int) {
-	return fileDescriptor_disgover_e6d98af1992fcec9, []int{0}
+	return fileDescriptor_disgover_edd7fcc889ab41f5, []int{0}
 }
 func (m *Empty) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Empty.Unmarshal(m, b)
@@ -53,6 +53,60 @@ func (m *Empty) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Empty proto.InternalMessageInfo
 
+type Authenticate struct {
+	Hash                 string   `protobuf:"bytes,1,opt,name=Hash,proto3" json:"Hash,omitempty"`
+	Time                 int64    `protobuf:"varint,2,opt,name=Time,proto3" json:"Time,omitempty"`
+	Signature            string   `protobuf:"bytes,3,opt,name=Signature,proto3" json:"Signature,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Authenticate) Reset()         { *m = Authenticate{} }
+func (m *Authenticate) String() string { return proto.CompactTextString(m) }
+func (*Authenticate) ProtoMessage()    {}
+func (*Authenticate) Descriptor() ([]byte, []int) {
+	return fileDescriptor_disgover_edd7fcc889ab41f5, []int{1}
+}
+func (m *Authenticate) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Authenticate.Unmarshal(m, b)
+}
+func (m *Authenticate) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Authenticate.Marshal(b, m, deterministic)
+}
+func (dst *Authenticate) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Authenticate.Merge(dst, src)
+}
+func (m *Authenticate) XXX_Size() int {
+	return xxx_messageInfo_Authenticate.Size(m)
+}
+func (m *Authenticate) XXX_DiscardUnknown() {
+	xxx_messageInfo_Authenticate.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Authenticate proto.InternalMessageInfo
+
+func (m *Authenticate) GetHash() string {
+	if m != nil {
+		return m.Hash
+	}
+	return ""
+}
+
+func (m *Authenticate) GetTime() int64 {
+	if m != nil {
+		return m.Time
+	}
+	return 0
+}
+
+func (m *Authenticate) GetSignature() string {
+	if m != nil {
+		return m.Signature
+	}
+	return ""
+}
+
 type Endpoint struct {
 	Host                 string   `protobuf:"bytes,1,opt,name=Host,proto3" json:"Host,omitempty"`
 	Port                 int64    `protobuf:"varint,2,opt,name=Port,proto3" json:"Port,omitempty"`
@@ -65,7 +119,7 @@ func (m *Endpoint) Reset()         { *m = Endpoint{} }
 func (m *Endpoint) String() string { return proto.CompactTextString(m) }
 func (*Endpoint) ProtoMessage()    {}
 func (*Endpoint) Descriptor() ([]byte, []int) {
-	return fileDescriptor_disgover_e6d98af1992fcec9, []int{1}
+	return fileDescriptor_disgover_edd7fcc889ab41f5, []int{2}
 }
 func (m *Endpoint) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Endpoint.Unmarshal(m, b)
@@ -100,12 +154,10 @@ func (m *Endpoint) GetPort() int64 {
 }
 
 type Node struct {
-	Hash                 string    `protobuf:"bytes,1,opt,name=Hash,proto3" json:"Hash,omitempty"`
-	Address              string    `protobuf:"bytes,2,opt,name=Address,proto3" json:"Address,omitempty"`
-	Signature            string    `protobuf:"bytes,3,opt,name=Signature,proto3" json:"Signature,omitempty"`
-	GrpcEndpoint         *Endpoint `protobuf:"bytes,4,opt,name=GrpcEndpoint,proto3" json:"GrpcEndpoint,omitempty"`
-	HttpEndpoint         *Endpoint `protobuf:"bytes,5,opt,name=HttpEndpoint,proto3" json:"HttpEndpoint,omitempty"`
-	Type                 string    `protobuf:"bytes,6,opt,name=Type,proto3" json:"Type,omitempty"`
+	Address              string    `protobuf:"bytes,1,opt,name=Address,proto3" json:"Address,omitempty"`
+	GrpcEndpoint         *Endpoint `protobuf:"bytes,2,opt,name=GrpcEndpoint,proto3" json:"GrpcEndpoint,omitempty"`
+	HttpEndpoint         *Endpoint `protobuf:"bytes,3,opt,name=HttpEndpoint,proto3" json:"HttpEndpoint,omitempty"`
+	Type                 string    `protobuf:"bytes,4,opt,name=Type,proto3" json:"Type,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
 	XXX_unrecognized     []byte    `json:"-"`
 	XXX_sizecache        int32     `json:"-"`
@@ -115,7 +167,7 @@ func (m *Node) Reset()         { *m = Node{} }
 func (m *Node) String() string { return proto.CompactTextString(m) }
 func (*Node) ProtoMessage()    {}
 func (*Node) Descriptor() ([]byte, []int) {
-	return fileDescriptor_disgover_e6d98af1992fcec9, []int{2}
+	return fileDescriptor_disgover_edd7fcc889ab41f5, []int{3}
 }
 func (m *Node) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Node.Unmarshal(m, b)
@@ -135,23 +187,9 @@ func (m *Node) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Node proto.InternalMessageInfo
 
-func (m *Node) GetHash() string {
-	if m != nil {
-		return m.Hash
-	}
-	return ""
-}
-
 func (m *Node) GetAddress() string {
 	if m != nil {
 		return m.Address
-	}
-	return ""
-}
-
-func (m *Node) GetSignature() string {
-	if m != nil {
-		return m.Signature
 	}
 	return ""
 }
@@ -177,46 +215,92 @@ func (m *Node) GetType() string {
 	return ""
 }
 
-type NodeInfo struct {
-	SeedNode             *Node    `protobuf:"bytes,1,opt,name=SeedNode,proto3" json:"SeedNode,omitempty"`
-	Delegates            []*Node  `protobuf:"bytes,2,rep,name=Delegates,proto3" json:"Delegates,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+type PingSeed struct {
+	Authenticate         *Authenticate `protobuf:"bytes,1,opt,name=Authenticate,proto3" json:"Authenticate,omitempty"`
+	Node                 *Node         `protobuf:"bytes,2,opt,name=Node,proto3" json:"Node,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
+	XXX_unrecognized     []byte        `json:"-"`
+	XXX_sizecache        int32         `json:"-"`
 }
 
-func (m *NodeInfo) Reset()         { *m = NodeInfo{} }
-func (m *NodeInfo) String() string { return proto.CompactTextString(m) }
-func (*NodeInfo) ProtoMessage()    {}
-func (*NodeInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_disgover_e6d98af1992fcec9, []int{3}
+func (m *PingSeed) Reset()         { *m = PingSeed{} }
+func (m *PingSeed) String() string { return proto.CompactTextString(m) }
+func (*PingSeed) ProtoMessage()    {}
+func (*PingSeed) Descriptor() ([]byte, []int) {
+	return fileDescriptor_disgover_edd7fcc889ab41f5, []int{4}
 }
-func (m *NodeInfo) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_NodeInfo.Unmarshal(m, b)
+func (m *PingSeed) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_PingSeed.Unmarshal(m, b)
 }
-func (m *NodeInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_NodeInfo.Marshal(b, m, deterministic)
+func (m *PingSeed) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_PingSeed.Marshal(b, m, deterministic)
 }
-func (dst *NodeInfo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_NodeInfo.Merge(dst, src)
+func (dst *PingSeed) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PingSeed.Merge(dst, src)
 }
-func (m *NodeInfo) XXX_Size() int {
-	return xxx_messageInfo_NodeInfo.Size(m)
+func (m *PingSeed) XXX_Size() int {
+	return xxx_messageInfo_PingSeed.Size(m)
 }
-func (m *NodeInfo) XXX_DiscardUnknown() {
-	xxx_messageInfo_NodeInfo.DiscardUnknown(m)
+func (m *PingSeed) XXX_DiscardUnknown() {
+	xxx_messageInfo_PingSeed.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_NodeInfo proto.InternalMessageInfo
+var xxx_messageInfo_PingSeed proto.InternalMessageInfo
 
-func (m *NodeInfo) GetSeedNode() *Node {
+func (m *PingSeed) GetAuthenticate() *Authenticate {
 	if m != nil {
-		return m.SeedNode
+		return m.Authenticate
 	}
 	return nil
 }
 
-func (m *NodeInfo) GetDelegates() []*Node {
+func (m *PingSeed) GetNode() *Node {
+	if m != nil {
+		return m.Node
+	}
+	return nil
+}
+
+type Update struct {
+	Authenticate         *Authenticate `protobuf:"bytes,1,opt,name=Authenticate,proto3" json:"Authenticate,omitempty"`
+	Delegates            []*Node       `protobuf:"bytes,2,rep,name=Delegates,proto3" json:"Delegates,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
+	XXX_unrecognized     []byte        `json:"-"`
+	XXX_sizecache        int32         `json:"-"`
+}
+
+func (m *Update) Reset()         { *m = Update{} }
+func (m *Update) String() string { return proto.CompactTextString(m) }
+func (*Update) ProtoMessage()    {}
+func (*Update) Descriptor() ([]byte, []int) {
+	return fileDescriptor_disgover_edd7fcc889ab41f5, []int{5}
+}
+func (m *Update) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Update.Unmarshal(m, b)
+}
+func (m *Update) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Update.Marshal(b, m, deterministic)
+}
+func (dst *Update) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Update.Merge(dst, src)
+}
+func (m *Update) XXX_Size() int {
+	return xxx_messageInfo_Update.Size(m)
+}
+func (m *Update) XXX_DiscardUnknown() {
+	xxx_messageInfo_Update.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Update proto.InternalMessageInfo
+
+func (m *Update) GetAuthenticate() *Authenticate {
+	if m != nil {
+		return m.Authenticate
+	}
+	return nil
+}
+
+func (m *Update) GetDelegates() []*Node {
 	if m != nil {
 		return m.Delegates
 	}
@@ -224,18 +308,18 @@ func (m *NodeInfo) GetDelegates() []*Node {
 }
 
 type SoftwareUpdate struct {
-	SeedNode             *Node    `protobuf:"bytes,1,opt,name=SeedNode,proto3" json:"SeedNode,omitempty"`
-	Software             []byte   `protobuf:"bytes,2,opt,name=Software,proto3" json:"Software,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Authenticate         *Authenticate `protobuf:"bytes,1,opt,name=Authenticate,proto3" json:"Authenticate,omitempty"`
+	Software             []byte        `protobuf:"bytes,2,opt,name=Software,proto3" json:"Software,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
+	XXX_unrecognized     []byte        `json:"-"`
+	XXX_sizecache        int32         `json:"-"`
 }
 
 func (m *SoftwareUpdate) Reset()         { *m = SoftwareUpdate{} }
 func (m *SoftwareUpdate) String() string { return proto.CompactTextString(m) }
 func (*SoftwareUpdate) ProtoMessage()    {}
 func (*SoftwareUpdate) Descriptor() ([]byte, []int) {
-	return fileDescriptor_disgover_e6d98af1992fcec9, []int{4}
+	return fileDescriptor_disgover_edd7fcc889ab41f5, []int{6}
 }
 func (m *SoftwareUpdate) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SoftwareUpdate.Unmarshal(m, b)
@@ -255,9 +339,9 @@ func (m *SoftwareUpdate) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SoftwareUpdate proto.InternalMessageInfo
 
-func (m *SoftwareUpdate) GetSeedNode() *Node {
+func (m *SoftwareUpdate) GetAuthenticate() *Authenticate {
 	if m != nil {
-		return m.SeedNode
+		return m.Authenticate
 	}
 	return nil
 }
@@ -271,9 +355,11 @@ func (m *SoftwareUpdate) GetSoftware() []byte {
 
 func init() {
 	proto.RegisterType((*Empty)(nil), "disgover.Empty")
+	proto.RegisterType((*Authenticate)(nil), "disgover.Authenticate")
 	proto.RegisterType((*Endpoint)(nil), "disgover.Endpoint")
 	proto.RegisterType((*Node)(nil), "disgover.Node")
-	proto.RegisterType((*NodeInfo)(nil), "disgover.NodeInfo")
+	proto.RegisterType((*PingSeed)(nil), "disgover.PingSeed")
+	proto.RegisterType((*Update)(nil), "disgover.Update")
 	proto.RegisterType((*SoftwareUpdate)(nil), "disgover.SoftwareUpdate")
 }
 
@@ -289,8 +375,8 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type DisgoverGrpcClient interface {
-	PingSeedGrpc(ctx context.Context, in *Node, opts ...grpc.CallOption) (*NodeInfo, error)
-	UpdateGrpc(ctx context.Context, in *NodeInfo, opts ...grpc.CallOption) (*Empty, error)
+	PingSeedGrpc(ctx context.Context, in *PingSeed, opts ...grpc.CallOption) (*Update, error)
+	UpdateGrpc(ctx context.Context, in *Update, opts ...grpc.CallOption) (*Empty, error)
 	UpdateSoftwareGrpc(ctx context.Context, in *SoftwareUpdate, opts ...grpc.CallOption) (*Empty, error)
 }
 
@@ -302,8 +388,8 @@ func NewDisgoverGrpcClient(cc *grpc.ClientConn) DisgoverGrpcClient {
 	return &disgoverGrpcClient{cc}
 }
 
-func (c *disgoverGrpcClient) PingSeedGrpc(ctx context.Context, in *Node, opts ...grpc.CallOption) (*NodeInfo, error) {
-	out := new(NodeInfo)
+func (c *disgoverGrpcClient) PingSeedGrpc(ctx context.Context, in *PingSeed, opts ...grpc.CallOption) (*Update, error) {
+	out := new(Update)
 	err := c.cc.Invoke(ctx, "/disgover.DisgoverGrpc/PingSeedGrpc", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -311,7 +397,7 @@ func (c *disgoverGrpcClient) PingSeedGrpc(ctx context.Context, in *Node, opts ..
 	return out, nil
 }
 
-func (c *disgoverGrpcClient) UpdateGrpc(ctx context.Context, in *NodeInfo, opts ...grpc.CallOption) (*Empty, error) {
+func (c *disgoverGrpcClient) UpdateGrpc(ctx context.Context, in *Update, opts ...grpc.CallOption) (*Empty, error) {
 	out := new(Empty)
 	err := c.cc.Invoke(ctx, "/disgover.DisgoverGrpc/UpdateGrpc", in, out, opts...)
 	if err != nil {
@@ -331,8 +417,8 @@ func (c *disgoverGrpcClient) UpdateSoftwareGrpc(ctx context.Context, in *Softwar
 
 // DisgoverGrpcServer is the server API for DisgoverGrpc service.
 type DisgoverGrpcServer interface {
-	PingSeedGrpc(context.Context, *Node) (*NodeInfo, error)
-	UpdateGrpc(context.Context, *NodeInfo) (*Empty, error)
+	PingSeedGrpc(context.Context, *PingSeed) (*Update, error)
+	UpdateGrpc(context.Context, *Update) (*Empty, error)
 	UpdateSoftwareGrpc(context.Context, *SoftwareUpdate) (*Empty, error)
 }
 
@@ -341,7 +427,7 @@ func RegisterDisgoverGrpcServer(s *grpc.Server, srv DisgoverGrpcServer) {
 }
 
 func _DisgoverGrpc_PingSeedGrpc_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Node)
+	in := new(PingSeed)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -353,13 +439,13 @@ func _DisgoverGrpc_PingSeedGrpc_Handler(srv interface{}, ctx context.Context, de
 		FullMethod: "/disgover.DisgoverGrpc/PingSeedGrpc",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DisgoverGrpcServer).PingSeedGrpc(ctx, req.(*Node))
+		return srv.(DisgoverGrpcServer).PingSeedGrpc(ctx, req.(*PingSeed))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _DisgoverGrpc_UpdateGrpc_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(NodeInfo)
+	in := new(Update)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -371,7 +457,7 @@ func _DisgoverGrpc_UpdateGrpc_Handler(srv interface{}, ctx context.Context, dec 
 		FullMethod: "/disgover.DisgoverGrpc/UpdateGrpc",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DisgoverGrpcServer).UpdateGrpc(ctx, req.(*NodeInfo))
+		return srv.(DisgoverGrpcServer).UpdateGrpc(ctx, req.(*Update))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -415,30 +501,32 @@ var _DisgoverGrpc_serviceDesc = grpc.ServiceDesc{
 	Metadata: "disgover.proto",
 }
 
-func init() { proto.RegisterFile("disgover.proto", fileDescriptor_disgover_e6d98af1992fcec9) }
+func init() { proto.RegisterFile("disgover.proto", fileDescriptor_disgover_edd7fcc889ab41f5) }
 
-var fileDescriptor_disgover_e6d98af1992fcec9 = []byte{
-	// 342 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x92, 0x4f, 0x4b, 0xf3, 0x40,
-	0x10, 0xc6, 0x9b, 0xb7, 0xff, 0x92, 0x69, 0xe8, 0x0b, 0x73, 0x5a, 0x8a, 0x87, 0x92, 0x53, 0x11,
-	0xe9, 0x21, 0x15, 0xef, 0x85, 0x16, 0xeb, 0x45, 0x4a, 0xaa, 0xe0, 0x35, 0xba, 0xdb, 0x34, 0xa0,
-	0xd9, 0x65, 0xb3, 0x2a, 0xfd, 0x6e, 0x7e, 0x0e, 0x3f, 0x8f, 0xec, 0xd4, 0x4d, 0x5a, 0x89, 0x07,
-	0x6f, 0xfb, 0xcc, 0x3c, 0xbf, 0xc9, 0x3c, 0x43, 0x60, 0xc8, 0xf3, 0x32, 0x93, 0x6f, 0x42, 0x4f,
-	0x95, 0x96, 0x46, 0xa2, 0xef, 0x74, 0xd4, 0x87, 0xee, 0xf2, 0x45, 0x99, 0x7d, 0x14, 0x83, 0xbf,
-	0x2c, 0xb8, 0x92, 0x79, 0x61, 0x10, 0xa1, 0xb3, 0x92, 0xa5, 0x61, 0xde, 0xd8, 0x9b, 0x04, 0x09,
-	0xbd, 0x6d, 0x6d, 0x2d, 0xb5, 0x61, 0xff, 0xc6, 0xde, 0xa4, 0x9d, 0xd0, 0x3b, 0xfa, 0xf4, 0xa0,
-	0x73, 0x2b, 0xb9, 0x20, 0x20, 0x2d, 0x77, 0x15, 0x90, 0x96, 0x3b, 0x64, 0xd0, 0x9f, 0x73, 0xae,
-	0x45, 0x59, 0x12, 0x13, 0x24, 0x4e, 0xe2, 0x19, 0x04, 0x9b, 0x3c, 0x2b, 0x52, 0xf3, 0xaa, 0x05,
-	0x6b, 0x53, 0xaf, 0x2e, 0xe0, 0x15, 0x84, 0xd7, 0x5a, 0x3d, 0xb9, 0x65, 0x58, 0x67, 0xec, 0x4d,
-	0x06, 0x31, 0x4e, 0xab, 0x08, 0xae, 0x93, 0x9c, 0xf8, 0x2c, 0xb7, 0x32, 0x46, 0x55, 0x5c, 0xf7,
-	0x77, 0xee, 0xd8, 0x67, 0x77, 0xbf, 0xdb, 0x2b, 0xc1, 0x7a, 0x87, 0xdd, 0xed, 0x3b, 0xe2, 0xe0,
-	0xdb, 0x5c, 0x37, 0xc5, 0x56, 0xe2, 0x39, 0xf8, 0x1b, 0x21, 0xb8, 0xd5, 0x94, 0x6f, 0x10, 0x0f,
-	0xeb, 0x99, 0xb6, 0x9a, 0x54, 0x7d, 0xbc, 0x80, 0x60, 0x21, 0x9e, 0x45, 0x96, 0x1a, 0x61, 0x53,
-	0xb7, 0x1b, 0xcc, 0xb5, 0x21, 0x7a, 0x80, 0xe1, 0x46, 0x6e, 0xcd, 0x7b, 0xaa, 0xc5, 0xbd, 0xe2,
-	0xa9, 0x11, 0x7f, 0xfa, 0xd6, 0x08, 0x7c, 0x47, 0xd3, 0x81, 0xc3, 0xa4, 0xd2, 0xf1, 0x87, 0x07,
-	0xe1, 0xe2, 0x9b, 0xb3, 0x47, 0xc2, 0x4b, 0x08, 0xd7, 0x79, 0x91, 0x59, 0x98, 0xf4, 0x8f, 0xb1,
-	0x23, 0x3c, 0xd5, 0x36, 0x78, 0xd4, 0xc2, 0x19, 0xc0, 0x61, 0x31, 0x62, 0x1a, 0x3c, 0xa3, 0xff,
-	0x47, 0xe7, 0xa5, 0xdf, 0xa8, 0x85, 0x73, 0xc0, 0x03, 0xe4, 0xb6, 0x21, 0x98, 0xd5, 0xc6, 0xd3,
-	0xcc, 0x0d, 0x23, 0x1e, 0x7b, 0xf4, 0x97, 0xce, 0xbe, 0x02, 0x00, 0x00, 0xff, 0xff, 0x63, 0x38,
-	0x75, 0x6a, 0xb7, 0x02, 0x00, 0x00,
+var fileDescriptor_disgover_edd7fcc889ab41f5 = []byte{
+	// 373 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x53, 0xcd, 0x4e, 0xea, 0x40,
+	0x14, 0xa6, 0x94, 0x0b, 0xe5, 0xd0, 0x70, 0x6f, 0x66, 0x71, 0xd3, 0x10, 0x17, 0x64, 0x56, 0x2c,
+	0x0c, 0x89, 0x35, 0x71, 0xe1, 0x8e, 0x04, 0x22, 0x2b, 0x43, 0x0a, 0x3e, 0x40, 0xa5, 0xc7, 0x52,
+	0x23, 0x9d, 0x66, 0x3a, 0x68, 0x78, 0x1f, 0x1f, 0xc3, 0x87, 0x33, 0x73, 0xca, 0xf4, 0x27, 0xe2,
+	0x4a, 0x77, 0xe7, 0x7c, 0xe7, 0xfb, 0xbe, 0x39, 0x3f, 0x2d, 0x0c, 0xa3, 0x24, 0x8f, 0xc5, 0x2b,
+	0xca, 0x69, 0x26, 0x85, 0x12, 0xcc, 0x31, 0x39, 0xef, 0xc1, 0x9f, 0xc5, 0x3e, 0x53, 0x47, 0xbe,
+	0x01, 0x77, 0x76, 0x50, 0x3b, 0x4c, 0x55, 0xb2, 0x0d, 0x15, 0x32, 0x06, 0x9d, 0x65, 0x98, 0xef,
+	0x3c, 0x6b, 0x6c, 0x4d, 0xfa, 0x01, 0xc5, 0x1a, 0xdb, 0x24, 0x7b, 0xf4, 0xda, 0x63, 0x6b, 0x62,
+	0x07, 0x14, 0xb3, 0x0b, 0xe8, 0xaf, 0x93, 0x38, 0x0d, 0xd5, 0x41, 0xa2, 0x67, 0x13, 0xb9, 0x02,
+	0xb8, 0x0f, 0xce, 0x22, 0x8d, 0x32, 0x91, 0xa4, 0x8a, 0x1c, 0x45, 0xae, 0x4a, 0x47, 0x91, 0x13,
+	0xb6, 0x12, 0x52, 0x19, 0x47, 0x1d, 0xf3, 0x77, 0x0b, 0x3a, 0xf7, 0x22, 0x42, 0xe6, 0x41, 0x6f,
+	0x16, 0x45, 0x12, 0xf3, 0xfc, 0xa4, 0x31, 0x29, 0xbb, 0x01, 0xf7, 0x4e, 0x66, 0x5b, 0x63, 0x4d,
+	0xf2, 0x81, 0xcf, 0xa6, 0xe5, 0x98, 0xa6, 0x12, 0x34, 0x78, 0x5a, 0xb7, 0x54, 0x2a, 0x2b, 0x75,
+	0xf6, 0xf7, 0xba, 0x3a, 0x8f, 0x06, 0x3f, 0x66, 0xe8, 0x75, 0x8a, 0xd6, 0x75, 0xcc, 0x9f, 0xc1,
+	0x59, 0x25, 0x69, 0xbc, 0x46, 0x8c, 0xd8, 0x6d, 0x73, 0x79, 0xd4, 0xee, 0xc0, 0xff, 0x5f, 0xf9,
+	0xd6, 0xab, 0x41, 0x73, 0xd1, 0xbc, 0x98, 0xf6, 0x34, 0xc3, 0xb0, 0xd2, 0x68, 0x34, 0xa0, 0x1a,
+	0x97, 0xd0, 0x7d, 0xc8, 0x22, 0xcd, 0xfe, 0xc9, 0x4b, 0x97, 0xd0, 0x9f, 0xe3, 0x0b, 0xc6, 0xa1,
+	0xc2, 0xdc, 0x6b, 0x8f, 0xed, 0x33, 0xcf, 0x55, 0x04, 0xbe, 0x83, 0xe1, 0x5a, 0x3c, 0xa9, 0xb7,
+	0x50, 0xe2, 0x2f, 0xbc, 0x3d, 0x02, 0xc7, 0xb8, 0xd1, 0xa4, 0x6e, 0x50, 0xe6, 0xfe, 0x87, 0x05,
+	0xee, 0xfc, 0xe4, 0xa1, 0xcf, 0xa5, 0xcf, 0x64, 0x56, 0x4b, 0x79, 0xed, 0x40, 0x06, 0x1f, 0xfd,
+	0xab, 0xb0, 0xa2, 0x3d, 0xde, 0x62, 0x57, 0x00, 0x45, 0x4c, 0xaa, 0x2f, 0x8c, 0xd1, 0xdf, 0xda,
+	0xa1, 0xe9, 0xa3, 0x6f, 0xb1, 0x19, 0xb0, 0xa2, 0x68, 0xba, 0x21, 0xa9, 0x57, 0x11, 0x9b, 0x3b,
+	0x38, 0x63, 0xf1, 0xd8, 0xa5, 0x7f, 0xea, 0xfa, 0x33, 0x00, 0x00, 0xff, 0xff, 0x68, 0x48, 0xff,
+	0x20, 0x65, 0x03, 0x00, 0x00,
 }

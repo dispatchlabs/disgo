@@ -57,7 +57,6 @@ func GetDisGoverService() *DisGoverService {
 				HttpEndpoint: types.GetConfig().HttpEndpoint,
 				Type:         types.TypeNode,
 			},
-			SeedNodes: make([]types.Node, 0),
 			// lruCache: lCache,
 			kdht: kbucket.NewRoutingTable(
 				1000,
@@ -67,21 +66,6 @@ func GetDisGoverService() *DisGoverService {
 			),
 			running: false,
 		}
-
-		// Set hash.
-		var err error
-		disGoverServiceInstance.ThisNode.Hash, err = disGoverServiceInstance.ThisNode.NewHash()
-		if err != nil {
-			services.GetDbService().Close()
-			utils.Fatal(err)
-		}
-
-		// Set signature.
-		disGoverServiceInstance.ThisNode.Signature, err = disGoverServiceInstance.ThisNode.NewSignature(types.GetAccount().PrivateKey)
-		if err != nil {
-			services.GetDbService().Close()
-			utils.Fatal(err)
-		}
 	})
 	return disGoverServiceInstance
 }
@@ -89,7 +73,6 @@ func GetDisGoverService() *DisGoverService {
 // DisGoverService
 type DisGoverService struct {
 	ThisNode      *types.Node
-	SeedNodes    []types.Node
 	kdht          *kbucket.RoutingTable
 	running       bool
 }
@@ -150,8 +133,6 @@ func (this DisGoverService) updateWorker() {
 			if !utils.Exists(fileName) {
 				continue
 			}
-
-			utils.Info("software update found")
 
 			// Read file?
 			bytes, err := ioutil.ReadFile(fileName)
