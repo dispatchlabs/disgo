@@ -424,4 +424,3 @@ func GetTransactionsReceived(delegateNode types.Node, address string) ([]types.T
 
 	return transactions, nil
 }
-
