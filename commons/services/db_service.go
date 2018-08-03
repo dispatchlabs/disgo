@@ -34,12 +34,17 @@ var dbServiceOnce sync.Once
 // GetDbService
 func GetDbService() *DbService {
 	dbServiceOnce.Do(func() {
+		fileName := "." + string(os.PathSeparator) + "db" + string(os.PathSeparator) + "LOCK"
+		if utils.Exists(fileName) {
+			err := os.Remove(fileName)
+			if err != nil {
+				utils.Fatal(err)
+			}
+		}
 		dbServiceInstance = &DbService{running: false, kmutex: utils.NewKmutex(), cache: cache.New(types.CacheTTL, types.CacheTTL*2)}
 		err := dbServiceInstance.openDb()
 		if err != nil {
 			utils.Fatal(err)
-			os.Exit(1)
-			return
 		}
 	})
 	return dbServiceInstance
@@ -56,6 +61,11 @@ type DbService struct {
 // IsRunning
 func (this *DbService) IsRunning() bool {
 	return this.running
+}
+
+// Close
+func (this *DbService) Close() {
+	this.db.Close()
 }
 
 // Go
