@@ -36,6 +36,7 @@ message Update {
 message SoftwareUpdate {
     Authenticate Authenticate = 1;
     bytes        Software = 2;
+    int64        ScheduledTime = 3;
 }
 
 service DisgoverGrpc {

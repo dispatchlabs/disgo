@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+
+// TODO: Keep in cache for sometime so you can't get duplicate authenticates.
 // Authenticate
 type Authenticate struct {
 	Hash      string

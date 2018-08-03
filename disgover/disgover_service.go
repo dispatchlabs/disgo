@@ -72,9 +72,9 @@ func GetDisGoverService() *DisGoverService {
 
 // DisGoverService
 type DisGoverService struct {
-	ThisNode      *types.Node
-	kdht          *kbucket.RoutingTable
-	running       bool
+	ThisNode *types.Node
+	kdht     *kbucket.RoutingTable
+	running  bool
 }
 
 // IsRunning - Returns the status if service is running

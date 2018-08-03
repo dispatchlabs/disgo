@@ -31,7 +31,7 @@ import (
 	"github.com/patrickmn/go-cache"
 	"io/ioutil"
 	"os"
-)
+	)
 
 // WithGrpc - Runs the DisGover service with GRPC transport
 func (this *DisGoverService) WithGrpc() *DisGoverService {
@@ -161,20 +161,20 @@ func (this *DisGoverService) peerPingSeedGrpc() ([]*types.Node, error) {
 }
 
 // UpdateGrpc
-func (this *DisGoverService) UpdateGrpc(ctx context.Context, nodeInfo *proto.Update) (*proto.Empty, error) {
+func (this *DisGoverService) UpdateGrpc(ctx context.Context, update *proto.Update) (*proto.Empty, error) {
 
 	// Verify seed node is authentic?
-	err := this.verifySeedNode(nodeInfo.Authenticate)
+	err := this.verifySeedNode(update.Authenticate)
 	if err != nil {
 		return &proto.Empty{}, err
 	}
 
 	// Cache delegates.
-	for _, delegate := range nodeInfo.Delegates {
+	for _, delegate := range update.Delegates {
 		convertToDomainNode(delegate).Cache(services.GetCache(), cache.NoExpiration)
 	}
 
-	utils.Info(fmt.Sprintf("delegates updated [count=%d]", len(nodeInfo.Delegates)))
+	utils.Info(fmt.Sprintf("delegates updated [count=%d]", len(update.Delegates)))
 
 	return &proto.Empty{}, nil
 }
@@ -228,14 +228,8 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 		return &proto.Empty{}, err
 	}
 
-	// Create directory?
-	directoryName := "." + string(os.PathSeparator) + "update"
-	if !utils.Exists(directoryName) {
-		os.MkdirAll(directoryName, os.ModePerm)
-	}
-
 	// Write file.
-	fileName := directoryName + string(os.PathSeparator) + "disgo"
+	fileName :=  "." + string(os.PathSeparator) + "disgo"
 	err = ioutil.WriteFile(fileName, softwareUpdate.Software, 0)
 	if err != nil {
 		utils.Error(fmt.Sprintf("unable to save file %s", fileName), err)
@@ -243,6 +237,13 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 	}
 
 	utils.Info(fmt.Sprintf("software updated from seed node"))
+
+	go func() {
+		time.Sleep(3 * time.Second) // TODO: This should be set to the time from the seed!!!
+		services.GetDbService().Close()
+		utils.Info("rebooting with new version of disgo...")
+		os.Exit(0)
+	}()
 
 	return &proto.Empty{}, nil
 }
@@ -306,6 +307,7 @@ func (this *DisGoverService) verifySeedNode(protoAuthenticate *proto.Authenticat
 			if err != nil {
 				return errors.New("you are not an authorized seed node")
 			}
+			return nil
 		}
 	}
 

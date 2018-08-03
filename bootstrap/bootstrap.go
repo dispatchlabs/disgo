@@ -39,11 +39,8 @@ import (
 	"github.com/dispatchlabs/disgo/dvm"
 	"syscall"
 	"os/signal"
-)
+		)
 
-const (
-	Version = "1.0.0"
-)
 
 // Server -
 type Server struct {
@@ -62,7 +59,7 @@ func NewServer() *Server {
 
 // Go
 func (server *Server) Go() {
-	utils.Info("booting Disgo v" + Version + "...")
+	utils.Info(fmt.Sprintf("booting Disgo v%s...", types.Version))
 
 	// Add services.
 	server.services = append(server.services, dvm.GetDVMService())

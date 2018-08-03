@@ -21,6 +21,11 @@ import (
 	"time"
 )
 
+// Version
+const (
+	Version = "2.2.0"
+)
+
 // Statuses
 const (
 	StatusPending                      = "Pending"
