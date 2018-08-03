@@ -440,7 +440,7 @@ func (this Transaction) NewHash() (string, error) {
 }
 
 // NewSignature
-func (this *Transaction) NewSignature(privateKey string) (string, error) {
+func (this Transaction) NewSignature(privateKey string) (string, error) {
 	hashBytes, err := hex.DecodeString(this.Hash)
 	if err != nil {
 		utils.Error("unable to decode hash", err)
