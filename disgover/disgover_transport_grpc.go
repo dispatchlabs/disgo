@@ -48,13 +48,13 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.P
 	}
 
 	node := convertToDomainNode(pingSeed.Node)
-	authenticate := convertToDomainAuthenticate(pingSeed.Authenticate)
-	authenticateAddress, err := authenticate.GetAddress()
+	authentication := convertToDomainAuthentication(pingSeed.Authentication)
+	authenticationAddress, err := authentication.GetAddress()
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("unable to authenticate you [error=%s]", err.Error()))
+		return nil, errors.New(fmt.Sprintf("unable to authentication you [error=%s]", err.Error()))
 	}
-	if authenticateAddress != node.Address {
-		return nil, errors.New("unable to authenticate you")
+	if authenticationAddress != node.Address {
+		return nil, errors.New("unable to authentication you")
 	}
 
 	// Persist and cache node.
@@ -67,10 +67,10 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.P
 		if delegateAddress == node.Address {
 
 			// Is this an authentic delegate?
-			err := authenticate.Verify(node.Address)
+			err := authentication.Verify(node.Address)
 			if err != nil {
-				utils.Warn(fmt.Sprintf("unable to authenticate delegate [address=%s]", node.Address))
-				return nil, errors.New("unable to authenticate you as a delegate")
+				utils.Warn(fmt.Sprintf("unable to authentication delegate [address=%s]", node.Address))
+				return nil, errors.New("unable to authentication you as a delegate")
 			}
 			node.Type = types.TypeDelegate
 			break
@@ -91,8 +91,8 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.P
 
 	utils.Info(fmt.Sprintf("received ping [address=%s, host=%s, port=%d, delegates=%d]", node.Address, node.GrpcEndpoint.Host, node.GrpcEndpoint.Port, len(delegates)))
 
-	// New authenticate.
-	authenticate, err = types.NewAuthenticate()
+	// New authentication.
+	authentication, err = types.NewAuthenticate()
 	if err != nil {
 		utils.Error(err)
 		return nil, err
@@ -104,7 +104,7 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.P
 		this.peerUpdateGrpc()
 	}()
 
-	return &proto.Update{Authenticate: convertToProtoAuthenticate(authenticate), Delegates: nodes}, nil
+	return &proto.Update{Authentication: convertToProtoAuthentication(authentication), Delegates: nodes}, nil
 }
 
 // peerPingSeedGrpc
@@ -120,14 +120,14 @@ func (this *DisGoverService) peerPingSeedGrpc() ([]*types.Node, error) {
 		client := proto.NewDisgoverGrpcClient(conn)
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
-		// New authenticate.
-		authenticate, err := types.NewAuthenticate()
+		// New authentication.
+		authentication, err := types.NewAuthenticate()
 		if err != nil {
 			return nil, err
 		}
 
 		// Ping seed.
-		response, err := client.PingSeedGrpc(ctx, &proto.PingSeed{Authenticate: convertToProtoAuthenticate(authenticate), Node: convertToProtoNode(this.ThisNode)})
+		response, err := client.PingSeedGrpc(ctx, &proto.PingSeed{Authentication: convertToProtoAuthentication(authentication), Node: convertToProtoNode(this.ThisNode)})
 		if err != nil {
 			conn.Close()
 			cancel()
@@ -144,7 +144,7 @@ func (this *DisGoverService) peerPingSeedGrpc() ([]*types.Node, error) {
 		}
 
 		// Verify seed node is authentic?
-		err = this.verifySeedNode(response.Authenticate)
+		err = this.verifySeedNode(response.Authentication)
 		if err != nil {
 			return nil, err
 		}
@@ -164,7 +164,7 @@ func (this *DisGoverService) peerPingSeedGrpc() ([]*types.Node, error) {
 func (this *DisGoverService) UpdateGrpc(ctx context.Context, update *proto.Update) (*proto.Empty, error) {
 
 	// Verify seed node is authentic?
-	err := this.verifySeedNode(update.Authenticate)
+	err := this.verifySeedNode(update.Authentication)
 	if err != nil {
 		return &proto.Empty{}, err
 	}
@@ -193,8 +193,8 @@ func (this *DisGoverService) peerUpdateGrpc() {
 		protoDelegates = append(protoDelegates, convertToProtoNode(delegate))
 	}
 
-	// New authenticate.
-	authenticate, err := types.NewAuthenticate()
+	// New authentication.
+	authentication, err := types.NewAuthenticate()
 	if err != nil {
 		utils.Error(err)
 		return
@@ -210,7 +210,7 @@ func (this *DisGoverService) peerUpdateGrpc() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
 		// Update.
-		_, err = client.UpdateGrpc(ctx, &proto.Update{Authenticate: convertToProtoAuthenticate(authenticate), Delegates: protoDelegates})
+		_, err = client.UpdateGrpc(ctx, &proto.Update{Authentication: convertToProtoAuthentication(authentication), Delegates: protoDelegates})
 		if err != nil {
 			utils.Error(err)
 		}
@@ -223,7 +223,7 @@ func (this *DisGoverService) peerUpdateGrpc() {
 func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpdate *proto.SoftwareUpdate) (*proto.Empty, error) {
 
 	// Verify seed node is authentic?
-	err := this.verifySeedNode(softwareUpdate.Authenticate)
+	err := this.verifySeedNode(softwareUpdate.Authentication)
 	if err != nil {
 		return &proto.Empty{}, err
 	}
@@ -258,8 +258,8 @@ func (this *DisGoverService) peerUpdateSoftwareGrpc(software []byte) {
 		return
 	}
 
-	// New authenticate.
-	authenticate, err := types.NewAuthenticate()
+	// New authentication.
+	authentication, err := types.NewAuthenticate()
 	if err != nil {
 		utils.Error(err)
 		return
@@ -276,7 +276,7 @@ func (this *DisGoverService) peerUpdateSoftwareGrpc(software []byte) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 
 		// Update software.
-		_, err = client.UpdateSoftwareGrpc(ctx, &proto.SoftwareUpdate{Authenticate: convertToProtoAuthenticate(authenticate), Software: software})
+		_, err = client.UpdateSoftwareGrpc(ctx, &proto.SoftwareUpdate{Authentication: convertToProtoAuthentication(authentication), Software: software})
 		if err != nil {
 			utils.Warn(fmt.Sprintf("unable to update sofware [address=%s, host=%s, port=%d]", delegate.Address, delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port))
 			continue
@@ -287,23 +287,23 @@ func (this *DisGoverService) peerUpdateSoftwareGrpc(software []byte) {
 }
 
 // verifySeedNode
-func (this *DisGoverService) verifySeedNode(protoAuthenticate *proto.Authenticate) error {
+func (this *DisGoverService) verifySeedNode(protoAuthenticate *proto.Authentication) error {
 
 	if protoAuthenticate == nil {
 		utils.Warn("attempted update by a non-authorized seed node")
 		return errors.New("you are not an authorized seed node")
 	}
 
-	authenticate := convertToDomainAuthenticate(protoAuthenticate)
-	authenticateAddress, err := authenticate.GetAddress()
+	authentication := convertToDomainAuthentication(protoAuthenticate)
+	authenticationAddress, err := authentication.GetAddress()
 	if err != nil {
 		utils.Error(err)
 		return err
 	}
 
 	for _, seedAddress := range types.GetConfig().SeedAddresses {
-		if seedAddress == authenticateAddress {
-			err = authenticate.Verify(seedAddress)
+		if seedAddress == authenticationAddress {
+			err = authentication.Verify(seedAddress)
 			if err != nil {
 				return errors.New("you are not an authorized seed node")
 			}
@@ -353,22 +353,22 @@ func convertToProtoNode(node *types.Node) *proto.Node {
 }
 
 // convertToDomainAuthenticate
-func convertToDomainAuthenticate(authenticate *proto.Authenticate) *types.Authenticate {
-	return &types.Authenticate{
-		Hash:      authenticate.Hash,
-		Time:      authenticate.Time,
-		Signature: authenticate.Signature,
+func convertToDomainAuthentication(authentication *proto.Authentication) *types.Authentication {
+	return &types.Authentication{
+		Hash:      authentication.Hash,
+		Time:      authentication.Time,
+		Signature: authentication.Signature,
 	}
 }
 
 // convertToProtoAuthenticate
-func convertToProtoAuthenticate(authenticate *types.Authenticate) *proto.Authenticate {
-	if authenticate == nil {
+func convertToProtoAuthentication(authentication *types.Authentication) *proto.Authentication {
+	if authentication == nil {
 		return nil
 	}
-	return &proto.Authenticate{
-		Hash:      authenticate.Hash,
-		Time:      authenticate.Time,
-		Signature: authenticate.Signature,
+	return &proto.Authentication{
+		Hash:      authentication.Hash,
+		Time:      authentication.Time,
+		Signature: authentication.Signature,
 	}
 }

@@ -13,15 +13,15 @@ import (
 
 
 // TODO: Keep in cache for sometime so you can't get duplicate authenticates.
-// Authenticate
-type Authenticate struct {
+// Authentication
+type Authentication struct {
 	Hash      string
 	Time      int64
 	Signature string
 }
 
 // UnmarshalJSON
-func (this *Authenticate) UnmarshalJSON(bytes []byte) error {
+func (this *Authentication) UnmarshalJSON(bytes []byte) error {
 	var jsonMap map[string]interface{}
 	var ok bool
 	error := json.Unmarshal(bytes, &jsonMap)
@@ -51,7 +51,7 @@ func (this *Authenticate) UnmarshalJSON(bytes []byte) error {
 }
 
 // MarshalJSON
-func (this Authenticate) MarshalJSON() ([]byte, error) {
+func (this Authentication) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Hash      string `json:"hash"`
 		Time      int64  `json:"time"`
@@ -64,7 +64,7 @@ func (this Authenticate) MarshalJSON() ([]byte, error) {
 }
 
 // NewHash
-func (this Authenticate) NewHash() (string, error) {
+func (this Authentication) NewHash() (string, error) {
 	var values = []interface{}{
 		this.Time,
 	}
@@ -81,7 +81,7 @@ func (this Authenticate) NewHash() (string, error) {
 }
 
 // NewSignature
-func (this Authenticate) NewSignature(privateKey string) (string, error) {
+func (this Authentication) NewSignature(privateKey string) (string, error) {
 	hashBytes, err := hex.DecodeString(this.Hash)
 	if err != nil {
 		utils.Error("unable to decode hash", err)
@@ -100,7 +100,7 @@ func (this Authenticate) NewSignature(privateKey string) (string, error) {
 }
 
 // GetAddress
-func (this Authenticate) GetAddress() (string, error) {
+func (this Authentication) GetAddress() (string, error) {
 
 	hashBytes, err := hex.DecodeString(this.Hash)
 	if err != nil {
@@ -123,7 +123,7 @@ func (this Authenticate) GetAddress() (string, error) {
 }
 
 // Verify
-func (this Authenticate) Verify(address string) error {
+func (this Authentication) Verify(address string) error {
 
 	// Time out?
 	elapsedMilliSeconds := utils.ToMilliSeconds(time.Now()) - this.Time
@@ -168,8 +168,8 @@ func (this Authenticate) Verify(address string) error {
 }
 
 // NewAuthenticate
-func NewAuthenticate() (*Authenticate, error) {
-	authenticate := &Authenticate{Time: utils.ToMicroSeconds(time.Now())}
+func NewAuthenticate() (*Authentication, error) {
+	authenticate := &Authentication{Time: utils.ToMicroSeconds(time.Now())}
 
 	// Set hash.
 	var err error

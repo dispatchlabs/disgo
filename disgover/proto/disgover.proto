@@ -5,7 +5,7 @@ package disgover;
 message Empty {
 }
 
-message Authenticate {
+message Authentication {
     string Hash = 1;
     int64  Time = 2;
     string Signature = 3;
@@ -24,19 +24,19 @@ message Node {
 }
 
 message PingSeed {
-    Authenticate  Authenticate = 1;
-    Node          Node = 2;
+    Authentication  Authentication = 1;
+    Node            Node = 2;
 }
 
 message Update {
-    Authenticate  Authenticate = 1;
-	repeated Node Delegates = 2;
+    Authentication Authentication = 1;
+	repeated Node  Delegates = 2;
 }
 
 message SoftwareUpdate {
-    Authenticate Authenticate = 1;
-    bytes        Software = 2;
-    int64        ScheduledTime = 3;
+    Authentication Authentication = 1;
+    bytes          Software = 2;
+    int64          ScheduledTime = 3;
 }
 
 service DisgoverGrpc {
