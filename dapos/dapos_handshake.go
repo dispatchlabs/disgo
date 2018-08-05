@@ -47,9 +47,9 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 		return types.NewResponseWithStatus(types.StatusInvalidTransaction, err.Error())
 	}
 	elapsedMilliSeconds := utils.ToMilliSeconds(time.Now()) - transaction.Time
-	if elapsedMilliSeconds > 1000 {
+	if elapsedMilliSeconds > types.TxReceiveTimeout {
 		utils.Error(fmt.Sprintf("Timed out [hash=%s]", transaction.Hash))
-		return types.NewResponseWithStatus(types.StatusTransactionTimeOut, "Transaction was received later than 1 second limit")
+		//return types.NewResponseWithStatus(types.StatusTransactionTimeOut, "Transaction was received later than 1 second limit")
 	}
 
 	// Duplicate transaction?
@@ -158,12 +158,6 @@ func (this *DAPoSService) gossipWorker() {
 					// TODO: Update receipt timed out, but only if the transaction didn't get executed.
 				}
 
-				//if elapsedMilliSeconds > 1000 * 5 {
-				//	utils.Debug("gossip timed out")
-				//	// TODO: Update receipt timed out, but only if the transaction didn't get executed.
-				//	return
-				//}
-
 				// Find nodes in cache?
 				delegateNodes, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
 				if err != nil {
@@ -172,7 +166,7 @@ func (this *DAPoSService) gossipWorker() {
 				}
 
 				// Do we have 2/3 of rumors?
-				if len(gossip.Rumors) >= len(delegateNodes) * 2/3 {
+				if float32(len(gossip.Rumors)) >= float32(len(delegateNodes)) * 2/3 {
 					if !this.gossipQueue.Exists(gossip.Transaction.Hash) {
 						this.gossipQueue.Push(gossip)
 
@@ -252,8 +246,7 @@ func (this *DAPoSService) doWork() {
 
 			utils.Debug("transactionworker")
 			// Get receipt.
-			var receipt *types.Receipt
-			value, err := types.ToReceiptFromCache(services.GetCache(), gossip.Transaction.Hash)
+			receipt, err := types.ToReceiptFromCache(services.GetCache(), gossip.Transaction.Hash)
 			if err != nil {
 				utils.Error(fmt.Sprintf("receipt not found [hash=%s]", gossip.Transaction.Hash))
 				receipt = types.NewReceipt(types.RequestNewTransaction)
@@ -261,7 +254,15 @@ func (this *DAPoSService) doWork() {
 				receipt.Cache(services.GetCache())
 				return
 			}
-			receipt = value
+			initialRcvDuration := gossip.Rumors[0].Time - gossip.Transaction.Time
+			utils.Info("Initial Receive Duration = %d", initialRcvDuration)
+			if  initialRcvDuration >= types.TxReceiveTimeout {
+				utils.Error(fmt.Sprintf("Timed out [hash=%s] %v milliseconds", gossip.Transaction.Hash, initialRcvDuration))
+				receipt = types.NewReceipt(gossip.Transaction.Hash)
+				receipt.Status = types.StatusTransactionTimeOut
+				receipt.Cache(services.GetCache())
+				return
+			}
 			receipt.Created = time.Now()
 
 			executeTransaction(&gossip.Transaction, receipt, gossip)
@@ -329,6 +330,11 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		dvmResult, err := dvmService.DeploySmartContract(transaction)
 		if err != nil {
 			utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
+			utils.Error(err)
+			receipt.Status = types.StatusInternalError
+			receipt.HumanReadableStatus = err.Error()
+			receipt.Cache(services.GetCache())
+			return
 		}
 
 		err = processDVMResult(transaction, dvmResult, receipt)

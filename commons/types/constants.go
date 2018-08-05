@@ -21,6 +21,10 @@ import (
 	"time"
 )
 
+// Timouts
+const (
+	TxReceiveTimeout    = int64(5 * time.Second)
+)
 // Requests
 const (
 	RequestGetStatus                    = "GetReceipt"

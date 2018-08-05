@@ -84,7 +84,7 @@ func (this *DAPoSService) GetReceipt(transactionHash string) *types.Response {
 		response.Status = types.StatusNotDelegate
 		response.HumanReadableStatus = "This node is not a delegate. Please select a delegate node."
 	}
-	utils.Info(fmt.Sprintf("GetAccount [hash=%s, status=%s]", transactionHash, response.Status))
+	utils.Info(fmt.Sprintf("GetReceipt [hash=%s, status=%s]", transactionHash, response.Status))
 
 	return response
 }
