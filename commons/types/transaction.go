@@ -30,6 +30,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/pkg/errors"
 	"github.com/patrickmn/go-cache"
+	"github.com/dispatchlabs/disgo/commons/helper"
 )
 
 // Transaction - The transaction info
@@ -651,7 +652,8 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		}
 	}
 	if jsonMap["params"] != nil {
-		this.Params, ok = jsonMap["params"].([]interface{})
+		//this.Params, ok = jsonMap["params"].([]interface{})
+		this.Params = helper.GetConvertedParams(jsonMap)
 		if !ok {
 			return errors.Errorf("value for field 'params' must be an array")
 		}
