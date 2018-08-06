@@ -260,8 +260,9 @@ func (this *DAPoSService) doWork() {
 		}
 		receipt = value
 		receipt.Created = time.Now()
-
-		executeTransaction(&gossip.Transaction, receipt, gossip)
+		if types.GetConfig().IsBookkeeper {
+			executeTransaction(&gossip.Transaction, receipt, gossip)
+		}
 	}
 }
 
