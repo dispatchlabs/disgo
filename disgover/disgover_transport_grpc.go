@@ -60,8 +60,8 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, node *proto.Node)
 	for _, delegate := range delegates {
 		nodes = append(nodes, convertToProto(delegate))
 	}
-
-	utils.Info(fmt.Sprintf("received ping [address=%s, ip=%s, port=%d, delegates=%d]", node.Address, node.Endpoint.Host, node.Endpoint.Port, len(delegates)))
+		//TODO: grpc endpoint?
+	utils.Info(fmt.Sprintf("received ping [address=%s, ip=%s, port=%d, delegates=%d]", node.Address, node.GrpcEndpoint.Host, node.GrpcEndpoint.Port, len(delegates)))
 
 	// Update all peers.
 	this.peerUpdateGrpc()
@@ -136,9 +136,9 @@ func (this *DisGoverService) peerUpdateGrpc() {
 	}
 
 	for _, delegate := range delegates {
-		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", delegate.Endpoint.Host, delegate.Endpoint.Port), grpc.WithInsecure())
+		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), grpc.WithInsecure())
 		if err != nil {
-			utils.Fatal(fmt.Sprintf("cannot dial node [host=%s, port=%d]", delegate.Endpoint.Host, delegate.Endpoint.Port), err)
+			utils.Fatal(fmt.Sprintf("cannot dial node [host=%s, port=%d]", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), err)
 			continue
 		}
 		client := proto.NewDisgoverGrpcClient(conn)
@@ -160,9 +160,13 @@ func (this *DisGoverService) peerUpdateGrpc() {
 func convertToDomain(node *proto.Node) *types.Node {
 	return &types.Node{
 		Address: node.Address,
-		Endpoint: &types.Endpoint{
-			Host: node.Endpoint.Host,
-			Port: node.Endpoint.Port,
+		GrpcEndpoint: &types.Endpoint{
+			Host: node.GrpcEndpoint.Host,
+			Port: node.GrpcEndpoint.Port, //TODO: grpc endpoint?
+		},
+		HttpEndpoint: &types.Endpoint{
+			Host: node.HttpEndpoint.Host,
+			Port: node.HttpEndpoint.Port,
 		},
 		Type: node.Type,
 	}
@@ -175,9 +179,13 @@ func convertToProto(node *types.Node) *proto.Node {
 	}
 	return &proto.Node{
 		Address: node.Address,
-		Endpoint: &proto.Endpoint{
-			Host: node.Endpoint.Host,
-			Port: node.Endpoint.Port,
+		GrpcEndpoint: &proto.Endpoint{
+			Host: node.GrpcEndpoint.Host,
+			Port: node.GrpcEndpoint.Port,
+		},
+		HttpEndpoint: &proto.Endpoint{
+			Host: node.HttpEndpoint.Host,
+			Port: node.HttpEndpoint.Port,
 		},
 		Type: node.Type,
 	}
