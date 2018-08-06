@@ -13,24 +13,42 @@ func GetConvertedParams(jsonMap map[string]interface{}) []interface{} {
 	if params == nil || len(params) == 0 {
 		return params
 	}
-	abi := GetABI(jsonMap["abi"].(string))
+	theAbi := GetABI(jsonMap["abi"].(string))
 	method, _ := jsonMap["method"].(string)
 	var result []interface{}
-	for k, v := range abi.Methods {
+	for k, v := range theAbi.Methods {
 		//fmt.Printf("Method: %v\n", k)
 		if k == method {
 			for i := 0; i < len(v.Inputs); i++ {
-				result = append(result, getValue(v.Inputs[i], params[i]))
+				arg := v.Inputs[i]
+				if arg.Type.T == abi.SliceTy || arg.Type.T == abi.ArrayTy {
+					typeString := arg.Type.String()[0:len(arg.Type.String())-2]
+					argType, err := abi.NewType(typeString)
+					if err != nil {
+						utils.Error(err)
+					}
+					var argument abi.Argument
+					argument.Type = argType
+					result = append(result, getValues(argument, params[i].([]interface{})))
+				} else {
+					result = append(result, getValue(arg, params[i]))
+				}
 			}
 		}
-		//for _, args := range v.Inputs {
-		//	fmt.Printf("\tInput Name: %v\n", args.Name)
-		//	fmt.Printf("\tInput Type: %v\n", args.Type)
-		//}
 	}
 	return result
 }
 
+func getValues(arg abi.Argument, values []interface{}) []*interface{} {
+	result := make([]*interface{}, 0)
+	for _, value := range values {
+		temp := getValue(arg, value)
+		result = append(result, &temp)
+	}
+	return result
+}
+
+//TODO: Need to add code to handle Arrays of numeric data
 //numerics from json are always serialized as float64
 func getValue(arg abi.Argument, value interface{}) interface{} {
 	if arg.Type.String() == "int256" || arg.Type.String() == "uint256" {
