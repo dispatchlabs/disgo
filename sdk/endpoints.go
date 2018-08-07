@@ -139,7 +139,7 @@ func GetAccount(delegateNode types.Node, address string) (*types.Account, error)
 }
 
 // TransferTokens - Send tokens FROM TO
-func TransferTokens(delegateNode types.Node, privateKey string, from string, to string, tokens int64) error {
+func TransferTokens(delegateNode types.Node, privateKey string, from string, to string, tokens int64) (string, error) {
 
 	// Create transfer tokens transaction.
 	transaction, err := types.NewTransferTokensTransaction(privateKey, from, to, tokens, 0, utils.ToMilliSeconds(time.Now()))
@@ -172,7 +172,7 @@ func TransferTokens(delegateNode types.Node, privateKey string, from string, to 
 		return errors.New(fmt.Sprintf("%s: %s", response.Status, response.HumanReadableStatus))
 	}
 
-	return nil
+	return transaction.Hash, nil
 }
 
 // DeploySmartContract - Deploy a smart contract, get the TX hash as result
