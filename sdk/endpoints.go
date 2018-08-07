@@ -72,7 +72,7 @@ func GetDelegates() ([]types.Node, error) {
 func CreateAccount(name string) (*types.Account, error) {
 	publicKey, privateKey := crypto.GenerateKeyPair()
 	address := crypto.ToAddress(publicKey)
-	account := &*types.Account{}
+	account := &types.Account{}
 	account.Address = hex.EncodeToString(address)
 	account.PrivateKey = hex.EncodeToString(privateKey)
 	account.Balance = big.NewInt(0)

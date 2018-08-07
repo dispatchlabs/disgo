@@ -174,6 +174,16 @@ func (this Account) String() string {
 	return string(bytes)
 }
 
+func (this Account) ToPrettyJson() string {
+	bytes, err := json.MarshalIndent(this, "", "  ")
+	if err != nil {
+		utils.Error("unable to marshal transaction", err)
+		return ""
+	}
+	return string(bytes)
+}
+
+
 // GetAccount - Returns the singleton instance of the current account
 func GetAccount() *Account {
 	accountOnce.Do(func() {
