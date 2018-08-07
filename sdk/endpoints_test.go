@@ -14,7 +14,7 @@ func TestCreateAccount(t *testing.T) {
 	fmt.Printf("%v\n", account.ToPrettyJson())
 
 	// Testing WITH name
-	account, err := CreateAccount("Test")
+	account, err = CreateAccount("Test")
 	if err != nil {
 		t.Error(err)
 	}

@@ -70,7 +70,7 @@ func GetDelegates() ([]types.Node, error) {
 
 // CreateAccount - Generate a new account
 func CreateAccount(name_optional ...string) (*types.Account, error) {
-	name = ""
+	name := ""
 	if len(name_optional) > 0 {
 		name = name_optional[0]
 	}
