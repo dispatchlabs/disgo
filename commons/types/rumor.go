@@ -21,8 +21,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
-	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"time"
@@ -37,51 +35,56 @@ type Rumor struct {
 	Signature       string
 }
 
-// ToRumorFromJson -
-func ToRumorFromJson(payload []byte) (*Rumor, error) {
-	rumor := &Rumor{}
-	err := json.Unmarshal(payload, rumor)
-	if err != nil {
-		return nil, err
+// UnmarshalJSON
+func (this *Rumor) UnmarshalJSON(bytes []byte) error {
+	var jsonMap map[string]interface{}
+	error := json.Unmarshal(bytes, &jsonMap)
+	if error != nil {
+		return error
 	}
-	return rumor, nil
+	if jsonMap["hash"] != nil {
+		this.Hash = jsonMap["hash"].(string)
+	}
+	if jsonMap["address"] != nil {
+		this.Address = jsonMap["address"].(string)
+	}
+	if jsonMap["transactionHash"] != nil {
+		this.TransactionHash = jsonMap["transactionHash"].(string)
+	}
+	if jsonMap["time"] != nil {
+		this.Time = int64(jsonMap["time"].(float64))
+	}
+	if jsonMap["signature"] != nil {
+		this.Signature = jsonMap["signature"].(string)
+	}
+	return nil
 }
 
-// ToRumorsFromJson -
-func ToRumorsFromJson(payload []byte) ([]*Rumor, error) {
-	var rumors = make([]*Rumor, 0)
-	err := json.Unmarshal(payload, &rumors)
-	if err != nil {
-		return nil, err
-	}
-	return rumors, nil
+// MarshalJSON
+func (this Rumor) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Hash            string `json:"hash"`
+		Address         string `json:"address"`
+		TransactionHash string `json:"transactionHash"`
+		Time            int64  `json:"time"`
+		Signature       string `json:"signature"`
+	}{
+		Hash:            this.Hash,
+		Address:         this.Address,
+		TransactionHash: this.TransactionHash,
+		Time:            this.Time,
+		Signature:       this.Signature,
+	})
 }
 
-// NewRumor -
-func NewRumor(privateKey string, address string, transactionHash string) *Rumor {
-	rumor := &Rumor{}
-	rumor.Address = address
-	rumor.TransactionHash = transactionHash
-	rumor.Time = utils.ToMilliSeconds(time.Now())
-	rumor.Hash = rumor.NewHash()
-	privateKeyBytes, err := hex.DecodeString(privateKey)
+// String
+func (this Rumor) String() string {
+	bytes, err := json.Marshal(this)
 	if err != nil {
-		utils.Error("unable to decode privateKey", err)
-		return nil
+		utils.Error("unable to marshal rumor", err)
+		return ""
 	}
-	hashBytes, err := hex.DecodeString(rumor.Hash)
-	if err != nil {
-		utils.Error("unable to decode hash", err)
-		return nil
-	}
-	signature, err := crypto.NewSignature(privateKeyBytes, hashBytes)
-	if err != nil {
-		utils.Error(err.Error())
-		return nil
-	}
-
-	rumor.Signature = hex.EncodeToString(signature)
-	return rumor
+	return string(bytes)
 }
 
 // NewHash
@@ -155,105 +158,6 @@ func (this Rumor) Verify() bool {
 	return crypto.VerifySignature(publicKeyBytes, hashBytes, signatureBytes)
 }
 
-// ToRumorByKey
-func ToRumorByKey(txn *badger.Txn, key []byte) (*Rumor, error) {
-	item, err := txn.Get(key)
-	if err != nil {
-		return nil, err
-	}
-	value, err := item.Value()
-	if err != nil {
-		return nil, err
-	}
-	transaction, err := ToRumorFromJson(value)
-	if err != nil {
-		return nil, err
-	}
-	return transaction, err
-}
-
-// ToRumors
-func ToRumors(txn *badger.Txn) ([]*Rumor, error) {
-	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
-	defer iterator.Close()
-	prefix := []byte(fmt.Sprintf("table-rumor-"))
-	var transactions = make([]*Rumor, 0)
-	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
-		item := iterator.Item()
-		value, err := item.Value()
-		if err != nil {
-			utils.Error(err)
-			continue
-		}
-		transaction, err := ToRumorFromJson(value)
-		if err != nil {
-			utils.Error(err)
-			continue
-		}
-		transactions = append(transactions, transaction)
-	}
-	return transactions, nil
-}
-
-// ToRumorByAddress
-func ToRumorsByAddress(txn *badger.Txn, address string) ([]*Rumor, error) {
-	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
-	defer iterator.Close()
-	prefix := []byte(fmt.Sprintf("key-rumor-address-%s", address))
-	var rumors = make([]*Rumor, 0)
-	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
-		item := iterator.Item()
-		value, err := item.Value()
-		if err != nil {
-			utils.Error(err)
-			continue
-		}
-		rumor, err := ToRumorByKey(txn, value)
-		if err != nil {
-			utils.Error(err)
-			continue
-		}
-		rumors = append(rumors, rumor)
-	}
-	return rumors, nil
-}
-
-// ToRumorsByTransactionHash
-func ToRumorsByTransactionHash(txn *badger.Txn, transactionHash string) ([]*Rumor, error) {
-	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
-	defer iterator.Close()
-	prefix := []byte(fmt.Sprintf("key-rumor-hash-%s", transactionHash))
-	var rumors = make([]*Rumor, 0)
-	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
-		item := iterator.Item()
-		value, err := item.Value()
-		if err != nil {
-			utils.Error(err)
-			continue
-		}
-		rumor, err := ToRumorByKey(txn, value)
-		if err != nil {
-			utils.Error(err)
-			continue
-		}
-		rumors = append(rumors, rumor)
-	}
-	return rumors, nil
-}
-
-// ToJsonByRumorTransactionHash
-func ToJsonByRumorTransactionHash(txn *badger.Txn, transactionHash string) ([]byte, error) {
-	rumors, err := ToRumorsByTransactionHash(txn, transactionHash)
-	if err != nil {
-		return nil, err
-	}
-	bytes, err := json.Marshal(rumors)
-	if err != nil {
-		return nil, err
-	}
-	return bytes, nil
-}
-
 // ToJsonByRumors
 func ToJsonByRumors(rumors []*Rumor) ([]byte, error) {
 	bytes, err := json.Marshal(rumors)
@@ -263,77 +167,49 @@ func ToJsonByRumors(rumors []*Rumor) ([]byte, error) {
 	return bytes, nil
 }
 
-// ToRumorsByTime
-func ToRumorsByTime(txn *badger.Txn, address string) ([]*Rumor, error) {
-	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
-	defer iterator.Close()
-	prefix := []byte(fmt.Sprintf("key-rumor-time-%s", address))
+// ToRumorFromJson -
+func ToRumorFromJson(payload []byte) (*Rumor, error) {
+	rumor := &Rumor{}
+	err := json.Unmarshal(payload, rumor)
+	if err != nil {
+		return nil, err
+	}
+	return rumor, nil
+}
+
+// ToRumorsFromJson -
+func ToRumorsFromJson(payload []byte) ([]*Rumor, error) {
 	var rumors = make([]*Rumor, 0)
-	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
-		item := iterator.Item()
-		value, err := item.Value()
-		if err != nil {
-			utils.Error(err)
-			continue
-		}
-		rumor, err := ToRumorByKey(txn, value)
-		if err != nil {
-			utils.Error(err)
-			continue
-		}
-		rumors = append(rumors, rumor)
+	err := json.Unmarshal(payload, &rumors)
+	if err != nil {
+		return nil, err
 	}
 	return rumors, nil
 }
 
-// String
-func (this Rumor) String() string {
-	bytes, err := json.Marshal(this)
+// NewRumor -
+func NewRumor(privateKey string, address string, transactionHash string) *Rumor {
+	rumor := &Rumor{}
+	rumor.Address = address
+	rumor.TransactionHash = transactionHash
+	rumor.Time = utils.ToMilliSeconds(time.Now())
+	rumor.Hash = rumor.NewHash()
+	privateKeyBytes, err := hex.DecodeString(privateKey)
 	if err != nil {
-		utils.Error("unable to marshal rumor", err)
-		return ""
+		utils.Error("unable to decode privateKey", err)
+		return nil
 	}
-	return string(bytes)
-}
+	hashBytes, err := hex.DecodeString(rumor.Hash)
+	if err != nil {
+		utils.Error("unable to decode hash", err)
+		return nil
+	}
+	signature, err := crypto.NewSignature(privateKeyBytes, hashBytes)
+	if err != nil {
+		utils.Error(err.Error())
+		return nil
+	}
 
-// UnmarshalJSON
-func (this *Rumor) UnmarshalJSON(bytes []byte) error {
-	var jsonMap map[string]interface{}
-	error := json.Unmarshal(bytes, &jsonMap)
-	if error != nil {
-		return error
-	}
-	if jsonMap["hash"] != nil {
-		this.Hash = jsonMap["hash"].(string)
-	}
-	if jsonMap["address"] != nil {
-		this.Address = jsonMap["address"].(string)
-	}
-	if jsonMap["transactionHash"] != nil {
-		this.TransactionHash = jsonMap["transactionHash"].(string)
-	}
-	if jsonMap["time"] != nil {
-		this.Time = int64(jsonMap["time"].(float64))
-	}
-	if jsonMap["signature"] != nil {
-		this.Signature = jsonMap["signature"].(string)
-	}
-	return nil
-}
-
-// MarshalJSON
-func (this Rumor) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Hash            string `json:"hash"`
-		Address         string `json:"address"`
-		TransactionHash string `json:"transactionHash"`
-		Time            int64  `json:"time"`
-		Signature       string `json:"signature"`
-	}{
-		Hash:            this.Hash,
-		Address:         this.Address,
-		TransactionHash: this.TransactionHash,
-		Time:            this.Time,
-		Signature:       this.Signature,
-	})
+	rumor.Signature = hex.EncodeToString(signature)
+	return rumor
 }

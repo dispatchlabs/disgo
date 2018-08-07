@@ -23,7 +23,7 @@ import (
 
 // Requests
 const (
-	RequestGetStatus                    = "GetStatus"
+	RequestGetStatus                    = "GetReceipt"
 	RequestGetDelegates                 = "GetDelegates"
 	RequestGetAccount                   = "GetAccount"
 	RequestNewTransaction               = "NewTransaction"
@@ -45,7 +45,9 @@ const (
 	StatusUnableToFindDelegates        = "StatusUnableToFindDelegates"
 	StatusUnableToExecuteDelegate      = "UnableToExecuteDelegate"
 	StatusInvalidRequest               = "InvalidRequest"
+	StatusNotDelegate                  = "StatusNotDelegate"
 	StatusAlreadyProcessingTransaction = "StatusAlreadyProcessingTransaction"
+	StatusGossipingTimedOut            = "StatusGossipingTimedOut"
 	StatusInternalError                = "InternalError"
 )
 
@@ -61,9 +63,12 @@ const (
 
 // Persistence TTLs
 const (
-	ReceiptTTL = time.Hour * 24
-	GossipTTL  = time.Hour * 48
-	NodeTTL    = time.Hour * 24
+	ReceiptTTL     = time.Hour * 24 * 3
+	GossipTTL      = time.Hour * 48
+	NodeTTL        = time.Hour * 24
+	AccountTTL     = time.Hour * 24
+	PageTTL        = time.Hour * 24
+	TransactionTTL = time.Hour * 48
 )
 
 // Cache TTLs

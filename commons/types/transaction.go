@@ -29,6 +29,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/pkg/errors"
+	"github.com/patrickmn/go-cache"
 )
 
 // Transaction - The transaction info
@@ -49,6 +50,126 @@ type Transaction struct {
 	ToName    string // Transient
 }
 
+// Key
+func (this Transaction) Key() string {
+	return fmt.Sprintf("table-transaction-%s", this.Hash)
+}
+
+// TypeKey
+func (this Transaction) TypeKey() string {
+	return fmt.Sprintf("key-transaction-type-%d-%d-%s", this.Type, this.Time, this.Hash)
+}
+
+// TimeKey
+func (this Transaction) TimeKey() string {
+	return fmt.Sprintf("key-transaction-time-%d-%s", this.Time, this.Hash)
+}
+
+// FromKey
+func (this Transaction) FromKey() string {
+	return fmt.Sprintf("key-transaction-from-%s-%d", this.From, this.Time)
+}
+
+// ToKey
+func (this Transaction) ToKey() string {
+	return fmt.Sprintf("key-transaction-to-%s-%d", this.To, this.Time)
+}
+
+//Cache
+func (this *Transaction) Cache(cache *cache.Cache, time_optional ...time.Duration){
+	TTL := TransactionTTL
+	if len(time_optional) > 0 {
+		TTL = time_optional[0]
+	}
+	cache.Set(this.Key(), this, TTL)
+}
+
+// Persist
+func (this *Transaction) Persist(txn *badger.Txn) error {
+	err := txn.Set([]byte(this.Key()), []byte(this.String()))
+	if err != nil {
+		return err
+	}
+	err = txn.Set([]byte(this.TypeKey()), []byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	err = txn.Set([]byte(this.TimeKey()), []byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	err = txn.Set([]byte(this.FromKey()), []byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	err = txn.Set([]byte(this.ToKey()), []byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// PersistAndCache
+func (this *Transaction) Set(txn *badger.Txn,cache *cache.Cache) error {
+	this.Cache(cache)
+
+	err := this.Persist(txn)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+
+// GetHashBytes
+func (this Transaction) GetHashBytes() crypto.HashBytes {
+	return crypto.GetHashBytes(this.Hash)
+}
+
+
+// ToTime
+func (this Transaction) ToTime() time.Time {
+	return time.Unix(0, this.Time*int64(time.Millisecond))
+}
+
+// CalculateHash (MerkleTree)
+func (this Transaction) CalculateHash() []byte {
+	from, err := hex.DecodeString(this.From)
+	if err != nil {
+		utils.Fatal("unable to decode from", err)
+		panic(err)
+	}
+	to, err := hex.DecodeString(this.To)
+	if err != nil {
+		utils.Fatal("unable to decode to", err)
+		panic(err)
+	}
+	signature, err := hex.DecodeString(this.Signature)
+	if err != nil {
+		utils.Fatal("unable to decode signature", err)
+		panic(err)
+	}
+	var values = []interface{}{
+		this.Type,
+		from,
+		to,
+		this.Value,
+		this.Time,
+		signature,
+	}
+	buffer := new(bytes.Buffer)
+	for _, value := range values {
+		err := binary.Write(buffer, binary.BigEndian, value)
+		if err != nil {
+			utils.Fatal("unable to write transaction bytes to buffer", err)
+			panic(err)
+		}
+	}
+	hash := crypto.NewHash(buffer.Bytes())
+	return hash[:]
+}
+
+
 // ToTransactionFromJson -
 func ToTransactionFromJson(payload []byte) (*Transaction, error) {
 	transaction := &Transaction{}
@@ -56,6 +177,16 @@ func ToTransactionFromJson(payload []byte) (*Transaction, error) {
 	if err != nil {
 		return nil, err
 	}
+	return transaction, nil
+}
+
+// ToTransactionFromCache -
+func ToTransactionFromCache(cache *cache.Cache, hash string) (*Transaction, error) {
+	value, ok :=cache.Get(fmt.Sprintf("table-transaction-%s", hash))
+	if !ok{
+		return nil, ErrNotFound
+	}
+	transaction := value.(*Transaction)
 	return transaction, nil
 }
 
@@ -87,6 +218,7 @@ func ToTransactions(txn *badger.Txn) ([]*Transaction, error) {
 		}
 		transactions = append(transactions, transaction)
 	}
+	SortByTime(transactions, false)
 	return transactions, nil
 }
 
@@ -118,6 +250,7 @@ func ToTransactionsByFromAddress(txn *badger.Txn, address string) ([]*Transactio
 		}
 		transactions = append(transactions, transaction)
 	}
+	SortByTime(transactions, false)
 	return transactions, nil
 }
 
@@ -149,6 +282,7 @@ func ToTransactionsByToAddress(txn *badger.Txn, address string) ([]*Transaction,
 		}
 		transactions = append(transactions, transaction)
 	}
+	SortByTime(transactions, false)
 	return transactions, nil
 }
 
@@ -208,7 +342,10 @@ func NewTransferTokensTransaction(privateKey string, from, to string, value, her
 	transaction.From = from
 	transaction.To = to
 	transaction.Value = value
-	transaction.Time = timeInMiliseconds
+	transaction.Time, err = checkTime(timeInMiliseconds)
+	if err != nil {
+		return nil, err
+	}
 	transaction.Hash, err = transaction.NewHash()
 	if err != nil {
 		return nil, err
@@ -221,14 +358,24 @@ func NewTransferTokensTransaction(privateKey string, from, to string, value, her
 }
 
 // NewDeployContractTransaction -
-func NewDeployContractTransaction(privateKey string, from string, code string, timeInMiliseconds int64) (*Transaction, error) {
+func NewDeployContractTransaction(privateKey string, from string, code string, abi string, timeInMiliseconds int64) (*Transaction, error) {
+	if abi == "" {
+		return nil, errors.Errorf("cannot have empty abi")
+	}
+	if code == "" {
+		return nil, errors.Errorf("cannot have empty code")
+	}
 	var err error
 	transaction := &Transaction{}
 	transaction.Type = TypeDeploySmartContract
 	transaction.From = from
 	transaction.To = ""
 	transaction.Code = code
-	transaction.Time = timeInMiliseconds
+	transaction.Abi = abi
+	transaction.Time, err = checkTime(timeInMiliseconds)
+	if err != nil {
+		return nil, err
+	}
 	transaction.Hash, err = transaction.NewHash()
 	if err != nil {
 		return nil, err
@@ -242,6 +389,12 @@ func NewDeployContractTransaction(privateKey string, from string, code string, t
 
 // NewExecuteContractTransaction -
 func NewExecuteContractTransaction(privateKey string, from string, to string, abi string, method string, params []interface{}, timeInMiliseconds int64) (*Transaction, error) {
+	if abi == "" {
+		return nil, errors.Errorf("cannot have empty abi")
+	}
+	if method == "" {
+		return nil, errors.Errorf("cannot have empty method")
+	}
 	var err error
 	transaction := &Transaction{}
 	transaction.Type = TypeExecuteSmartContract
@@ -250,7 +403,10 @@ func NewExecuteContractTransaction(privateKey string, from string, to string, ab
 	transaction.Abi = abi
 	transaction.Method = method
 	transaction.Params = params
-	transaction.Time = timeInMiliseconds
+	transaction.Time, err = checkTime(timeInMiliseconds)
+	if err != nil {
+		return nil, err
+	}
 	transaction.Hash, err = transaction.NewHash()
 	if err != nil {
 		return nil, err
@@ -263,22 +419,22 @@ func NewExecuteContractTransaction(privateKey string, from string, to string, ab
 }
 
 // NewHash
-	func (this Transaction) NewHash() (string, error) {
-		fromBytes, err := hex.DecodeString(this.From)
-		if err != nil {
-			utils.Error("unable decode from", err)
-			return "", err
-		}
-		toBytes, err := hex.DecodeString(this.To)
-		if err != nil {
-			utils.Error("unable decode to", err)
-			return "", err
-		}
-		codeBytes, err := hex.DecodeString(this.Code)
-		if err != nil {
-			utils.Error("unable decode code", err)
-			return "", err
-		}
+func (this Transaction) NewHash() (string, error) {
+	fromBytes, err := hex.DecodeString(this.From)
+	if err != nil {
+		utils.Error("unable decode from", err)
+		return "", err
+	}
+	toBytes, err := hex.DecodeString(this.To)
+	if err != nil {
+		utils.Error("unable decode to", err)
+		return "", err
+	}
+	codeBytes, err := hex.DecodeString(this.Code)
+	if err != nil {
+		utils.Error("unable decode code", err)
+		return "", err
+	}
 	var values = []interface{}{
 		this.Type,
 		fromBytes,
@@ -299,8 +455,6 @@ func NewExecuteContractTransaction(privateKey string, from string, to string, ab
 		}
 	}
 	hash := crypto.NewHash(buffer.Bytes())
-	hashString := hex.EncodeToString(hash[:])
-	fmt.Printf("\n%v\nHash: %v\n\n", this.String(), hashString)
 	return hex.EncodeToString(hash[:]), nil
 }
 
@@ -324,114 +478,87 @@ func (this *Transaction) NewSignature(privateKey string) (string, error) {
 }
 
 // Verify
-func (this Transaction) Verify() bool {
-	if len(this.Hash) != crypto.HashLength*2 {
-		utils.Debug("Invalid Hash")
-		return false
+func (this Transaction) Verify() error {
+	if len(this.Hash) != crypto.HashLength*2  {
+		return errors.New("invalid hash")
 	}
 	if len(this.From) != crypto.AddressLength*2 {
-		utils.Debug("Invalid From Address")
-		return false
-	}
-	if this.To != "" && len(this.To) != crypto.AddressLength*2 {
-		utils.Debug("Invalid To Address")
-		return false
-	}
-	if this.To != "" && this.Value < 0 {
-		return false
+		return errors.New("invalid from address")
 	}
 	if len(this.Signature) != crypto.SignatureLength*2 {
-		utils.Debug("Invalid Signature")
-		return false
+		return errors.New("invalid signature")
+	}
+	if this.From == this.To {
+		return errors.New("from address cannot equal to address")
+	}
+
+	// Type?
+	switch this.Type {
+	case TypeTransferTokens:
+		if len(this.To) != crypto.AddressLength*2 {
+			return errors.New("invalid to address")
+		}
+		if this.Value <= 0 {
+			return errors.New("invalid value")
+		}
+		break
+	case TypeDeploySmartContract:
+		if len(this.To) != 0 {
+			return errors.New("to address must be blank for a deployment of a smart contract")
+		}
+		if len(this.Code) == 0 {
+			return errors.New("invalid code")
+		}
+		if len(this.Abi) == 0 {
+			return errors.New("invalid abi")
+		}
+		break
+	case TypeExecuteSmartContract:
+		if len(this.To) != crypto.AddressLength*2 {
+			return errors.New("invalid to address")
+		}
+
+		// TODO: Should we check method?
+		break
 	}
 
 	// Hash ok?
 	hash, err := this.NewHash()
 	if err != nil {
-		utils.Error(err)
-		return false
+		return errors.New("unable to compute hash")
 	}
 	if this.Hash != hash {
-		return false
+		return errors.New("invalid hash")
 	}
 
 	hashBytes, err := hex.DecodeString(this.Hash)
 	if err != nil {
 		utils.Error("unable to decode hash", err)
-		return false
+		return errors.New("unable to decode hash")
 	}
 	signatureBytes, err := hex.DecodeString(this.Signature)
 	if err != nil {
 		utils.Error("unable to decode signature", err)
-		return false
+		return errors.New("unable to decode signature")
 	}
 	publicKeyBytes, err := crypto.ToPublicKey(hashBytes, signatureBytes)
 	if err != nil {
-		return false
+		utils.Error("unable to generate public key from hash and signature", err)
+		return errors.New("unable to generate public key from hash and signature")
 	}
 
 	// Derived address from publicKeyBytes match from?
 	address := hex.EncodeToString(crypto.ToAddress(publicKeyBytes))
 	if address != this.From {
-		return false
+		return errors.New("from address does not match the computed address from hash and signature")
 	}
-	return crypto.VerifySignature(publicKeyBytes, hashBytes, signatureBytes)
-}
-
-// ToTime
-func (this Transaction) ToTime() time.Time {
-	return time.Unix(0, this.Time*int64(time.Millisecond))
-}
-
-// Key
-func (this Transaction) Key() string {
-	return fmt.Sprintf("table-transaction-%s", this.Hash)
-}
-
-// TypeKey
-func (this Transaction) TypeKey() string {
-	return fmt.Sprintf("key-transaction-type-%d-%d-%s", this.Type, this.Time, this.Hash)
-}
-
-// TimeKey
-func (this Transaction) TimeKey() string {
-	return fmt.Sprintf("key-transaction-time-%d-%s", this.Time, this.Hash)
-}
-
-// FromKey
-func (this Transaction) FromKey() string {
-	return fmt.Sprintf("key-transaction-from-%s-%d", this.From, this.Time)
-}
-
-// ToKey
-func (this Transaction) ToKey() string {
-	return fmt.Sprintf("key-transaction-to-%s-%d", this.To, this.Time)
-}
-
-// Set
-func (this *Transaction) Set(txn *badger.Txn) error {
-	err := txn.Set([]byte(this.Key()), []byte(this.String()))
-	if err != nil {
-		return err
+	if !crypto.VerifySignature(publicKeyBytes, hashBytes, signatureBytes) {
+		return errors.New("invalid signature")
 	}
-	err = txn.Set([]byte(this.TypeKey()), []byte(this.Key()))
-	if err != nil {
-		return err
-	}
-	err = txn.Set([]byte(this.TimeKey()), []byte(this.Key()))
-	if err != nil {
-		return err
-	}
-	err = txn.Set([]byte(this.FromKey()), []byte(this.Key()))
-	if err != nil {
-		return err
-	}
-	err = txn.Set([]byte(this.ToKey()), []byte(this.Key()))
-	if err != nil {
-		return err
-	}
+
 	return nil
 }
+
 
 // String
 func (this Transaction) String() string {
@@ -442,6 +569,17 @@ func (this Transaction) String() string {
 	}
 	return string(bytes)
 }
+
+// String
+func (this Transaction) ToPrettyJson() string {
+	bytes, err := json.MarshalIndent(this, "", "  ")
+	if err != nil {
+		utils.Error("unable to marshal transaction", err)
+		return ""
+	}
+	return string(bytes)
+}
+
 
 // UnmarshalJSON
 func (this *Transaction) UnmarshalJSON(bytes []byte) error {
@@ -475,6 +613,12 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		if !ok {
 			return errors.Errorf("value for field 'to' must be a string")
 		}
+		if jsonMap["code"] != nil {
+			code := jsonMap["code"].(string)
+			if len(this.To) == 0 && len(code) == 0 {
+				return errors.Errorf("value for field 'to' is invalid")
+			}
+		}
 	}
 	if jsonMap["value"] != nil {
 		val, ok := jsonMap["value"].(float64)
@@ -494,6 +638,11 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		if !ok {
 			return errors.Errorf("value for field 'abi' must be a string")
 		}
+		to, _ := jsonMap["to"].(string)
+		method, _ := jsonMap["method"].(string)
+		if len(to) > 0 && len(method) > 0 && this.Abi == "" {
+			return errors.Errorf("value for field 'abi' is invalid")
+		}
 	}
 	if jsonMap["method"] != nil {
 		this.Method, ok = jsonMap["method"].(string)
@@ -508,11 +657,15 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		}
 	}
 	if jsonMap["time"] != nil {
-		time, ok := jsonMap["time"].(float64)
+		t, ok := jsonMap["time"].(float64)
 		if !ok {
 			return errors.Errorf("value for field 'time' must be a number")
 		}
-		this.Time = int64(time)
+		txTime, err := checkTime(int64(t))
+		if err != nil {
+			return err
+		}
+		this.Time = txTime
 	}
 	if jsonMap["signature"] != nil {
 		this.Signature, ok = jsonMap["signature"].(string)
@@ -580,4 +733,17 @@ func (this Transaction) MarshalJSON() ([]byte, error) {
 // Equals
 func (this Transaction) Equals(other string) bool {
 	return this.Hash == other
+}
+
+func checkTime(txTime int64) (int64, error) {
+	now := utils.ToMilliSeconds(time.Now())
+	if now < txTime {
+		return txTime, errors.Errorf("transaction time cannot be in the future")
+	} else if txTime < 0 {
+		return txTime, errors.Errorf("transaction time cannot be negative")
+	}
+	//TODO: need to have a limit check here that it is not older than some value whether that is static at startup or relative to current time.
+	//TODO: Talking with Avery, should be related to page TS limits.  This will not be the appropriate place for the check but will suffice for the moment.
+
+	return txTime, nil
 }

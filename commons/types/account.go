@@ -26,6 +26,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"github.com/patrickmn/go-cache"
 
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/crypto"
@@ -34,14 +35,6 @@ import (
 
 var accountInstance *Account
 var accountOnce sync.Once
-
-// GetAccount - Returns the singleton instance of the current account
-func GetAccount() *Account {
-	accountOnce.Do(func() {
-		accountInstance = readAccountFile()
-	})
-	return accountInstance
-}
 
 // Account
 type Account struct {
@@ -58,15 +51,146 @@ type Account struct {
 	CodeHash []byte
 }
 
-// type Account interface {
-// 	Key()
-// 	NameKey()
-// 	Set(txn *badger.Txn)
-// 	VerifyAddress(hash string, signature string)
-// 	UnmarshalJSON(bytes []byte)
-// 	MarshalJSON()
-// 	String()
-// }
+// Key
+func (this Account) Key() string {
+	return fmt.Sprintf("table-account-%s", this.Address)
+}
+
+// NameKey
+func (this Account) NameKey() string {
+	return fmt.Sprintf("key-account-name-%s", strings.ToLower(this.Name))
+}
+
+//Cache
+func (this *Account) Cache(cache *cache.Cache, time_optional ...time.Duration){
+	TTL := AccountTTL
+	if len(time_optional) > 0 {
+		TTL = time_optional[0]
+	}
+	cache.Set(this.Key(), this,TTL)
+}
+
+//Persist
+func (this *Account) Persist(txn *badger.Txn) error{
+	err := txn.Set([]byte(this.Key()), []byte(this.String()))
+	if err != nil {
+		return err
+	}
+	err = txn.Set([]byte(this.NameKey()), []byte(this.Key()))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// PersistAndCache
+func (this *Account) Set(txn *badger.Txn,cache *cache.Cache) error {
+	this.Cache(cache)
+	err := this.Persist(txn)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UnmarshalJSON
+func (this *Account) UnmarshalJSON(bytes []byte) error {
+	var jsonMap map[string]interface{}
+	err := json.Unmarshal(bytes, &jsonMap)
+	if err != nil {
+		return err
+	}
+	if jsonMap["address"] != nil {
+		this.Address = jsonMap["address"].(string)
+	}
+	if jsonMap["privateKey"] != nil {
+		this.PrivateKey = jsonMap["privateKey"].(string)
+	}
+	if jsonMap["name"] != nil {
+		this.Name = jsonMap["name"].(string)
+	}
+	if jsonMap["balance"] != nil {
+		this.Balance = big.NewInt(int64(jsonMap["balance"].(float64)))
+	}
+	if jsonMap["updated"] != nil {
+		updated, err := time.Parse(time.RFC3339, jsonMap["updated"].(string))
+		if err != nil {
+			return err
+		}
+		this.Updated = updated
+	}
+	if jsonMap["created"] != nil {
+		created, err := time.Parse(time.RFC3339, jsonMap["created"].(string))
+		if err != nil {
+			return err
+		}
+		this.Created = created
+	}
+	if jsonMap["nonce"] != nil {
+		this.Nonce = uint64(jsonMap["nonce"].(float64))
+	}
+	// if jsonMap["root"] != nil {
+	// 	this.Root = crypto.GetHashBytes(jsonMap["root"].(string))
+	// }
+	// if jsonMap["codehash"] != nil {
+	// 	this.CodeHash = crypto.GetHashBytes(jsonMap["codehash"].(string)).Bytes()
+	// }
+
+	return nil
+}
+
+// MarshalJSON
+func (this Account) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Address    string    `json:"address"`
+		PrivateKey string    `json:"privateKey,omitempty"`
+		Name       string    `json:"name"`
+		Balance    int64     `json:"balance"`
+		Updated    time.Time `json:"updated"`
+		Created    time.Time `json:"created"`
+		Nonce      uint64    `json:"nonce"`
+		// Root       string    `json:"root"`
+		// CodeHash   string    `json:"codehash"`
+	}{
+		Address:    this.Address,
+		PrivateKey: this.PrivateKey,
+		Name:       this.Name,
+		Balance:    this.Balance.Int64(),
+		Updated:    this.Updated,
+		Created:    this.Created,
+		Nonce:      this.Nonce,
+		// Root:       crypto.Encode(this.Root.Bytes()),
+		// CodeHash:   crypto.Encode(this.CodeHash),
+	})
+}
+
+// String
+func (this Account) String() string {
+	bytes, err := json.Marshal(this)
+	if err != nil {
+		utils.Error("unable to marshal account", err)
+		return ""
+	}
+	return string(bytes)
+}
+
+func (this Account) ToPrettyJson() string {
+	bytes, err := json.MarshalIndent(this, "", "  ")
+	if err != nil {
+		utils.Error("unable to marshal transaction", err)
+		return ""
+	}
+	return string(bytes)
+}
+
+
+// GetAccount - Returns the singleton instance of the current account
+func GetAccount() *Account {
+	accountOnce.Do(func() {
+		accountInstance = readAccountFile()
+	})
+	return accountInstance
+}
 
 // ToAccountFromJson -
 func ToAccountFromJson(payload []byte) (*Account, error) {
@@ -75,6 +199,16 @@ func ToAccountFromJson(payload []byte) (*Account, error) {
 	if err != nil {
 		return nil, err
 	}
+	return account, nil
+}
+
+// ToAccountFromCache -
+func ToAccountFromCache(cache *cache.Cache, address string) (*Account, error) {
+	value, ok := cache.Get(fmt.Sprintf("table-account-%s", address))
+	if !ok{
+		return nil, ErrNotFound
+	}
+	account := value.(*Account)
 	return account, nil
 }
 
@@ -136,110 +270,6 @@ func ToAccountsByName(name string, txn *badger.Txn) ([]*Account, error) {
 	return Accounts, nil
 }
 
-// Key
-func (this Account) Key() string {
-	return fmt.Sprintf("table-account-%s", this.Address)
-}
-
-// NameKey
-func (this Account) NameKey() string {
-	return fmt.Sprintf("key-account-name-%s", strings.ToLower(this.Name))
-}
-
-// Set
-func (this *Account) Set(txn *badger.Txn) error {
-	err := txn.Set([]byte(this.Key()), []byte(this.String()))
-	if err != nil {
-		return err
-	}
-	err = txn.Set([]byte(this.NameKey()), []byte(this.Key()))
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// UnmarshalJSON
-func (this *Account) UnmarshalJSON(bytes []byte) error {
-	var jsonMap map[string]interface{}
-	err := json.Unmarshal(bytes, &jsonMap)
-	if err != nil {
-		return err
-	}
-	if jsonMap["address"] != nil {
-		this.Address = jsonMap["address"].(string)
-	}
-	if jsonMap["privateKey"] != nil {
-		this.PrivateKey = jsonMap["privateKey"].(string)
-	}
-	if jsonMap["name"] != nil {
-		this.Name = jsonMap["name"].(string)
-	}
-	if jsonMap["balance"] != nil {
-		this.Balance = big.NewInt(int64(jsonMap["balance"].(float64)))
-	}
-	if jsonMap["updated"] != nil {
-		updated, err := time.Parse(time.RFC3339, jsonMap["updated"].(string))
-		if err != nil {
-			return err
-		}
-		this.Updated = updated
-	}
-	if jsonMap["created"] != nil {
-		created, err := time.Parse(time.RFC3339, jsonMap["created"].(string))
-		if err != nil {
-			return err
-		}
-		this.Created = created
-	}
-	if jsonMap["nonce"] != nil {
-		this.Nonce = uint64(jsonMap["nonce"].(float64))
-	}
-	// if jsonMap["root"] != nil {
-	// 	this.Root = crypto.GetHashBytes(jsonMap["root"].(string))
-	// }
-	// if jsonMap["codehash"] != nil {
-	// 	this.CodeHash = crypto.GetHashBytes(jsonMap["codehash"].(string)).Bytes()
-	// }
-
-	return nil
-}
-
-// MarshalJSON
-func (this Account) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Address    string    `json:"address"`
-		PrivateKey string    `json:"privateKey"`
-		Name       string    `json:"name"`
-		Balance    int64     `json:"balance"`
-		Updated    time.Time `json:"updated"`
-		Created    time.Time `json:"created"`
-		Nonce      uint64    `json:"nonce"`
-		// Root       string    `json:"root"`
-		// CodeHash   string    `json:"codehash"`
-	}{
-		Address:    this.Address,
-		PrivateKey: this.PrivateKey,
-		Name:       this.Name,
-		Balance:    this.Balance.Int64(),
-		Updated:    this.Updated,
-		Created:    this.Created,
-		Nonce:      this.Nonce,
-		// Root:       crypto.Encode(this.Root.Bytes()),
-		// CodeHash:   crypto.Encode(this.CodeHash),
-	})
-}
-
-// String
-func (this Account) String() string {
-	bytes, err := json.Marshal(this)
-	if err != nil {
-		utils.Error("unable to marshal account", err)
-		return ""
-	}
-	return string(bytes)
-}
-
 // readAccountFile -
 func readAccountFile(name_optional ...string) *Account {
 	name := "account.json"
@@ -254,6 +284,10 @@ func readAccountFile(name_optional ...string) *Account {
 		account.Address = hex.EncodeToString(address)
 		account.PrivateKey = hex.EncodeToString(privateKey)
 		account.Balance = big.NewInt(0)
+		account.Name = ""
+		now := time.Now()
+		account.Created = now
+		account.Updated = now
 
 		// Write account.
 		var jsonMap map[string]interface{}
@@ -271,7 +305,6 @@ func readAccountFile(name_optional ...string) *Account {
 			os.Exit(1)
 		}
 		writeAccountFile(bytes, name)
-		return account
 	}
 	bytes, err := ioutil.ReadFile(fileName)
 	if err != nil {

@@ -17,25 +17,18 @@
 package dapos
 
 import (
-	"fmt"
 	"math/big"
 	"sync"
 
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/services"
-	cache "github.com/patrickmn/go-cache"
-	"google.golang.org/grpc"
-
-	// "github.com/patrickmn/go-cache"
-	"github.com/processout/grpc-go-pool"
-	// "google.golang.org/grpc"
-
 	"os"
 	"time"
 
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/disgover"
+	"github.com/dispatchlabs/disgo/commons/queue"
 )
 
 var daposServiceInstance *DAPoSService
@@ -55,7 +48,13 @@ var (
 // GetDAPoSService
 func GetDAPoSService() *DAPoSService {
 	daposServiceOnce.Do(func() {
-		daposServiceInstance = &DAPoSService{running: false, gossipChan: make(chan *types.Gossip, 1000), transactionChan: make(chan *types.Gossip, 1000)} // TODO: What should this be?
+		daposServiceInstance = &DAPoSService{
+			running: false,
+			gossipChan: make(chan *types.Gossip, 1000),
+			queueChan: make(chan *types.Gossip, 1000),
+			timoutChan: make(chan bool, 1000),
+			gossipQueue: queue.NewGossipQueue(),
+		} // TODO: What should this be?
 	})
 	return daposServiceInstance
 }
@@ -64,7 +63,9 @@ func GetDAPoSService() *DAPoSService {
 type DAPoSService struct {
 	running         bool
 	gossipChan      chan *types.Gossip
-	transactionChan chan *types.Gossip
+	queueChan      	chan *types.Gossip
+	timoutChan 		chan bool
+	gossipQueue 	*queue.GossipQueue
 }
 
 // IsRunning -
@@ -73,7 +74,7 @@ func (this *DAPoSService) IsRunning() bool {
 }
 
 // Go -
-func (this *DAPoSService) Go(waitGroup *sync.WaitGroup) {
+func (this *DAPoSService) Go() {
 	this.running = true
 	utils.Info("running, waiting for delegates sync")
 
@@ -83,53 +84,15 @@ func (this *DAPoSService) Go(waitGroup *sync.WaitGroup) {
 	)
 }
 
-func (this *DAPoSService) setupConnectionPoolForPeer(node *types.Node) {
-	pool, err := grpcpool.New(func() (*grpc.ClientConn, error) {
-		clientConn, err := grpc.Dial(fmt.Sprintf("%s:%d", node.Endpoint.Host, node.Endpoint.Port), grpc.WithInsecure())
-		if err != nil {
-			utils.Error(err.Error())
-			return nil, err
-		}
-		return clientConn, nil
-	}, 10, 10, -1)
-
-	if err != nil {
-		utils.Error(err.Error())
-	}
-	services.GetCache().Set(fmt.Sprintf("dapos-grpc-pool-%s", node.Address), pool, cache.NoExpiration)
-}
-
 // OnEvent - Event to
 func (this *DAPoSService) disGoverServiceInitFinished() {
-
-	// Setup GRPC connection Pools
-	delegateNodes, err := disgover.GetDisGoverService().FindByType(types.TypeDelegate)
-	if err != nil {
-		utils.Error(err)
-	}
-
-	var wg sync.WaitGroup
-	for _, delegateNode := range delegateNodes {
-		if delegateNode.Address == disgover.GetDisGoverService().ThisNode.Address {
-			continue
-		}
-
-		wg.Add(1)
-
-		go func(node *types.Node, wg *sync.WaitGroup) {
-			this.setupConnectionPoolForPeer(node)
-			wg.Done()
-		}(delegateNode, &wg)
-	}
-
-	wg.Wait()
 
 	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
 		this.peerSynchronize()
 	}
 
 	// Create genesis transaction.
-	err = this.createGenesisTransactionAndAccount()
+	err := this.createGenesisTransactionAndAccount()
 	if err != nil {
 		utils.Fatal("unable to create genesis block", err)
 		os.Exit(1)
@@ -138,6 +101,7 @@ func (this *DAPoSService) disGoverServiceInitFinished() {
 
 	go this.gossipWorker()
 	go this.transactionWorker()
+	//go this.queueWorker()
 
 	utils.Events().Raise(Events.DAPoSServiceInitFinished)
 }
@@ -153,12 +117,12 @@ func (this *DAPoSService) createGenesisTransactionAndAccount() error {
 	_, err = types.ToTransactionByKey(txn, []byte(transaction.Key()))
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
-			err = transaction.Set(txn)
+			err = transaction.Set(txn,services.GetCache())
 			if err != nil {
 				return err
 			}
 			account := &types.Account{Address: transaction.To, Name: "Dispatch Labs", Balance: big.NewInt(transaction.Value), Updated: time.Now(), Created: time.Now()}
-			err = account.Set(txn)
+			err = account.Set(txn,services.GetCache())
 			if err != nil {
 				return err
 			}

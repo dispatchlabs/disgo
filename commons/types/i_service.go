@@ -16,10 +16,6 @@
  */
 package types
 
-import (
-	"sync"
-)
-
 // IService -
 type IService interface {
 
@@ -27,5 +23,5 @@ type IService interface {
 	IsRunning() bool
 
 	// start the service and wait for requests -
-	Go(waitGroup *sync.WaitGroup)
+	Go()
 }

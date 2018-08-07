@@ -31,12 +31,14 @@ import (
 // WithHttp -
 func (this *DAPoSService) WithHttp() *DAPoSService {
 	services.GetHttpRouter().HandleFunc("/v1/delegates", this.getDelegatesHandler).Methods("GET")
-	services.GetHttpRouter().HandleFunc("/v1/statuses/{id}", this.getStatusHandler).Methods("GET")
+	services.GetHttpRouter().HandleFunc("/v1/receipts/{hash}", this.getReceiptHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/accounts/{address}", this.getAccountHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/transactions", this.getTransactionsHandler).Methods("GET")
+	services.GetHttpRouter().HandleFunc("/v1/queue", this.getQueueHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/transactions/from/{address}", this.getTransactionsByFromAddressHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/transactions/to/{address}", this.getTransactionsByToAddressHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/transactions", this.newTransactionHandler).Methods("POST")
+	services.GetHttpRouter().HandleFunc("/v1/transactions/{hash}", this.getTransactionHandler).Methods("POST")
 	return this
 }
 
@@ -51,26 +53,28 @@ func (this *DAPoSService) getDelegatesHandler(responseWriter http.ResponseWriter
 	responseWriter.Write([]byte(this.GetDelegateNodes().String()))
 }
 
-// getAccountHandler
-func (this *DAPoSService) getStatusHandler(responseWriter http.ResponseWriter, request *http.Request) {
+// getReceiptHandler
+func (this *DAPoSService) getReceiptHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
-	receipt := this.GetStatus(vars["id"])
+	response := this.GetReceipt(vars["hash"])
 	setHeaders(&responseWriter)
-	responseWriter.Write([]byte(receipt.String()))
+	responseWriter.Write([]byte(response.String()))
 }
 
 // getAccountHandler
 func (this *DAPoSService) getAccountHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
-	receipt := this.GetAccount(vars["address"])
+	response := this.GetAccount(vars["address"])
 	setHeaders(&responseWriter)
-	responseWriter.Write([]byte(receipt.String()))
+	responseWriter.Write([]byte(response.String()))
 }
 
-// setAccountHandler
-func (this *DAPoSService) setAccountHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	// TODO: Call SetAccount.
+// getTransactionHandler
+func (this *DAPoSService) getTransactionHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	vars := mux.Vars(request)
+	response := this.GetTransaction(vars["hash"])
 	setHeaders(&responseWriter)
+	responseWriter.Write([]byte(response.String()))
 }
 
 // newTransactionHandler
@@ -78,7 +82,7 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 	body, err := ioutil.ReadAll(request.Body)
 	if err != nil {
 		utils.Error("unable to read HTTP body of request", err)
-		http.Error(responseWriter, `{"status":"INTERNAL_ERROR"}`, http.StatusInternalServerError)
+		services.Error(responseWriter, `{"status":"INTERNAL_ERROR"}`, http.StatusInternalServerError)
 		return
 	}
 
@@ -86,33 +90,41 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 	transaction, err := types.ToTransactionFromJson(body)
 	if err != nil {
 		utils.Error("JSON parse error", err)
-		http.Error(responseWriter, fmt.Sprintf(`{"status":"JSON_PARSE_ERROR: %v"}`, err), http.StatusInternalServerError)
+		services.Error(responseWriter, fmt.Sprintf(`{"status":"JSON_PARSE_ERROR: %v"}`, err), http.StatusInternalServerError)
 		return
 	}
-	receipt := this.NewTransaction(transaction)
+	response := this.NewTransaction(transaction)
 	setHeaders(&responseWriter)
-	responseWriter.Write([]byte(receipt.String()))
+	responseWriter.Write([]byte(response.String()))
 }
 
 // getTransactionsByFromAddressHandler
 func (this *DAPoSService) getTransactionsByFromAddressHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
-	receipt := this.GetTransactionsByFromAddress(vars["address"])
+	response := this.GetTransactionsByFromAddress(vars["address"])
 	setHeaders(&responseWriter)
-	responseWriter.Write([]byte(receipt.String()))
+	responseWriter.Write([]byte(response.String()))
 }
 
 // getTransactionsByToAddressHandler
 func (this *DAPoSService) getTransactionsByToAddressHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
-	receipt := this.GetTransactionsByToAddress(vars["address"])
+	response := this.GetTransactionsByToAddress(vars["address"])
 	setHeaders(&responseWriter)
-	responseWriter.Write([]byte(receipt.String()))
+	responseWriter.Write([]byte(response.String()))
 }
 
 // getTransactionsByFromAddressHandler
 func (this *DAPoSService) getTransactionsHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	receipt := this.GetTransactions()
+	response := this.GetTransactions()
 	setHeaders(&responseWriter)
-	responseWriter.Write([]byte(receipt.String()))
+	responseWriter.Write([]byte(response.String()))
 }
+
+// getReceiptHandler
+func (this *DAPoSService) getQueueHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	response := this.DumpQueue()
+	setHeaders(&responseWriter)
+	responseWriter.Write([]byte(response.String()))
+}
+

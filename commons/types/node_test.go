@@ -19,8 +19,12 @@ package types
 import (
 	"testing"
 	"encoding/json"
+	"time"
+	"reflect"
 )
 
+
+//recoverMe
 func recoverMe(t *testing.T) {
 	if r := recover(); r != nil {
 		// fmt.Println ("Recovered from: ", r)
@@ -28,6 +32,27 @@ func recoverMe(t *testing.T) {
 	}
 }
 
+//TestNodeCache
+func TestNodeCache(t *testing.T) {
+	node1:= &Node{}
+	node1.GrpcEndpoint =&Endpoint{}
+	node1.GrpcEndpoint.Host = "127.0.0.1"
+	node1.GrpcEndpoint.Port = 1973
+	node1.HttpEndpoint =&Endpoint{}
+	node1.HttpEndpoint.Host = "127.0.0.1"
+	node1.HttpEndpoint.Port = 1975
+	node1.Address = "123"
+	node1.Cache(c, time.Second * 5)
+	testNode, err := ToNodeFromCache(c, node1.Address)
+	if err != nil {
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testNode, node1) == false{
+		t.Error("node1 not equal to testNode")
+	}
+}
+
+//TestEndPointSerialization
 func TestEndPointSerialization(t *testing.T) {
 
 	var ep Endpoint
@@ -57,11 +82,12 @@ func TestEndPointSerialization(t *testing.T) {
 
 }
 
+//TestNodeSerialization
 func TestNodeSerialization(t *testing.T) {
 	node1:= &Node{}
-	node1.Endpoint =&Endpoint{}
-	node1.Endpoint.Host = "127.0.0.1"
-	node1.Endpoint.Port = 1975
+	node1.GrpcEndpoint =&Endpoint{}
+	node1.GrpcEndpoint.Host = "127.0.0.1"
+	node1.GrpcEndpoint.Port = 1975
 	node1.Address = "123"
 
 	defer recoverMe(t)
@@ -76,11 +102,11 @@ func TestNodeSerialization(t *testing.T) {
 		t.Error("Marshal/Unmarshal failed = 1 Address")
 	}
 
-	if node1.Endpoint.Host != node2.Endpoint.Host {
+	if node1.GrpcEndpoint.Host != node2.GrpcEndpoint.Host {
 		t.Error("Marshal/Unmarshal failed = 1 Host")
 	}
 
-	if node1.Endpoint.Port != node2.Endpoint.Port {
+	if node1.GrpcEndpoint.Port != node2.GrpcEndpoint.Port {
 		t.Error("Marshal/Unmarshal Failed = 2 Port")
 	}
 }

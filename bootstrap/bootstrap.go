@@ -30,7 +30,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"sync"
 
 	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/types"
@@ -38,6 +37,8 @@ import (
 	"github.com/dispatchlabs/disgo/dapos"
 	"github.com/dispatchlabs/disgo/disgover"
 	"github.com/dispatchlabs/disgo/dvm"
+	"syscall"
+	"os/signal"
 )
 
 const (
@@ -72,13 +73,41 @@ func (server *Server) Go() {
 	server.services = append(server.services, services.GetGrpcService())
 
 	// Run services.
-	var waitGroup sync.WaitGroup
 	for _, service := range server.services {
 		utils.Info("starting " + utils.GetStructName(service) + "...")
-		go service.Go(&waitGroup)
-		waitGroup.Add(1)
+		go service.Go()
 	}
-	waitGroup.Wait()
+
+	// Safely handle shutdown and close the DB.
+	signal_chan := make(chan os.Signal, 1)
+	signal.Notify(signal_chan, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	exit_chan := make(chan int)
+	go func() {
+		for {
+			s := <-signal_chan
+			utils.Info(fmt.Sprintf("received termination signal from OS [signal=%d]", s))
+
+			// What is the signal?
+			switch s {
+			case syscall.SIGHUP:
+				exit_chan <- 0x1
+			case syscall.SIGINT:
+				exit_chan <- 0x2
+			case syscall.SIGTERM:
+				exit_chan <- 0xf
+			case syscall.SIGQUIT:
+				exit_chan <- 0x3
+			case syscall.SIGKILL:
+				exit_chan <- 0x9
+			}
+		}
+	}()
+
+	code := <-exit_chan
+	utils.Info("closing DB...")
+	services.GetDb().Close()
+	os.Exit(code)
+
 }
 
 // Keys Helpers

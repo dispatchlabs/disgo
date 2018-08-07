@@ -2,6 +2,9 @@ syntax = "proto3";
 
 package disgover;
 
+message Empty {
+}
+
 message Endpoint {
 	string Host = 1;
 	int64 Port = 2;
@@ -9,22 +12,16 @@ message Endpoint {
 
 message Node {
 	string 	 Address = 1;
-	Endpoint Endpoint = 2;
+	Endpoint GrpcEndpoint = 2;
+	Endpoint HttpEndpoint = 3;
 	string   Type = 3;
 }
 
-message Request {
-	string Payload = 1;
-}
-
 message NodeList {
-	repeated Node Nodes = 1;
+	repeated Node Delegates = 1;
 }
-
-message Empty {}
 
 service DisgoverGrpc {
-	rpc PingGrpc(Node) returns (Node) {}
-	rpc FindGrpc(Request) returns (Node) {}
-	rpc FindByTypeGrpc(Request) returns (NodeList) {}
+	rpc PingSeedGrpc(Node) returns (NodeList) {}
+	rpc UpdateGrpc(NodeList) returns (Empty) {}
 }
