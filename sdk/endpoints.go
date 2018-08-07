@@ -19,10 +19,14 @@ import (
 )
 
 // GetDelegates - Get the known delegates at this point in time
-func GetDelegates() ([]types.Node, error) {
+func GetDelegates(seedUrl_optional ...string) ([]types.Node, error) {
+	seedUrl := "seed.dispatchlabs.io:1975"
+	if len(seedUrl_optional) > 0 {
+		seedUrl = seedUrl_optional[0]
+	}
 
 	// Get delegates.
-	httpResponse, err := http.Get("http://seed.dispatchlabs.io:1975/v1/delegates")
+	httpResponse, err := http.Get(fmt.Sprintf("http://%s/v1/delegates", seedUrl))
 	if err != nil {
 		return nil, err
 	}
@@ -139,40 +143,40 @@ func GetAccount(delegateNode types.Node, address string) (*types.Account, error)
 }
 
 // TransferTokens - Send tokens FROM TO
-func TransferTokens(delegateNode types.Node, privateKey string, from string, to string, tokens int64) error {
+func TransferTokens(delegateNode types.Node, privateKey string, from string, to string, tokens int64) (string, error) {
 
 	// Create transfer tokens transaction.
 	transaction, err := types.NewTransferTokensTransaction(privateKey, from, to, tokens, 0, utils.ToMilliSeconds(time.Now()))
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Post transaction.
 	httpResponse, err := http.Post(fmt.Sprintf("http://%s:%d/v1/transactions", delegateNode.HttpEndpoint.Host, delegateNode.HttpEndpoint.Port), "application/json", bytes.NewBuffer([]byte(transaction.String())))
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer httpResponse.Body.Close()
 
 	// Read body.
 	body, err := ioutil.ReadAll(httpResponse.Body)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Unmarshal response.
 	var response *types.Response
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Status?
 	if response.Status != types.StatusPending {
-		return errors.New(fmt.Sprintf("%s: %s", response.Status, response.HumanReadableStatus))
+		return "", errors.New(fmt.Sprintf("%s: %s", response.Status, response.HumanReadableStatus))
 	}
 
-	return nil
+	return transaction.Hash, nil
 }
 
 // DeploySmartContract - Deploy a smart contract, get the TX hash as result
