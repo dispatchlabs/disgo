@@ -1,8 +1,10 @@
 package sdk
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
+	"math/big"
 	"net/http"
 
 	"github.com/dispatchlabs/disgo/commons/types"
@@ -13,6 +15,7 @@ import (
 	"time"
 
 	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/dispatchlabs/disgo/commons/crypto"
 )
 
 // GetDelegates - Get the known delegates at this point in time
@@ -63,6 +66,22 @@ func GetDelegates() ([]types.Node, error) {
 	}
 
 	return nodes, nil
+}
+
+// CreateAccount - Generate a new account
+func CreateAccount(name string) (*types.Account, error) {
+	publicKey, privateKey := crypto.GenerateKeyPair()
+	address := crypto.ToAddress(publicKey)
+	account := &Account{}
+	account.Address = hex.EncodeToString(address)
+	account.PrivateKey = hex.EncodeToString(privateKey)
+	account.Balance = big.NewInt(0)
+	account.Name = name
+	now := time.Now()
+	account.Created = now
+	account.Updated = now
+
+	return account, nil;
 }
 
 // GetAccount - Get account details
