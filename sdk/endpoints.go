@@ -144,32 +144,32 @@ func TransferTokens(delegateNode types.Node, privateKey string, from string, to 
 	// Create transfer tokens transaction.
 	transaction, err := types.NewTransferTokensTransaction(privateKey, from, to, tokens, 0, utils.ToMilliSeconds(time.Now()))
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Post transaction.
 	httpResponse, err := http.Post(fmt.Sprintf("http://%s:%d/v1/transactions", delegateNode.HttpEndpoint.Host, delegateNode.HttpEndpoint.Port), "application/json", bytes.NewBuffer([]byte(transaction.String())))
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer httpResponse.Body.Close()
 
 	// Read body.
 	body, err := ioutil.ReadAll(httpResponse.Body)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Unmarshal response.
 	var response *types.Response
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Status?
 	if response.Status != types.StatusPending {
-		return errors.New(fmt.Sprintf("%s: %s", response.Status, response.HumanReadableStatus))
+		return "", errors.New(fmt.Sprintf("%s: %s", response.Status, response.HumanReadableStatus))
 	}
 
 	return transaction.Hash, nil
