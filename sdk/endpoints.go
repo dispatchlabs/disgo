@@ -69,7 +69,11 @@ func GetDelegates() ([]types.Node, error) {
 }
 
 // CreateAccount - Generate a new account
-func CreateAccount(name string) (*types.Account, error) {
+func CreateAccount(name_optional ...string) (*types.Account, error) {
+	name = ""
+	if len(name_optional) > 0 {
+		name = name_optional[0]
+	}
 	publicKey, privateKey := crypto.GenerateKeyPair()
 	address := crypto.ToAddress(publicKey)
 	account := &types.Account{}
