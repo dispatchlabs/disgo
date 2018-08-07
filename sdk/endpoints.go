@@ -19,10 +19,14 @@ import (
 )
 
 // GetDelegates - Get the known delegates at this point in time
-func GetDelegates() ([]types.Node, error) {
+func GetDelegates(seedUrl_optional ...string) ([]types.Node, error) {
+	seedUrl := "seed.dispatchlabs.io:1975"
+	if len(seedUrl_optional) > 0 {
+		seedUrl = seedUrl_optional[0]
+	}
 
 	// Get delegates.
-	httpResponse, err := http.Get("http://seed.dispatchlabs.io:1975/v1/delegates")
+	httpResponse, err := http.Get(fmt.Sprintf("http://%s/v1/delegates", seedUrl))
 	if err != nil {
 		return nil, err
 	}
