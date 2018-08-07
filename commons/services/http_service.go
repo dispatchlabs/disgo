@@ -63,7 +63,7 @@ func (this *HttpService) IsRunning() bool {
 // Go -
 func (this *HttpService) Go() {
 	this.running = true
-	listen := fmt.Sprintf("%s:%d", this.Endpoint.Host, this.Endpoint.Port)
+	listen := fmt.Sprintf("%s:%d", "", this.Endpoint.Port) // FIX: commented "this.Endpoint.Host" for prod release
 	utils.Info("listening on http://" + listen)
 	cors := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
