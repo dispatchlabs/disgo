@@ -21,10 +21,14 @@ import (
 	"time"
 )
 
-// Timouts
+//TODO: I think we need to convert these timouts and their calculations in code to nano seconds
+// Timouts -- currently calculated in milliseconds.
 const (
-	TxReceiveTimeout    = int64(5 * time.Second)
+	TxReceiveTimeout    = 1000  //1 second
+	GossipQueueTimeout  = time.Second * 5
+	GossipTimeout    	= 300  //300 milliseconds
 )
+
 // Requests
 const (
 	RequestGetStatus                    = "GetReceipt"

@@ -49,7 +49,7 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 	elapsedMilliSeconds := utils.ToMilliSeconds(time.Now()) - transaction.Time
 	if elapsedMilliSeconds > types.TxReceiveTimeout {
 		utils.Error(fmt.Sprintf("Timed out [hash=%s]", transaction.Hash))
-		//return types.NewResponseWithStatus(types.StatusTransactionTimeOut, "Transaction was received later than 1 second limit")
+		return types.NewResponseWithStatus(types.StatusTransactionTimeOut, "Transaction was received later than 1 second limit")
 	}
 
 	// Duplicate transaction?
@@ -171,7 +171,7 @@ func (this *DAPoSService) gossipWorker() {
 						this.gossipQueue.Push(gossip)
 
 						go func() {
-							time.Sleep(5 * time.Second)
+							time.Sleep(types.GossipQueueTimeout)
 							this.timoutChan <- true
 						}()
 					}
@@ -255,9 +255,9 @@ func (this *DAPoSService) doWork() {
 				return
 			}
 			initialRcvDuration := gossip.Rumors[0].Time - gossip.Transaction.Time
-			utils.Info("Initial Receive Duration = %d", initialRcvDuration)
+			utils.Info("Initial Receive Duration = ", initialRcvDuration, types.TxReceiveTimeout)
 			if  initialRcvDuration >= types.TxReceiveTimeout {
-				utils.Error(fmt.Sprintf("Timed out [hash=%s] %v milliseconds", gossip.Transaction.Hash, initialRcvDuration))
+				utils.Error(fmt.Sprintf("Timed out [hash=%s] %v milliseconds", gossip.Transaction.Hash))
 				receipt = types.NewReceipt(gossip.Transaction.Hash)
 				receipt.Status = types.StatusTransactionTimeOut
 				receipt.Cache(services.GetCache())
@@ -330,7 +330,6 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		dvmResult, err := dvmService.DeploySmartContract(transaction)
 		if err != nil {
 			utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
-			utils.Error(err)
 			receipt.Status = types.StatusInternalError
 			receipt.HumanReadableStatus = err.Error()
 			receipt.Cache(services.GetCache())
