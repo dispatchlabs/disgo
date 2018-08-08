@@ -21,6 +21,14 @@ import (
 	"time"
 )
 
+//TODO: I think we need to convert these timouts and their calculations in code to nano seconds
+// Timouts -- currently calculated in milliseconds.
+const (
+	TxReceiveTimeout    = 1000  //1 second
+	GossipQueueTimeout  = time.Second * 5
+	GossipTimeout    	= 300  //300 milliseconds
+)
+
 // Requests
 const (
 	RequestGetStatus                    = "GetReceipt"
@@ -38,6 +46,7 @@ const (
 	StatusOk                           = "Ok"
 	StatusNotFound                     = "NotFound"
 	StatusReceiptNotFound              = "StatusReceiptNotFound"
+	StatusTransactionTimeOut           = "StatusTransactionTimeOut"
 	StatusInvalidTransaction           = "InvalidTransaction"
 	StatusInsufficientTokens           = "InsufficientTokens"
 	StatusDuplicateTransaction         = "DuplicateTransaction"
