@@ -37,6 +37,7 @@ type Config struct {
 	GrpcTimeout        int         `json:"grpcTimeout"`
 	SeedEndpoints      []*Endpoint `json:"seedEndpoints"`
 	UseQuantumEntropy  bool        `json:"useQuantumEntropy"`
+	IsBookkeeper  	   bool        `json:"isBookkeeper"`
 	GenesisTransaction string      `json:"genesisTransaction"`
 }
 
