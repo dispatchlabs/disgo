@@ -22,14 +22,16 @@ func GetConvertedParams(jsonMap map[string]interface{}) []interface{} {
 			for i := 0; i < len(v.Inputs); i++ {
 				arg := v.Inputs[i]
 				if arg.Type.T == abi.SliceTy || arg.Type.T == abi.ArrayTy {
-					typeString := arg.Type.String()[0:len(arg.Type.String())-2]
+					dataTypeString := arg.Type.String()[0:len(arg.Type.String())-2]
+					typeString := arg.Type.String()
+					utils.Info("New Type: ", typeString)
 					argType, err := abi.NewType(typeString)
 					if err != nil {
 						utils.Error(err)
 					}
 					var argument abi.Argument
 					argument.Type = argType
-					result = append(result, getValues(argument, params[i].([]interface{})))
+					result = append(result, getValues(argument, dataTypeString, params[i].([]interface{})))
 				} else {
 					result = append(result, getValue(arg, params[i]))
 				}
@@ -39,11 +41,20 @@ func GetConvertedParams(jsonMap map[string]interface{}) []interface{} {
 	return result
 }
 
-func getValues(arg abi.Argument, values []interface{}) []*interface{} {
-	result := make([]*interface{}, 0)
+func getValues(arg abi.Argument, dataTypeString string, values []interface{}) []interface{} {
+	result := make([]interface{}, 0)
+	if dataTypeString == "int256" || dataTypeString == "uint256" {
+		//var result []*interface{}
+		//tmp := make([]*big.Int, 0)
+		for _, value := range values {
+			result = append(result, new(big.Int).SetUint64(uint64(value.(float64))))
+		}
+		return result
+	}
+
 	for _, value := range values {
 		temp := getValue(arg, value)
-		result = append(result, &temp)
+		result = append(result, temp)
 	}
 	return result
 }

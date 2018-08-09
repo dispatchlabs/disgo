@@ -35,7 +35,7 @@ func InitializeLogger() {
 		}
 		log.SetFormatter(formatter)
 		log.SetOutput(os.Stdout)
-		log.SetLevel(log.InfoLevel)
+		log.SetLevel(log.DebugLevel)
 	})
 }
 
