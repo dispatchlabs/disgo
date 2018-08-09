@@ -5,6 +5,12 @@ package disgover;
 message Empty {
 }
 
+message Authentication {
+    string Hash = 1;
+    int64  Time = 2;
+    string Signature = 3;
+}
+
 message Endpoint {
 	string Host = 1;
 	int64 Port = 2;
@@ -14,14 +20,32 @@ message Node {
 	string 	 Address = 1;
 	Endpoint GrpcEndpoint = 2;
 	Endpoint HttpEndpoint = 3;
+<<<<<<< HEAD
 	string   Type = 3;
+=======
+	string   Type = 4;
 }
 
-message NodeList {
-	repeated Node Delegates = 1;
+message PingSeed {
+    Authentication  Authentication = 1;
+    Node            Node = 2;
+>>>>>>> DG-676
+}
+
+message Update {
+    Authentication Authentication = 1;
+	repeated Node  Delegates = 2;
+}
+
+message SoftwareUpdate {
+    Authentication Authentication = 1;
+    bytes          Software = 2;
+    int64          ScheduledTime = 3;
 }
 
 service DisgoverGrpc {
-	rpc PingSeedGrpc(Node) returns (NodeList) {}
-	rpc UpdateGrpc(NodeList) returns (Empty) {}
+	rpc PingSeedGrpc(PingSeed) returns (Update) {}
+	rpc UpdateGrpc(Update) returns (Empty) {}
+    rpc UpdateSoftwareGrpc(SoftwareUpdate) returns (Empty) {}
 }
+

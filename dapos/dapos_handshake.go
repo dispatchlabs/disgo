@@ -196,7 +196,8 @@ func (this *DAPoSService) gossipWorker() {
 				// Get random delegate?
 				node := this.getRandomDelegate(gossip, delegateNodes)
 				if node == nil {
-					utils.Debug("did not find any delegates to rumor with")
+					utils.Warn("did not find any delegates to rumor with")
+					this.gossipChan <- gossip
 					return
 				}
 
@@ -257,7 +258,7 @@ func (this *DAPoSService) doWork() {
 		receipt, err := types.ToReceiptFromCache(services.GetCache(), gossip.Transaction.Hash)
 		if err != nil {
 			utils.Error(fmt.Sprintf("receipt not found [hash=%s]", gossip.Transaction.Hash))
-			receipt = types.NewReceipt(types.RequestNewTransaction)
+			receipt = types.NewReceipt(gossip.Transaction.Hash)
 			receipt.Status = types.StatusReceiptNotFound
 			receipt.Cache(services.GetCache())
 			return
@@ -355,7 +356,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		}
 
 		// Persist contract account.
-		contractAccount := &types.Account{Address: hex.EncodeToString(dvmResult.ContractAddress[:]), Balance: big.NewInt(0), Updated: now, Created: now}
+		contractAccount := &types.Account{Address: hex.EncodeToString(dvmResult.ContractAddress[:]), Balance: big.NewInt(0), TransactionHash: transaction.Hash, Updated: now, Created: now}
 		err = contractAccount.Persist(txn)
 		if err != nil {
 			utils.Error(err)

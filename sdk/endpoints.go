@@ -144,7 +144,6 @@ func GetAccount(delegateNode types.Node, address string) (*types.Account, error)
 
 // TransferTokens - Send tokens FROM TO
 func TransferTokens(delegateNode types.Node, privateKey string, from string, to string, tokens int64) (string, error) {
-
 	// Create transfer tokens transaction.
 	transaction, err := types.NewTransferTokensTransaction(privateKey, from, to, tokens, 0, utils.ToMilliSeconds(time.Now()))
 	if err != nil {
@@ -181,7 +180,6 @@ func TransferTokens(delegateNode types.Node, privateKey string, from string, to 
 
 // DeploySmartContract - Deploy a smart contract, get the TX hash as result
 func DeploySmartContract(delegateNode types.Node, privateKey string, from string, code string, abi string) (string, error) {
-
 	// Create deploy smart contract transaction.
 	transaction, err := types.NewDeployContractTransaction(privateKey, from, code, abi, utils.ToMilliSeconds(time.Now()))
 	if err != nil {
@@ -218,7 +216,6 @@ func DeploySmartContract(delegateNode types.Node, privateKey string, from string
 
 // ExecuteSmartContractTransaction - Execute a smart contract, get the TX hash as result
 func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey string, from string, to string, abi string, method string, params []interface{}) (string, error) {
-
 	// Create execute smart contract transaction.
 	transaction, err := types.NewExecuteContractTransaction(privateKey, from, to, abi, method, params, utils.ToMilliSeconds(time.Now()))
 	if err != nil {
@@ -253,7 +250,7 @@ func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey string,
 	return transaction.Hash, nil
 }
 
-// GetTransaction -  TODO
+// GetTransaction
 func GetTransaction(delegateNode types.Node, hash string) (*types.Transaction, error) {
 
 	// Get transaction.
