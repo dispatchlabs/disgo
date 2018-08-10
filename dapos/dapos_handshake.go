@@ -162,7 +162,8 @@ func (this *DAPoSService) gossipWorker() {
 				// Gossip timeout?
 				if len(gossip.Rumors) > 1 {
 					if !types.ValidateTimeDelta(gossip.Rumors) {
-						utils.Warn("The rumors have an invalid time delta (greater than 300 milliseconds")
+						utils.Warn("The rumors have an invalid time delta (greater than gossip timeout milliseconds")
+
 						//ignore this gossip's rumors and hopefully still hit 2/3 from well timed gossip, but keep listening
 						return
 					}
