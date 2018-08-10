@@ -125,8 +125,9 @@ func (this *DisGoverService) peerPingSeedGrpc() ([]*types.Node, error) {
 			return nil, err
 		}
 
+		protoNode := convertToProtoNode(this.ThisNode)
 		// Ping seed.
-		response, err := client.PingSeedGrpc(ctx, &proto.PingSeed{Authentication: convertToProtoAuthentication(authentication), Node: convertToProtoNode(this.ThisNode)})
+		response, err := client.PingSeedGrpc(ctx, &proto.PingSeed{Authentication: convertToProtoAuthentication(authentication), Node: protoNode})
 		if err != nil {
 			conn.Close()
 			cancel()

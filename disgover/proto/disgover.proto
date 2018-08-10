@@ -20,16 +20,12 @@ message Node {
 	string 	 Address = 1;
 	Endpoint GrpcEndpoint = 2;
 	Endpoint HttpEndpoint = 3;
-<<<<<<< HEAD
-	string   Type = 3;
-=======
 	string   Type = 4;
 }
 
 message PingSeed {
     Authentication  Authentication = 1;
     Node            Node = 2;
->>>>>>> DG-676
 }
 
 message Update {
