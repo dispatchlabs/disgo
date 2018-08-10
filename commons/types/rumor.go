@@ -25,6 +25,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"time"
 	"sort"
+	"fmt"
 )
 
 // Rumor
@@ -236,20 +237,34 @@ func (this RumorsSorter) Less(i, j int) bool {
 }
 
 func ValidateTimeDelta(rumors []Rumor) bool {
+	result := true
 	rumorSorter := RumorsSorter{rumors}
 	sort.Sort(rumorSorter)
 	len := rumorSorter.Len()
 
+	timing := make([]int64, 0)
 	now := utils.ToMilliSeconds(time.Now())
+	initialTime := now - rumorSorter.Rumors[len-1].Time
+	timing = append(timing, initialTime)
+
 	if  now - rumorSorter.Rumors[len-1].Time > GossipTimeout {
-		return false
+		msg := fmt.Sprintf("gossip to local delegate %s took %v", rumorSorter.Rumors[len-1].Address, initialTime)
+		utils.Info(msg)
+		result = false
 	}
 	if len > 1 {
 		for i := 1; i < len; i++ {
-			if rumorSorter.Rumors[i].Time - rumorSorter.Rumors[i-1].Time > GossipTimeout {
-				return false
+			gossipTime := rumorSorter.Rumors[i].Time - rumorSorter.Rumors[i-1].Time
+			timing = append(timing, gossipTime)
+			if gossipTime > GossipTimeout {
+				msg := fmt.Sprintf("gossip between delegate %s and delegage %s took %v", rumorSorter.Rumors[i].Address, rumorSorter.Rumors[i-1].Address, gossipTime)
+				utils.Info(msg)
+				result = false
 			}
 		}
 	}
-	return true
+	if(len == 5) {
+		fmt.Printf("%s: %v\n", rumors[0].TransactionHash, timing)
+	}
+	return result
 }
