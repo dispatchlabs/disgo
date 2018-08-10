@@ -155,7 +155,7 @@ func testCleanAccountFile(t *testing.T, name_optional ...string) func() {
 	if len(name_optional) > 0 {
 		name = name_optional[0]
 	}
-	fileName := utils.GetDisgoDir() + string(os.PathSeparator) + name
+	fileName := utils.GetConfigDir() + string(os.PathSeparator) + name
 	if utils.Exists(fileName) {
 		os.Remove(fileName)
 	}
