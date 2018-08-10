@@ -21,15 +21,17 @@ import (
 	"time"
 )
 
+//TODO: I think we need to convert these timouts and their calculations in code to nano seconds
+// Timouts -- currently calculated in milliseconds.
+const (
+	TxReceiveTimeout    = 2000  //1 second
+	GossipQueueTimeout  = time.Second * 5
+	GossipTimeout    	= 300  //300 milliseconds
+)
+
 // Requests
 const (
-	RequestGetStatus                    = "GetReceipt"
-	RequestGetDelegates                 = "GetDelegates"
-	RequestGetAccount                   = "GetAccount"
-	RequestNewTransaction               = "NewTransaction"
-	RequestGetTransactions              = "GetTransactions"
-	RequestGetTransactionsByFromAddress = "GetTransactionsByFromAddress"
-	RequestGetTransactionsByToAddress   = "GetTransactionsByToAddress"
+	Version = "2.2.0"
 )
 
 // Statuses
@@ -38,16 +40,14 @@ const (
 	StatusOk                           = "Ok"
 	StatusNotFound                     = "NotFound"
 	StatusReceiptNotFound              = "StatusReceiptNotFound"
+	StatusTransactionTimeOut           = "StatusTransactionTimeOut"
 	StatusInvalidTransaction           = "InvalidTransaction"
 	StatusInsufficientTokens           = "InsufficientTokens"
 	StatusDuplicateTransaction         = "DuplicateTransaction"
-	StatusUnableToConnectToDelegate    = "UnableToConnectToDelegate"
-	StatusUnableToFindDelegates        = "StatusUnableToFindDelegates"
-	StatusUnableToExecuteDelegate      = "UnableToExecuteDelegate"
-	StatusInvalidRequest               = "InvalidRequest"
 	StatusNotDelegate                  = "StatusNotDelegate"
 	StatusAlreadyProcessingTransaction = "StatusAlreadyProcessingTransaction"
 	StatusGossipingTimedOut            = "StatusGossipingTimedOut"
+	StatusJsonParseError               = "StatusJsonParseError"
 	StatusInternalError                = "InternalError"
 	StatusUnavailableFeature 		   = "UnavailableFeature"
 )

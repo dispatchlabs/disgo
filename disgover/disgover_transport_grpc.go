@@ -29,7 +29,9 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"github.com/patrickmn/go-cache"
-)
+	"io/ioutil"
+	"os"
+	)
 
 // WithGrpc - Runs the DisGover service with GRPC transport
 func (this *DisGoverService) WithGrpc() *DisGoverService {
@@ -38,17 +40,43 @@ func (this *DisGoverService) WithGrpc() *DisGoverService {
 }
 
 // PingSeedGrpc
-func (this *DisGoverService) PingSeedGrpc(ctx context.Context, node *proto.Node) (*proto.NodeList, error) {
+func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.PingSeed) (*proto.Update, error) {
 
 	// Is this node a seed?
 	if this.ThisNode.Type != types.TypeSeed {
 		return nil, errors.New("you pinged a non-seed node")
 	}
 
-	// Persist and cache  delegate.
+	node := convertToDomainNode(pingSeed.Node)
+	authentication := convertToDomainAuthentication(pingSeed.Authentication)
+	authenticationAddress, err := authentication.GetAddress()
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("unable to authentication you [error=%s]", err.Error()))
+	}
+	if authenticationAddress != node.Address {
+		return nil, errors.New("unable to authentication you")
+	}
+
+	// Persist and cache node.
 	txn := services.NewTxn(true)
 	defer txn.Discard()
-	convertToDomain(node).PersistAndCache(txn, services.GetCache())
+
+	for _, delegateAddress := range types.GetConfig().DelegateAddresses {
+
+		// Is this a delegate node?
+		if delegateAddress == node.Address {
+
+			// Is this an authentic delegate?
+			err := authentication.Verify(node.Address)
+			if err != nil {
+				utils.Warn(fmt.Sprintf("unable to authentication delegate [address=%s]", node.Address))
+				return nil, errors.New("unable to authentication you as a delegate")
+			}
+			node.Type = types.TypeDelegate
+			break
+		}
+	}
+	node.PersistAndCache(txn, services.GetCache(), cache.NoExpiration)
 
 	// Get cached delegates.
 	delegates, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
@@ -58,15 +86,24 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, node *proto.Node)
 
 	var nodes = make([]*proto.Node, 0)
 	for _, delegate := range delegates {
-		nodes = append(nodes, convertToProto(delegate))
+		nodes = append(nodes, convertToProtoNode(delegate))
 	}
-		//TODO: grpc endpoint?
-	utils.Info(fmt.Sprintf("received ping [address=%s, ip=%s, port=%d, delegates=%d]", node.Address, node.GrpcEndpoint.Host, node.GrpcEndpoint.Port, len(delegates)))
+	utils.Info(fmt.Sprintf("received ping [address=%s, host=%s, port=%d, delegates=%d]", node.Address, node.GrpcEndpoint.Host, node.GrpcEndpoint.Port, len(delegates)))
+
+	// New authentication.
+	authentication, err = types.NewAuthenticate()
+	if err != nil {
+		utils.Error(err)
+		return nil, err
+	}
 
 	// Update all peers.
-	this.peerUpdateGrpc()
+	go func() {
+		time.Sleep(500 * time.Millisecond)
+		this.peerUpdateGrpc()
+	}()
 
-	return &proto.NodeList{Delegates: nodes}, nil
+	return &proto.Update{Authentication: convertToProtoAuthentication(authentication), Delegates: nodes}, nil
 }
 
 // peerPingSeedGrpc
@@ -79,18 +116,25 @@ func (this *DisGoverService) peerPingSeedGrpc() ([]*types.Node, error) {
 			utils.Fatal(fmt.Sprintf("cannot dial seed [host=%s, port=%d]", seedEndpoint.Host, seedEndpoint.Port), err)
 			return nil, err
 		}
-		defer conn.Close()
 		client := proto.NewDisgoverGrpcClient(conn)
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
+
+		// New authentication.
+		authentication, err := types.NewAuthenticate()
+		if err != nil {
+			return nil, err
+		}
 
 		// Ping seed.
-		response, err := client.PingSeedGrpc(ctx, convertToProto(this.ThisNode))
+		response, err := client.PingSeedGrpc(ctx, &proto.PingSeed{Authentication: convertToProtoAuthentication(authentication), Node: convertToProtoNode(this.ThisNode)})
 		if err != nil {
+			conn.Close()
+			cancel()
 			utils.Error(err)
 			return nil, err
 		}
-		defer conn.Close()
+		conn.Close()
+		cancel()
 
 		// Response?
 		if response == nil {
@@ -98,10 +142,16 @@ func (this *DisGoverService) peerPingSeedGrpc() ([]*types.Node, error) {
 			return nil, errors.New("unable to ping seed node")
 		}
 
+		// Verify seed node is authentic?
+		err = this.verifySeedNode(response.Authentication)
+		if err != nil {
+			return nil, err
+		}
+
 		utils.Info(fmt.Sprintf("pinged seed node [delegates=%d]", len(response.Delegates)))
 
 		for _, delegate := range response.Delegates {
-			delegates = append(delegates, convertToDomain(delegate))
+			delegates = append(delegates, convertToDomainNode(delegate))
 		}
 		return delegates, nil
 	}
@@ -110,14 +160,20 @@ func (this *DisGoverService) peerPingSeedGrpc() ([]*types.Node, error) {
 }
 
 // UpdateGrpc
-func (this *DisGoverService) UpdateGrpc(ctx context.Context, nodeList *proto.NodeList) (*proto.Empty, error) {
+func (this *DisGoverService) UpdateGrpc(ctx context.Context, update *proto.Update) (*proto.Empty, error) {
 
-	// Cache delegates.
-	for _, delegate := range nodeList.Delegates {
-		convertToDomain(delegate).Cache(services.GetCache(), cache.NoExpiration)
+	// Verify seed node is authentic?
+	err := this.verifySeedNode(update.Authentication)
+	if err != nil {
+		return &proto.Empty{}, err
 	}
 
-	utils.Info(fmt.Sprintf("delegates updated [count=%d]", len(nodeList.Delegates)))
+	// Cache delegates.
+	for _, delegate := range update.Delegates {
+		convertToDomainNode(delegate).Cache(services.GetCache(), cache.NoExpiration)
+	}
+
+	utils.Info(fmt.Sprintf("delegates updated [count=%d]", len(update.Delegates)))
 
 	return &proto.Empty{}, nil
 }
@@ -128,11 +184,19 @@ func (this *DisGoverService) peerUpdateGrpc() {
 	// Get delegates in cache.
 	delegates, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
 	if err != nil {
-		utils.Fatal(err)
+		utils.Error(err)
+		return
 	}
 	var protoDelegates = make([]*proto.Node, 0)
 	for _, delegate := range delegates {
-		protoDelegates = append(protoDelegates, convertToProto(delegate))
+		protoDelegates = append(protoDelegates, convertToProtoNode(delegate))
+	}
+
+	// New authentication.
+	authentication, err := types.NewAuthenticate()
+	if err != nil {
+		utils.Error(err)
+		return
 	}
 
 	for _, delegate := range delegates {
@@ -145,7 +209,7 @@ func (this *DisGoverService) peerUpdateGrpc() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
 		// Update.
-		_, err = client.UpdateGrpc(ctx, &proto.NodeList{Delegates: protoDelegates})
+		_, err = client.UpdateGrpc(ctx, &proto.Update{Authentication: convertToProtoAuthentication(authentication), Delegates: protoDelegates})
 		if err != nil {
 			utils.Error(err)
 		}
@@ -154,10 +218,106 @@ func (this *DisGoverService) peerUpdateGrpc() {
 	}
 }
 
+// UpdateSoftwareGrpc
+func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpdate *proto.SoftwareUpdate) (*proto.Empty, error) {
+
+	// Verify seed node is authentic?
+	err := this.verifySeedNode(softwareUpdate.Authentication)
+	if err != nil {
+		return &proto.Empty{}, err
+	}
+
+	// Write file.
+	fileName :=  "." + string(os.PathSeparator) + "disgo"
+	err = ioutil.WriteFile(fileName, softwareUpdate.Software, 0)
+	if err != nil {
+		utils.Error(fmt.Sprintf("unable to save file %s", fileName), err)
+		return &proto.Empty{}, err
+	}
+
+	utils.Info(fmt.Sprintf("software updated from seed node"))
+
+	go func() {
+		time.Sleep(3 * time.Second) // TODO: This should be set to the time from the seed!!!
+		services.GetDbService().Close()
+		utils.Info("rebooting with new version of disgo...")
+		os.Exit(0)
+	}()
+
+	return &proto.Empty{}, nil
+}
+
+// peerUpdateSoftwareGrpc
+func (this *DisGoverService) peerUpdateSoftwareGrpc(software []byte) {
+
+	// Get delegates in cache.
+	delegates, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
+	if err != nil {
+		utils.Error(err)
+		return
+	}
+
+	// New authentication.
+	authentication, err := types.NewAuthenticate()
+	if err != nil {
+		utils.Error(err)
+		return
+	}
+
+	for _, delegate := range delegates {
+		maxSize := 1024 * 1024 * 1024 // TODO: Do we need this (ServerOptions sets this)?
+		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxSize), grpc.MaxCallSendMsgSize(maxSize)), grpc.WithInsecure())
+		if err != nil {
+			utils.Warn(fmt.Sprintf("cannot dial node [host=%s, port=%d]", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), err)
+			continue
+		}
+		client := proto.NewDisgoverGrpcClient(conn)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+
+		// Update software.
+		_, err = client.UpdateSoftwareGrpc(ctx, &proto.SoftwareUpdate{Authentication: convertToProtoAuthentication(authentication), Software: software})
+		if err != nil {
+			utils.Warn(fmt.Sprintf("unable to update sofware [address=%s, host=%s, port=%d]", delegate.Address, delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port))
+			continue
+		}
+		conn.Close()
+		cancel()
+	}
+}
+
+// verifySeedNode
+func (this *DisGoverService) verifySeedNode(protoAuthenticate *proto.Authentication) error {
+
+	if protoAuthenticate == nil {
+		utils.Warn("attempted update by a non-authorized seed node")
+		return errors.New("you are not an authorized seed node")
+	}
+
+	authentication := convertToDomainAuthentication(protoAuthenticate)
+	authenticationAddress, err := authentication.GetAddress()
+	if err != nil {
+		utils.Error(err)
+		return err
+	}
+
+	for _, seedAddress := range types.GetConfig().SeedAddresses {
+		if seedAddress == authenticationAddress {
+			err = authentication.Verify(seedAddress)
+			if err != nil {
+				return errors.New("you are not an authorized seed node")
+			}
+			return nil
+		}
+	}
+
+	utils.Warn("attempted update by a non-authorized seed node")
+	return errors.New("you are not an authorized seed node")
+}
+
 /*
  *  Simple conversion functions from / to proto generated objects and domain level objects
  */
-func convertToDomain(node *proto.Node) *types.Node {
+func convertToDomainNode(node *proto.Node) *types.Node {
 	return &types.Node{
 		Address: node.Address,
 		GrpcEndpoint: &types.Endpoint{
@@ -172,8 +332,8 @@ func convertToDomain(node *proto.Node) *types.Node {
 	}
 }
 
-// convertToProto
-func convertToProto(node *types.Node) *proto.Node {
+// convertToProtoNode
+func convertToProtoNode(node *types.Node) *proto.Node {
 	if node == nil {
 		return nil
 	}
@@ -188,5 +348,26 @@ func convertToProto(node *types.Node) *proto.Node {
 			Port: node.HttpEndpoint.Port,
 		},
 		Type: node.Type,
+	}
+}
+
+// convertToDomainAuthenticate
+func convertToDomainAuthentication(authentication *proto.Authentication) *types.Authentication {
+	return &types.Authentication{
+		Hash:      authentication.Hash,
+		Time:      authentication.Time,
+		Signature: authentication.Signature,
+	}
+}
+
+// convertToProtoAuthenticate
+func convertToProtoAuthentication(authentication *types.Authentication) *proto.Authentication {
+	if authentication == nil {
+		return nil
+	}
+	return &proto.Authentication{
+		Hash:      authentication.Hash,
+		Time:      authentication.Time,
+		Signature: authentication.Signature,
 	}
 }

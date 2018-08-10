@@ -30,6 +30,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/pkg/errors"
 	"github.com/patrickmn/go-cache"
+	"github.com/dispatchlabs/disgo/commons/helper"
 )
 
 // Transaction - The transaction info
@@ -45,9 +46,10 @@ type Transaction struct {
 	Params    []interface{}
 	Time      int64 // Milliseconds
 	Signature string
-	Hertz     int64  //our version of Gas
-	FromName  string // Transient
-	ToName    string // Transient
+	Hertz     int64   //our version of Gas
+	Receipt   Receipt // Transient
+	FromName  string  // Transient
+	ToName    string  // Transient
 }
 
 // Key
@@ -76,7 +78,7 @@ func (this Transaction) ToKey() string {
 }
 
 //Cache
-func (this *Transaction) Cache(cache *cache.Cache, time_optional ...time.Duration){
+func (this *Transaction) Cache(cache *cache.Cache, time_optional ...time.Duration) {
 	TTL := TransactionTTL
 	if len(time_optional) > 0 {
 		TTL = time_optional[0]
@@ -110,7 +112,7 @@ func (this *Transaction) Persist(txn *badger.Txn) error {
 }
 
 // PersistAndCache
-func (this *Transaction) Set(txn *badger.Txn,cache *cache.Cache) error {
+func (this *Transaction) Set(txn *badger.Txn, cache *cache.Cache) error {
 	this.Cache(cache)
 
 	err := this.Persist(txn)
@@ -120,12 +122,10 @@ func (this *Transaction) Set(txn *badger.Txn,cache *cache.Cache) error {
 	return nil
 }
 
-
 // GetHashBytes
 func (this Transaction) GetHashBytes() crypto.HashBytes {
 	return crypto.GetHashBytes(this.Hash)
 }
-
 
 // ToTime
 func (this Transaction) ToTime() time.Time {
@@ -169,7 +169,6 @@ func (this Transaction) CalculateHash() []byte {
 	return hash[:]
 }
 
-
 // ToTransactionFromJson -
 func ToTransactionFromJson(payload []byte) (*Transaction, error) {
 	transaction := &Transaction{}
@@ -182,8 +181,8 @@ func ToTransactionFromJson(payload []byte) (*Transaction, error) {
 
 // ToTransactionFromCache -
 func ToTransactionFromCache(cache *cache.Cache, hash string) (*Transaction, error) {
-	value, ok :=cache.Get(fmt.Sprintf("table-transaction-%s", hash))
-	if !ok{
+	value, ok := cache.Get(fmt.Sprintf("table-transaction-%s", hash))
+	if !ok {
 		return nil, ErrNotFound
 	}
 	transaction := value.(*Transaction)
@@ -200,22 +199,13 @@ func ToTransactions(txn *badger.Txn) ([]*Transaction, error) {
 		item := iterator.Item()
 		value, err := item.Value()
 		if err != nil {
-			utils.Error(err)
-			continue
+			return nil, err
 		}
 		transaction, err := ToTransactionFromJson(value)
 		if err != nil {
-			utils.Error(err)
-			continue
+			return nil, err
 		}
-		fromAccount, err := ToAccountByAddress(txn, transaction.From)
-		if err == nil {
-			transaction.FromName = fromAccount.Name
-		}
-		toAccount, err := ToAccountByAddress(txn, transaction.To)
-		if err == nil {
-			transaction.ToName = toAccount.Name
-		}
+		transaction.setTransients(txn)
 		transactions = append(transactions, transaction)
 	}
 	SortByTime(transactions, false)
@@ -271,22 +261,13 @@ func ToTransactionsByFromAddress(txn *badger.Txn, address string) ([]*Transactio
 		item := iterator.Item()
 		value, err := item.Value()
 		if err != nil {
-			utils.Error(err)
-			continue
+			return nil, err
 		}
 		transaction, err := ToTransactionByKey(txn, value)
 		if err != nil {
-			utils.Error(err)
-			continue
+			return nil, err
 		}
-		fromAccount, err := ToAccountByAddress(txn, transaction.From)
-		if err == nil {
-			transaction.FromName = fromAccount.Name
-		}
-		toAccount, err := ToAccountByAddress(txn, transaction.To)
-		if err == nil {
-			transaction.ToName = toAccount.Name
-		}
+		transaction.setTransients(txn)
 		transactions = append(transactions, transaction)
 	}
 	SortByTime(transactions, false)
@@ -303,22 +284,13 @@ func ToTransactionsByToAddress(txn *badger.Txn, address string) ([]*Transaction,
 		item := iterator.Item()
 		value, err := item.Value()
 		if err != nil {
-			utils.Error(err)
-			continue
+			return nil, err
 		}
 		transaction, err := ToTransactionByKey(txn, value)
 		if err != nil {
-			utils.Error(err)
-			continue
+			return nil, err
 		}
-		fromAccount, err := ToAccountByAddress(txn, transaction.From)
-		if err == nil {
-			transaction.FromName = fromAccount.Name
-		}
-		toAccount, err := ToAccountByAddress(txn, transaction.To)
-		if err == nil {
-			transaction.ToName = toAccount.Name
-		}
+		transaction.setTransients(txn)
 		transactions = append(transactions, transaction)
 	}
 	SortByTime(transactions, false)
@@ -335,25 +307,34 @@ func ToTransactionsByType(txn *badger.Txn, tipe byte) ([]*Transaction, error) {
 		item := iterator.Item()
 		value, err := item.Value()
 		if err != nil {
-			utils.Error(err)
-			continue
+			return nil, err
 		}
 		transaction, err := ToTransactionByKey(txn, value)
 		if err != nil {
-			utils.Error(err)
-			continue
+			return nil, err
 		}
-		fromAccount, err := ToAccountByAddress(txn, transaction.From)
-		if err == nil {
-			transaction.FromName = fromAccount.Name
-		}
-		toAccount, err := ToAccountByAddress(txn, transaction.To)
-		if err == nil {
-			transaction.ToName = toAccount.Name
-		}
+		transaction.setTransients(txn)
 		transactions = append(transactions, transaction)
 	}
 	return transactions, nil
+}
+
+// ToTransactionByHash
+func ToTransactionByHash(txn *badger.Txn, hash string) (*Transaction, error) {
+	item, err := txn.Get([]byte(fmt.Sprintf("table-transaction-%s", hash)))
+	if err != nil {
+		return nil, err
+	}
+	value, err := item.Value()
+	if err != nil {
+		return nil, err
+	}
+	transaction, err := ToTransactionFromJson(value)
+	if err != nil {
+		return nil, err
+	}
+	transaction.setTransients(txn)
+	return transaction, err
 }
 
 // ToTransactionByKey
@@ -370,11 +351,12 @@ func ToTransactionByKey(txn *badger.Txn, key []byte) (*Transaction, error) {
 	if err != nil {
 		return nil, err
 	}
+	transaction.setTransients(txn)
 	return transaction, err
 }
 
 // NewTransferTokensTransaction -
-func NewTransferTokensTransaction(privateKey string, from, to string, value, hertz, timeInMiliseconds int64) (*Transaction, error) {
+func NewTransferTokensTransaction(privateKey string, from, to string, value int64, hertz int64, timeInMiliseconds int64) (*Transaction, error) {
 	var err error
 	transaction := &Transaction{}
 	transaction.Type = TypeTransferTokens
@@ -498,7 +480,7 @@ func (this Transaction) NewHash() (string, error) {
 }
 
 // NewSignature
-func (this *Transaction) NewSignature(privateKey string) (string, error) {
+func (this Transaction) NewSignature(privateKey string) (string, error) {
 	hashBytes, err := hex.DecodeString(this.Hash)
 	if err != nil {
 		utils.Error("unable to decode hash", err)
@@ -518,7 +500,7 @@ func (this *Transaction) NewSignature(privateKey string) (string, error) {
 
 // Verify
 func (this Transaction) Verify() error {
-	if len(this.Hash) != crypto.HashLength*2  {
+	if len(this.Hash) != crypto.HashLength*2 {
 		return errors.New("invalid hash")
 	}
 	if len(this.From) != crypto.AddressLength*2 {
@@ -538,7 +520,7 @@ func (this Transaction) Verify() error {
 			return errors.New("invalid to address")
 		}
 		if this.Value <= 0 {
-			return errors.New("invalid value")
+			return errors.New("value cannot be less than or equal to zero")
 		}
 		break
 	case TypeDeploySmartContract:
@@ -598,7 +580,6 @@ func (this Transaction) Verify() error {
 	return nil
 }
 
-
 // String
 func (this Transaction) String() string {
 	bytes, err := json.Marshal(this)
@@ -618,7 +599,6 @@ func (this Transaction) ToPrettyJson() string {
 	}
 	return string(bytes)
 }
-
 
 // UnmarshalJSON
 func (this *Transaction) UnmarshalJSON(bytes []byte) error {
@@ -652,19 +632,14 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		if !ok {
 			return errors.Errorf("value for field 'to' must be a string")
 		}
-		if jsonMap["code"] != nil {
-			code := jsonMap["code"].(string)
-			if len(this.To) == 0 && len(code) == 0 {
-				return errors.Errorf("value for field 'to' is invalid")
-			}
-		}
 	}
 	if jsonMap["value"] != nil {
-		val, ok := jsonMap["value"].(float64)
+		value, ok := jsonMap["value"].(float64)
 		if !ok {
 			return errors.Errorf("value for field 'value' must be a number")
 		}
-		this.Value = int64(val)
+		this.Value = int64(value)
+
 	}
 	if jsonMap["code"] != nil {
 		this.Code, ok = jsonMap["code"].(string)
@@ -690,7 +665,8 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		}
 	}
 	if jsonMap["params"] != nil {
-		this.Params, ok = jsonMap["params"].([]interface{})
+		//this.Params, ok = jsonMap["params"].([]interface{})
+		this.Params = helper.GetConvertedParams(jsonMap)
 		if !ok {
 			return errors.Errorf("value for field 'params' must be an array")
 		}
@@ -719,18 +695,6 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		}
 		this.Hertz = int64(hertz)
 	}
-	if jsonMap["fromName"] != nil {
-		this.FromName, ok = jsonMap["fromName"].(string)
-		if !ok {
-			return errors.Errorf("value for field 'fromName' must be a string")
-		}
-	}
-	if jsonMap["toName"] != nil {
-		this.ToName, ok = jsonMap["toName"].(string)
-		if !ok {
-			return errors.Errorf("value for field 'toName' must be a string")
-		}
-	}
 	return nil
 }
 
@@ -740,17 +704,18 @@ func (this Transaction) MarshalJSON() ([]byte, error) {
 		Hash      string        `json:"hash"`
 		Type      byte          `json:"type"`
 		From      string        `json:"from"`
-		To        string        `json:"to"`
-		Value     int64         `json:"value"`
-		Code      string        `json:"code"`
-		Abi       string        `json:"abi"`
-		Method    string        `json:"method"`
-		Params    []interface{} `json:"params"`
+		To        string        `json:"to,omitempty"`
+		Value     int64         `json:"value,omitempty"`
+		Code      string        `json:"code,omitempty"`
+		Abi       string        `json:"abi,omitempty"`
+		Method    string        `json:"method,omitempty"`
+		Params    []interface{} `json:"params,omitempty"`
 		Time      int64         `json:"time"`
 		Signature string        `json:"signature"`
 		Hertz     int64         `json:"hertz"`
-		FromName  string        `json:"fromName"`
-		ToName    string        `json:"toName"`
+		Receipt   Receipt       `json:"receipt,omitempty"`
+		FromName  string        `json:"fromName,omitempty"`
+		ToName    string        `json:"toName,omitempty"`
 	}{
 		Hash:      this.Hash,
 		Type:      this.Type,
@@ -764,6 +729,7 @@ func (this Transaction) MarshalJSON() ([]byte, error) {
 		Time:      this.Time,
 		Signature: this.Signature,
 		Hertz:     this.Hertz,
+		Receipt:   this.Receipt,
 		FromName:  this.FromName,
 		ToName:    this.ToName,
 	})
@@ -785,4 +751,20 @@ func checkTime(txTime int64) (int64, error) {
 	//TODO: Talking with Avery, should be related to page TS limits.  This will not be the appropriate place for the check but will suffice for the moment.
 
 	return txTime, nil
+}
+
+// setTransients
+func (this *Transaction) setTransients(txn *badger.Txn) {
+	fromAccount, err := ToAccountByAddress(txn, this.From)
+	if err == nil {
+		this.FromName = fromAccount.Name
+	}
+	toAccount, err := ToAccountByAddress(txn, this.To)
+	if err == nil {
+		this.ToName = toAccount.Name
+	}
+	receipt, err := ToReceiptFromTransactionHash(txn, this.Hash)
+	if err == nil {
+		this.Receipt = *receipt
+	}
 }
