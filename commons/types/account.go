@@ -276,6 +276,46 @@ func ToAccountsByName(name string, txn *badger.Txn) ([]*Account, error) {
 	return Accounts, nil
 }
 
+func AccountPaging(page int,txn *badger.Txn) ([]*Account, error){
+	var iteratorCount = 0
+	var firstItem int
+	pageSize := 10
+	if page <= 0 {
+		return nil, ErrInvalidRequest
+	}else if page == 1{
+		firstItem = 1
+	} else{
+		firstItem = (page * pageSize) - (pageSize - 1)
+	}
+
+	defer txn.Discard()
+	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
+	defer iterator.Close()
+	prefix := []byte(fmt.Sprintf("table-account-"))
+	var Accounts = make([]*Account, 0)
+	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
+		iteratorCount++
+		if iteratorCount >= firstItem && iteratorCount <= (firstItem+9) {
+			item := iterator.Item()
+			value, err := item.Value()
+			if err != nil {
+				utils.Error(err)
+				continue
+			}
+			Account, err := ToAccountFromJson(value)
+			if err != nil {
+				utils.Error(err)
+				continue
+			}
+			Accounts = append(Accounts, Account)
+		}
+		if iteratorCount > (firstItem+9){
+			break
+		}
+	}
+	return Accounts, nil //TODO: return error if empty?
+}
+
 // readAccountFile -
 func readAccountFile(name_optional ...string) *Account {
 	name := "account.json"

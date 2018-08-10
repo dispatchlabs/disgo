@@ -30,15 +30,31 @@ import (
 
 // WithHttp -
 func (this *DAPoSService) WithHttp() *DAPoSService {
-	services.GetHttpRouter().HandleFunc("/v1/delegates", this.getDelegatesHandler).Methods("GET")
+	//Accounts
 	services.GetHttpRouter().HandleFunc("/v1/accounts/{address}", this.getAccountHandler).Methods("GET")
-	services.GetHttpRouter().HandleFunc("/v1/transactions", this.getTransactionsHandler).Methods("GET")
-	services.GetHttpRouter().HandleFunc("/v1/queue", this.getQueueHandler).Methods("GET")
+	services.GetHttpRouter().HandleFunc("/v1/accounts", this.getAccountsHandler).Methods("GET")
+	//Transactions
 	services.GetHttpRouter().HandleFunc("/v1/transactions/from/{address}", this.getTransactionsByFromAddressHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/transactions/to/{address}", this.getTransactionsByToAddressHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/transactions", this.newTransactionHandler).Methods("POST")
-	services.GetHttpRouter().HandleFunc("/v1/transactions/{hash}", this.getTransactionHandler).Methods("GET")
-	services.GetHttpRouter().HandleFunc("/v1/receipts/{hash}", this.getReceiptHandler).Methods("GET")
+	services.GetHttpRouter().HandleFunc("/v1/transactions/{hash}", this.getTransactionHandler).Methods("GET") //TODO: support pagination
+	services.GetHttpRouter().HandleFunc("/v1/transactions", this.getTransactionsHandler).Methods("GET") //TODO: to be deprecated
+	//Artifacts
+	services.GetHttpRouter().HandleFunc("/v1/artifacts/{query}", this.unsupportedFunctionHandler).Methods("GET")//TODO: support pagination
+	services.GetHttpRouter().HandleFunc("/v1/artifacts/", this.unsupportedFunctionHandler).Methods("POST")
+	services.GetHttpRouter().HandleFunc("/v1/artifacts/{hash}", this.unsupportedFunctionHandler).Methods("GET")
+	//delegates
+	services.GetHttpRouter().HandleFunc("/v1/delegates", this.getDelegatesHandler).Methods("GET")
+	services.GetHttpRouter().HandleFunc("/v1/delegates/subscribe", this.unsupportedFunctionHandler).Methods("POST")
+	services.GetHttpRouter().HandleFunc("/v1/delegates/unsubscribe", this.unsupportedFunctionHandler).Methods("POST")
+
+	//Page
+	services.GetHttpRouter().HandleFunc("/v1/page", this.unsupportedFunctionHandler).Methods("GET") //TODO:only return hashes
+	services.GetHttpRouter().HandleFunc("/v1/page/{id}", this.unsupportedFunctionHandler).Methods("GET")
+	//analytical
+	services.GetHttpRouter().HandleFunc("/v1/queue", this.getQueueHandler).Methods("GET")
+	services.GetHttpRouter().HandleFunc("/v1/gossips", this.getGossipsHandler).Methods("GET")
+	services.GetHttpRouter().HandleFunc("/v1/gossips/{hash}", this.getGossipHandler).Methods("GET")
 	return this
 }
 
@@ -106,27 +122,56 @@ func (this *DAPoSService) getTransactionsByToAddressHandler(responseWriter http.
 	responseWriter.Write([]byte(response.String()))
 }
 
-// getTransactionsHandler
 func (this *DAPoSService) getTransactionsHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	response := this.GetTransactions()
+	pageNumber := request.URL.Query().Get("page")
+	if pageNumber == ""{
+		pageNumber = "1"
+	}
+	response := this.GetTransactions(pageNumber)
 	setHeaders(&responseWriter)
 	responseWriter.Write([]byte(response.String()))
 }
 
-// getReceiptHandler
-func (this *DAPoSService) getReceiptHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	vars := mux.Vars(request)
-	response := this.GetReceipt(vars["hash"])
-	setHeaders(&responseWriter)
-	responseWriter.Write([]byte(response.String()))
-}
-
-// getReceiptHandler
+// getQueueHandler
 func (this *DAPoSService) getQueueHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	response := this.DumpQueue()
 	setHeaders(&responseWriter)
 	responseWriter.Write([]byte(response.String()))
 }
 
+// getArtifactHandler
+func (this *DAPoSService) unsupportedFunctionHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	response := this.ToBeSupported()
+	setHeaders(&responseWriter)
+	responseWriter.Write([]byte(response.String()))
+}
 
+// getAccountsHandler
+func (this *DAPoSService) getAccountsHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	pageNumber := request.URL.Query().Get("page")
+	if pageNumber == ""{
+		pageNumber = "1"
+	}
+	response := this.GetAccounts(pageNumber)
+	setHeaders(&responseWriter)
+	responseWriter.Write([]byte(response.String()))
+}
 
+// getGossipsHandler
+func (this *DAPoSService) getGossipsHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	pageNumber := request.URL.Query().Get("page")
+	if pageNumber == ""{
+		pageNumber = "1"
+	}
+	response := this.GetGossips(pageNumber)
+	setHeaders(&responseWriter)
+	responseWriter.Write([]byte(response.String()))
+}
+
+// getTransactionHandler
+func (this *DAPoSService) getGossipHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	vars := mux.Vars(request)
+	response := this.GetGossip(vars["hash"])
+	setHeaders(&responseWriter)
+	responseWriter.Write([]byte(response.String()))
+}
