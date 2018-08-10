@@ -222,6 +222,45 @@ func ToTransactions(txn *badger.Txn) ([]*Transaction, error) {
 	return transactions, nil
 }
 
+func TransactionPaging(page int,txn *badger.Txn) ([]*Transaction, error){
+	var iteratorCount = 0
+	var firstItem int
+	if page == 0 {
+		return nil, errors.New(StatusInvalidRequest)
+	}else if page == 1{
+		firstItem = 1
+	} else{
+		firstItem = (page * 10) - 9
+	}
+
+	defer txn.Discard()
+	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
+	defer iterator.Close()
+	prefix := []byte(fmt.Sprintf("table-transaction-"))
+	var transactions = make([]*Transaction, 0)
+	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
+		iteratorCount++
+		if iteratorCount >= firstItem && iteratorCount <= (firstItem+9) {
+			item := iterator.Item()
+			value, err := item.Value()
+			if err != nil {
+				utils.Error(err)
+				continue
+			}
+			transaction, err := ToTransactionFromJson(value)
+			if err != nil {
+				utils.Error(err)
+				continue
+			}
+			transactions = append(transactions, transaction)
+		}
+		if iteratorCount > (firstItem+9){
+			break
+		}
+	}
+	return transactions, nil //TODO: return error if empty?
+}
+
 // ToTransactionsByFromAddress
 func ToTransactionsByFromAddress(txn *badger.Txn, address string) ([]*Transaction, error) {
 	iterator := txn.NewIterator(badger.DefaultIteratorOptions)

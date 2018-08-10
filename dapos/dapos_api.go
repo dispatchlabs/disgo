@@ -23,6 +23,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/disgover"
+	"strconv"
 )
 
 // GetDelegateNodes
@@ -141,7 +142,7 @@ func (this *DAPoSService) GetTransaction(hash string) *types.Response {
 
 	// Delegate?
 	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
-		account, err := types.ToTransactionByKey(txn, []byte(hash))
+		transaction, err := types.ToTransactionByKey(txn, []byte(fmt.Sprintf("table-transaction-%s", hash)))
 		if err != nil {
 			if err == badger.ErrKeyNotFound {
 				response.Status = types.StatusNotFound
@@ -149,7 +150,7 @@ func (this *DAPoSService) GetTransaction(hash string) *types.Response {
 				response.Status = types.StatusInternalError
 			}
 		} else {
-			response.Data = account
+			response.Data = transaction
 			response.Status = types.StatusOk
 		}
 	} else {
@@ -162,7 +163,7 @@ func (this *DAPoSService) GetTransaction(hash string) *types.Response {
 }
 
 // GetTransactions
-func (this *DAPoSService) GetTransactions() *types.Response {
+func (this *DAPoSService) GetTransactionsOld() *types.Response { //TODO: to be depricated
 	txn := services.NewTxn(true)
 	defer txn.Discard()
 	response := types.NewResponse()
@@ -186,6 +187,41 @@ func (this *DAPoSService) GetTransactions() *types.Response {
 
 	return response
 }
+
+// GetTransactions
+func (this *DAPoSService) GetTransactions(page string) *types.Response {
+	txn := services.NewTxn(true)
+	defer txn.Discard()
+	response := types.NewResponse()
+	var err error
+	pageNumber, err := strconv.Atoi(page)
+	if err !=nil {
+		response.Status = types.StatusInternalError
+		response.HumanReadableStatus = err.Error()
+		return response
+	}
+
+	// Delegate?
+	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
+
+		response.Data, err = types.TransactionPaging(pageNumber, txn)
+		if err != nil {
+			response.Status = types.StatusInternalError
+			response.HumanReadableStatus = err.Error()
+		} else {
+			response.Status = types.StatusOk
+		}
+	} else {
+		response.Status = types.StatusNotDelegate
+		response.HumanReadableStatus = "This node is not a delegate. Please select a delegate node."
+	}
+
+	utils.Info(fmt.Sprintf("GetTransactions [status=%s]", response.Status))
+
+	return response
+}
+
+
 
 // GetTransactionsByFromAddress
 func (this *DAPoSService) GetTransactionsByFromAddress(address string) *types.Response {
@@ -244,3 +280,42 @@ func (this *DAPoSService) DumpQueue() *types.Response {
 	response.Data = this.gossipQueue.Dump()
 	return response
 }
+
+func (this *DAPoSService) ToBeSupported() *types.Response{
+	response := types.NewResponse()
+	response.Data = types.StatusUnavailableFeature
+	return response
+}
+
+func (this *DAPoSService) GetAccounts(page string) *types.Response{
+	txn := services.NewTxn(true)
+	defer txn.Discard()
+	response := types.NewResponse()
+	var err error
+	pageNumber, err := strconv.Atoi(page)
+	if err !=nil {
+		response.Status = types.StatusInternalError
+		response.HumanReadableStatus = err.Error()
+		return response
+	}
+
+	// Delegate?
+	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
+
+		response.Data, err = types.AccountPaging(pageNumber, txn)
+		if err != nil {
+			response.Status = types.StatusInternalError
+			response.HumanReadableStatus = err.Error()
+		} else {
+			response.Status = types.StatusOk
+		}
+	} else {
+		response.Status = types.StatusNotDelegate
+		response.HumanReadableStatus = "This node is not a delegate. Please select a delegate node."
+	}
+
+	utils.Info(fmt.Sprintf("GetAccounts [status=%s]", response.Status))
+
+	return response
+}
+

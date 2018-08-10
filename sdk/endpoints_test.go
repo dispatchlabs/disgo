@@ -36,3 +36,35 @@ func TestGetDelegates(t *testing.T) {
 	}
 	fmt.Printf("%v\n", delegates)
 }
+
+func TestGetTransaction(t *testing.T) {
+	account, err := CreateAccount()
+	if err != nil {
+		t.Error(err)
+	}
+
+	toAccount, err := CreateAccount()
+	if err != nil {
+		t.Error(err)
+	}
+
+	delegates, err := GetDelegates("127.0.0.1:3500")
+	if err != nil {
+		t.Error(err)
+	}
+
+	hash, err := TransferTokens(delegates[0],account.PrivateKey,account.Address, toAccount.Address, 0)
+	if err != nil {
+		t.Error(err)
+	}
+
+	tx, err := GetTransaction(delegates[0],hash)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if tx.Hash != hash {
+		fmt.Print(tx.Hash, "vs" , hash)
+		t.Error("invalid hash")
+	}
+}

@@ -134,7 +134,7 @@ func (this *DAPoSService) ExecuteGrpc(context context.Context, request *proto.Re
 	case types.RequestGetTransactionsByToAddress:
 		return &proto.Response{Payload: this.GetTransactionsByToAddress(request.Payload).String()}, nil
 	case types.RequestGetTransactions:
-		return &proto.Response{Payload: this.GetTransactions().String()}, nil
+		return &proto.Response{Payload: this.GetTransactionsOld().String()}, nil
 	}
 	return &proto.Response{Payload: types.NewReceiptWithStatus(request.Type, types.StatusInvalidRequest, "invalid request").String()}, nil
 }
