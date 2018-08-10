@@ -247,6 +247,9 @@ func ValidateTimeDelta(rumors []Rumor) bool {
 	initialTime := now - rumorSorter.Rumors[len-1].Time
 	timing = append(timing, initialTime)
 
+	msg := fmt.Sprintf("gossip for tx: %s between delegate %s and delegage %s took %v", rumorSorter.Rumors[len-1].TransactionHash, rumorSorter.Rumors[len-1].Address, rumorSorter.Rumors[len-2].Address, initialTime)
+	utils.Info(msg)
+
 	if now-rumorSorter.Rumors[len-1].Time > GossipTimeout {
 		msg := fmt.Sprintf("gossip to local delegate %s took %v", rumorSorter.Rumors[len-1].Address, initialTime)
 		utils.Info(msg)
@@ -256,8 +259,6 @@ func ValidateTimeDelta(rumors []Rumor) bool {
 		for i := 1; i < len; i++ {
 			gossipTime := rumorSorter.Rumors[i].Time - rumorSorter.Rumors[i-1].Time
 			timing = append(timing, gossipTime)
-			msg := fmt.Sprintf("gossip between delegate %s and delegage %s took %v", rumorSorter.Rumors[i].Address, rumorSorter.Rumors[i-1].Address, gossipTime)
-			utils.Info(msg)
 			if gossipTime > GossipTimeout {
 				msg := fmt.Sprintf("gossip between delegate %s and delegage %s took %v", rumorSorter.Rumors[i].Address, rumorSorter.Rumors[i-1].Address, gossipTime)
 				utils.Error(msg)
