@@ -215,12 +215,13 @@ func ToTransactions(txn *badger.Txn) ([]*Transaction, error) {
 func TransactionPaging(page int,txn *badger.Txn) ([]*Transaction, error){
 	var iteratorCount = 0
 	var firstItem int
-	if page == 0 {
-		return nil, errors.New(StatusInvalidRequest)
+	pageSize := 10
+	if page <= 0 {
+		return nil, ErrInvalidRequest
 	}else if page == 1{
 		firstItem = 1
 	} else{
-		firstItem = (page * 10) - 9
+		firstItem = (page * pageSize) - (pageSize - 1)
 	}
 
 	defer txn.Discard()

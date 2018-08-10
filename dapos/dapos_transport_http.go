@@ -39,7 +39,6 @@ func (this *DAPoSService) WithHttp() *DAPoSService {
 	services.GetHttpRouter().HandleFunc("/v1/transactions", this.newTransactionHandler).Methods("POST")
 	services.GetHttpRouter().HandleFunc("/v1/transactions/{hash}", this.getTransactionHandler).Methods("GET") //TODO: support pagination
 	services.GetHttpRouter().HandleFunc("/v1/transactions", this.getTransactionsHandler).Methods("GET") //TODO: to be deprecated
-	services.GetHttpRouter().HandleFunc("/v1/receipts/{hash}", this.getReceiptHandler).Methods("GET")//TODO: to be deprecated
 	//Artifacts
 	services.GetHttpRouter().HandleFunc("/v1/artifacts/{query}", this.unsupportedFunctionHandler).Methods("GET")//TODO: support pagination
 	services.GetHttpRouter().HandleFunc("/v1/artifacts/", this.unsupportedFunctionHandler).Methods("POST")
@@ -121,15 +120,11 @@ func (this *DAPoSService) getTransactionsByToAddressHandler(responseWriter http.
 	responseWriter.Write([]byte(response.String()))
 }
 
-// getTransactionsByFromAddressHandler
-func (this *DAPoSService) getTransactionsOldHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	response := this.GetTransactionsOld()
-	setHeaders(&responseWriter)
-	responseWriter.Write([]byte(response.String()))
-}
-
 func (this *DAPoSService) getTransactionsHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	pageNumber := request.URL.Query().Get("page")
+	if pageNumber == ""{
+		pageNumber = "1"
+	}
 	response := this.GetTransactions(pageNumber)
 	setHeaders(&responseWriter)
 	responseWriter.Write([]byte(response.String()))
@@ -152,6 +147,9 @@ func (this *DAPoSService) unsupportedFunctionHandler(responseWriter http.Respons
 // getAccountsHandler
 func (this *DAPoSService) getAccountsHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	pageNumber := request.URL.Query().Get("page")
+	if pageNumber == ""{
+		pageNumber = "1"
+	}
 	response := this.GetAccounts(pageNumber)
 	setHeaders(&responseWriter)
 	responseWriter.Write([]byte(response.String()))
