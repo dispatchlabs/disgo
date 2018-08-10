@@ -217,3 +217,43 @@ func ToGossips(txn *badger.Txn) ([]*Gossip, error) {
 	}
 	return gossips, nil
 }
+
+func GossipPaging(page int,txn *badger.Txn) ([]*Gossip, error){
+	var iteratorCount = 0
+	var firstItem int
+	pageSize := 10
+	if page <= 0 {
+		return nil, ErrInvalidRequest
+	}else if page == 1{
+		firstItem = 1
+	} else{
+		firstItem = (page * pageSize) - (pageSize - 1)
+	}
+
+	defer txn.Discard()
+	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
+	defer iterator.Close()
+	prefix := []byte(fmt.Sprintf("table-gossip-"))
+	var Gossips = make([]*Gossip, 0)
+	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
+		iteratorCount++
+		if iteratorCount >= firstItem && iteratorCount <= (firstItem+9) {
+			item := iterator.Item()
+			value, err := item.Value()
+			if err != nil {
+				utils.Error(err)
+				continue
+			}
+			Gossip, err := ToGossipFromJson(value)
+			if err != nil {
+				utils.Error(err)
+				continue
+			}
+			Gossips = append(Gossips, Gossip)
+		}
+		if iteratorCount > (firstItem+9){
+			break
+		}
+	}
+	return Gossips, nil //TODO: return error if empty?
+}

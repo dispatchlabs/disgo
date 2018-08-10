@@ -53,6 +53,8 @@ func (this *DAPoSService) WithHttp() *DAPoSService {
 	services.GetHttpRouter().HandleFunc("/v1/page/{id}", this.unsupportedFunctionHandler).Methods("GET")
 	//analytical
 	services.GetHttpRouter().HandleFunc("/v1/queue", this.getQueueHandler).Methods("GET")
+	services.GetHttpRouter().HandleFunc("/v1/gossips", this.getGossipsHandler).Methods("GET")
+	services.GetHttpRouter().HandleFunc("/v1/gossips/{hash}", this.getGossipHandler).Methods("GET")
 	return this
 }
 
@@ -155,3 +157,21 @@ func (this *DAPoSService) getAccountsHandler(responseWriter http.ResponseWriter,
 	responseWriter.Write([]byte(response.String()))
 }
 
+// getGossipsHandler
+func (this *DAPoSService) getGossipsHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	pageNumber := request.URL.Query().Get("page")
+	if pageNumber == ""{
+		pageNumber = "1"
+	}
+	response := this.GetGossips(pageNumber)
+	setHeaders(&responseWriter)
+	responseWriter.Write([]byte(response.String()))
+}
+
+// getTransactionHandler
+func (this *DAPoSService) getGossipHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	vars := mux.Vars(request)
+	response := this.GetGossip(vars["hash"])
+	setHeaders(&responseWriter)
+	responseWriter.Write([]byte(response.String()))
+}

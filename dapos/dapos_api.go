@@ -319,3 +319,62 @@ func (this *DAPoSService) GetAccounts(page string) *types.Response{
 	return response
 }
 
+func (this *DAPoSService) GetGossips(page string) *types.Response{
+	txn := services.NewTxn(true)
+	defer txn.Discard()
+	response := types.NewResponse()
+	var err error
+	pageNumber, err := strconv.Atoi(page)
+	if err !=nil {
+		response.Status = types.StatusInternalError
+		response.HumanReadableStatus = err.Error()
+		return response
+	}
+
+	// Delegate?
+	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
+
+		response.Data, err = types.GossipPaging(pageNumber, txn)
+		if err != nil {
+			response.Status = types.StatusInternalError
+			response.HumanReadableStatus = err.Error()
+		} else {
+			response.Status = types.StatusOk
+		}
+	} else {
+		response.Status = types.StatusNotDelegate
+		response.HumanReadableStatus = "This node is not a delegate. Please select a delegate node."
+	}
+
+	utils.Info(fmt.Sprintf("GetGossips [status=%s]", response.Status))
+
+	return response
+}
+
+// GetAccount
+func (this *DAPoSService) GetGossip(hash string) *types.Response {
+	txn := services.NewTxn(true)
+	defer txn.Discard()
+	response := types.NewResponse()
+
+	// Delegate?
+	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
+		gossip, err := types.ToGossipByTransactionHash(txn, hash)
+		if err != nil {
+			if err == badger.ErrKeyNotFound {
+				response.Status = types.StatusNotFound
+			} else {
+				response.Status = types.StatusInternalError
+			}
+		} else {
+			response.Data = gossip
+			response.Status = types.StatusOk
+		}
+	} else {
+		response.Status = types.StatusNotDelegate
+		response.HumanReadableStatus = "This node is not a delegate. Please select a delegate node."
+	}
+	utils.Info(fmt.Sprintf("retrieved Gossip [tx hash=%s, status=%s]", hash, response.Status))
+
+	return response
+}
