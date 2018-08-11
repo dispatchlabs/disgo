@@ -65,7 +65,7 @@ func sliceTypeCheck(t Type, val reflect.Value) error {
 // typeCheck checks that the given reflection value can be assigned to the reflection
 // type in t.
 func typeCheck(t Type, value reflect.Value) error {
-	utils.Debug("typeCheck --> ",t.Elem.Kind, value.Type() )
+	utils.Debug("typeCheck --> ",t.Kind, value.Type() )
 
 	if t.T == SliceTy || t.T == ArrayTy {
 		return sliceTypeCheck(t, value)
