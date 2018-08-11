@@ -55,6 +55,9 @@ func (this *DAPoSService) WithHttp() *DAPoSService {
 	services.GetHttpRouter().HandleFunc("/v1/queue", this.getQueueHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/gossips", this.getGossipsHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/gossips/{hash}", this.getGossipHandler).Methods("GET")
+
+	services.GetHttpRouter().HandleFunc("/v1/receipts/{hash}", this.getReceiptHandler).Methods("GET")
+
 	return this
 }
 
@@ -172,6 +175,14 @@ func (this *DAPoSService) getGossipsHandler(responseWriter http.ResponseWriter, 
 func (this *DAPoSService) getGossipHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
 	response := this.GetGossip(vars["hash"])
+	setHeaders(&responseWriter)
+	responseWriter.Write([]byte(response.String()))
+}
+
+// getReceiptHandler
+func (this *DAPoSService) getReceiptHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	vars := mux.Vars(request)
+	response := this.GetReceipt(vars["hash"])
 	setHeaders(&responseWriter)
 	responseWriter.Write([]byte(response.String()))
 }

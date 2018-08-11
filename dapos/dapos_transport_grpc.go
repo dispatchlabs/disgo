@@ -54,6 +54,7 @@ func (this *DAPoSService) SynchronizeGrpc(context.Context, *proto.Empty) (*proto
 			if err != nil {
 				return err
 			}
+			fmt.Printf("Key = %v\n", string(key))
 			items = append(items, &proto.Item{Key: string(key), Value: string(value)})
 		}
 		return nil
