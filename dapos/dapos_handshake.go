@@ -370,6 +370,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		utils.Info(fmt.Sprintf("deployed contract [hash=%s, contractAddress=%s]", transaction.Hash, contractAccount.Address))
 		break
 	case types.TypeExecuteSmartContract:
+		// TODO: Need to add a check that the contract address being called actually exists.
 		dvmService := dvm.GetDVMService()
 		dvmResult, err1 := dvmService.ExecuteSmartContract(transaction)
 		if err1 != nil {
@@ -386,6 +387,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		}
 		receipt.ContractAddress = transaction.To
 		utils.Info(fmt.Sprintf("executed contract [hash=%s, contractAddress=%s]", transaction.Hash, transaction.To))
+		break
 	default:
 		utils.Error(fmt.Sprintf("invalid transaction type [hash=%s]", transaction.Hash))
 		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInvalidTransaction)

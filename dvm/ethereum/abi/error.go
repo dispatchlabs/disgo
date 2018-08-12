@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
 var (
@@ -38,6 +39,7 @@ func formatSliceString(kind reflect.Kind, sliceSize int) string {
 // sliceTypeCheck checks that the given slice can by assigned to the reflection
 // type in t.
 func sliceTypeCheck(t Type, val reflect.Value) error {
+	utils.Debug("sliceTypeCheck --> ",t.Elem.Kind, val.Type() )
 	if val.Kind() != reflect.Slice && val.Kind() != reflect.Array {
 		return typeErr(formatSliceString(t.Kind, t.Size), val.Type())
 	}
@@ -63,6 +65,8 @@ func sliceTypeCheck(t Type, val reflect.Value) error {
 // typeCheck checks that the given reflection value can be assigned to the reflection
 // type in t.
 func typeCheck(t Type, value reflect.Value) error {
+	utils.Debug("typeCheck --> ",t.Kind, value.Type() )
+
 	if t.T == SliceTy || t.T == ArrayTy {
 		return sliceTypeCheck(t, value)
 	}
