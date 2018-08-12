@@ -28,6 +28,7 @@ import (
 	"github.com/dispatchlabs/disgo/disgover"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"strings"
 )
 
 // TODO: Should we GZIP the response from remote call?
@@ -54,8 +55,11 @@ func (this *DAPoSService) SynchronizeGrpc(context.Context, *proto.Empty) (*proto
 			if err != nil {
 				return err
 			}
-			fmt.Printf("Key = %v\n", string(key))
-			items = append(items, &proto.Item{Key: string(key), Value: string(value)})
+			keyString := string(key)
+			//fmt.Printf("Key = %v\n", keyString)
+			if strings.HasPrefix(keyString, "key") {
+				items = append(items, &proto.Item{Key: keyString, Value: string(value)})
+			}
 		}
 		return nil
 	})
