@@ -23,9 +23,8 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/patrickmn/go-cache"
 	"time"
-	//"reflect"
 	"strings"
-)
+					)
 
 type FakeNode struct { //TODO: rip this out
 	Address  string    `json:"address,omitempty"`
@@ -37,10 +36,10 @@ type FakeNode struct { //TODO: rip this out
 
 // Node - Is the DisGover's notion of what a node is
 type Node struct {
-	Address  string    `json:"address,omitempty"`
+	Address      string    `json:"address"`
 	GrpcEndpoint *Endpoint `json:"grpcEndpoint"`
 	HttpEndpoint *Endpoint `json:"httpEndpoint"`
-	Type     string    `json:"type"`
+	Type         string    `json:"type"`
 }
 
 // Key
@@ -78,8 +77,8 @@ func (this *Node) Persist(txn *badger.Txn) error {
 }
 
 // PersistAndCache
-func (this *Node) PersistAndCache(txn *badger.Txn, cache *cache.Cache) error {
-	this.Cache(cache)
+func (this *Node) PersistAndCache(txn *badger.Txn, cache *cache.Cache, ttl time.Duration) error {
+	this.Cache(cache, ttl)
 	return this.Persist(txn)
 }
 
@@ -102,6 +101,7 @@ func (this Node) String() string {
 	}
 	return string(bytes)
 }
+
 
 // ToTransactionFromJson -
 func ToNodeFromJson(payload []byte) (*Node, error) {

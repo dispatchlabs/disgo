@@ -34,7 +34,8 @@ var grpcServiceOnce sync.Once
 // GetGrpcService
 func GetGrpcService() *GrpcService {
 	grpcServiceOnce.Do(func() {
-		grpcServiceInstance = &GrpcService{Port: int(types.GetConfig().GrpcEndpoint.Port), Server: grpc.NewServer(), running: false}
+		opts := grpc.ServerOption(grpc.MaxRecvMsgSize(1024 * 1024 * 1024))
+		grpcServiceInstance = &GrpcService{Port: int(types.GetConfig().GrpcEndpoint.Port), Server: grpc.NewServer(opts), running: false}
 	})
 	return grpcServiceInstance
 }

@@ -27,8 +27,8 @@ func Exists(name string) bool {
 	return !os.IsNotExist(error)
 }
 
-// GetDisgoDir -
-func GetDisgoDir() string {
+// GetConfigDir -
+func GetConfigDir() string {
 	directoryName := "." + string(os.PathSeparator) + "config"
 	if !Exists(directoryName) {
 		err := os.MkdirAll(directoryName, 0755)

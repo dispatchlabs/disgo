@@ -30,7 +30,7 @@ import (
 	//"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/types"
-)
+	)
 
 //go:generate gencodec -type txdata -field-override txdataMarshaling -out gen_tx_json.go
 

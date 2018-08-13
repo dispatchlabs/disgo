@@ -39,11 +39,8 @@ import (
 	"github.com/dispatchlabs/disgo/dvm"
 	"syscall"
 	"os/signal"
-)
+		)
 
-const (
-	Version = "1.0.0"
-)
 
 // Server -
 type Server struct {
@@ -62,7 +59,7 @@ func NewServer() *Server {
 
 // Go
 func (server *Server) Go() {
-	utils.Info("booting Disgo v" + Version + "...")
+	utils.Info(fmt.Sprintf("booting Disgo v%s...", types.Version))
 
 	// Add services.
 	server.services = append(server.services, dvm.GetDVMService())
@@ -161,8 +158,8 @@ func checkError(err error) {
 }
 
 func loadKeys() ([]byte, []byte, error) {
-	privateKeyFile := utils.GetDisgoDir() + string(os.PathSeparator) + "key"
-	publicKeyFile := utils.GetDisgoDir() + string(os.PathSeparator) + "key.pub"
+	privateKeyFile := utils.GetConfigDir() + string(os.PathSeparator) + "key"
+	publicKeyFile := utils.GetConfigDir() + string(os.PathSeparator) + "key.pub"
 
 	if _, err := os.Stat(privateKeyFile); os.IsNotExist(err) {
 		reader := rand.Reader
