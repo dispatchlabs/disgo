@@ -54,6 +54,25 @@ func (this Config) String() string {
 	return string(bytes)
 }
 
+func (this Config) ToPrettyJson() string {
+	bytes, err := json.MarshalIndent(this, "", "  ")
+	if err != nil {
+		utils.Error("unable to marshal config", err)
+		return ""
+	}
+	return string(bytes)
+}
+
+// ToAccountFromJson -
+func ToConfigFromJson(payload []byte) (*Config, error) {
+	config := &Config{}
+	err := json.Unmarshal(payload, config)
+	if err != nil {
+		return nil, err
+	}
+	return config, nil
+}
+
 // GetConfig -
 func GetConfig() *Config {
 	configOnce.Do(func() {
