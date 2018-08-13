@@ -176,8 +176,7 @@ func (this *DAPoSService) gossipWorker() {
 				}
 
 				// Do we have 2/3 of rumors?
-				//if float32(len(gossip.Rumors)) >= float32(len(delegateNodes)) * 2/3 {
-				if len(gossip.Rumors) == len(delegateNodes) {
+				if float32(len(gossip.Rumors)) >= float32(len(delegateNodes)) * 2/3 {
 					if !this.gossipQueue.Exists(gossip.Transaction.Hash) {
 						this.gossipQueue.Push(gossip)
 
