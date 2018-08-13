@@ -163,7 +163,6 @@ func (this *DAPoSService) gossipWorker() {
 				if len(gossip.Rumors) > 1 {
 					if !types.ValidateTimeDelta(gossip.Rumors) {
 						utils.Warn("The rumors have an invalid time delta (greater than gossip timeout milliseconds")
-
 						//ignore this gossip's rumors and hopefully still hit 2/3 from well timed gossip, but keep listening
 						return
 					}
@@ -177,7 +176,8 @@ func (this *DAPoSService) gossipWorker() {
 				}
 
 				// Do we have 2/3 of rumors?
-				if float32(len(gossip.Rumors)) >= float32(len(delegateNodes)) * 2/3 {
+				//if float32(len(gossip.Rumors)) >= float32(len(delegateNodes)) * 2/3 {
+				if len(gossip.Rumors) == len(delegateNodes) {
 					if !this.gossipQueue.Exists(gossip.Transaction.Hash) {
 						this.gossipQueue.Push(gossip)
 
