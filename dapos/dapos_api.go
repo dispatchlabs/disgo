@@ -36,21 +36,9 @@ func (this *DAPoSService) GetDelegateNodes() *types.Response {
 		return types.NewResponseWithError(err)
 	}
 
-	var newnodes []*types.FakeNode //TODO: remove this
-	for _, node := range nodes{
-		var fakie = &types.FakeNode{
-			Address: node.Address,
-			Endpoint: node.GrpcEndpoint,
-			GrpcEndpoint: node.GrpcEndpoint,
-			HttpEndpoint: node.HttpEndpoint,
-			Type: node.Type}
-
-		newnodes = append(newnodes, fakie)
-	}
-
 	// Create response.
 	response := types.NewResponse()
-	response.Data = newnodes //TODO: newnodes-> nodes
+	response.Data = nodes
 	utils.Info("GetDelegateNodes")
 
 	return response
