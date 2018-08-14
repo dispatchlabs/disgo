@@ -159,6 +159,7 @@ func TestAccountSet(t *testing.T) {
 
 //TestAccountUnmarshalJSON
 func TestAccountUnmarshalJSON(t *testing.T) {
+	defer destruct()
 	account := &Account{}
 	account.UnmarshalJSON(testAccountByte)
 	testAccountStruct(t, account)
@@ -166,6 +167,7 @@ func TestAccountUnmarshalJSON(t *testing.T) {
 
 //TestAccountMarshalJSON
 func TestAccountMarshalJSON(t *testing.T) {
+	defer destruct()
 	account := &Account{}
 	account.UnmarshalJSON(testAccountByte)
 	out, err := account.MarshalJSON()
