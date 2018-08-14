@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math/big"
 	"os"
 	"strings"
 	"sync"
@@ -41,7 +40,7 @@ type Account struct {
 	Address         string
 	PrivateKey      string
 	Name            string
-	Balance         *big.Int
+	Balance         uint64
 	TransactionHash string // Smart contract
 	Updated         time.Time
 	Created         time.Time
@@ -111,7 +110,7 @@ func (this *Account) UnmarshalJSON(bytes []byte) error {
 		this.Name = jsonMap["name"].(string)
 	}
 	if jsonMap["balance"] != nil {
-		this.Balance = big.NewInt(int64(jsonMap["balance"].(float64)))
+		this.Balance = uint64(jsonMap["balance"].(float64))
 	}
 	if jsonMap["transactionHash"] != nil {
 		this.TransactionHash = jsonMap["transactionHash"].(string)
@@ -149,7 +148,7 @@ func (this Account) MarshalJSON() ([]byte, error) {
 		Address         string    `json:"address"`
 		PrivateKey      string    `json:"privateKey,omitempty"`
 		Name            string    `json:"name"`
-		Balance         int64     `json:"balance"`
+		Balance         uint64     `json:"balance"`
 		TransactionHash string    `json:"transactionHash,omitempty"`
 		Updated         time.Time `json:"updated"`
 		Created         time.Time `json:"created"`
@@ -160,7 +159,7 @@ func (this Account) MarshalJSON() ([]byte, error) {
 		Address:         this.Address,
 		PrivateKey:      this.PrivateKey,
 		Name:            this.Name,
-		Balance:         this.Balance.Int64(),
+		Balance:         this.Balance,
 		TransactionHash: this.TransactionHash,
 		Updated:         this.Updated,
 		Created:         this.Created,
@@ -329,7 +328,7 @@ func readAccountFile(name_optional ...string) *Account {
 		account := &Account{}
 		account.Address = hex.EncodeToString(address)
 		account.PrivateKey = hex.EncodeToString(privateKey)
-		account.Balance = big.NewInt(0)
+		account.Balance = 0
 		account.Name = ""
 		now := time.Now()
 		account.Created = now
