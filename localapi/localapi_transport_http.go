@@ -17,14 +17,18 @@
 package localapi
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/dispatchlabs/disgo/dapos"
 
 	"fmt"
 
 	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/dispatchlabs/disgo/sdk"
 )
 
 // WithHttp -
@@ -40,6 +44,7 @@ func setHeaders(responseWriter *http.ResponseWriter) {
 }
 
 func (this *LocalAPIService) tranferHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	// Read Object from payload
 	body, err := ioutil.ReadAll(request.Body)
 	if err != nil {
 		utils.Error("unable to read HTTP body of request", err)
@@ -47,10 +52,43 @@ func (this *LocalAPIService) tranferHandler(responseWriter http.ResponseWriter, 
 		return
 	}
 
+	transfer := &Transfer{}
+	err = json.Unmarshal(body, transfer)
+	if err != nil {
+		utils.Error("unable to read HTTP body of request", err)
+		services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusInternalError, err), http.StatusInternalServerError)
+		return
+	}
+
 	// Invoke SDK
+	var delegates = dapos.GetDAPoSService().GetDelegateNodes().Data.([]*types.FakeNode)
+	if len(delegates) <= 0 {
+		utils.Error("no delegates found")
+		services.Error(responseWriter, fmt.Sprintf(`{"status":"no delegates found"}`), http.StatusInternalServerError)
+		return
+	}
+
+	var node = types.Node{}
+	node.Address = delegates[0].Address
+	node.GrpcEndpoint = delegates[0].GrpcEndpoint
+	node.HttpEndpoint = delegates[0].HttpEndpoint
+	node.Type = delegates[0].Type
+
+	response, err := sdk.TransferTokens(
+		node,
+		types.GetAccount().PrivateKey,
+		transfer.From,
+		transfer.To,
+		transfer.Amount,
+	)
 
 	// Send Reply
-	response := body
+	if err != nil {
+		utils.Error("error executing Local API", err)
+		services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusInternalError, err), http.StatusInternalServerError)
+		return
+	}
+
 	setHeaders(&responseWriter)
-	responseWriter.Write(response)
+	responseWriter.Write([]byte(response))
 }

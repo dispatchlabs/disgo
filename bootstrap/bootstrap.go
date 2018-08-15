@@ -67,7 +67,7 @@ func (server *Server) Go() {
 	server.services = append(server.services, services.GetDbService())
 	server.services = append(server.services, disgover.GetDisGoverService().WithGrpc().WithHttp())
 	server.services = append(server.services, dapos.GetDAPoSService().WithGrpc().WithHttp())
-	server.services = append(server.services, localapi.GetLocalAPIService())
+	server.services = append(server.services, localapi.GetLocalAPIService().WithHttp())
 	server.services = append(server.services, services.GetHttpService())
 	server.services = append(server.services, services.GetGrpcService())
 
