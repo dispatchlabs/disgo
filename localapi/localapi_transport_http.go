@@ -65,21 +65,15 @@ func (this *LocalAPIService) tranferHandler(responseWriter http.ResponseWriter, 
 	}
 
 	// Invoke SDK
-	var delegates = dapos.GetDAPoSService().GetDelegateNodes().Data.([]*types.FakeNode)
+	var delegates = dapos.GetDAPoSService().GetDelegateNodes().Data.([]*types.Node)
 	if len(delegates) <= 0 {
 		utils.Error("no delegates found")
 		services.Error(responseWriter, fmt.Sprintf(`{"status":"no delegates found"}`), http.StatusInternalServerError)
 		return
 	}
 
-	var node = types.Node{}
-	node.Address = delegates[0].Address
-	node.GrpcEndpoint = delegates[0].GrpcEndpoint
-	node.HttpEndpoint = delegates[0].HttpEndpoint
-	node.Type = delegates[0].Type
-
 	response, err := sdk.TransferTokens(
-		node,
+		*delegates[0],
 		types.GetAccount().PrivateKey,
 		transfer.From,
 		transfer.To,
@@ -115,21 +109,15 @@ func (this *LocalAPIService) deployHandler(responseWriter http.ResponseWriter, r
 	}
 
 	// Invoke SDK
-	var delegates = dapos.GetDAPoSService().GetDelegateNodes().Data.([]*types.FakeNode)
+	var delegates = dapos.GetDAPoSService().GetDelegateNodes().Data.([]*types.Node)
 	if len(delegates) <= 0 {
 		utils.Error("no delegates found")
 		services.Error(responseWriter, fmt.Sprintf(`{"status":"no delegates found"}`), http.StatusInternalServerError)
 		return
 	}
 
-	var node = types.Node{}
-	node.Address = delegates[0].Address
-	node.GrpcEndpoint = delegates[0].GrpcEndpoint
-	node.HttpEndpoint = delegates[0].HttpEndpoint
-	node.Type = delegates[0].Type
-
 	response, err := sdk.DeploySmartContract(
-		node,
+		*delegates[0],
 		types.GetAccount().PrivateKey,
 		disgover.GetDisGoverService().ThisNode.Address,
 		deploy.ByteCode,
@@ -165,21 +153,15 @@ func (this *LocalAPIService) executeHandler(responseWriter http.ResponseWriter, 
 	}
 
 	// Invoke SDK
-	var delegates = dapos.GetDAPoSService().GetDelegateNodes().Data.([]*types.FakeNode)
+	var delegates = dapos.GetDAPoSService().GetDelegateNodes().Data.([]*types.Node)
 	if len(delegates) <= 0 {
 		utils.Error("no delegates found")
 		services.Error(responseWriter, fmt.Sprintf(`{"status":"no delegates found"}`), http.StatusInternalServerError)
 		return
 	}
 
-	var node = types.Node{}
-	node.Address = delegates[0].Address
-	node.GrpcEndpoint = delegates[0].GrpcEndpoint
-	node.HttpEndpoint = delegates[0].HttpEndpoint
-	node.Type = delegates[0].Type
-
 	response, err := sdk.ExecuteSmartContractTransaction(
-		node,
+		*delegates[0],
 		types.GetAccount().PrivateKey,
 		disgover.GetDisGoverService().ThisNode.Address,
 		execute.ContractAddress,
