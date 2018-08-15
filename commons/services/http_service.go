@@ -35,9 +35,10 @@ var httpServiceOnce sync.Once
 func GetHttpService() *HttpService {
 	httpServiceOnce.Do(func() {
 		httpServiceInstance = &HttpService{
-			Endpoint: *types.GetConfig().HttpEndpoint,
-			running:  false,
-			router:   mux.NewRouter(),
+			PublicApiEndpoint: *types.GetConfig().HttpEndpoint,
+			PrivateApiPort:    types.GetConfig().LocalHttpApiPort,
+			running:           false,
+			router:            mux.NewRouter(),
 		}
 	})
 	return httpServiceInstance
@@ -50,9 +51,10 @@ func GetHttpRouter() *mux.Router {
 
 // HttpService
 type HttpService struct {
-	Endpoint types.Endpoint
-	running  bool
-	router   *mux.Router
+	PublicApiEndpoint types.Endpoint
+	PrivateApiPort    int
+	running           bool
+	router            *mux.Router
 }
 
 // IsRunning
@@ -62,21 +64,50 @@ func (this *HttpService) IsRunning() bool {
 
 // Go -
 func (this *HttpService) Go() {
-	this.running = true
-	listen := fmt.Sprintf("%s:%d", "", this.Endpoint.Port) // FIX: commented "this.Endpoint.Host" for prod release
-	utils.Info("listening on http://" + listen)
-	cors := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowCredentials: true,
-	})
-	handler := cors.Handler(this.router)
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	wg.Add(1)
+
+	go func() {
+		this.running = true
+		listen := fmt.Sprintf("%s:%d", "", this.PublicApiEndpoint.Port) // FIX: commented "this.Endpoint.Host" for prod release
+		utils.Info("listening on http://" + listen)
+		cors := cors.New(cors.Options{
+			AllowedOrigins:   []string{"*"},
+			AllowCredentials: true,
+		})
+		handler := cors.Handler(this.router)
+
+		err := http.ListenAndServe(listen, handler)
+
+		// QUESTION: this line is never reached
+		utils.Error("unable to listen/serve HTTP [error=" + err.Error() + "]")
+
+		wg.Done()
+	}()
+
+	go func() {
+		listen := fmt.Sprintf("127.0.0.1:%d", this.PrivateApiPort)
+		utils.Info("listening on http://" + listen)
+		cors := cors.New(cors.Options{
+			AllowedOrigins:   []string{"*"},
+			AllowCredentials: true,
+		})
+		handler := cors.Handler(this.router)
+
+		err := http.ListenAndServe(listen, handler)
+
+		// QUESTION: this line is never reached
+		utils.Error("unable to listen/serve HTTP [error=" + err.Error() + "]")
+
+		wg.Done()
+
+	}()
 
 	utils.Events().Raise(Events.HttpServiceInitFinished)
 
-	error := http.ListenAndServe(listen, handler)
-
-	// QUESTION: this line is never reached
-	utils.Error("unable to listen/serve HTTP [error=" + error.Error() + "]")
+	wg.Wait()
 }
 
 // Error replies to the request with the specified error message and HTTP code.

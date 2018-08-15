@@ -31,16 +31,17 @@ import (
 	"net/http"
 	"os"
 
+	"os/signal"
+	"syscall"
+
 	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/dapos"
 	"github.com/dispatchlabs/disgo/disgover"
 	"github.com/dispatchlabs/disgo/dvm"
-	"syscall"
-	"os/signal"
-		)
-
+	"github.com/dispatchlabs/disgo/localapi"
+)
 
 // Server -
 type Server struct {
@@ -66,6 +67,7 @@ func (server *Server) Go() {
 	server.services = append(server.services, services.GetDbService())
 	server.services = append(server.services, disgover.GetDisGoverService().WithGrpc().WithHttp())
 	server.services = append(server.services, dapos.GetDAPoSService().WithGrpc().WithHttp())
+	server.services = append(server.services, localapi.GetLocalAPIService())
 	server.services = append(server.services, services.GetHttpService())
 	server.services = append(server.services, services.GetGrpcService())
 
