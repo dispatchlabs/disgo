@@ -11,7 +11,10 @@ import (
 )
 
 func GetConvertedParams(jsonMap map[string]interface{}) ([]interface{}, error) {
-	params, _ := jsonMap["params"].([]interface{})
+	params, ok := jsonMap["params"].([]interface{})
+	if !ok {
+		return nil, errors.Errorf("value for field 'params' must be an array")
+	}
 	if params == nil || len(params) == 0 {
 		return params, nil
 	}
