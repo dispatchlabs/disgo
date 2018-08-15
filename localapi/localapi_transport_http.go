@@ -35,9 +35,9 @@ import (
 
 // WithHttp -
 func (this *LocalAPIService) WithHttp() *LocalAPIService {
-	services.GetHttpRouter().HandleFunc("/v1/localapi/transfer", this.tranferHandler).Methods("POST")
-	services.GetHttpRouter().HandleFunc("/v1/localapi/deploy", this.deployHandler).Methods("POST")
-	services.GetHttpRouter().HandleFunc("/v1/localapi/execute", this.executeHandler).Methods("POST")
+	services.GetHttpRouter().HandleFunc("/v1/local/transfer", this.tranferHandler).Methods("POST")
+	services.GetHttpRouter().HandleFunc("/v1/local/deploy", this.deployHandler).Methods("POST")
+	services.GetHttpRouter().HandleFunc("/v1/local/execute", this.executeHandler).Methods("POST")
 
 	return this
 }
