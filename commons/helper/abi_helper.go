@@ -6,20 +6,26 @@ import (
 	"encoding/hex"
 	"reflect"
 	"math/big"
+	"github.com/pkg/errors"
+	"fmt"
 )
 
-func GetConvertedParams(jsonMap map[string]interface{}) []interface{} {
+func GetConvertedParams(jsonMap map[string]interface{}) ([]interface{}, error) {
 	params, _ := jsonMap["params"].([]interface{})
 	if params == nil || len(params) == 0 {
-		return params
+		return params, nil
 	}
 	theAbi := GetABI(jsonMap["abi"].(string))
 	method, _ := jsonMap["method"].(string)
 	var result []interface{}
-
+	found := false
 	for k, v := range theAbi.Methods {
 		//fmt.Printf("Method: %v\n", k)
 		if k == method {
+			found = true
+			if len(v.Inputs) != len(params) {
+				return nil, errors.New(fmt.Sprintf("This method requires %d parameters and %d are provided", len(v.Inputs), len(params)))
+			}
 			for i := 0; i < len(v.Inputs); i++ {
 				arg := v.Inputs[i]
 				if arg.Type.T == abi.SliceTy || arg.Type.T == abi.ArrayTy {
@@ -30,7 +36,10 @@ func GetConvertedParams(jsonMap map[string]interface{}) []interface{} {
 			}
 		}
 	}
-	return result
+	if !found {
+		return nil, errors.New(fmt.Sprintf("This method %s is not valid for this contract", method))
+	}
+	return result, nil
 }
 
 func getValues(arg abi.Argument, values []interface{}) interface{} {
