@@ -266,7 +266,7 @@ func (this *DAPoSService) doWork() {
 		initialRcvDuration := gossip.Rumors[0].Time - gossip.Transaction.Time
 		utils.Info("Initial Receive Duration = ", initialRcvDuration, types.TxReceiveTimeout)
 		if  initialRcvDuration >= types.TxReceiveTimeout {
-			utils.Error(fmt.Sprintf("Timed out [hash=%s] %v milliseconds", gossip.Transaction.Hash))
+			utils.Error(fmt.Sprintf("Timed out [hash=%s] %v milliseconds", gossip.Transaction.Hash, initialRcvDuration))
 			receipt = types.NewReceipt(gossip.Transaction.Hash)
 			receipt.Status = types.StatusTransactionTimeOut
 			receipt.Cache(services.GetCache())
