@@ -27,7 +27,6 @@ import (
 	"github.com/libp2p/go-libp2p-kbucket"
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-peerstore"
-	"github.com/patrickmn/go-cache"
 )
 
 var disGoverServiceInstance *DisGoverService
@@ -102,7 +101,7 @@ func (this *DisGoverService) Go() {
 		}
 
 		for _, delegate := range delegates {
-			delegate.Cache(services.GetCache(), cache.NoExpiration)
+			delegate.Cache(services.GetCache())
 		}
 	}
 
