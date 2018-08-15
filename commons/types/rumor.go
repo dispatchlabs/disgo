@@ -24,6 +24,8 @@ import (
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"time"
+	"sort"
+	"fmt"
 )
 
 // Rumor
@@ -212,4 +214,54 @@ func NewRumor(privateKey string, address string, transactionHash string) *Rumor 
 
 	rumor.Signature = hex.EncodeToString(signature)
 	return rumor
+}
+
+
+type RumorsSorter struct {
+	Rumors  []Rumor
+}
+
+// Len is part of sort.Interface.
+func (this RumorsSorter) Len() int {
+	return len(this.Rumors)
+}
+
+// Swap is part of sort.Interface.
+func (this RumorsSorter) Swap(i, j int) {
+	this.Rumors[i], this.Rumors[j] = this.Rumors[j], this.Rumors[i]
+}
+
+// Less is part of sort.Interface. It is implemented by calling the "by" closure in the sorter.
+func (this RumorsSorter) Less(i, j int) bool {
+	return this.Rumors[i].Time < this.Rumors[j].Time
+}
+
+func ValidateTimeDelta(rumors []Rumor) bool {
+	result := true
+	rumorSorter := RumorsSorter{rumors}
+	sort.Sort(rumorSorter)
+	len := rumorSorter.Len()
+
+	timing := make([]int64, 0)
+	now := utils.ToMilliSeconds(time.Now())
+	initialTime := now - rumorSorter.Rumors[len-1].Time
+	timing = append(timing, initialTime)
+
+	if  now - rumorSorter.Rumors[len-1].Time > GossipTimeout {
+		msg := fmt.Sprintf("gossip to local delegate %s took %v", rumorSorter.Rumors[len-1].Address, initialTime)
+		utils.Info(msg)
+		result = false
+	}
+	if len > 1 {
+		for i := 1; i < len; i++ {
+			gossipTime := rumorSorter.Rumors[i].Time - rumorSorter.Rumors[i-1].Time
+			timing = append(timing, gossipTime)
+			if gossipTime > GossipTimeout {
+				msg := fmt.Sprintf("gossip between delegate %s and delegage %s took %v", rumorSorter.Rumors[i].Address, rumorSorter.Rumors[i-1].Address, gossipTime)
+				utils.Info(msg)
+				result = false
+			}
+		}
+	}
+	return result
 }

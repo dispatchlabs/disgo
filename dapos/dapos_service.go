@@ -17,18 +17,17 @@
 package dapos
 
 import (
-	"math/big"
 	"sync"
 
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/services"
-	"os"
 	"time"
 
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/disgover"
 	"github.com/dispatchlabs/disgo/commons/queue"
+	"math/big"
 )
 
 var daposServiceInstance *DAPoSService
@@ -94,9 +93,8 @@ func (this *DAPoSService) disGoverServiceInitFinished() {
 	// Create genesis transaction.
 	err := this.createGenesisTransactionAndAccount()
 	if err != nil {
+		services.GetDbService().Close()
 		utils.Fatal("unable to create genesis block", err)
-		os.Exit(1)
-		return
 	}
 
 	go this.gossipWorker()

@@ -28,6 +28,7 @@ import (
 	"github.com/dispatchlabs/disgo/disgover"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"strings"
 )
 
 // TODO: Should we GZIP the response from remote call?
@@ -54,7 +55,11 @@ func (this *DAPoSService) SynchronizeGrpc(context.Context, *proto.Empty) (*proto
 			if err != nil {
 				return err
 			}
-			items = append(items, &proto.Item{Key: string(key), Value: string(value)})
+			keyString := string(key)
+			//fmt.Printf("Key = %v\n", keyString)
+			if strings.HasPrefix(keyString, "key") {
+				items = append(items, &proto.Item{Key: keyString, Value: string(value)})
+			}
 		}
 		return nil
 	})
@@ -114,29 +119,6 @@ func (this *DAPoSService) peerSynchronize() {
 		utils.Info("DB synchronized from peer delegate")
 		return
 	}
-}
-
-// Execute
-func (this *DAPoSService) ExecuteGrpc(context context.Context, request *proto.Request) (*proto.Response, error) {
-
-	// Type?
-	switch request.Type {
-	case types.RequestGetAccount:
-		return &proto.Response{Payload: this.GetAccount(request.Payload).String()}, nil
-	case types.RequestGetStatus:
-		return &proto.Response{Payload: this.GetReceipt(request.Payload).String()}, nil
-	case types.RequestNewTransaction:
-		transaction, err := types.ToTransactionFromJson([]byte(request.Payload))
-		if err != nil {
-			return &proto.Response{Payload: types.NewReceiptWithError(types.RequestNewTransaction, err).String()}, nil
-		}
-		return &proto.Response{Payload: this.NewTransaction(transaction).String()}, nil
-	case types.RequestGetTransactionsByToAddress:
-		return &proto.Response{Payload: this.GetTransactionsByToAddress(request.Payload).String()}, nil
-	case types.RequestGetTransactions:
-		return &proto.Response{Payload: this.GetTransactions().String()}, nil
-	}
-	return &proto.Response{Payload: types.NewReceiptWithStatus(request.Type, types.StatusInvalidRequest, "invalid request").String()}, nil
 }
 
 // Gossip
