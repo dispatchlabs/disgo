@@ -17,11 +17,13 @@
 package localapi
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/dispatchlabs/disgo/dapos"
+	"github.com/dispatchlabs/disgo/disgover"
 
 	"fmt"
 
@@ -34,6 +36,8 @@ import (
 // WithHttp -
 func (this *LocalAPIService) WithHttp() *LocalAPIService {
 	services.GetHttpRouter().HandleFunc("/v1/local-api/transfer", this.tranferHandler).Methods("POST")
+	services.GetHttpRouter().HandleFunc("/v1/local-api/deploy", this.deployHandler).Methods("POST")
+	services.GetHttpRouter().HandleFunc("/v1/local-api/execute", this.executeHandler).Methods("POST")
 
 	return this
 }
@@ -80,6 +84,108 @@ func (this *LocalAPIService) tranferHandler(responseWriter http.ResponseWriter, 
 		transfer.From,
 		transfer.To,
 		transfer.Amount,
+	)
+
+	// Send Reply
+	if err != nil {
+		utils.Error("error executing Local API", err)
+		services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusInternalError, err), http.StatusInternalServerError)
+		return
+	}
+
+	setHeaders(&responseWriter)
+	responseWriter.Write([]byte(response))
+}
+
+func (this *LocalAPIService) deployHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	// Read Object from payload
+	body, err := ioutil.ReadAll(request.Body)
+	if err != nil {
+		utils.Error("unable to read HTTP body of request", err)
+		services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusInternalError, err), http.StatusInternalServerError)
+		return
+	}
+
+	deploy := &Deploy{}
+	err = json.Unmarshal(body, deploy)
+	if err != nil {
+		utils.Error("unable to read HTTP body of request", err)
+		services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusInternalError, err), http.StatusInternalServerError)
+		return
+	}
+
+	// Invoke SDK
+	var delegates = dapos.GetDAPoSService().GetDelegateNodes().Data.([]*types.FakeNode)
+	if len(delegates) <= 0 {
+		utils.Error("no delegates found")
+		services.Error(responseWriter, fmt.Sprintf(`{"status":"no delegates found"}`), http.StatusInternalServerError)
+		return
+	}
+
+	var node = types.Node{}
+	node.Address = delegates[0].Address
+	node.GrpcEndpoint = delegates[0].GrpcEndpoint
+	node.HttpEndpoint = delegates[0].HttpEndpoint
+	node.Type = delegates[0].Type
+
+	response, err := sdk.DeploySmartContract(
+		node,
+		types.GetAccount().PrivateKey,
+		disgover.GetDisGoverService().ThisNode.Address,
+		deploy.ByteCode,
+		hex.EncodeToString([]byte(deploy.Abi)),
+	)
+
+	// Send Reply
+	if err != nil {
+		utils.Error("error executing Local API", err)
+		services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusInternalError, err), http.StatusInternalServerError)
+		return
+	}
+
+	setHeaders(&responseWriter)
+	responseWriter.Write([]byte(response))
+}
+
+func (this *LocalAPIService) executeHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	// Read Object from payload
+	body, err := ioutil.ReadAll(request.Body)
+	if err != nil {
+		utils.Error("unable to read HTTP body of request", err)
+		services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusInternalError, err), http.StatusInternalServerError)
+		return
+	}
+
+	execute := &Execute{}
+	err = json.Unmarshal(body, execute)
+	if err != nil {
+		utils.Error("unable to read HTTP body of request", err)
+		services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusInternalError, err), http.StatusInternalServerError)
+		return
+	}
+
+	// Invoke SDK
+	var delegates = dapos.GetDAPoSService().GetDelegateNodes().Data.([]*types.FakeNode)
+	if len(delegates) <= 0 {
+		utils.Error("no delegates found")
+		services.Error(responseWriter, fmt.Sprintf(`{"status":"no delegates found"}`), http.StatusInternalServerError)
+		return
+	}
+
+	var node = types.Node{}
+	node.Address = delegates[0].Address
+	node.GrpcEndpoint = delegates[0].GrpcEndpoint
+	node.HttpEndpoint = delegates[0].HttpEndpoint
+	node.Type = delegates[0].Type
+
+	response, err := sdk.ExecuteSmartContractTransaction(
+		node,
+		types.GetAccount().PrivateKey,
+		disgover.GetDisGoverService().ThisNode.Address,
+		execute.ContractAddress,
+		hex.EncodeToString([]byte(execute.Abi)),
+		execute.Method,
+		execute.Params,
 	)
 
 	// Send Reply
