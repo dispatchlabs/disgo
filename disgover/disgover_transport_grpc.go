@@ -28,10 +28,9 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"github.com/patrickmn/go-cache"
 	"io/ioutil"
 	"os"
-	)
+)
 
 // WithGrpc - Runs the DisGover service with GRPC transport
 func (this *DisGoverService) WithGrpc() *DisGoverService {
@@ -76,7 +75,7 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.P
 			break
 		}
 	}
-	node.PersistAndCache(txn, services.GetCache(), cache.NoExpiration)
+	node.PersistAndCache(txn, services.GetCache())
 
 	// Get cached delegates.
 	delegates, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
@@ -171,7 +170,7 @@ func (this *DisGoverService) UpdateGrpc(ctx context.Context, update *proto.Updat
 
 	// Cache delegates.
 	for _, delegate := range update.Delegates {
-		convertToDomainNode(delegate).Cache(services.GetCache(), cache.NoExpiration)
+		convertToDomainNode(delegate).Cache(services.GetCache())
 	}
 
 	utils.Info(fmt.Sprintf("delegates updated [count=%d]", len(update.Delegates)))
