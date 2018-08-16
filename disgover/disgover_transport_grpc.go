@@ -310,9 +310,9 @@ func (this *DisGoverService) verifySeedNode(protoAuthenticate *proto.Authenticat
 		return err
 	}
 
-	for _, seedAddress := range types.GetConfig().SeedAddresses {
-		if seedAddress == authenticationAddress {
-			err = authentication.Verify(seedAddress)
+	for _, Endpoint := range types.GetConfig().SeedEndpoints {
+		if Endpoint.Address == authenticationAddress {
+			err = authentication.Verify(Endpoint.Address)
 			if err != nil {
 				return errors.New("you are not an authorized seed node")
 			}
