@@ -126,11 +126,25 @@ func (this *DAPoSService) getTransactionsByToAddressHandler(responseWriter http.
 }
 
 func (this *DAPoSService) getTransactionsHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	response := types.NewResponse()
 	pageNumber := request.URL.Query().Get("page")
-	if pageNumber == ""{
+	if pageNumber == "" {
 		pageNumber = "1"
 	}
-	response := this.GetTransactions(pageNumber)
+	from := request.URL.Query().Get("from")
+	to := request.URL.Query().Get("to")
+	if from != "" && to != "" {
+		response.Status = http.StatusText(http.StatusBadRequest)
+		response.HumanReadableStatus = "\"from\" and \"to\" parameters may not both be provided"
+		services.Error(responseWriter, response.String(), http.StatusBadRequest)
+		return
+	} else if from != "" {
+		response = this.GetTransactionsByFromAddress(from)
+	} else if to != "" {
+		response = this.GetTransactionsByToAddress(to)
+	} else {
+		response = this.GetTransactions(pageNumber)
+	}
 	setHeaders(&responseWriter)
 	responseWriter.Write([]byte(response.String()))
 }
