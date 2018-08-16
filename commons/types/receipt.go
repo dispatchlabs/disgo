@@ -59,8 +59,8 @@ func (this *Receipt) Persist(txn *badger.Txn) error {
 	return nil
 }
 
-// PersistAndCache
-func (this *Receipt) PersistAndCache(txn *badger.Txn, cache *cache.Cache) error {
+// Set
+func (this *Receipt) Set(txn *badger.Txn, cache *cache.Cache) error {
 	this.Cache(cache)
 
 	err := this.Persist(txn)

@@ -110,3 +110,32 @@ func TestNodeSerialization(t *testing.T) {
 		t.Error("Marshal/Unmarshal Failed = 2 Port")
 	}
 }
+
+
+//TestReceiptSet
+func TestNodeSet(t *testing.T) {
+	defer destruct()
+	txn := db.NewTransaction(true)
+	defer txn.Discard()
+	node:= &Node{}
+	node.GrpcEndpoint =&Endpoint{}
+	node.GrpcEndpoint.Host = "127.0.0.1"
+	node.GrpcEndpoint.Port = 1975
+	node.Address = "123"
+	node.Set(txn,c)
+
+	testNode, err := ToNodeByKey(txn, []byte(node.Key()))
+	if err != nil{
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testNode, node) == false{
+		t.Error("Node not equal to testNode")
+	}
+	testNode, err = ToNodeFromCache(c, node.Address)
+	if err != nil {
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testNode, node) == false{
+		t.Error("Node not equal to testNode")
+	}
+}

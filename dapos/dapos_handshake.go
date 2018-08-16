@@ -427,7 +427,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 
 	// Save receipt.
 	receipt.Status = types.StatusOk
-	err = receipt.PersistAndCache(txn, services.GetCache())
+	err = receipt.Set(txn, services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
