@@ -15,8 +15,10 @@ import (
 
 // Creates an ethereum address given the bytes and the nonce
 func CreateAddress(b dvmCrypto.AddressBytes, nonce uint64) dvmCrypto.AddressBytes {
-	data, _ := rlp.EncodeToBytes([]interface{}{b, nonce})
-
+	data, err := rlp.EncodeToBytes([]interface{}{b, nonce})
+	if err != nil {
+		utils.Error(err)
+	}
 	bytes := common.BytesToAddress(Keccak256(data)[12:])
 	utils.Info(fmt.Sprintf("***** CreateAddress: %s : @ %s", common.EthAddressToDispatchAddress(bytes), utils.GetCallStackWithFileAndLineNumber()))
 

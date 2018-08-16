@@ -28,6 +28,9 @@ import (
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-peerstore"
 	"github.com/patrickmn/go-cache"
+	"time"
+	"os"
+	"io/ioutil"
 )
 
 var disGoverServiceInstance *DisGoverService
@@ -49,10 +52,10 @@ func GetDisGoverService() *DisGoverService {
 	disGoverServiceOnce.Do(func() {
 		disGoverServiceInstance = &DisGoverService{
 			ThisNode: &types.Node{
-				Address:  types.GetAccount().Address,
+				Address:      types.GetAccount().Address,
 				GrpcEndpoint: types.GetConfig().GrpcEndpoint,
 				HttpEndpoint: types.GetConfig().HttpEndpoint,
-				Type:     types.TypeDelegate,
+				Type:         types.TypeDelegate,
 			},
 			// lruCache: lCache,
 			kdht: kbucket.NewRoutingTable(
@@ -94,18 +97,59 @@ func (this *DisGoverService) Go() {
 		this.ThisNode.Type = types.TypeSeed
 	}
 
-	// Cache delegates.
-	if this.ThisNode.Type == types.TypeDelegate {
+	// Cache delegates?
+	if this.ThisNode.Type != types.TypeSeed {
 		delegates, err := this.peerPingSeedGrpc()
 		if err != nil {
-			utils.Fatal(err)
+			utils.Error(err)
+			services.GetDbService().Close()
+			utils.Fatal("unable to connect to seed node (seed.dispatchlabs.io)...please try again later")
 		}
-
 		for _, delegate := range delegates {
 			delegate.Cache(services.GetCache(), cache.NoExpiration)
+			if delegate.Address == this.ThisNode.Address {
+				this.ThisNode.Type = delegate.Type
+			}
 		}
+	}
+
+	// Start update thread.
+	if this.ThisNode.Type == types.TypeSeed {
+		go this.updateWorker()
 	}
 
 	utils.Info(fmt.Sprintf("running as %s", this.ThisNode.Type))
 	utils.Events().Raise(Events.DisGoverServiceInitFinished)
+}
+
+// updateWorker
+func (this DisGoverService) updateWorker() {
+	for {
+		timer := time.NewTimer(30 * time.Second)
+		select {
+		case <-timer.C:
+
+			// Is there a software update?
+			fileName := "." + string(os.PathSeparator) + "update" + string(os.PathSeparator) + "disgo"
+			if !utils.Exists(fileName) {
+				continue
+			}
+
+			// Read file?
+			bytes, err := ioutil.ReadFile(fileName)
+			if err != nil {
+				utils.Error(fmt.Sprintf("unable to load file %s", fileName), err)
+				continue
+			}
+
+			// Update software.
+			this.peerUpdateSoftwareGrpc(bytes)
+
+			// Delete file.
+			err = os.Remove(fileName)
+			if err != nil {
+				utils.Warn(fmt.Sprintf("unable to delete file %s", fileName), err)
+			}
+		}
+	}
 }

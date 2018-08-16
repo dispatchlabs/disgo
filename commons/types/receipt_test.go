@@ -35,7 +35,7 @@ func TestReceiptCache(t *testing.T) {
 		t.Error(err)
 	}
 	if reflect.DeepEqual(testReceipt, receipt) == false{
-		t.Error("Reciept not equal to testReceipt")
+		t.Error("Receipt not equal to testReceipt")
 	}
 }
 

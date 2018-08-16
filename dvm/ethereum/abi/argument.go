@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
 // Argument holds the name of the argument and the corresponding type.
@@ -242,6 +243,7 @@ func (arguments Arguments) Pack(args ...interface{}) ([]byte, error) {
 	for i, a := range args {
 		input := abiArgs[i]
 		// pack the input
+		utils.Debug("Pack --> a = ", a, reflect.ValueOf(a))
 		packed, err := input.Type.pack(reflect.ValueOf(a))
 		if err != nil {
 			return nil, err

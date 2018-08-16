@@ -46,6 +46,11 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 		utils.Info(fmt.Sprintf("invalid transaction [hash=%s]", transaction.Hash))
 		return types.NewResponseWithStatus(types.StatusInvalidTransaction, err.Error())
 	}
+	elapsedMilliSeconds := utils.ToMilliSeconds(time.Now()) - transaction.Time
+	if elapsedMilliSeconds > types.TxReceiveTimeout {
+		utils.Error(fmt.Sprintf("Timed out [hash=%s]", transaction.Hash))
+		return types.NewResponseWithStatus(types.StatusTransactionTimeOut, "Transaction was received later than 1 second limit")
+	}
 
 	// Duplicate transaction?
 	_, err = txn.Get([]byte(transaction.Key()))
@@ -58,7 +63,7 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 		return types.NewResponseWithError(err)
 	}
 
-	// TODO: Check minimum hertz, balance, and negative value!!!!!
+	// TODO: Check minimum hertz
 
 	// Are we already gossiping about this transaction?
 	_, err = types.ToTransactionFromCache(services.GetCache(), transaction.Hash)
@@ -68,6 +73,7 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 	}
 
 	// Cache receipt.
+	utils.Info("Cache receipt")
 	receipt := types.NewReceipt(transaction.Hash)
 	receipt.Cache(services.GetCache())
 
@@ -154,11 +160,12 @@ func (this *DAPoSService) gossipWorker() {
 			go func(gossip *types.Gossip) {
 
 				// Gossip timeout?
-				elapsedMilliSeconds := utils.ToMilliSeconds(time.Now()) - gossip.Rumors[0].Time
-				if elapsedMilliSeconds > 1000*5 {
-					utils.Debug("gossip timed out")
-					// TODO: Update receipt timed out, but only if the transaction didn't get executed.
-					return
+				if len(gossip.Rumors) > 1 {
+					if !types.ValidateTimeDelta(gossip.Rumors) {
+						utils.Warn("The rumors have an invalid time delta (greater than gossip timeout milliseconds")
+						//ignore this gossip's rumors and hopefully still hit 2/3 from well timed gossip, but keep listening
+						return
+					}
 				}
 
 				// Find nodes in cache?
@@ -169,12 +176,12 @@ func (this *DAPoSService) gossipWorker() {
 				}
 
 				// Do we have 2/3 of rumors?
-				if len(gossip.Rumors) >= len(delegateNodes)*2/3 {
+				if float32(len(gossip.Rumors)) >= float32(len(delegateNodes)) * 2/3 {
 					if !this.gossipQueue.Exists(gossip.Transaction.Hash) {
 						this.gossipQueue.Push(gossip)
 
 						go func() {
-							time.Sleep(5 * time.Second)
+							time.Sleep(types.GossipQueueTimeout)
 							this.timoutChan <- true
 						}()
 					}
@@ -189,7 +196,8 @@ func (this *DAPoSService) gossipWorker() {
 				// Get random delegate?
 				node := this.getRandomDelegate(gossip, delegateNodes)
 				if node == nil {
-					utils.Debug("did not find any delegates to rumor with")
+					utils.Warn("did not find any delegates to rumor with")
+					this.gossipChan <- gossip
 					return
 				}
 
@@ -246,22 +254,28 @@ func (this *DAPoSService) doWork() {
 
 	if this.gossipQueue.HasAvailable() {
 		gossip = this.gossipQueue.Pop()
-
-		utils.Debug("transactionworker")
 		// Get receipt.
-		var receipt *types.Receipt
-		value, err := types.ToReceiptFromCache(services.GetCache(), gossip.Transaction.Hash)
+		receipt, err := types.ToReceiptFromCache(services.GetCache(), gossip.Transaction.Hash)
 		if err != nil {
 			utils.Error(fmt.Sprintf("receipt not found [hash=%s]", gossip.Transaction.Hash))
-			receipt = types.NewReceipt(types.RequestNewTransaction)
+			receipt = types.NewReceipt(gossip.Transaction.Hash)
 			receipt.Status = types.StatusReceiptNotFound
 			receipt.Cache(services.GetCache())
 			return
 		}
-		receipt = value
+		initialRcvDuration := gossip.Rumors[0].Time - gossip.Transaction.Time
+		utils.Info("Initial Receive Duration = ", initialRcvDuration, types.TxReceiveTimeout)
+		if  initialRcvDuration >= types.TxReceiveTimeout {
+			utils.Error(fmt.Sprintf("Timed out [hash=%s] %v milliseconds", gossip.Transaction.Hash, initialRcvDuration))
+			receipt = types.NewReceipt(gossip.Transaction.Hash)
+			receipt.Status = types.StatusTransactionTimeOut
+			receipt.Cache(services.GetCache())
+			return
+		}
 		receipt.Created = time.Now()
-
-		executeTransaction(&gossip.Transaction, receipt, gossip)
+		if types.GetConfig().IsBookkeeper {
+			executeTransaction(&gossip.Transaction, receipt, gossip)
+		}
 	}
 }
 
@@ -326,6 +340,10 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		dvmResult, err := dvmService.DeploySmartContract(transaction)
 		if err != nil {
 			utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
+			receipt.Status = types.StatusInternalError
+			receipt.HumanReadableStatus = err.Error()
+			receipt.Cache(services.GetCache())
+			return
 		}
 
 		err = processDVMResult(transaction, dvmResult, receipt)
@@ -338,7 +356,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		}
 
 		// Persist contract account.
-		contractAccount := &types.Account{Address: hex.EncodeToString(dvmResult.ContractAddress[:]), Balance: big.NewInt(0), Updated: now, Created: now}
+		contractAccount := &types.Account{Address: hex.EncodeToString(dvmResult.ContractAddress[:]), Balance: big.NewInt(0), TransactionHash: transaction.Hash, Updated: now, Created: now}
 		err = contractAccount.Persist(txn)
 		if err != nil {
 			utils.Error(err)
@@ -351,6 +369,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		utils.Info(fmt.Sprintf("deployed contract [hash=%s, contractAddress=%s]", transaction.Hash, contractAccount.Address))
 		break
 	case types.TypeExecuteSmartContract:
+		// TODO: Need to add a check that the contract address being called actually exists.
 		dvmService := dvm.GetDVMService()
 		dvmResult, err1 := dvmService.ExecuteSmartContract(transaction)
 		if err1 != nil {
@@ -367,6 +386,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		}
 		receipt.ContractAddress = transaction.To
 		utils.Info(fmt.Sprintf("executed contract [hash=%s, contractAddress=%s]", transaction.Hash, transaction.To))
+		break
 	default:
 		utils.Error(fmt.Sprintf("invalid transaction type [hash=%s]", transaction.Hash))
 		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInvalidTransaction)
