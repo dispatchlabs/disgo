@@ -53,7 +53,7 @@ to get all the dependencies simply run `go get ./...` from disgo directory
 
 <a name="configuration"></a>
 ### Configuration
-The disgo package relies on the configuration loaded by [commons](https://github.com/dispatchlabs/disgo/commons) 
+The disgo package relies on the configuration loaded by [commons](https://github.com/dispatchlabs/disgo/tree/master/commons) 
 
 <a name="protobuf"></a>
 ##### protobuf ([see common install instructions](https://github.com/dispatchlabs/disgo#-develop))
