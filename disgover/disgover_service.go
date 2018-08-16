@@ -27,7 +27,6 @@ import (
 	"github.com/libp2p/go-libp2p-kbucket"
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-peerstore"
-	"github.com/patrickmn/go-cache"
 	"time"
 	"os"
 	"io/ioutil"
@@ -106,7 +105,7 @@ func (this *DisGoverService) Go() {
 			utils.Fatal("unable to connect to seed node (seed.dispatchlabs.io)...please try again later")
 		}
 		for _, delegate := range delegates {
-			delegate.Cache(services.GetCache(), cache.NoExpiration)
+			delegate.Cache(services.GetCache())
 			if delegate.Address == this.ThisNode.Address {
 				this.ThisNode.Type = delegate.Type
 			}
