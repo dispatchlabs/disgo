@@ -134,6 +134,8 @@ func (this DisGoverService) updateWorker() {
 				continue
 			}
 
+			utils.Info("found software to update")
+
 			// Read file?
 			bytes, err := ioutil.ReadFile(fileName)
 			if err != nil {

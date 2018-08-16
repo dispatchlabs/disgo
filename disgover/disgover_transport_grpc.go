@@ -30,6 +30,7 @@ import (
 	"google.golang.org/grpc"
 	"io/ioutil"
 	"os"
+	"github.com/jasonlvhit/gocron"
 )
 
 //TODO: we are going to drop delegates if we fail to communicate with them.  The exepctation will be that the seed will tell us when they come back on line
@@ -248,10 +249,13 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 	utils.Info(fmt.Sprintf("software updated from seed node"))
 
 	go func() {
-		time.Sleep(3 * time.Second) // TODO: This should be set to the time from the seed!!!
-		services.GetDbService().Close()
-		utils.Info("rebooting with new version of disgo...")
-		os.Exit(0)
+		gocron.Every(1).Day().At(softwareUpdate.ScheduledReboot).Do(func() {
+			gocron.Clear()
+			services.GetDbService().Close()
+			utils.Info("rebooting with new version of disgo...")
+			os.Exit(0)
+		})
+		<- gocron.Start()
 	}()
 
 	return &proto.Empty{}, nil
@@ -274,18 +278,27 @@ func (this *DisGoverService) peerUpdateSoftwareGrpc(software []byte) {
 		return
 	}
 
+	txn := services.NewTxn(true)
+	defer txn.Discard()
+	reboot := time.Now()
+	reboot = reboot.Add(2 * time.Minute)
+
 	for _, delegate := range delegates {
 		maxSize := 1024 * 1024 * 1024 // TODO: Do we need this (ServerOptions sets this)?
 		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxSize), grpc.MaxCallSendMsgSize(maxSize)), grpc.WithInsecure())
 		if err != nil {
-			utils.Warn(fmt.Sprintf("cannot dial node [host=%s, port=%d]", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), err)
+			utils.Error(fmt.Sprintf("cannot dial node [host=%s, port=%d]", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), err)
+			err = delegate.Unset(txn, services.GetCache())
+			if err != nil {
+				utils.Error(err)
+			}
 			continue
 		}
 		client := proto.NewDisgoverGrpcClient(conn)
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 
 		// Update software.
-		_, err = client.UpdateSoftwareGrpc(ctx, &proto.SoftwareUpdate{Authentication: convertToProtoAuthentication(authentication), Software: software})
+		_, err = client.UpdateSoftwareGrpc(ctx, &proto.SoftwareUpdate{Authentication: convertToProtoAuthentication(authentication), Software: software, ScheduledReboot: reboot.Format("3:04")})
 		if err != nil {
 			utils.Warn(fmt.Sprintf("unable to update sofware [address=%s, host=%s, port=%d]", delegate.Address, delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port))
 			continue
@@ -361,7 +374,7 @@ func convertToProtoNode(node *types.Node) *proto.Node {
 	}
 }
 
-// convertToDomainAuthenticate
+// convertToDomainAuthentication
 func convertToDomainAuthentication(authentication *proto.Authentication) *types.Authentication {
 	return &types.Authentication{
 		Hash:      authentication.Hash,
@@ -370,7 +383,7 @@ func convertToDomainAuthentication(authentication *proto.Authentication) *types.
 	}
 }
 
-// convertToProtoAuthenticate
+// convertToProtoAuthentication
 func convertToProtoAuthentication(authentication *types.Authentication) *proto.Authentication {
 	if authentication == nil {
 		return nil
