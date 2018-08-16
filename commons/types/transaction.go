@@ -48,6 +48,7 @@ type Transaction struct {
 	Signature string
 	Hertz     int64   //our version of Gas
 	Receipt   Receipt // Transient
+	Gossip    []Rumor // Transient
 	FromName  string  // Transient
 	ToName    string  // Transient
 }
@@ -715,6 +716,7 @@ func (this Transaction) MarshalJSON() ([]byte, error) {
 		Signature string        `json:"signature"`
 		Hertz     int64         `json:"hertz"`
 		Receipt   Receipt       `json:"receipt,omitempty"`
+		Gossip    []Rumor       `json:"gossip,omitempty"`
 		FromName  string        `json:"fromName,omitempty"`
 		ToName    string        `json:"toName,omitempty"`
 	}{
@@ -731,6 +733,7 @@ func (this Transaction) MarshalJSON() ([]byte, error) {
 		Signature: this.Signature,
 		Hertz:     this.Hertz,
 		Receipt:   this.Receipt,
+		Gossip:    this.Gossip,
 		FromName:  this.FromName,
 		ToName:    this.ToName,
 	})
@@ -767,5 +770,9 @@ func (this *Transaction) setTransients(txn *badger.Txn) {
 	receipt, err := ToReceiptFromTransactionHash(txn, this.Hash)
 	if err == nil {
 		this.Receipt = *receipt
+	}
+	gossip, err := ToGossipByTransactionHash(txn, this.Hash)
+	if err == nil {
+		this.Gossip = gossip.Rumors
 	}
 }
