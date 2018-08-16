@@ -90,6 +90,8 @@ func setHeaders(response *types.Response, responseWriter *http.ResponseWriter) {
 			(*responseWriter).WriteHeader(http.StatusOK)
 		} else if response.Status == types.StatusInternalError {
 			(*responseWriter).WriteHeader(http.StatusInternalServerError)
+		} else if response.Status == types.StatusNotDelegate {
+			(*responseWriter).WriteHeader(http.StatusTeapot)
 		} else {
 			(*responseWriter).WriteHeader(http.StatusBadRequest)
 		}
