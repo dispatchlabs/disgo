@@ -354,7 +354,7 @@ func GetReceipt(delegateNode types.Node, hash string) (*types.Receipt, error) {
 func GetTransactionsSent(delegateNode types.Node, address string) ([]types.Transaction, error) {
 
 	// Get sent transaction.
-	httpResponse, err := http.Get(fmt.Sprintf("http://%s:%d/v1/transactions?from=%s", delegateNode.HttpEndpoint.Host, delegateNode.HttpEndpoint.Port, address))
+	httpResponse, err := http.Get(fmt.Sprintf("http://%s:%d/v1/transactions/from/%s", delegateNode.HttpEndpoint.Host, delegateNode.HttpEndpoint.Port, address))
 	if err != nil {
 		return nil, err
 	}
@@ -404,7 +404,7 @@ func GetTransactionsSent(delegateNode types.Node, address string) ([]types.Trans
 func GetTransactionsReceived(delegateNode types.Node, address string) ([]types.Transaction, error) {
 
 	// Get received transactions.
-	httpResponse, err := http.Get(fmt.Sprintf("http://%s:%d/v1/transactions?to=%s", delegateNode.HttpEndpoint.Host, delegateNode.HttpEndpoint.Port, address))
+	httpResponse, err := http.Get(fmt.Sprintf("http://%s:%d/v1/transactions/to/%s", delegateNode.HttpEndpoint.Host, delegateNode.HttpEndpoint.Port, address))
 	if err != nil {
 		return nil, err
 	}

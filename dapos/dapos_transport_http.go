@@ -34,11 +34,11 @@ func (this *DAPoSService) WithHttp() *DAPoSService {
 	services.GetHttpRouter().HandleFunc("/v1/accounts/{address}", this.getAccountHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/accounts", this.getAccountsHandler).Methods("GET")
 	//Transactions
-	services.GetHttpRouter().HandleFunc("/v1/transactions/from/{address}", this.getTransactionsByFromAddressHandler).Methods("GET")
-	services.GetHttpRouter().HandleFunc("/v1/transactions/to/{address}", this.getTransactionsByToAddressHandler).Methods("GET")
+	services.GetHttpRouter().HandleFunc("/v1/transactions/from/{address}", this.getTransactionsByFromAddressHandler).Methods("GET")//TODO: support pagination
+	services.GetHttpRouter().HandleFunc("/v1/transactions/to/{address}", this.getTransactionsByToAddressHandler).Methods("GET")//TODO: support pagination
 	services.GetHttpRouter().HandleFunc("/v1/transactions", this.newTransactionHandler).Methods("POST")
-	services.GetHttpRouter().HandleFunc("/v1/transactions/{hash}", this.getTransactionHandler).Methods("GET") //TODO: support pagination
-	services.GetHttpRouter().HandleFunc("/v1/transactions", this.getTransactionsHandler).Methods("GET")       //TODO: to be deprecated
+	services.GetHttpRouter().HandleFunc("/v1/transactions/{hash}", this.getTransactionHandler).Methods("GET")
+	services.GetHttpRouter().HandleFunc("/v1/transactions", this.getTransactionsHandler).Methods("GET")
 	//Artifacts
 	services.GetHttpRouter().HandleFunc("/v1/artifacts/{query}", this.unsupportedFunctionHandler).Methods("GET") //TODO: support pagination
 	services.GetHttpRouter().HandleFunc("/v1/artifacts/", this.unsupportedFunctionHandler).Methods("POST")
