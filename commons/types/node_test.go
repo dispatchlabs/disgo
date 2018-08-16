@@ -19,7 +19,6 @@ package types
 import (
 	"testing"
 	"encoding/json"
-	"time"
 	"reflect"
 )
 
@@ -42,7 +41,7 @@ func TestNodeCache(t *testing.T) {
 	node1.HttpEndpoint.Host = "127.0.0.1"
 	node1.HttpEndpoint.Port = 1975
 	node1.Address = "123"
-	node1.Cache(c, time.Second * 5)
+	node1.Cache(c)
 	testNode, err := ToNodeFromCache(c, node1.Address)
 	if err != nil {
 		t.Error(err)
