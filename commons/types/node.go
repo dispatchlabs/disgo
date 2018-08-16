@@ -63,12 +63,8 @@ func (this *Node) Persist(txn *badger.Txn) error {
 }
 
 // PersistAndCache
-func (this *Node) Set(txn *badger.Txn, cache *cache.Cache,time_optional ...time.Duration) error {
-	TTL := NodeTTL
-	if len(time_optional) > 0 {
-		TTL = time_optional[0]
-	}
-	this.Cache(cache,TTL)
+func (this *Node) Set(txn *badger.Txn, cache *cache.Cache) error {
+	this.Cache(cache)
 	err := this.Persist(txn)
 	if err != nil {
 		return err
