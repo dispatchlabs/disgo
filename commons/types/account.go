@@ -255,7 +255,9 @@ func ToAccountByName(txn *badger.Txn, name string) (*Account, error) {
 // ToAccountsByName
 func ToAccountsByName(name string, txn *badger.Txn) ([]*Account, error) {
 	defer txn.Discard()
-	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = false
+	iterator := txn.NewIterator(opts)
 	defer iterator.Close()
 	prefix := []byte(fmt.Sprintf("key-account-name-%s", name))
 	var Accounts = make([]*Account, 0)
@@ -289,7 +291,9 @@ func AccountPaging(page int,txn *badger.Txn) ([]*Account, error){
 	}
 
 	defer txn.Discard()
-	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = false
+	iterator := txn.NewIterator(opts)
 	defer iterator.Close()
 	prefix := []byte(fmt.Sprintf("table-account-"))
 	var Accounts = make([]*Account, 0)
