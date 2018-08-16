@@ -22,8 +22,6 @@ import (
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/patrickmn/go-cache"
-	"time"
-	//"reflect"
 	"strings"
 )
 
@@ -54,14 +52,9 @@ func (this Node) TypeKey() string {
 }
 
 //Cache
-func (this *Node) Cache(cache *cache.Cache, time_optional ...time.Duration) {
-	TTL := NodeTTL
-	if len(time_optional) > 0 {
-		TTL = time_optional[0]
-	}
-
-	cache.Set(this.Key(), this, TTL)
-	cache.Set(this.TypeKey(), this.Key(), TTL)
+func (this *Node) Cache(c *cache.Cache) {
+	c.Set(this.Key(), this, cache.NoExpiration)
+	c.Set(this.TypeKey(), this.Key(), cache.NoExpiration)
 }
 
 //Persist

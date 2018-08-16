@@ -28,7 +28,6 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"github.com/patrickmn/go-cache"
 )
 
 // WithGrpc - Runs the DisGover service with GRPC transport
@@ -114,7 +113,7 @@ func (this *DisGoverService) UpdateGrpc(ctx context.Context, nodeList *proto.Nod
 
 	// Cache delegates.
 	for _, delegate := range nodeList.Delegates {
-		convertToDomain(delegate).Cache(services.GetCache(), cache.NoExpiration)
+		convertToDomain(delegate).Cache(services.GetCache())
 	}
 
 	utils.Info(fmt.Sprintf("delegates updated [count=%d]", len(nodeList.Delegates)))
