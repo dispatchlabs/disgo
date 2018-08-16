@@ -22,9 +22,8 @@ import (
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/patrickmn/go-cache"
-	"time"
 	"strings"
-					)
+)
 
 // Node - Is the DisGover's notion of what a node is
 type Node struct {
@@ -45,14 +44,9 @@ func (this Node) TypeKey() string {
 }
 
 //Cache
-func (this *Node) Cache(cache *cache.Cache, time_optional ...time.Duration) {
-	TTL := NodeTTL
-	if len(time_optional) > 0 {
-		TTL = time_optional[0]
-	}
-
-	cache.Set(this.Key(), this, TTL)
-	cache.Set(this.TypeKey(), this.Key(), TTL)
+func (this *Node) Cache(c *cache.Cache) {
+	c.Set(this.Key(), this, cache.NoExpiration)
+	c.Set(this.TypeKey(), this.Key(), cache.NoExpiration)
 }
 
 //Persist
@@ -69,8 +63,8 @@ func (this *Node) Persist(txn *badger.Txn) error {
 }
 
 // PersistAndCache
-func (this *Node) PersistAndCache(txn *badger.Txn, cache *cache.Cache, ttl time.Duration) error {
-	this.Cache(cache, ttl)
+func (this *Node) PersistAndCache(txn *badger.Txn, cache *cache.Cache) error {
+	this.Cache(cache)
 	return this.Persist(txn)
 }
 
