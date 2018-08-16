@@ -160,6 +160,15 @@ func (this *DAPoSService) peerGossipGrpc(node types.Node, gossip *types.Gossip) 
 	// Remote gossip.
 	response, err := client.GossipGrpc(contextWithTimeout, &proto.Request{Payload: gossip.String()})
 	if err != nil {
+		utils.Error(fmt.Sprintf("cannot connect to node [host=%s, port=%d]", node.GrpcEndpoint.Host, node.GrpcEndpoint.Port), err)
+		txn := services.NewTxn(true)
+		defer txn.Discard()
+
+		unsetErr := node.Unset(txn, services.GetCache())
+		if unsetErr != nil {
+			utils.Error(unsetErr)
+		}
+
 		return nil, err
 	}
 	remoteGossip, err := types.ToGossipFromJson([]byte(response.Payload))
