@@ -33,6 +33,9 @@ import (
 	"os"
 	)
 
+//TODO: we are going to drop delegates if we fail to communicate with them.  The exepctation will be that the seed will tell us when they come back on line
+//TODO: Need to add more robust solution to resolve missing delegates and add a notification infrastructure for the rest of the delegates.
+
 // WithGrpc - Runs the DisGover service with GRPC transport
 func (this *DisGoverService) WithGrpc() *DisGoverService {
 	proto.RegisterDisgoverGrpcServer(services.GetGrpcService().Server, this)
@@ -200,10 +203,17 @@ func (this *DisGoverService) peerUpdateGrpc() {
 		return
 	}
 
+	txn := services.NewTxn(true)
+	defer txn.Discard()
+
 	for _, delegate := range delegates {
 		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), grpc.WithInsecure())
 		if err != nil {
-			utils.Fatal(fmt.Sprintf("cannot dial node [host=%s, port=%d]", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), err)
+			utils.Error(fmt.Sprintf("cannot dial node [host=%s, port=%d]", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), err)
+			err = delegate.Unset(txn, services.GetCache())
+			if err != nil {
+				utils.Error(err)
+			}
 			continue
 		}
 		client := proto.NewDisgoverGrpcClient(conn)
