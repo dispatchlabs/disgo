@@ -64,19 +64,17 @@ const (
 
 // Persistence TTLs
 const (
-	ReceiptTTL     = time.Hour * 24 * 3
-	GossipTTL      = time.Hour * 48
-	NodeTTL        = time.Hour * 24
-	AccountTTL     = time.Hour * 24
-	PageTTL        = time.Hour * 24
-	TransactionTTL = time.Hour * 48
+	AccountTTL      = time.Hour * 24
+	PageTTL         = time.Hour * 24
+	TransactionTTL  = time.Hour * 48
 )
 
 // Cache TTLs
 const (
 	CacheTTL        = time.Hour
-	ReceiptCacheTTL = time.Minute * 30
+	ReceiptCacheTTL = time.Hour * 24 * 3
 	GossipCacheTTL  = time.Minute * 5
+	AuthenticationCacheTTL = time.Minute
 )
 
 // Errors

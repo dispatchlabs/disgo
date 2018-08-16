@@ -70,7 +70,7 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.P
 		if delegateAddress == node.Address {
 
 			// Is this an authentic delegate?
-			err := authentication.Verify(node.Address)
+			err := authentication.Verify(services.GetCache(), node.Address)
 			if err != nil {
 				utils.Warn(fmt.Sprintf("unable to authentication delegate [address=%s]", node.Address))
 				return nil, errors.New("unable to authentication you as a delegate")
@@ -325,7 +325,7 @@ func (this *DisGoverService) verifySeedNode(protoAuthenticate *proto.Authenticat
 
 	for _, seedAddress := range types.GetConfig().SeedAddresses {
 		if seedAddress == authenticationAddress {
-			err = authentication.Verify(seedAddress)
+			err = authentication.Verify(services.GetCache(), seedAddress)
 			if err != nil {
 				return errors.New("you are not an authorized seed node")
 			}

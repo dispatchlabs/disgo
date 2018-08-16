@@ -9,10 +9,11 @@ import (
 	"encoding/binary"
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"time"
+	"fmt"
+	"github.com/patrickmn/go-cache"
 )
 
 
-// TODO: Keep in cache for sometime so you can't get duplicate authenticates.
 // Authentication
 type Authentication struct {
 	Hash      string
@@ -61,6 +62,26 @@ func (this Authentication) MarshalJSON() ([]byte, error) {
 		Time:      this.Time,
 		Signature: this.Signature,
 	})
+}
+
+// String
+func (this Authentication) String() string {
+	bytes, err := json.Marshal(this)
+	if err != nil {
+		utils.Error("unable to marshal authentication", err)
+		return ""
+	}
+	return string(bytes)
+}
+
+// Key
+func (this Authentication) Key() string {
+	return fmt.Sprintf("table-authentication-%s", this.Hash)
+}
+
+// Cache
+func (this *Authentication) Cache(cache *cache.Cache){
+	cache.Set(this.Key(), this, AuthenticationCacheTTL)
 }
 
 // NewHash
@@ -123,12 +144,18 @@ func (this Authentication) GetAddress() (string, error) {
 }
 
 // Verify
-func (this Authentication) Verify(address string) error {
+func (this Authentication) Verify(cache *cache.Cache, address string) error {
+
+	// Is this a duplicate authentication?
+	_, err := ToAuthenticationFromCache(cache, address)
+	if err != ErrNotFound {
+		return errors.New("duplicate authentication")
+	}
 
 	// Time out?
 	elapsedMilliSeconds := utils.ToMilliSeconds(time.Now()) - this.Time
 	if elapsedMilliSeconds > 1500 {
-		return errors.New("timed out")
+		return errors.New("authentication timed out")
 	}
 
 	// Hash ok?
@@ -164,7 +191,19 @@ func (this Authentication) Verify(address string) error {
 		return errors.New("invalid signature")
 	}
 
+	// Cache authentication for duplicate attacks.
+	this.Cache(cache)
+
 	return nil
+}
+
+// ToAuthenticationFromCache -
+func ToAuthenticationFromCache(cache *cache.Cache, hash string) (*Authentication, error) {
+	value, ok := cache.Get(fmt.Sprintf("table-authentication-%s", hash))
+	if !ok{
+		return nil, ErrNotFound
+	}
+	return value.(*Authentication), nil
 }
 
 // NewAuthenticate

@@ -22,7 +22,6 @@ import (
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/patrickmn/go-cache"
-	"time"
 )
 
 // Gossip
@@ -37,15 +36,11 @@ func (this Gossip) Key() string {
 }
 
 // Cache
-func (this *Gossip) Cache(cache *cache.Cache, time_optional ...time.Duration){
-	TTL := GossipTTL
-	if len(time_optional) > 0 {
-		TTL = time_optional[0]
-	}
-	cache.Set(this.Key(), this, TTL)
+func (this *Gossip) Cache(cache *cache.Cache){
+	cache.Set(this.Key(), this, GossipCacheTTL)
 }
 
-//Persist
+// Persist
 func (this *Gossip) Persist(txn *badger.Txn) error{
 	err := txn.Set([]byte(this.Key()), []byte(this.String()))
 	if err != nil {
