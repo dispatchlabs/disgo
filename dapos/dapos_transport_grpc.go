@@ -148,7 +148,7 @@ func (this *DAPoSService) peerGossipGrpc(node types.Node, gossip *types.Gossip) 
 
 	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", node.GrpcEndpoint.Host, node.GrpcEndpoint.Port), grpc.WithInsecure())
 	if err != nil {
-		utils.Fatal(fmt.Sprintf("cannot dial seed [host=%s, port=%d]",  node.GrpcEndpoint.Host,  node.GrpcEndpoint.Port), err)
+		utils.Error(fmt.Sprintf("cannot dial seed [host=%s, port=%d]",  node.GrpcEndpoint.Host,  node.GrpcEndpoint.Port), err)
 		return nil, err
 	}
 	defer conn.Close()
@@ -161,14 +161,13 @@ func (this *DAPoSService) peerGossipGrpc(node types.Node, gossip *types.Gossip) 
 	response, err := client.GossipGrpc(contextWithTimeout, &proto.Request{Payload: gossip.String()})
 	if err != nil {
 		utils.Error(fmt.Sprintf("cannot connect to node [host=%s, port=%d]", node.GrpcEndpoint.Host, node.GrpcEndpoint.Port), err)
-		txn := services.NewTxn(true)
-		defer txn.Discard()
-
-		unsetErr := node.Unset(txn, services.GetCache())
-		if unsetErr != nil {
-			utils.Error(unsetErr)
-		}
-
+		//txn := services.NewTxn(true)
+		//defer txn.Discard()
+		//
+		//unsetErr := node.Unset(txn, services.GetCache())
+		//if unsetErr != nil {
+		//	utils.Error(unsetErr)
+		//}
 		return nil, err
 	}
 	remoteGossip, err := types.ToGossipFromJson([]byte(response.Payload))
