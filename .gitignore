@@ -10,4 +10,4 @@ config
 
 *.iml
 commons/types/testdb/
-disgo.log
+*.log
