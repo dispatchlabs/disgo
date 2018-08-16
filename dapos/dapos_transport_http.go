@@ -38,9 +38,9 @@ func (this *DAPoSService) WithHttp() *DAPoSService {
 	services.GetHttpRouter().HandleFunc("/v1/transactions/to/{address}", this.getTransactionsByToAddressHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/transactions", this.newTransactionHandler).Methods("POST")
 	services.GetHttpRouter().HandleFunc("/v1/transactions/{hash}", this.getTransactionHandler).Methods("GET") //TODO: support pagination
-	services.GetHttpRouter().HandleFunc("/v1/transactions", this.getTransactionsHandler).Methods("GET") //TODO: to be deprecated
+	services.GetHttpRouter().HandleFunc("/v1/transactions", this.getTransactionsHandler).Methods("GET")       //TODO: to be deprecated
 	//Artifacts
-	services.GetHttpRouter().HandleFunc("/v1/artifacts/{query}", this.unsupportedFunctionHandler).Methods("GET")//TODO: support pagination
+	services.GetHttpRouter().HandleFunc("/v1/artifacts/{query}", this.unsupportedFunctionHandler).Methods("GET") //TODO: support pagination
 	services.GetHttpRouter().HandleFunc("/v1/artifacts/", this.unsupportedFunctionHandler).Methods("POST")
 	services.GetHttpRouter().HandleFunc("/v1/artifacts/{hash}", this.unsupportedFunctionHandler).Methods("GET")
 	//delegates
@@ -127,11 +127,39 @@ func (this *DAPoSService) getTransactionsByToAddressHandler(responseWriter http.
 
 func (this *DAPoSService) getTransactionsHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	pageNumber := request.URL.Query().Get("page")
-	if pageNumber == ""{
+	if pageNumber == "" {
 		pageNumber = "1"
 	}
 	response := this.GetTransactions(pageNumber)
 	setHeaders(&responseWriter)
+
+	// Adjust the HTTP status reply - taken from `disgo/commons/types/constants.go`
+	// StatusPending                      = "Pending"
+	// StatusOk                           = "Ok"
+	// StatusNotFound                     = "NotFound"
+	// StatusReceiptNotFound              = "StatusReceiptNotFound"
+	// StatusTransactionTimeOut           = "StatusTransactionTimeOut"
+	// StatusInvalidTransaction           = "InvalidTransaction"
+	// StatusInsufficientTokens           = "InsufficientTokens"
+	// StatusDuplicateTransaction         = "DuplicateTransaction"
+	// StatusNotDelegate                  = "StatusNotDelegate"
+	// StatusAlreadyProcessingTransaction = "StatusAlreadyProcessingTransaction"
+	// StatusGossipingTimedOut            = "StatusGossipingTimedOut"
+	// StatusJsonParseError               = "StatusJsonParseError"
+	// StatusInternalError                = "InternalError"
+	// StatusUnavailableFeature           = "UnavailableFeature"
+
+	if response.Status == types.StatusOk {
+		responseWriter.WriteHeader(http.StatusOK)
+	} else if response.Status == types.StatusNotFound {
+		responseWriter.WriteHeader(http.StatusNotFound)
+	} else if response.Status == types.StatusPending {
+		responseWriter.WriteHeader(http.StatusProcessing)
+	} else if response.Status == types.StatusInternalError {
+		responseWriter.WriteHeader(http.StatusInternalServerError)
+	} else {
+		responseWriter.WriteHeader(http.StatusBadRequest)
+	}
 	responseWriter.Write([]byte(response.String()))
 }
 
@@ -152,7 +180,7 @@ func (this *DAPoSService) unsupportedFunctionHandler(responseWriter http.Respons
 // getAccountsHandler
 func (this *DAPoSService) getAccountsHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	pageNumber := request.URL.Query().Get("page")
-	if pageNumber == ""{
+	if pageNumber == "" {
 		pageNumber = "1"
 	}
 	response := this.GetAccounts(pageNumber)
@@ -163,7 +191,7 @@ func (this *DAPoSService) getAccountsHandler(responseWriter http.ResponseWriter,
 // getGossipsHandler
 func (this *DAPoSService) getGossipsHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	pageNumber := request.URL.Query().Get("page")
-	if pageNumber == ""{
+	if pageNumber == "" {
 		pageNumber = "1"
 	}
 	response := this.GetGossips(pageNumber)
