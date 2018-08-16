@@ -17,12 +17,10 @@
 package types
 
 import (
-	"testing"
 	"encoding/json"
-	"time"
 	"reflect"
+	"testing"
 )
-
 
 //recoverMe
 func recoverMe(t *testing.T) {
@@ -34,20 +32,20 @@ func recoverMe(t *testing.T) {
 
 //TestNodeCache
 func TestNodeCache(t *testing.T) {
-	node1:= &Node{}
-	node1.GrpcEndpoint =&Endpoint{}
+	node1 := &Node{}
+	node1.GrpcEndpoint = &Endpoint{}
 	node1.GrpcEndpoint.Host = "127.0.0.1"
 	node1.GrpcEndpoint.Port = 1973
-	node1.HttpEndpoint =&Endpoint{}
+	node1.HttpEndpoint = &Endpoint{}
 	node1.HttpEndpoint.Host = "127.0.0.1"
 	node1.HttpEndpoint.Port = 1975
 	node1.Address = "123"
-	node1.Cache(c, time.Second * 5)
+	node1.Cache(c)
 	testNode, err := ToNodeFromCache(c, node1.Address)
 	if err != nil {
 		t.Error(err)
 	}
-	if reflect.DeepEqual(testNode, node1) == false{
+	if reflect.DeepEqual(testNode, node1) == false {
 		t.Error("node1 not equal to testNode")
 	}
 }
@@ -84,15 +82,15 @@ func TestEndPointSerialization(t *testing.T) {
 
 //TestNodeSerialization
 func TestNodeSerialization(t *testing.T) {
-	node1:= &Node{}
-	node1.GrpcEndpoint =&Endpoint{}
+	node1 := &Node{}
+	node1.GrpcEndpoint = &Endpoint{}
 	node1.GrpcEndpoint.Host = "127.0.0.1"
 	node1.GrpcEndpoint.Port = 1975
 	node1.Address = "123"
 
 	defer recoverMe(t)
 
-	node2:= &Node{}
+	node2 := &Node{}
 	err := json.Unmarshal([]byte(node1.String()), node2)
 	if err != nil {
 		t.Error("Error Marshaling Endpoint")
