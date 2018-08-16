@@ -1,4 +1,4 @@
-/*	
+/*
  *    This file is part of DAPoS library.
  *
  *    The DAPoS library is free software: you can redistribute it and/or modify
@@ -13,17 +13,18 @@
  *
  *    You should have received a copy of the GNU General Public License
  *    along with the DAPoS library.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 package dapos
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/disgover"
-	"strconv"
 )
 
 // GetDelegateNodes
@@ -71,7 +72,7 @@ func (this *DAPoSService) GetReceipt(transactionHash string) *types.Response {
 		}
 	} else {
 		response.Status = types.StatusNotDelegate
-		response.HumanReadableStatus = "This node is not a delegate. Please select a delegate node."
+		response.HumanReadableStatus = types.StatusNotDelegateAsHumanReadable
 	}
 	utils.Info(fmt.Sprintf("GetReceipt [hash=%s, status=%s]", transactionHash, response.Status))
 
@@ -99,7 +100,7 @@ func (this *DAPoSService) GetAccount(address string) *types.Response {
 		}
 	} else {
 		response.Status = types.StatusNotDelegate
-		response.HumanReadableStatus = "This node is not a delegate. Please select a delegate node."
+		response.HumanReadableStatus = types.StatusNotDelegateAsHumanReadable
 	}
 	utils.Info(fmt.Sprintf("retrieved account [address=%s, status=%s]", address, response.Status))
 
@@ -115,7 +116,7 @@ func (this *DAPoSService) NewTransaction(transaction *types.Transaction) *types.
 		response = this.startGossiping(transaction)
 	} else {
 		response.Status = types.StatusNotDelegate
-		response.HumanReadableStatus = "This node is not a delegate. Please select a delegate node."
+		response.HumanReadableStatus = types.StatusNotDelegateAsHumanReadable
 	}
 
 	utils.Info(fmt.Sprintf("new transaction [hash=%s, status=%s]", transaction.Hash, response.Status))
@@ -143,7 +144,7 @@ func (this *DAPoSService) GetTransaction(hash string) *types.Response {
 		}
 	} else {
 		response.Status = types.StatusNotDelegate
-		response.HumanReadableStatus = "This node is not a delegate. Please select a delegate node."
+		response.HumanReadableStatus = types.StatusNotDelegateAsHumanReadable
 	}
 	utils.Info(fmt.Sprintf("retrieved transaction [hash=%s, status=%s]", hash, response.Status))
 
@@ -168,7 +169,7 @@ func (this *DAPoSService) GetTransactionsOld() *types.Response { //TODO: to be d
 		}
 	} else {
 		response.Status = types.StatusNotDelegate
-		response.HumanReadableStatus = "This node is not a delegate. Please select a delegate node."
+		response.HumanReadableStatus = types.StatusNotDelegateAsHumanReadable
 	}
 
 	utils.Info(fmt.Sprintf("retrieved transactions [status=%s]", response.Status))
@@ -183,7 +184,7 @@ func (this *DAPoSService) GetTransactions(page string) *types.Response {
 	response := types.NewResponse()
 	var err error
 	pageNumber, err := strconv.Atoi(page)
-	if err !=nil {
+	if err != nil {
 		response.Status = types.StatusInternalError
 		response.HumanReadableStatus = err.Error()
 		return response
@@ -201,15 +202,13 @@ func (this *DAPoSService) GetTransactions(page string) *types.Response {
 		}
 	} else {
 		response.Status = types.StatusNotDelegate
-		response.HumanReadableStatus = "This node is not a delegate. Please select a delegate node."
+		response.HumanReadableStatus = types.StatusNotDelegateAsHumanReadable
 	}
 
 	utils.Info(fmt.Sprintf("GetTransactions [status=%s]", response.Status))
 
 	return response
 }
-
-
 
 // GetTransactionsByFromAddress
 func (this *DAPoSService) GetTransactionsByFromAddress(address string) *types.Response {
@@ -229,7 +228,7 @@ func (this *DAPoSService) GetTransactionsByFromAddress(address string) *types.Re
 		}
 	} else {
 		response.Status = types.StatusNotDelegate
-		response.HumanReadableStatus = "This node is not a delegate. Please select a delegate node."
+		response.HumanReadableStatus = types.StatusNotDelegateAsHumanReadable
 	}
 
 	utils.Info(fmt.Sprintf("retrieved transactions by from address [address=%s, status=%s]", address, response.Status))
@@ -255,7 +254,7 @@ func (this *DAPoSService) GetTransactionsByToAddress(address string) *types.Resp
 		}
 	} else {
 		response.Status = types.StatusNotDelegate
-		response.HumanReadableStatus = "This node is not a delegate. Please select a delegate node."
+		response.HumanReadableStatus = types.StatusNotDelegateAsHumanReadable
 	}
 
 	utils.Info(fmt.Sprintf("retrieved transactions by to address [address=%s, status=%s]", address, response.Status))
@@ -269,19 +268,19 @@ func (this *DAPoSService) DumpQueue() *types.Response {
 	return response
 }
 
-func (this *DAPoSService) ToBeSupported() *types.Response{
+func (this *DAPoSService) ToBeSupported() *types.Response {
 	response := types.NewResponse()
 	response.Data = types.StatusUnavailableFeature
 	return response
 }
 
-func (this *DAPoSService) GetAccounts(page string) *types.Response{
+func (this *DAPoSService) GetAccounts(page string) *types.Response {
 	txn := services.NewTxn(true)
 	defer txn.Discard()
 	response := types.NewResponse()
 	var err error
 	pageNumber, err := strconv.Atoi(page)
-	if err !=nil {
+	if err != nil {
 		response.Status = types.StatusInternalError
 		response.HumanReadableStatus = err.Error()
 		return response
@@ -299,7 +298,7 @@ func (this *DAPoSService) GetAccounts(page string) *types.Response{
 		}
 	} else {
 		response.Status = types.StatusNotDelegate
-		response.HumanReadableStatus = "This node is not a delegate. Please select a delegate node."
+		response.HumanReadableStatus = types.StatusNotDelegateAsHumanReadable
 	}
 
 	utils.Info(fmt.Sprintf("GetAccounts [status=%s]", response.Status))
@@ -307,13 +306,13 @@ func (this *DAPoSService) GetAccounts(page string) *types.Response{
 	return response
 }
 
-func (this *DAPoSService) GetGossips(page string) *types.Response{
+func (this *DAPoSService) GetGossips(page string) *types.Response {
 	txn := services.NewTxn(true)
 	defer txn.Discard()
 	response := types.NewResponse()
 	var err error
 	pageNumber, err := strconv.Atoi(page)
-	if err !=nil {
+	if err != nil {
 		response.Status = types.StatusInternalError
 		response.HumanReadableStatus = err.Error()
 		return response
@@ -331,7 +330,7 @@ func (this *DAPoSService) GetGossips(page string) *types.Response{
 		}
 	} else {
 		response.Status = types.StatusNotDelegate
-		response.HumanReadableStatus = "This node is not a delegate. Please select a delegate node."
+		response.HumanReadableStatus = types.StatusNotDelegateAsHumanReadable
 	}
 
 	utils.Info(fmt.Sprintf("GetGossips [status=%s]", response.Status))
@@ -360,7 +359,7 @@ func (this *DAPoSService) GetGossip(hash string) *types.Response {
 		}
 	} else {
 		response.Status = types.StatusNotDelegate
-		response.HumanReadableStatus = "This node is not a delegate. Please select a delegate node."
+		response.HumanReadableStatus = types.StatusNotDelegateAsHumanReadable
 	}
 	utils.Info(fmt.Sprintf("retrieved Gossip [tx hash=%s, status=%s]", hash, response.Status))
 
