@@ -24,9 +24,9 @@ import (
 //TODO: I think we need to convert these timouts and their calculations in code to nano seconds
 // Timouts -- currently calculated in milliseconds.
 const (
-	TxReceiveTimeout    = 10000  //1 second
-	GossipQueueTimeout  = time.Second * 5
-	GossipTimeout    	= 30000  //300 milliseconds
+	TxReceiveTimeout   = 10000 //1 second
+	GossipQueueTimeout = time.Second * 5
+	GossipTimeout      = 30000 //300 milliseconds
 )
 
 // Requests
@@ -49,7 +49,11 @@ const (
 	StatusGossipingTimedOut            = "StatusGossipingTimedOut"
 	StatusJsonParseError               = "StatusJsonParseError"
 	StatusInternalError                = "InternalError"
-	StatusUnavailableFeature 		   = "UnavailableFeature"
+	StatusUnavailableFeature           = "UnavailableFeature"
+)
+
+const (
+	StatusNotDelegateAsHumanReadable = "This node is not a delegate. Please select a delegate node."
 )
 
 // Types
@@ -79,6 +83,6 @@ const (
 
 // Errors
 var (
-	ErrNotFound = errors.New("not found")
+	ErrNotFound       = errors.New("not found")
 	ErrInvalidRequest = errors.New("invalid request")
 )
