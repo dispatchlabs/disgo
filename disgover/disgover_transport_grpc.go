@@ -175,8 +175,8 @@ func (this *DisGoverService) UpdateGrpc(ctx context.Context, update *proto.Updat
 	for _, delegate := range update.Delegates {
 		convertToDomainNode(delegate).Cache(services.GetCache())
 	}
-
-	utils.Info(fmt.Sprintf("delegates updated [count=%d]", len(update.Delegates)))
+	d := update.Delegates[0]
+	utils.Info(fmt.Sprintf("delegates updated [count=%d] %s : %d", len(update.Delegates), d.Address, d.GrpcEndpoint.Port))
 
 	return &proto.Empty{}, nil
 }

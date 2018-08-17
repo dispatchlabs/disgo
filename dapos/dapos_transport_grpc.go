@@ -39,6 +39,7 @@ func (this *DAPoSService) WithGrpc() *DAPoSService {
 	return this
 }
 
+
 // Synchronize
 func (this *DAPoSService) SynchronizeGrpc(context.Context, *proto.Empty) (*proto.SynchronizeResponse, error) {
 	utils.Info("synchronizing DB with a delegate...")
@@ -146,15 +147,18 @@ func (this *DAPoSService) GossipGrpc(context context.Context, request *proto.Req
 func (this *DAPoSService) peerGossipGrpc(node types.Node, gossip *types.Gossip) (*types.Gossip, error) {
 	utils.Debug(fmt.Sprintf("attempting to gossip with delegate [address=%s]", node.Address))
 
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", node.GrpcEndpoint.Host, node.GrpcEndpoint.Port), grpc.WithInsecure())
-	if err != nil {
-		utils.Error(fmt.Sprintf("cannot dial seed [host=%s, port=%d]",  node.GrpcEndpoint.Host,  node.GrpcEndpoint.Port), err)
-		return nil, err
-	}
-	defer conn.Close()
+	//conn, err := grpc.Dial(fmt.Sprintf("%s:%d", node.GrpcEndpoint.Host, node.GrpcEndpoint.Port), grpc.WithInsecure())
+	//if err != nil {
+	//	utils.Error(fmt.Sprintf("cannot dial seed [host=%s, port=%d]",  node.GrpcEndpoint.Host,  node.GrpcEndpoint.Port), err)
+	//	return nil, err
+	//}
+	//defer conn.Close()
+
+	conn, err := services.GetGrpcConnection(node.Address, node.GrpcEndpoint.Host, node.GrpcEndpoint.Port)
 
 	client := proto.NewDAPoSGrpcClient(conn)
-	contextWithTimeout, cancel := context.WithTimeout(context.Background(), 2000*time.Millisecond)
+
+	contextWithTimeout, cancel := context.WithTimeout(context.Background(), 20000*time.Millisecond)
 	defer cancel()
 
 	// Remote gossip.
