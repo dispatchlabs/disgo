@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
-	"time"
 )
 
 //testMockNewGossip
@@ -39,7 +38,7 @@ func TestNewGossip(t *testing.T) {
 //TestGossipCache
 func TestGossipCache(t *testing.T) {
 	gossip, tx := testMockNewGossip(t)
-	gossip.Cache(c, time.Second * 5)
+	gossip.Cache(c)
 	testGossip, err := ToGossipFromCache(c, tx.Hash)
 	if err != nil {
 		t.Error(err)
