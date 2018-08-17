@@ -94,7 +94,7 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.P
 	utils.Info(fmt.Sprintf("received ping [address=%s, host=%s, port=%d, delegates=%d]", node.Address, node.GrpcEndpoint.Host, node.GrpcEndpoint.Port, len(delegates)))
 
 	// New authentication.
-	authentication, err = types.NewAuthenticate()
+	authentication, err = types.NewAuthentication()
 	if err != nil {
 		utils.Error(err)
 		return nil, err
@@ -123,7 +123,7 @@ func (this *DisGoverService) peerPingSeedGrpc() ([]*types.Node, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
 		// New authentication.
-		authentication, err := types.NewAuthenticate()
+		authentication, err := types.NewAuthentication()
 		if err != nil {
 			return nil, err
 		}
@@ -197,7 +197,7 @@ func (this *DisGoverService) peerUpdateGrpc() {
 	}
 
 	// New authentication.
-	authentication, err := types.NewAuthenticate()
+	authentication, err := types.NewAuthentication()
 	if err != nil {
 		utils.Error(err)
 		return
@@ -272,7 +272,7 @@ func (this *DisGoverService) peerUpdateSoftwareGrpc(software []byte) {
 	}
 
 	// New authentication.
-	authentication, err := types.NewAuthenticate()
+	authentication, err := types.NewAuthentication()
 	if err != nil {
 		utils.Error(err)
 		return

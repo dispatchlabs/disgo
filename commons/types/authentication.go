@@ -13,7 +13,6 @@ import (
 	"github.com/patrickmn/go-cache"
 )
 
-
 // Authentication
 type Authentication struct {
 	Hash      string
@@ -80,7 +79,7 @@ func (this Authentication) Key() string {
 }
 
 // Cache
-func (this *Authentication) Cache(cache *cache.Cache){
+func (this *Authentication) Cache(cache *cache.Cache) {
 	cache.Set(this.Key(), this, AuthenticationCacheTTL)
 }
 
@@ -200,15 +199,15 @@ func (this Authentication) Verify(cache *cache.Cache, address string) error {
 // ToAuthenticationFromCache -
 func ToAuthenticationFromCache(cache *cache.Cache, hash string) (*Authentication, error) {
 	value, ok := cache.Get(fmt.Sprintf("table-authentication-%s", hash))
-	if !ok{
+	if !ok {
 		return nil, ErrNotFound
 	}
 	return value.(*Authentication), nil
 }
 
-// NewAuthenticate
-func NewAuthenticate() (*Authentication, error) {
-	authenticate := &Authentication{Time: utils.ToMicroSeconds(time.Now())}
+// NewAuthentication
+func NewAuthentication() (*Authentication, error) {
+	authenticate := &Authentication{Time: utils.ToMilliSeconds(time.Now())}
 
 	// Set hash.
 	var err error
