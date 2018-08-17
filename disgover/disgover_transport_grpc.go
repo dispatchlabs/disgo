@@ -64,19 +64,24 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.P
 	txn := services.NewTxn(true)
 	defer txn.Discard()
 
-	for _, delegateAddress := range types.GetConfig().DelegateAddresses {
+	// If delegate addresses is not set all nodes other than seed become a delegate (making it easy for testing and production).
+	if len(types.GetConfig().DelegateAddresses) == 0 {
+		node.Type = types.TypeDelegate
+	} else {
+		for _, delegateAddress := range types.GetConfig().DelegateAddresses {
 
-		// Is this a delegate node?
-		if delegateAddress == node.Address {
+			// Is this a delegate node?
+			if delegateAddress == node.Address {
 
-			// Is this an authentic delegate?
-			err := authentication.Verify(services.GetCache(), node.Address)
-			if err != nil {
-				utils.Warn(fmt.Sprintf("unable to authentication delegate [address=%s]", node.Address))
-				return nil, errors.New("unable to authentication you as a delegate")
+				// Is this an authentic delegate?
+				err := authentication.Verify(services.GetCache(), node.Address)
+				if err != nil {
+					utils.Warn(fmt.Sprintf("unable to authentication delegate [address=%s]", node.Address))
+					return nil, errors.New("unable to authentication you as a delegate")
+				}
+				node.Type = types.TypeDelegate
+				break
 			}
-			node.Type = types.TypeDelegate
-			break
 		}
 	}
 	node.PersistAndCache(txn, services.GetCache())
@@ -239,7 +244,7 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 	}
 
 	// Write file.
-	fileName :=  "." + string(os.PathSeparator) + "disgo"
+	fileName := "." + string(os.PathSeparator) + "disgo"
 	err = ioutil.WriteFile(fileName, softwareUpdate.Software, 0)
 	if err != nil {
 		utils.Error(fmt.Sprintf("unable to save file %s", fileName), err)
@@ -248,6 +253,7 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 
 	utils.Info(fmt.Sprintf("software updated from seed node"))
 
+	// Schedule the reboot.
 	go func() {
 		gocron.Every(1).Day().At(softwareUpdate.ScheduledReboot).Do(func() {
 			gocron.Clear()
@@ -255,7 +261,7 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 			utils.Info("rebooting with new version of disgo...")
 			os.Exit(0)
 		})
-		<- gocron.Start()
+		<-gocron.Start()
 	}()
 
 	return &proto.Empty{}, nil
