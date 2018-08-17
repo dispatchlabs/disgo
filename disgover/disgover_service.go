@@ -54,7 +54,7 @@ func GetDisGoverService() *DisGoverService {
 				Address:      types.GetAccount().Address,
 				GrpcEndpoint: types.GetConfig().GrpcEndpoint,
 				HttpEndpoint: types.GetConfig().HttpEndpoint,
-				Type:         types.TypeDelegate,
+				Type:         types.TypeNode,
 			},
 			// lruCache: lCache,
 			kdht: kbucket.NewRoutingTable(
@@ -86,13 +86,13 @@ func (this *DisGoverService) Go() {
 	this.running = true
 
 	// Check if we are a seed.
-	for _, seedEndpoint := range types.GetConfig().SeedEndpoints {
-		if seedEndpoint.Host == types.GetConfig().GrpcEndpoint.Host && seedEndpoint.Port == types.GetConfig().GrpcEndpoint.Port {
+	for _, seedHost := range types.GetConfig().Seeds {
+		if seedHost.GrpcEndpoint.Host == types.GetConfig().GrpcEndpoint.Host && seedHost.GrpcEndpoint.Port == types.GetConfig().GrpcEndpoint.Port {
 			this.ThisNode.Type = types.TypeSeed
 			break
 		}
 	}
-	if types.GetConfig().SeedEndpoints == nil || len(types.GetConfig().SeedEndpoints) == 0 {
+	if types.GetConfig().Seeds == nil || len(types.GetConfig().Seeds) == 0 {
 		this.ThisNode.Type = types.TypeSeed
 	}
 
@@ -133,6 +133,8 @@ func (this DisGoverService) updateWorker() {
 			if !utils.Exists(fileName) {
 				continue
 			}
+
+			utils.Info("found software to update")
 
 			// Read file?
 			bytes, err := ioutil.ReadFile(fileName)

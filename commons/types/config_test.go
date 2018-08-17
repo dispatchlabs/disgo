@@ -30,7 +30,7 @@ func TestGetConfig(t *testing.T) {
 	if c.HttpEndpoint.Port != 1975 {
 		t.Error( "Disgo Config PORT NOT defaulted to 1975 - we better have a good reason to change this" )
 	}
-	if c.SeedEndpoints == nil {
+	if c.Seeds == nil {
 		t.Error ("Seed list just can't be nil.  That would be just silly.  I mean, where ya goona go ?")
 	}
 }
