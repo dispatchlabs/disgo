@@ -118,10 +118,10 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.P
 func (this *DisGoverService) peerPingSeedGrpc() ([]*types.Node, error) {
 
 	var delegates = make([]*types.Node, 0)
-	for _, seedEndpoint := range types.GetConfig().SeedEndpoints {
-		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", seedEndpoint.Host, seedEndpoint.Port), grpc.WithInsecure())
+	for _, seedEndpoint := range types.GetConfig().Seeds {
+		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", seedEndpoint.GrpcEndpoint.Host, seedEndpoint.GrpcEndpoint.Port), grpc.WithInsecure())
 		if err != nil {
-			utils.Fatal(fmt.Sprintf("cannot dial seed [host=%s, port=%d]", seedEndpoint.Host, seedEndpoint.Port), err)
+			utils.Fatal(fmt.Sprintf("cannot dial seed [host=%s, port=%d]", seedEndpoint.GrpcEndpoint.Host, seedEndpoint.GrpcEndpoint.Port), err)
 			return nil, err
 		}
 		client := proto.NewDisgoverGrpcClient(conn)
@@ -329,9 +329,9 @@ func (this *DisGoverService) verifySeedNode(protoAuthenticate *proto.Authenticat
 		return err
 	}
 
-	for _, seedAddress := range types.GetConfig().SeedAddresses {
-		if seedAddress == authenticationAddress {
-			err = authentication.Verify(services.GetCache(), seedAddress)
+	for _, SeedNode := range types.GetConfig().Seeds {
+		if SeedNode.Address == authenticationAddress {
+			err = authentication.Verify(services.GetCache(), SeedNode.Address)
 			if err != nil {
 				return errors.New("you are not an authorized seed node")
 			}
