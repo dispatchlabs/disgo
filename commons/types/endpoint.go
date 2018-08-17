@@ -7,7 +7,6 @@ import (
 
 // Endpoint - Is the DisGover's notion of where a node can be contacted
 type Endpoint struct {
-	Address string
 	Host string
 	Port int64
 }
@@ -18,9 +17,6 @@ func (this *Endpoint) UnmarshalJSON(bytes []byte) error {
 	err := json.Unmarshal(bytes, &jsonMap)
 	if err != nil {
 		return err
-	}
-	if jsonMap["address"] != nil {
-		this.Address = jsonMap["address"].(string)
 	}
 	if jsonMap["host"] != nil {
 		this.Host = jsonMap["host"].(string)
@@ -34,7 +30,6 @@ func (this *Endpoint) UnmarshalJSON(bytes []byte) error {
 // MarshalJSON
 func (this Endpoint) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Address string `json:"address"`
 		Host string `json:"host"`
 		Port int64  `json:"port"`
 	}{
