@@ -231,7 +231,9 @@ func GossipPaging(page int,txn *badger.Txn) ([]*Gossip, error){
 	}
 
 	defer txn.Discard()
-	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = false
+	iterator := txn.NewIterator(opts)
 	defer iterator.Close()
 	prefix := []byte(fmt.Sprintf("table-gossip-"))
 	var Gossips = make([]*Gossip, 0)

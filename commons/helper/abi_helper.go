@@ -2,36 +2,51 @@ package helper
 
 import (
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
-	"github.com/dispatchlabs/disgo/commons/utils"
 	"encoding/hex"
 	"reflect"
 	"math/big"
 	"github.com/pkg/errors"
 	"fmt"
+	"strings"
 )
 
 func GetConvertedParams(jsonMap map[string]interface{}) ([]interface{}, error) {
-	params, _ := jsonMap["params"].([]interface{})
+	params, ok := jsonMap["params"].([]interface{})
+	if !ok {
+		return nil, errors.Errorf("value for field 'params' must be an array")
+	}
 	if params == nil || len(params) == 0 {
 		return params, nil
 	}
-	theAbi := GetABI(jsonMap["abi"].(string))
+	theAbi, err := GetABI(jsonMap["abi"].(string))
+	if err != nil {
+		return nil, err
+	}
 	method, _ := jsonMap["method"].(string)
 	var result []interface{}
 	found := false
 	for k, v := range theAbi.Methods {
-		//fmt.Printf("Method: %v\n", k)
 		if k == method {
 			found = true
 			if len(v.Inputs) != len(params) {
-				return nil, errors.New(fmt.Sprintf("This method requires %d parameters and %d are provided", len(v.Inputs), len(params)))
+				return nil, errors.New(fmt.Sprintf("This method %s, requires %d parameters and %d are provided", method, len(v.Inputs), len(params)))
 			}
 			for i := 0; i < len(v.Inputs); i++ {
 				arg := v.Inputs[i]
 				if arg.Type.T == abi.SliceTy || arg.Type.T == abi.ArrayTy {
-					result = append(result, getValues(arg, params[i].([]interface{})))
+					value, valErr := getValues(arg, params[i].([]interface{}))
+					if valErr != nil {
+						msg := fmt.Sprintf("Invalid value provided for method %s: %v", method, valErr.Error())
+						return nil, errors.New(msg)
+					}
+					result = append(result, value)
 				} else {
-					result = append(result, getValue(arg, params[i]))
+					value, valErr := getValue(arg, params[i])
+					if valErr != nil {
+						msg := fmt.Sprintf("Invalid value provided for method %s: %v", method, valErr.Error())
+						return nil, errors.New(msg)
+					}
+					result = append(result, value)
 				}
 			}
 		}
@@ -42,10 +57,15 @@ func GetConvertedParams(jsonMap map[string]interface{}) ([]interface{}, error) {
 	return result, nil
 }
 
-func getValues(arg abi.Argument, values []interface{}) interface{} {
+func getValues(arg abi.Argument, values []interface{}) (interface{}, error) {
 	var result interface{}
 	dataTypeString := arg.Type.String()[0:len(arg.Type.String())-2]
-
+	if strings.HasPrefix(dataTypeString, "int") || strings.HasPrefix(dataTypeString, "uint") {
+		for _, value := range values {
+			_, isNumber := value.(float64)
+			if !isNumber {return nil, errors.Errorf("only number value required in input array, a provided value is '%v'", value)}
+		}
+	}
 	switch dataTypeString {
 	case "int256", "uint256", "int", "uint":
 		dynarrin := make([]*big.Int, 0)
@@ -117,46 +137,67 @@ func getValues(arg abi.Argument, values []interface{}) interface{} {
 		}
 		result = array
 	}
-	return result
+	return result, nil
 }
 
 //numerics from json are always serialized as float64
-func getValue(arg abi.Argument, value interface{}) interface{} {
+func getValue(arg abi.Argument, value interface{}) (interface{}, error) {
+	nbrValue, isNumber := value.(float64)
 	if arg.Type.String() == "int256" || arg.Type.String() == "uint256" {
-		return big.NewInt(int64(value.(float64)))
+		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		return big.NewInt(int64(value.(float64))), nil
 	}
 	switch arg.Type.Kind {
 	case reflect.Int:
-		return big.NewInt(int64(value.(float64)))
+		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		return big.NewInt(int64(nbrValue)), nil
 	case reflect.Int8:
-		return int8(value.(float64))
+		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		return int8(nbrValue), nil
 	case reflect.Int16:
-		return int16(value.(float64))
+		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		return int16(nbrValue), nil
 	case reflect.Int32:
-		return int32(value.(float64))
+		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		return int32(nbrValue), nil
 	case reflect.Int64:
-		return int64(value.(float64))
+		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		return int64(nbrValue), nil
 	case reflect.Uint:
-		return big.NewInt(int64(value.(float64)))
+		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		return big.NewInt(int64(nbrValue)), nil
 	case reflect.Uint8:
-		return uint8(value.(float64))
+		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		return uint8(nbrValue), nil
 	case reflect.Uint16:
-		return uint16(value.(float64))
+		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		return uint16(nbrValue), nil
 	case reflect.Uint32:
-		return uint32(value.(float64))
+		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		return uint32(nbrValue), nil
 	case reflect.Uint64:
-		return uint64(value.(float64))
+		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		return uint64(nbrValue), nil
+	case reflect.Bool:
+		val, ok := value.(bool)
+		if !ok {
+			return nil, errors.Errorf("boolean value required, provided value is %v", value)
+		}
+		if val == true || val == false {
+			return val, nil
+		}
 	default:
-		return value
+		return value, nil
 	}
+	return value, nil
 }
 
-func GetABI(data string) abi.ABI {
+func GetABI(data string) (*abi.ABI, error) {
 	bytes, err := hex.DecodeString(data)
 	var abi abi.ABI
 	err = abi.UnmarshalJSON(bytes)
 	if err != nil {
-		utils.Error(err)
+		return nil, errors.New("The ABI provided is not a valid ABI structure")
 	}
-	return abi
+	return &abi, nil
 }
