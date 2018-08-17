@@ -192,7 +192,9 @@ func ToTransactionFromCache(cache *cache.Cache, hash string) (*Transaction, erro
 
 // ToTransactions
 func ToTransactions(txn *badger.Txn) ([]*Transaction, error) {
-	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = false
+	iterator := txn.NewIterator(opts)
 	defer iterator.Close()
 	prefix := []byte(fmt.Sprintf("table-transaction-"))
 	var transactions = make([]*Transaction, 0)
@@ -226,7 +228,9 @@ func TransactionPaging(page int,txn *badger.Txn) ([]*Transaction, error){
 	}
 
 	defer txn.Discard()
-	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = false
+	iterator := txn.NewIterator(opts)
 	defer iterator.Close()
 	prefix := []byte(fmt.Sprintf("table-transaction-"))
 	var transactions = make([]*Transaction, 0)
@@ -255,7 +259,9 @@ func TransactionPaging(page int,txn *badger.Txn) ([]*Transaction, error){
 
 // ToTransactionsByFromAddress
 func ToTransactionsByFromAddress(txn *badger.Txn, address string) ([]*Transaction, error) {
-	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = false
+	iterator := txn.NewIterator(opts)
 	defer iterator.Close()
 	prefix := []byte(fmt.Sprintf("key-transaction-from-%s", address))
 	var transactions = make([]*Transaction, 0)
@@ -278,7 +284,9 @@ func ToTransactionsByFromAddress(txn *badger.Txn, address string) ([]*Transactio
 
 // ToTransactionsByToAddress
 func ToTransactionsByToAddress(txn *badger.Txn, address string) ([]*Transaction, error) {
-	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = false
+	iterator := txn.NewIterator(opts)
 	defer iterator.Close()
 	prefix := []byte(fmt.Sprintf("key-transaction-to-%s", address))
 	var transactions = make([]*Transaction, 0)
@@ -301,7 +309,9 @@ func ToTransactionsByToAddress(txn *badger.Txn, address string) ([]*Transaction,
 
 // ToTransactionsByType
 func ToTransactionsByType(txn *badger.Txn, tipe byte) ([]*Transaction, error) {
-	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = false
+	iterator := txn.NewIterator(opts)
 	defer iterator.Close()
 	prefix := []byte(fmt.Sprintf("key-transaction-type-%d", tipe))
 	var transactions = make([]*Transaction, 0)

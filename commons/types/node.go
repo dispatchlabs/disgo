@@ -149,7 +149,9 @@ func ToNodeByAddress(txn *badger.Txn, address string) (*Node, error) {
 
 // ToNodesByType
 func ToNodesByType(txn *badger.Txn, tipe string) ([]*Node, error) {
-	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = false
+	iterator := txn.NewIterator(opts)
 	defer iterator.Close()
 	prefix := []byte(fmt.Sprintf("key-node-type-%s", tipe))
 	var nodes = make([]*Node, 0)
