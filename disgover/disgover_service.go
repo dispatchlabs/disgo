@@ -54,7 +54,7 @@ func GetDisGoverService() *DisGoverService {
 				Address:      types.GetAccount().Address,
 				GrpcEndpoint: types.GetConfig().GrpcEndpoint,
 				HttpEndpoint: types.GetConfig().HttpEndpoint,
-				Type:         types.TypeDelegate,
+				Type:         types.TypeNode,
 			},
 			// lruCache: lCache,
 			kdht: kbucket.NewRoutingTable(
@@ -133,6 +133,8 @@ func (this DisGoverService) updateWorker() {
 			if !utils.Exists(fileName) {
 				continue
 			}
+
+			utils.Info("found software to update")
 
 			// Read file?
 			bytes, err := ioutil.ReadFile(fileName)

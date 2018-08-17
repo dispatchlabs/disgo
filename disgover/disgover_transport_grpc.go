@@ -30,6 +30,7 @@ import (
 	"google.golang.org/grpc"
 	"io/ioutil"
 	"os"
+	"github.com/jasonlvhit/gocron"
 )
 
 //TODO: we are going to drop delegates if we fail to communicate with them.  The exepctation will be that the seed will tell us when they come back on line
@@ -63,19 +64,24 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.P
 	txn := services.NewTxn(true)
 	defer txn.Discard()
 
-	for _, delegateAddress := range types.GetConfig().DelegateAddresses {
+	// If delegate addresses is not set all nodes other than seed become a delegate (making it easy for testing and production).
+	if len(types.GetConfig().DelegateAddresses) == 0 {
+		node.Type = types.TypeDelegate
+	} else {
+		for _, delegateAddress := range types.GetConfig().DelegateAddresses {
 
-		// Is this a delegate node?
-		if delegateAddress == node.Address {
+			// Is this a delegate node?
+			if delegateAddress == node.Address {
 
-			// Is this an authentic delegate?
-			err := authentication.Verify(node.Address)
-			if err != nil {
-				utils.Warn(fmt.Sprintf("unable to authentication delegate [address=%s]", node.Address))
-				return nil, errors.New("unable to authentication you as a delegate")
+				// Is this an authentic delegate?
+				err := authentication.Verify(services.GetCache(), node.Address)
+				if err != nil {
+					utils.Warn(fmt.Sprintf("unable to authentication delegate [address=%s]", node.Address))
+					return nil, errors.New("unable to authentication you as a delegate")
+				}
+				node.Type = types.TypeDelegate
+				break
 			}
-			node.Type = types.TypeDelegate
-			break
 		}
 	}
 	node.PersistAndCache(txn, services.GetCache())
@@ -93,7 +99,7 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.P
 	utils.Info(fmt.Sprintf("received ping [address=%s, host=%s, port=%d, delegates=%d]", node.Address, node.GrpcEndpoint.Host, node.GrpcEndpoint.Port, len(delegates)))
 
 	// New authentication.
-	authentication, err = types.NewAuthenticate()
+	authentication, err = types.NewAuthentication()
 	if err != nil {
 		utils.Error(err)
 		return nil, err
@@ -122,7 +128,7 @@ func (this *DisGoverService) peerPingSeedGrpc() ([]*types.Node, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
 		// New authentication.
-		authentication, err := types.NewAuthenticate()
+		authentication, err := types.NewAuthentication()
 		if err != nil {
 			return nil, err
 		}
@@ -196,7 +202,7 @@ func (this *DisGoverService) peerUpdateGrpc() {
 	}
 
 	// New authentication.
-	authentication, err := types.NewAuthenticate()
+	authentication, err := types.NewAuthentication()
 	if err != nil {
 		utils.Error(err)
 		return
@@ -238,7 +244,7 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 	}
 
 	// Write file.
-	fileName :=  "." + string(os.PathSeparator) + "disgo"
+	fileName := "." + string(os.PathSeparator) + "disgo"
 	err = ioutil.WriteFile(fileName, softwareUpdate.Software, 0)
 	if err != nil {
 		utils.Error(fmt.Sprintf("unable to save file %s", fileName), err)
@@ -247,11 +253,15 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 
 	utils.Info(fmt.Sprintf("software updated from seed node"))
 
+	// Schedule the reboot.
 	go func() {
-		time.Sleep(3 * time.Second) // TODO: This should be set to the time from the seed!!!
-		services.GetDbService().Close()
-		utils.Info("rebooting with new version of disgo...")
-		os.Exit(0)
+		gocron.Every(1).Day().At(softwareUpdate.ScheduledReboot).Do(func() {
+			gocron.Clear()
+			services.GetDbService().Close()
+			utils.Info("rebooting with new version of disgo...")
+			os.Exit(0)
+		})
+		<-gocron.Start()
 	}()
 
 	return &proto.Empty{}, nil
@@ -268,24 +278,33 @@ func (this *DisGoverService) peerUpdateSoftwareGrpc(software []byte) {
 	}
 
 	// New authentication.
-	authentication, err := types.NewAuthenticate()
+	authentication, err := types.NewAuthentication()
 	if err != nil {
 		utils.Error(err)
 		return
 	}
 
+	txn := services.NewTxn(true)
+	defer txn.Discard()
+	reboot := time.Now()
+	reboot = reboot.Add(2 * time.Minute)
+
 	for _, delegate := range delegates {
 		maxSize := 1024 * 1024 * 1024 // TODO: Do we need this (ServerOptions sets this)?
 		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxSize), grpc.MaxCallSendMsgSize(maxSize)), grpc.WithInsecure())
 		if err != nil {
-			utils.Warn(fmt.Sprintf("cannot dial node [host=%s, port=%d]", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), err)
+			utils.Error(fmt.Sprintf("cannot dial node [host=%s, port=%d]", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), err)
+			err = delegate.Unset(txn, services.GetCache())
+			if err != nil {
+				utils.Error(err)
+			}
 			continue
 		}
 		client := proto.NewDisgoverGrpcClient(conn)
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 
 		// Update software.
-		_, err = client.UpdateSoftwareGrpc(ctx, &proto.SoftwareUpdate{Authentication: convertToProtoAuthentication(authentication), Software: software})
+		_, err = client.UpdateSoftwareGrpc(ctx, &proto.SoftwareUpdate{Authentication: convertToProtoAuthentication(authentication), Software: software, ScheduledReboot: reboot.Format("3:04")})
 		if err != nil {
 			utils.Warn(fmt.Sprintf("unable to update sofware [address=%s, host=%s, port=%d]", delegate.Address, delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port))
 			continue
@@ -312,7 +331,7 @@ func (this *DisGoverService) verifySeedNode(protoAuthenticate *proto.Authenticat
 
 	for _, seedAddress := range types.GetConfig().SeedAddresses {
 		if seedAddress == authenticationAddress {
-			err = authentication.Verify(seedAddress)
+			err = authentication.Verify(services.GetCache(), seedAddress)
 			if err != nil {
 				return errors.New("you are not an authorized seed node")
 			}
@@ -361,7 +380,7 @@ func convertToProtoNode(node *types.Node) *proto.Node {
 	}
 }
 
-// convertToDomainAuthenticate
+// convertToDomainAuthentication
 func convertToDomainAuthentication(authentication *proto.Authentication) *types.Authentication {
 	return &types.Authentication{
 		Hash:      authentication.Hash,
@@ -370,7 +389,7 @@ func convertToDomainAuthentication(authentication *proto.Authentication) *types.
 	}
 }
 
-// convertToProtoAuthenticate
+// convertToProtoAuthentication
 func convertToProtoAuthentication(authentication *types.Authentication) *proto.Authentication {
 	if authentication == nil {
 		return nil
