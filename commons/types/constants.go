@@ -26,7 +26,7 @@ import (
 const (
 	TxReceiveTimeout   = 1000 //1 second
 	GossipQueueTimeout = time.Second * 5
-	GossipTimeout      = 300 //300 milliseconds
+	GossipTimeout      = 1000 //1 second  //will continue to decrease until we find best value
 )
 
 // Requests
