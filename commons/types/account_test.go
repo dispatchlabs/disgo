@@ -98,6 +98,7 @@ func TestToAccountByAddress(t *testing.T) {
 //TestToAccountByName
 func TestToAccountByName(t *testing.T) {
 	//TODO: currently not using names
+	t.Skip("names not in use")
 	//defer destruct()
 	//txn := db.NewTransaction(true)
 	//defer txn.Discard()
@@ -117,6 +118,7 @@ func TestToAccountByName(t *testing.T) {
 //TestToAccountsByName
 func TestToAccountsByName(t *testing.T) {
 	//TODO: currently not using names
+	t.Skip("names not in use")
 	//defer destruct()
 	//txn := db.NewTransaction(true)
 	//defer txn.Discard()
