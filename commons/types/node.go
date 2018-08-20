@@ -30,7 +30,7 @@ type Node struct {
 	Address      string    `json:"address"`
 	GrpcEndpoint *Endpoint `json:"grpcEndpoint"`
 	HttpEndpoint *Endpoint `json:"httpEndpoint"`
-	Type         string    `json:"type"`
+	Type         string    `json:"type,omitempty"`
 }
 
 // Key

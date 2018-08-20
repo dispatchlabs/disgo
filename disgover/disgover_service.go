@@ -102,7 +102,8 @@ func (this *DisGoverService) Go() {
 		if err != nil {
 			utils.Error(err)
 			services.GetDbService().Close()
-			utils.Fatal("unable to connect to seed node (seed.dispatchlabs.io)...please try again later")
+			seeds := types.GetConfig().Seeds
+			utils.Fatal(fmt.Sprintf("unable to connect to seed node (%s:%d)...please try again later", seeds[0].GrpcEndpoint.Host, seeds[0].GrpcEndpoint.Port))
 		}
 		for _, delegate := range delegates {
 			delegate.Cache(services.GetCache())

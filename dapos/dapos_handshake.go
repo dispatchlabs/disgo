@@ -144,7 +144,8 @@ func (this *DAPoSService) synchronizeGossip(gossip *types.Gossip) (*types.Gossip
 		if err == nil {
 			synchronizedGossip.Rumors = append(gossip.Rumors, *types.NewRumor(types.GetAccount().PrivateKey, types.GetAccount().Address, gossip.Transaction.Hash))
 		} else {
-			utils.Warn(err)
+			utils.Error(err)
+			return synchronizedGossip, err
 		}
 	}
 	return synchronizedGossip, nil
