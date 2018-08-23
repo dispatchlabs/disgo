@@ -22,6 +22,7 @@ import (
 	"time"
 	"reflect"
 	"github.com/dispatchlabs/disgo/commons/utils"
+	"fmt"
 )
 
 var testReceiptByte = []byte("{\"transactionHash\":\"test\",\"status\":\"Pending\",\"humanReadableStatus\":\"Pending\",\"data\":\"test data\",\"contractAddress\":\"\",\"contractResult\":[],\"created\":\"2018-05-09T15:04:05Z\"}")
@@ -114,21 +115,21 @@ func TestReceiptMarshalJSON(t *testing.T) {
 	}
 }
 
-//TestToReceiptFromTransactionHash
-func TestToReceiptFromTransactionHash(t *testing.T) {
+//TestToReceiptFromKey
+func TestToReceiptFromKey(t *testing.T) {
 	defer destruct()
 	txn := db.NewTransaction(true)
 	defer txn.Discard()
 	receipt := &Receipt{}
-	receipt.UnmarshalJSON(testReceiptByte)
+	receipt.TransactionHash = "testing"
 	receipt.Persist(txn)
 
-	testReceipt, err := ToReceiptFromTransactionHash(txn, receipt.TransactionHash)
+	testReceipt, err := ToReceiptFromKey(txn, []byte(receipt.Key()))
 	if err != nil{
 		t.Error(err)
 	}
 	if reflect.DeepEqual(testReceipt, receipt) == false{
-		t.Error("Node not equal to testAccount")
+		t.Error("Receipt not equal to testAccount")
 	}
 }
 
@@ -138,17 +139,17 @@ func TestReceiptSet(t *testing.T) {
 	txn := db.NewTransaction(true)
 	defer txn.Discard()
 	receipt := &Receipt{}
-	receipt.UnmarshalJSON(testReceiptByte)
+	receipt.TransactionHash = "testing"
 	receipt.Set(txn, c)
 
-	testReceipt, err := ToReceiptFromTransactionHash(txn, receipt.TransactionHash)
+	testReceipt, err := ToReceiptFromKey(txn, []byte(fmt.Sprintf("table-receipt-" + receipt.TransactionHash)))
 	if err != nil{
 		t.Error(err)
 	}
 	if reflect.DeepEqual(testReceipt, receipt) == false{
 		utils.Info(testReceipt)
 		utils.Info(receipt)
-		t.Error("Node not equal to testAccount")
+		t.Error("Receipt not equal to testAccount")
 	}
 	testReceipt, err = ToReceiptFromCache(c, receipt.TransactionHash)
 	if err != nil {

@@ -217,9 +217,9 @@ func ToReceiptFromCache(cache *cache.Cache, transactionHash string) (*Receipt, e
 	return receipt, nil
 }
 
-// ToReceiptFromTransactionHash
-func ToReceiptFromTransactionHash(txn *badger.Txn, transactionHash string) (*Receipt, error) {
-	item, err := txn.Get([]byte("table-receipt-" + transactionHash))
+// ToReceiptFromTransactionKey
+func ToReceiptFromKey(txn *badger.Txn, key []byte) (*Receipt, error) {
+	item, err := txn.Get(key)
 	if err != nil {
 		return nil, err
 	}

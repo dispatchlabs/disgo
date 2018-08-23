@@ -55,7 +55,7 @@ func (this *DAPoSService) GetReceipt(transactionHash string) *types.Response {
 	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
 		receipt, err := types.ToReceiptFromCache(services.GetCache(), transactionHash)
 		if err != nil {
-			receipt, err = types.ToReceiptFromTransactionHash(txn, transactionHash)
+			receipt, err = types.ToReceiptFromKey(txn, []byte(fmt.Sprintf("table-receipt-" +transactionHash)))
 			if err != nil {
 				if err == badger.ErrKeyNotFound {
 					response.Status = types.StatusNotFound

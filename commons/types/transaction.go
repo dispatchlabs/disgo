@@ -777,7 +777,7 @@ func (this *Transaction) setTransients(txn *badger.Txn) {
 	if err == nil {
 		this.ToName = toAccount.Name
 	}
-	receipt, err := ToReceiptFromTransactionHash(txn, this.Hash)
+	receipt, err := ToReceiptFromKey(txn, []byte(fmt.Sprintf("table-receipt-" + this.Hash)))
 	if err == nil {
 		this.Receipt = *receipt
 	}
