@@ -54,10 +54,10 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.P
 	authentication := convertToDomainAuthentication(pingSeed.Authentication)
 	authenticationAddress, err := authentication.GetAddress()
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("unable to authentication you [error=%s]", err.Error()))
+		return nil, errors.New(fmt.Sprintf("unable to authenticate you [error=%s]", err.Error()))
 	}
 	if authenticationAddress != node.Address {
-		return nil, errors.New("unable to authentication you")
+		return nil, errors.New("unable to authenticate you")
 	}
 
 	// Persist and cache node.
@@ -76,8 +76,8 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.P
 				// Is this an authentic delegate?
 				err := authentication.Verify(services.GetCache(), node.Address)
 				if err != nil {
-					utils.Warn(fmt.Sprintf("unable to authentication delegate [address=%s]", node.Address))
-					return nil, errors.New("unable to authentication you as a delegate")
+					utils.Warn(fmt.Sprintf("unable to authenticate delegate [address=%s]", node.Address))
+					return nil, errors.New("unable to authenticate you as a delegate")
 				}
 				node.Type = types.TypeDelegate
 				break
@@ -327,9 +327,9 @@ func (this *DisGoverService) verifySeedNode(protoAuthenticate *proto.Authenticat
 		return err
 	}
 
-	for _, SeedNode := range types.GetConfig().Seeds {
-		if SeedNode.Address == authenticationAddress {
-			err = authentication.Verify(services.GetCache(), SeedNode.Address)
+	for _, seedNode := range types.GetConfig().Seeds {
+		if seedNode.Address == authenticationAddress {
+			err = authentication.Verify(services.GetCache(), seedNode.Address)
 			if err != nil {
 				return errors.New("you are not an authorized seed node")
 			}
