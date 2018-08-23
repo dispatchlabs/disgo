@@ -52,7 +52,7 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.P
 
 	node := convertToDomainNode(pingSeed.Node)
 	authentication := convertToDomainAuthentication(pingSeed.Authentication)
-	authenticationAddress, err := authentication.GetAddress()
+	authenticationAddress, err := authentication.GetDerivedAddress()
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("unable to authenticate you [error=%s]", err.Error()))
 	}
@@ -321,7 +321,7 @@ func (this *DisGoverService) verifySeedNode(protoAuthenticate *proto.Authenticat
 	}
 
 	authentication := convertToDomainAuthentication(protoAuthenticate)
-	authenticationAddress, err := authentication.GetAddress()
+	authenticationAddress, err := authentication.GetDerivedAddress()
 	if err != nil {
 		utils.Error(err)
 		return err
