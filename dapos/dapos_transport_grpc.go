@@ -83,7 +83,7 @@ func (this *DAPoSService) SynchronizeGrpc(constext context.Context, request *pro
 
 // peerDelegateExecuteGrpc
 func (this *DAPoSService) peerSynchronize() {
-	utils.Info("synchronizing DB with a delegate...")
+	utils.Info("synchronizing DB with peer delegate...")
 
 	// Find delegate nodes.
 	delegates, err := types.ToNodesByTypeFromCache(services.GetCache(),types.TypeDelegate)
@@ -109,7 +109,7 @@ func (this *DAPoSService) peerSynchronize() {
 		}
 		defer conn.Close()
 		client := proto.NewDAPoSGrpcClient(conn)
-		contextWithTimeout, cancel := context.WithTimeout(context.Background(), 2000*time.Millisecond)
+		contextWithTimeout, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
 		// Synchronize
@@ -137,7 +137,7 @@ func (this *DAPoSService) peerSynchronize() {
 				utils.Error(err)
 			}
 		}
-		utils.Info("DB synchronized from peer delegate")
+		utils.Info(fmt.Sprintf("synchronized %d records from peer delegate's DB", index))
 		return
 	}
 }
