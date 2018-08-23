@@ -79,12 +79,8 @@ func (this Transaction) ToKey() string {
 }
 
 //Cache
-func (this *Transaction) Cache(cache *cache.Cache, time_optional ...time.Duration) {
-	TTL := TransactionTTL
-	if len(time_optional) > 0 {
-		TTL = time_optional[0]
-	}
-	cache.Set(this.Key(), this, TTL)
+func (this *Transaction) Cache(cache *cache.Cache) {
+	cache.Set(this.Key(), this, TransactionCacheTTL)
 }
 
 // Persist
@@ -602,7 +598,7 @@ func (this Transaction) String() string {
 	return string(bytes)
 }
 
-// String
+// ToPrettyJson
 func (this Transaction) ToPrettyJson() string {
 	bytes, err := json.MarshalIndent(this, "", "  ")
 	if err != nil {
