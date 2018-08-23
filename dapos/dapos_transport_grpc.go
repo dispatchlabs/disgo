@@ -40,8 +40,8 @@ func (this *DAPoSService) WithGrpc() *DAPoSService {
 }
 
 
-// Synchronize
-func (this *DAPoSService) SynchronizeGrpc(context.Context, *proto.Empty) (*proto.SynchronizeResponse, error) {
+// SynchronizeGrpc
+func (this *DAPoSService) SynchronizeGrpc(constext context.Context, request *proto.SynchronizeRequest) (*proto.SynchronizeResponse, error) {
 	utils.Info("synchronizing DB with a delegate...")
 	var items = make([]*proto.Item, 0)
 	err := services.GetDb().View(func(txn *badger.Txn) error {
@@ -49,6 +49,7 @@ func (this *DAPoSService) SynchronizeGrpc(context.Context, *proto.Empty) (*proto
 		opts.PrefetchSize = 100
 		it := txn.NewIterator(opts)
 		defer it.Close()
+		var i int64 = 0
 		for it.Rewind(); it.Valid(); it.Next() {
 			item := it.Item()
 			key := item.Key()
@@ -57,9 +58,18 @@ func (this *DAPoSService) SynchronizeGrpc(context.Context, *proto.Empty) (*proto
 				return err
 			}
 			keyString := string(key)
-			//fmt.Printf("Key = %v\n", keyString)
-			if strings.HasPrefix(keyString, "key") {
-				items = append(items, &proto.Item{Key: keyString, Value: string(value)})
+			if !strings.HasPrefix(keyString, "table") && !strings.HasPrefix(keyString, "key") { // TODO: Where is the smart contract state stored?
+				continue
+			}
+
+			if i < request.Index {
+				i++
+				continue
+			}
+			items = append(items, &proto.Item{Key: keyString, Value: string(value)})
+			i++
+			if len(items) == 50 {
+				break
 			}
 		}
 		return nil
@@ -103,20 +113,30 @@ func (this *DAPoSService) peerSynchronize() {
 		defer cancel()
 
 		// Synchronize
-		response, err := client.SynchronizeGrpc(contextWithTimeout, &proto.Empty{})
-		if err != nil {
-			utils.Warn(fmt.Sprintf("unable to synchronize with delegate [host=%s, port=%d]", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), err)
-			continue
-		}
-		txn := services.NewTxn(true)
-		defer txn.Discard()
-		for _, item := range response.Items {
-			err = txn.Set([]byte(item.Key), []byte(item.Value))
+		var index int64 = 0
+		for {
+			txn := services.NewTxn(true)
+			defer txn.Discard()
+			response, err := client.SynchronizeGrpc(contextWithTimeout, &proto.SynchronizeRequest{Index: index})
+			if err != nil {
+				utils.Warn(fmt.Sprintf("unable to synchronize with delegate [host=%s, port=%d]", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), err)
+				continue
+			}
+			if len(response.Items) == 0 {
+				break
+			}
+			for _, item := range response.Items {
+				err = txn.Set([]byte(item.Key), []byte(item.Value))
+				if err != nil {
+					utils.Error(err)
+				}
+			}
+			index += int64(len(response.Items))
+			err = txn.Commit(nil)
 			if err != nil {
 				utils.Error(err)
 			}
 		}
-		txn.Commit(nil)
 		utils.Info("DB synchronized from peer delegate")
 		return
 	}
