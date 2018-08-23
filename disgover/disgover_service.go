@@ -86,8 +86,8 @@ func (this *DisGoverService) Go() {
 	this.running = true
 
 	// Check if we are a seed.
-	for _, seedHost := range types.GetConfig().Seeds {
-		if seedHost.GrpcEndpoint.Host == types.GetConfig().GrpcEndpoint.Host && seedHost.GrpcEndpoint.Port == types.GetConfig().GrpcEndpoint.Port {
+	for _, seed := range types.GetConfig().Seeds {
+		if seed.Address == types.GetAccount().Address {
 			this.ThisNode.Type = types.TypeSeed
 			break
 		}
