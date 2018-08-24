@@ -25,7 +25,7 @@ import (
 // Timouts -- currently calculated in milliseconds.
 const (
 	TxReceiveTimeout   = 3000 //1 second
-	TxReceiveWiggle    = 100000 // 100ms in nanoseconds
+	TxReceiveWiggle    = 100 // 100ms
 	GossipQueueTimeout = time.Second * 5
 	GossipTimeout      = 1000 //1 second  //will continue to decrease until we find best value
 )
