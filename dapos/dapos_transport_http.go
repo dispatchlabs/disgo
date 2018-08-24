@@ -34,11 +34,11 @@ func (this *DAPoSService) WithHttp() *DAPoSService {
 	services.GetHttpRouter().HandleFunc("/v1/accounts/{address}", this.getAccountHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/accounts", this.getAccountsHandler).Methods("GET")
 	//Transactions
-	services.GetHttpRouter().HandleFunc("/v1/transactions/from/{address}", this.getTransactionsByFromAddressHandler).Methods("GET")
-	services.GetHttpRouter().HandleFunc("/v1/transactions/to/{address}", this.getTransactionsByToAddressHandler).Methods("GET")
+	services.GetHttpRouter().HandleFunc("/v1/transactions/from/{address}", this.getTransactionsByFromAddressHandler).Methods("GET")//TODO: deprecate
+	services.GetHttpRouter().HandleFunc("/v1/transactions/to/{address}", this.getTransactionsByToAddressHandler).Methods("GET")//TODO: deprecate
 	services.GetHttpRouter().HandleFunc("/v1/transactions", this.newTransactionHandler).Methods("POST")
-	services.GetHttpRouter().HandleFunc("/v1/transactions/{hash}", this.getTransactionHandler).Methods("GET") //TODO: support pagination
-	services.GetHttpRouter().HandleFunc("/v1/transactions", this.getTransactionsHandler).Methods("GET")       //TODO: to be deprecated
+	services.GetHttpRouter().HandleFunc("/v1/transactions/{hash}", this.getTransactionHandler).Methods("GET")
+	services.GetHttpRouter().HandleFunc("/v1/transactions", this.getTransactionsHandler).Methods("GET")
 	//Artifacts
 	services.GetHttpRouter().HandleFunc("/v1/artifacts/{query}", this.unsupportedFunctionHandler).Methods("GET") //TODO: support pagination
 	services.GetHttpRouter().HandleFunc("/v1/artifacts/", this.unsupportedFunctionHandler).Methods("POST")
@@ -144,7 +144,7 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 // getTransactionsByFromAddressHandler
 func (this *DAPoSService) getTransactionsByFromAddressHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
-	response := this.GetTransactionsByFromAddress(vars["address"])
+	response := this.GetTransactionsByFromAddressOld(vars["address"])
 	setHeaders(response, &responseWriter)
 	responseWriter.Write([]byte(response.String()))
 }
@@ -152,7 +152,7 @@ func (this *DAPoSService) getTransactionsByFromAddressHandler(responseWriter htt
 // getTransactionsByToAddressHandler
 func (this *DAPoSService) getTransactionsByToAddressHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
-	response := this.GetTransactionsByToAddress(vars["address"])
+	response := this.GetTransactionsByToAddressOld(vars["address"])
 	setHeaders(response, &responseWriter)
 	responseWriter.Write([]byte(response.String()))
 }
@@ -171,9 +171,9 @@ func (this *DAPoSService) getTransactionsHandler(responseWriter http.ResponseWri
 		services.Error(responseWriter, response.String(), http.StatusBadRequest)
 		return
 	} else if from != "" {
-		response = this.GetTransactionsByFromAddress(from)
+		response = this.GetTransactionsByFromAddress(from, pageNumber)
 	} else if to != "" {
-		response = this.GetTransactionsByToAddress(to)
+		response = this.GetTransactionsByToAddress(to, pageNumber)
 	} else {
 		response = this.GetTransactions(pageNumber)
 	}
