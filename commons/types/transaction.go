@@ -756,7 +756,7 @@ func (this Transaction) Equals(other string) bool {
 
 func checkTime(txTime int64) (int64, error) {
 	now := utils.ToMilliSeconds(time.Now())
-	if now + 100 < txTime { // Adding "wiggle room" to allow for clock variances
+	if now + TxReceiveWiggle < txTime { // Adding "wiggle room" to allow for clock variances
 		return txTime, errors.Errorf("transaction time cannot be in the future")
 	} else if txTime < 0 {
 		return txTime, errors.Errorf("transaction time cannot be negative")
