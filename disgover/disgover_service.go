@@ -27,6 +27,9 @@ import (
 	"github.com/libp2p/go-libp2p-kbucket"
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-peerstore"
+	"time"
+	"os"
+	"io/ioutil"
 )
 
 var disGoverServiceInstance *DisGoverService
@@ -48,10 +51,10 @@ func GetDisGoverService() *DisGoverService {
 	disGoverServiceOnce.Do(func() {
 		disGoverServiceInstance = &DisGoverService{
 			ThisNode: &types.Node{
-				Address:  types.GetAccount().Address,
+				Address:      types.GetAccount().Address,
 				GrpcEndpoint: types.GetConfig().GrpcEndpoint,
 				HttpEndpoint: types.GetConfig().HttpEndpoint,
-				Type:     types.TypeDelegate,
+				Type:         types.TypeNode,
 			},
 			// lruCache: lCache,
 			kdht: kbucket.NewRoutingTable(
@@ -83,28 +86,72 @@ func (this *DisGoverService) Go() {
 	this.running = true
 
 	// Check if we are a seed.
-	for _, seedEndpoint := range types.GetConfig().SeedEndpoints {
-		if seedEndpoint.Host == types.GetConfig().GrpcEndpoint.Host && seedEndpoint.Port == types.GetConfig().GrpcEndpoint.Port {
+	for _, seedHost := range types.GetConfig().Seeds {
+		if seedHost.GrpcEndpoint.Host == types.GetConfig().GrpcEndpoint.Host && seedHost.GrpcEndpoint.Port == types.GetConfig().GrpcEndpoint.Port {
 			this.ThisNode.Type = types.TypeSeed
 			break
 		}
 	}
-	if types.GetConfig().SeedEndpoints == nil || len(types.GetConfig().SeedEndpoints) == 0 {
+	if types.GetConfig().Seeds == nil || len(types.GetConfig().Seeds) == 0 {
 		this.ThisNode.Type = types.TypeSeed
 	}
 
-	// Cache delegates.
-	if this.ThisNode.Type == types.TypeDelegate {
+	// Cache delegates?
+	if this.ThisNode.Type != types.TypeSeed {
 		delegates, err := this.peerPingSeedGrpc()
 		if err != nil {
-			utils.Fatal(err)
+			utils.Error(err)
+			services.GetDbService().Close()
+			seeds := types.GetConfig().Seeds
+			utils.Fatal(fmt.Sprintf("unable to connect to seed node (%s:%d)...please try again later", seeds[0].GrpcEndpoint.Host, seeds[0].GrpcEndpoint.Port))
 		}
-
 		for _, delegate := range delegates {
 			delegate.Cache(services.GetCache())
+			if delegate.Address == this.ThisNode.Address {
+				this.ThisNode.Type = delegate.Type
+			}
 		}
+	}
+
+	// Start update thread.
+	if this.ThisNode.Type == types.TypeSeed {
+		go this.updateWorker()
 	}
 
 	utils.Info(fmt.Sprintf("running as %s", this.ThisNode.Type))
 	utils.Events().Raise(Events.DisGoverServiceInitFinished)
+}
+
+// updateWorker
+func (this DisGoverService) updateWorker() {
+	for {
+		timer := time.NewTimer(30 * time.Second)
+		select {
+		case <-timer.C:
+
+			// Is there a software update?
+			fileName := "." + string(os.PathSeparator) + "update" + string(os.PathSeparator) + "disgo"
+			if !utils.Exists(fileName) {
+				continue
+			}
+
+			utils.Info("found software to update")
+
+			// Read file?
+			bytes, err := ioutil.ReadFile(fileName)
+			if err != nil {
+				utils.Error(fmt.Sprintf("unable to load file %s", fileName), err)
+				continue
+			}
+
+			// Update software.
+			this.peerUpdateSoftwareGrpc(bytes)
+
+			// Delete file.
+			err = os.Remove(fileName)
+			if err != nil {
+				utils.Warn(fmt.Sprintf("unable to delete file %s", fileName), err)
+			}
+		}
+	}
 }

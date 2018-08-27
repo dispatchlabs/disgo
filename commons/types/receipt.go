@@ -43,7 +43,7 @@ func (this Receipt) Key() string {
 
 // Cache
 func (this *Receipt) Cache(cache *cache.Cache, time_optional ...time.Duration) {
-	TTL := ReceiptTTL
+	TTL := ReceiptCacheTTL
 	if len(time_optional) > 0 {
 		TTL = time_optional[0]
 	}
@@ -157,7 +157,7 @@ func (this *Receipt) SetInternalErrorWithNewTransaction(db *badger.DB, err error
 	defer txn.Discard()
 	this.Status = StatusInternalError
 	this.HumanReadableStatus = err.Error()
-	err = txn.SetWithTTL([]byte(this.Key()), []byte(this.String()), ReceiptTTL)
+	err = txn.SetWithTTL([]byte(this.Key()), []byte(this.String()), ReceiptCacheTTL)
 	if err != nil {
 		utils.Error(err)
 	}
@@ -172,7 +172,7 @@ func (this *Receipt) SetStatusWithNewTransaction(db *badger.DB, status string) {
 	txn := db.NewTransaction(true)
 	defer txn.Discard()
 	this.Status = status
-	err := txn.SetWithTTL([]byte(this.Key()), []byte(this.String()), ReceiptTTL)
+	err := txn.SetWithTTL([]byte(this.Key()), []byte(this.String()), ReceiptCacheTTL)
 	if err != nil {
 		utils.Error(err)
 	}

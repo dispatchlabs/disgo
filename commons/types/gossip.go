@@ -22,7 +22,6 @@ import (
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/patrickmn/go-cache"
-	"time"
 )
 
 // Gossip
@@ -37,15 +36,11 @@ func (this Gossip) Key() string {
 }
 
 // Cache
-func (this *Gossip) Cache(cache *cache.Cache, time_optional ...time.Duration){
-	TTL := GossipTTL
-	if len(time_optional) > 0 {
-		TTL = time_optional[0]
-	}
-	cache.Set(this.Key(), this, TTL)
+func (this *Gossip) Cache(cache *cache.Cache){
+	cache.Set(this.Key(), this, GossipCacheTTL)
 }
 
-//Persist
+// Persist
 func (this *Gossip) Persist(txn *badger.Txn) error{
 	err := txn.Set([]byte(this.Key()), []byte(this.String()))
 	if err != nil {
@@ -216,4 +211,46 @@ func ToGossips(txn *badger.Txn) ([]*Gossip, error) {
 		gossips = append(gossips, gossip)
 	}
 	return gossips, nil
+}
+
+func GossipPaging(page int,txn *badger.Txn) ([]*Gossip, error){
+	var iteratorCount = 0
+	var firstItem int
+	pageSize := 10
+	if page <= 0 {
+		return nil, ErrInvalidRequest
+	}else if page == 1{
+		firstItem = 1
+	} else{
+		firstItem = (page * pageSize) - (pageSize - 1)
+	}
+
+	defer txn.Discard()
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = false
+	iterator := txn.NewIterator(opts)
+	defer iterator.Close()
+	prefix := []byte(fmt.Sprintf("table-gossip-"))
+	var Gossips = make([]*Gossip, 0)
+	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
+		iteratorCount++
+		if iteratorCount >= firstItem && iteratorCount <= (firstItem+9) {
+			item := iterator.Item()
+			value, err := item.Value()
+			if err != nil {
+				utils.Error(err)
+				continue
+			}
+			Gossip, err := ToGossipFromJson(value)
+			if err != nil {
+				utils.Error(err)
+				continue
+			}
+			Gossips = append(Gossips, Gossip)
+		}
+		if iteratorCount > (firstItem+9){
+			break
+		}
+	}
+	return Gossips, nil //TODO: return error if empty?
 }

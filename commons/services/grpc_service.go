@@ -26,6 +26,12 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"golang.org/x/net/context"
+
+	"github.com/processout/grpc-go-pool"
+	"time"
+	"github.com/pkg/errors"
+	"github.com/patrickmn/go-cache"
 )
 
 var grpcServiceInstance *GrpcService
@@ -34,7 +40,8 @@ var grpcServiceOnce sync.Once
 // GetGrpcService
 func GetGrpcService() *GrpcService {
 	grpcServiceOnce.Do(func() {
-		grpcServiceInstance = &GrpcService{Port: int(types.GetConfig().GrpcEndpoint.Port), Server: grpc.NewServer(), running: false}
+		opts := grpc.ServerOption(grpc.MaxRecvMsgSize(1024 * 1024 * 1024))
+		grpcServiceInstance = &GrpcService{Port: int(types.GetConfig().GrpcEndpoint.Port), Server: grpc.NewServer(opts), running: false}
 	})
 	return grpcServiceInstance
 }
@@ -71,4 +78,43 @@ func (this *GrpcService) Go() {
 		utils.Fatal("failed to serve: %v", error)
 		this.running = false
 	}
+}
+
+
+func GetGrpcConnection(address string, host string, port int64) (*grpc.ClientConn, error) {
+
+	value, ok := GetCache().Get(fmt.Sprintf("dapos-grpc-pool-%s", address))
+	// IF not found then setup one
+	if !ok {
+		setupConnectionPoolForPeer(address, host, port)
+	}
+	value, ok = GetCache().Get(fmt.Sprintf("dapos-grpc-pool-%s", address))
+	if !ok {
+		return nil, errors.New(fmt.Sprintf("unable to find GRPC pool for this delegate [address=%s]", address))
+	}
+	pool := value.(*grpcpool.Pool)
+	clientConn, err := pool.Get(context.Background())
+	if err != nil {
+		utils.Error("Client connection error ", err)
+	}
+	defer clientConn.Close()
+	return clientConn.ClientConn, nil
+
+}
+
+func setupConnectionPoolForPeer(address string, host string, port int64) {
+	factory := func() (*grpc.ClientConn, error) {
+		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", host, port), grpc.WithInsecure())
+
+		if err != nil {
+			utils.Error("Failed to start gRPC connection: %v", err)
+		}
+		utils.Info("Connected to node at", host, port)
+		return conn, err
+	}
+	pool, err := grpcpool.New(factory, 5, 5, time.Second* 5)
+	if err != nil {
+		utils.Error(err.Error())
+	}
+	GetCache().Set(fmt.Sprintf("dapos-grpc-pool-%s", address), pool, cache.NoExpiration)
 }

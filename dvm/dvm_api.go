@@ -183,6 +183,7 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 		}, err
 	}
 
+	// TODO: I may have broken this!!!!
 	callData, err := jsonABI.Pack(tx.Method, tx.Params...)
 	if err != nil {
 		utils.Error(err)
