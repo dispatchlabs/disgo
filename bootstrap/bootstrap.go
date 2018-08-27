@@ -31,18 +31,16 @@ import (
 	"net/http"
 	"os"
 
+	"os/signal"
+	"syscall"
+
 	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/dapos"
 	"github.com/dispatchlabs/disgo/disgover"
 	"github.com/dispatchlabs/disgo/dvm"
-	"syscall"
-	"os/signal"
-)
-
-const (
-	Version = "1.0.0"
+	"github.com/dispatchlabs/disgo/localapi"
 )
 
 // Server -
@@ -62,13 +60,14 @@ func NewServer() *Server {
 
 // Go
 func (server *Server) Go() {
-	utils.Info("booting Disgo v" + Version + "...")
+	utils.Info(fmt.Sprintf("booting Disgo v%s...", types.Version))
 
 	// Add services.
 	server.services = append(server.services, dvm.GetDVMService())
 	server.services = append(server.services, services.GetDbService())
 	server.services = append(server.services, disgover.GetDisGoverService().WithGrpc().WithHttp())
 	server.services = append(server.services, dapos.GetDAPoSService().WithGrpc().WithHttp())
+	server.services = append(server.services, localapi.GetLocalAPIService().WithHttp())
 	server.services = append(server.services, services.GetHttpService())
 	server.services = append(server.services, services.GetGrpcService())
 
@@ -161,8 +160,8 @@ func checkError(err error) {
 }
 
 func loadKeys() ([]byte, []byte, error) {
-	privateKeyFile := utils.GetDisgoDir() + string(os.PathSeparator) + "key"
-	publicKeyFile := utils.GetDisgoDir() + string(os.PathSeparator) + "key.pub"
+	privateKeyFile := utils.GetConfigDir() + string(os.PathSeparator) + "key"
+	publicKeyFile := utils.GetConfigDir() + string(os.PathSeparator) + "key.pub"
 
 	if _, err := os.Stat(privateKeyFile); os.IsNotExist(err) {
 		reader := rand.Reader

@@ -25,20 +25,12 @@ import (
 	"strings"
 )
 
-type FakeNode struct { //TODO: rip this out
-	Address  string    `json:"address,omitempty"`
-	Endpoint *Endpoint  `json:"endpoint"`
-	GrpcEndpoint *Endpoint `json:"grpcEndpoint"`
-	HttpEndpoint *Endpoint `json:"httpEndpoint"`
-	Type     string    `json:"type"`
-}
-
 // Node - Is the DisGover's notion of what a node is
 type Node struct {
-	Address  string    `json:"address,omitempty"`
+	Address      string    `json:"address"`
 	GrpcEndpoint *Endpoint `json:"grpcEndpoint"`
 	HttpEndpoint *Endpoint `json:"httpEndpoint"`
-	Type     string    `json:"type"`
+	Type         string    `json:"type,omitempty"`
 }
 
 // Key
@@ -96,6 +88,7 @@ func (this Node) String() string {
 	return string(bytes)
 }
 
+
 // ToTransactionFromJson -
 func ToNodeFromJson(payload []byte) (*Node, error) {
 	node := &Node{}
@@ -152,7 +145,9 @@ func ToNodeByAddress(txn *badger.Txn, address string) (*Node, error) {
 
 // ToNodesByType
 func ToNodesByType(txn *badger.Txn, tipe string) ([]*Node, error) {
-	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = false
+	iterator := txn.NewIterator(opts)
 	defer iterator.Close()
 	prefix := []byte(fmt.Sprintf("key-node-type-%s", tipe))
 	var nodes = make([]*Node, 0)

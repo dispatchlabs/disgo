@@ -21,6 +21,7 @@ import (
 	"sync"
 
 	log "github.com/sirupsen/logrus"
+	"io"
 )
 
 var loggerOnce sync.Once
@@ -34,7 +35,12 @@ func InitializeLogger() {
 			ForceColors:   false,
 		}
 		log.SetFormatter(formatter)
-		log.SetOutput(os.Stdout)
+		logFile, err := os.OpenFile("disgo.log", os.O_WRONLY | os.O_CREATE, 0755)
+		if err != nil {
+			panic(err)
+		}
+		mw := io.MultiWriter(os.Stdout, logFile)
+		log.SetOutput(mw)
 		log.SetLevel(log.InfoLevel)
 	})
 }
