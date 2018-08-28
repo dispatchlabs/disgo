@@ -215,16 +215,29 @@ func ToTransactions(txn *badger.Txn) ([]*Transaction, error) {
 	return transactions, nil
 }
 
-func TransactionPaging(page int,txn *badger.Txn) ([]*Transaction, error){
+func TransactionPaging(txn *badger.Txn, startingHash string, page, pageSize int) ([]*Transaction, error){
 	var iteratorCount = 0
 	var firstItem int
-	pageSize := 100
+	if pageSize <= 0 || pageSize > 100{
+		return nil, ErrInvalidRequestPageSize
+	}
 	if page <= 0 {
-		return nil, ErrInvalidRequest
+		return nil, ErrInvalidRequestPage
 	}else if page == 1{
 		firstItem = 1
 	} else{
 		firstItem = (page * pageSize) - (pageSize - 1)
+	}
+	var item []byte
+	prefix := []byte(fmt.Sprintf("table-transaction-"))
+	if startingHash != "" {
+		thing, err := ToTransactionByKey(txn,[]byte(fmt.Sprintf("table-transaction-%s", startingHash)))
+		if err != nil {
+			return nil, ErrInvalidRequestHash
+		}
+		item = []byte(thing.Key())
+	} else{
+		item = prefix
 	}
 
 	defer txn.Discard()
@@ -232,11 +245,10 @@ func TransactionPaging(page int,txn *badger.Txn) ([]*Transaction, error){
 	opts.PrefetchValues = false
 	iterator := txn.NewIterator(opts)
 	defer iterator.Close()
-	prefix := []byte(fmt.Sprintf("table-transaction-"))
 	var transactions = make([]*Transaction, 0)
-	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
+	for iterator.Seek(item); iterator.ValidForPrefix(prefix); iterator.Next() {
 		iteratorCount++
-		if iteratorCount >= firstItem && iteratorCount <= (firstItem+pageSize) {
+		if iteratorCount >= firstItem && iteratorCount < (firstItem+pageSize) {
 			item := iterator.Item()
 			value, err := item.Value()
 			if err != nil {
@@ -258,27 +270,40 @@ func TransactionPaging(page int,txn *badger.Txn) ([]*Transaction, error){
 }
 
 // ToTransactionsByFromAddress
-func ToTransactionsByFromAddress(txn *badger.Txn, address string, page int) ([]*Transaction, error) {
+func ToTransactionsByFromAddress(txn *badger.Txn, address, startingHash string, page, pageSize int) ([]*Transaction, error) {
 	var iteratorCount = 0
 	var firstItem int
-	pageSize := 100
+	if pageSize <= 0 || pageSize > 100{
+		return nil, ErrInvalidRequestPageSize
+	}
 	if page <= 0 {
-		return nil, ErrInvalidRequest
+		return nil, ErrInvalidRequestPage
 	}else if page == 1{
 		firstItem = 1
 	} else{
 		firstItem = (page * pageSize) - (pageSize - 1)
 	}
+	var item []byte
+	prefix := []byte(fmt.Sprintf("key-transaction-from-%s", address))
+	if startingHash != "" {
+		thing, err := ToTransactionByKey(txn,[]byte(fmt.Sprintf("table-transaction-%s", startingHash)))
+		if err != nil {
+			return nil, ErrInvalidRequestHash
+		}
+		item = []byte(thing.FromKey())
+	} else{
+		item = prefix
+	}
+
 
 	opts := badger.DefaultIteratorOptions
 	opts.PrefetchValues = false
 	iterator := txn.NewIterator(opts)
 	defer iterator.Close()
-	prefix := []byte(fmt.Sprintf("key-transaction-from-%s", address))
 	var transactions = make([]*Transaction, 0)
-	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
+	for iterator.Seek(item); iterator.ValidForPrefix(prefix); iterator.Next() {
 		iteratorCount++
-		if iteratorCount >= firstItem && iteratorCount <= (firstItem+pageSize) {
+		if iteratorCount >= firstItem && iteratorCount < (firstItem+pageSize) {
 			item := iterator.Item()
 			value, err := item.Value()
 			if err != nil {
@@ -300,27 +325,39 @@ func ToTransactionsByFromAddress(txn *badger.Txn, address string, page int) ([]*
 }
 
 // ToTransactionsByToAddress
-func ToTransactionsByToAddress(txn *badger.Txn, address string, page int) ([]*Transaction, error) {
+func ToTransactionsByToAddress(txn *badger.Txn, address, startingHash string, page, pageSize int) ([]*Transaction, error) {
 	var iteratorCount = 0
 	var firstItem int
-	pageSize := 100
+	if pageSize <= 0 || pageSize > 100{
+		return nil, ErrInvalidRequestPageSize
+	}
 	if page <= 0 {
-		return nil, ErrInvalidRequest
+		return nil, ErrInvalidRequestPage
 	}else if page == 1{
 		firstItem = 1
 	} else{
 		firstItem = (page * pageSize) - (pageSize - 1)
+	}
+	var item []byte
+	prefix := []byte(fmt.Sprintf("key-transaction-to-%s", address))
+	if startingHash != "" {
+		thing, err := ToTransactionByKey(txn,[]byte(fmt.Sprintf("table-transaction-%s", startingHash)))
+		if err != nil {
+			return nil, ErrInvalidRequestHash
+		}
+		item = []byte(thing.ToKey())
+	} else{
+		item = prefix
 	}
 
 	opts := badger.DefaultIteratorOptions
 	opts.PrefetchValues = false
 	iterator := txn.NewIterator(opts)
 	defer iterator.Close()
-	prefix := []byte(fmt.Sprintf("key-transaction-to-%s", address))
 	var transactions = make([]*Transaction, 0)
-	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
+	for iterator.Seek(item); iterator.ValidForPrefix(prefix); iterator.Next() {
 		iteratorCount++
-		if iteratorCount >= firstItem && iteratorCount <= (firstItem+pageSize) {
+		if iteratorCount >= firstItem && iteratorCount < (firstItem+pageSize) {
 			item := iterator.Item()
 			value, err := item.Value()
 			if err != nil {
