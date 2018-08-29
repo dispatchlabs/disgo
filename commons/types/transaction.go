@@ -723,6 +723,15 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		}
 		this.Hertz = int64(hertz)
 	}
+	if jsonMap["receipt"] != nil {
+		var receipt Receipt
+		b, err := json.Marshal(jsonMap["receipt"])
+		if err != nil {
+			utils.Error(err)
+		}
+		receipt.UnmarshalJSON(b)
+		this.Receipt = receipt
+	}
 	return nil
 }
 
