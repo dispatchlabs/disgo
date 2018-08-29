@@ -79,12 +79,8 @@ func (this Transaction) ToKey() string {
 }
 
 //Cache
-func (this *Transaction) Cache(cache *cache.Cache, time_optional ...time.Duration) {
-	TTL := TransactionTTL
-	if len(time_optional) > 0 {
-		TTL = time_optional[0]
-	}
-	cache.Set(this.Key(), this, TTL)
+func (this *Transaction) Cache(cache *cache.Cache) {
+	cache.Set(this.Key(), this, TransactionCacheTTL)
 }
 
 // Persist
@@ -218,7 +214,7 @@ func ToTransactions(txn *badger.Txn) ([]*Transaction, error) {
 func TransactionPaging(page int,txn *badger.Txn) ([]*Transaction, error){
 	var iteratorCount = 0
 	var firstItem int
-	pageSize := 10
+	pageSize := 100
 	if page <= 0 {
 		return nil, ErrInvalidRequest
 	}else if page == 1{
@@ -236,7 +232,7 @@ func TransactionPaging(page int,txn *badger.Txn) ([]*Transaction, error){
 	var transactions = make([]*Transaction, 0)
 	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
 		iteratorCount++
-		if iteratorCount >= firstItem && iteratorCount <= (firstItem+9) {
+		if iteratorCount >= firstItem && iteratorCount <= (firstItem+pageSize) {
 			item := iterator.Item()
 			value, err := item.Value()
 			if err != nil {
@@ -250,7 +246,7 @@ func TransactionPaging(page int,txn *badger.Txn) ([]*Transaction, error){
 			}
 			transactions = append(transactions, transaction)
 		}
-		if iteratorCount > (firstItem+9){
+		if iteratorCount > (firstItem+pageSize){
 			break
 		}
 	}
@@ -602,7 +598,7 @@ func (this Transaction) String() string {
 	return string(bytes)
 }
 
-// String
+// ToPrettyJson
 func (this Transaction) ToPrettyJson() string {
 	bytes, err := json.MarshalIndent(this, "", "  ")
 	if err != nil {
@@ -756,8 +752,8 @@ func (this Transaction) Equals(other string) bool {
 
 func checkTime(txTime int64) (int64, error) {
 	now := utils.ToMilliSeconds(time.Now())
-	if now < txTime {
-		return txTime, errors.Errorf("transaction time cannot be in the future")
+	if now + TxReceiveWiggle < txTime { // Adding "wiggle room" to allow for clock variances
+		return txTime, errors.Errorf(fmt.Sprintf("transaction time cannot be in the future (delegate time: %v tx.time: %v)", now, txTime))
 	} else if txTime < 0 {
 		return txTime, errors.Errorf("transaction time cannot be negative")
 	}

@@ -49,7 +49,7 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 	elapsedMilliSeconds := utils.ToMilliSeconds(time.Now()) - transaction.Time
 	if elapsedMilliSeconds > types.TxReceiveTimeout {
 		utils.Error(fmt.Sprintf("Timed out [hash=%s]", transaction.Hash))
-		return types.NewResponseWithStatus(types.StatusTransactionTimeOut, "Transaction was received later than 1 second limit")
+		return types.NewResponseWithStatus(types.StatusTransactionTimeOut, "Transaction was received later than 3 second limit")
 	}
 
 	// Duplicate transaction?
