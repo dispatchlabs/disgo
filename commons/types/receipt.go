@@ -59,8 +59,8 @@ func (this *Receipt) Persist(txn *badger.Txn) error {
 	return nil
 }
 
-// PersistAndCache
-func (this *Receipt) PersistAndCache(txn *badger.Txn, cache *cache.Cache) error {
+// Set
+func (this *Receipt) Set(txn *badger.Txn, cache *cache.Cache) error {
 	this.Cache(cache)
 
 	err := this.Persist(txn)
@@ -217,9 +217,9 @@ func ToReceiptFromCache(cache *cache.Cache, transactionHash string) (*Receipt, e
 	return receipt, nil
 }
 
-// ToReceiptFromTransactionHash
-func ToReceiptFromTransactionHash(txn *badger.Txn, transactionHash string) (*Receipt, error) {
-	item, err := txn.Get([]byte("table-receipt-" + transactionHash))
+// ToReceiptFromTransactionKey
+func ToReceiptFromKey(txn *badger.Txn, key []byte) (*Receipt, error) {
+	item, err := txn.Get(key)
 	if err != nil {
 		return nil, err
 	}
