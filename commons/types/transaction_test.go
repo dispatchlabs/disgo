@@ -52,7 +52,7 @@ func testMockTransaction(t *testing.T) *Transaction {
 //TestTransactionCache
 func TestTransactionCache(t *testing.T) {
 	tx := testMockTransaction(t)
-	tx.Cache(c, time.Second * 5)
+	tx.Cache(c)
 	testTx, err := ToTransactionFromCache(c, tx.Hash)
 	if err != nil {
 		t.Error(err)
