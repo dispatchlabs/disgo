@@ -34,15 +34,15 @@ var configOnce sync.Once
 
 // Config - Is the structure definition for the system properties
 type Config struct {
-	HttpEndpoint       *Endpoint   `json:"httpEndpoint"`
-	GrpcEndpoint       *Endpoint   `json:"grpcEndpoint"`
-	GrpcTimeout        int         `json:"grpcTimeout"`
-	LocalHttpApiPort   int         `json:"localHttpApiPort"`
-	Seeds              []*Node     `json:"seeds"`
-	DelegateAddresses  []string    `json:"delegateAddresses"`
-	UseQuantumEntropy  bool        `json:"useQuantumEntropy"`
-	IsBookkeeper       bool        `json:"isBookkeeper"`
-	GenesisTransaction string      `json:"genesisTransaction"`
+	HttpEndpoint       *Endpoint `json:"httpEndpoint"`
+	GrpcEndpoint       *Endpoint `json:"grpcEndpoint"`
+	GrpcTimeout        int       `json:"grpcTimeout"`
+	LocalHttpApiPort   int       `json:"localHttpApiPort"`
+	Seeds              []*Node   `json:"seeds"`
+	DelegateAddresses  []string  `json:"delegateAddresses"`
+	UseQuantumEntropy  bool      `json:"useQuantumEntropy"`
+	IsBookkeeper       bool      `json:"isBookkeeper"`
+	GenesisTransaction string    `json:"genesisTransaction"`
 }
 
 // String - Implement the `fmt.Stringer` interface
@@ -74,37 +74,10 @@ func ToConfigFromJson(payload []byte) (*Config, error) {
 	return config, nil
 }
 
-// GetConfig -
+// GetConfig - Reads from disk or Returns default config. Saves to disk
 func GetConfig() *Config {
 	configOnce.Do(func() {
-		configInstance = &Config{
-			HttpEndpoint: &Endpoint{
-				Host: "0.0.0.0",
-				Port: 1975,
-			},
-			GrpcEndpoint: &Endpoint{
-				Host: "127.0.0.1",
-				Port: 1973,
-			},
-			GrpcTimeout: 5,
-			LocalHttpApiPort: 1971,
-			Seeds: []*Node{
-				{
-					Address: "9aa050c8ecc7bf9e7de03494c43776e65fd5328e",
-					GrpcEndpoint: &Endpoint{
-						Host: "seed.dispatchlabs.io",
-						Port: 1973,
-					},
-					HttpEndpoint: &Endpoint{
-						Host: "seed.dispatchlabs.io",
-						Port: 1975,
-					},
-					Type: TypeSeed,
-				},
-			},
-			IsBookkeeper: true,
-			GenesisTransaction: `{"hash":"a48ff2bd1fb99d9170e2bae2f4ed94ed79dbc8c1002986f8054a369655e29276","type":0,"from":"e6098cc0d5c20c6c31c4d69f0201a02975264e94","to":"3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c","value":10000000,"data":"","time":0,"signature":"03c1fdb91cd10aa441e0025dd21def5ebe045762c1eeea0f6a3f7e63b27deb9c40e08b656a744f6c69c55f7cb41751eebd49c1eedfbd10b861834f0352c510b200","hertz":0,"fromName":"","toName":""}`,
-		}
+		configInstance = GetDefaultConfig()
 		temp, _ := json.MarshalIndent(configInstance, "", "   ")
 		fmt.Printf(string(temp))
 		var configFileName = utils.GetConfigDir() + string(os.PathSeparator) + "config.json"
@@ -136,4 +109,36 @@ func GetConfig() *Config {
 	})
 
 	return configInstance
+}
+
+// GetDefaultConfig - Returns default config, does not save to disk
+func GetDefaultConfig() *Config {
+	return &Config{
+		HttpEndpoint: &Endpoint{
+			Host: "0.0.0.0",
+			Port: 1975,
+		},
+		GrpcEndpoint: &Endpoint{
+			Host: "127.0.0.1",
+			Port: 1973,
+		},
+		GrpcTimeout:      5,
+		LocalHttpApiPort: 1971,
+		Seeds: []*Node{
+			{
+				Address: "9aa050c8ecc7bf9e7de03494c43776e65fd5328e",
+				GrpcEndpoint: &Endpoint{
+					Host: "seed.dispatchlabs.io",
+					Port: 1973,
+				},
+				HttpEndpoint: &Endpoint{
+					Host: "seed.dispatchlabs.io",
+					Port: 1975,
+				},
+				Type: TypeSeed,
+			},
+		},
+		IsBookkeeper:       true,
+		GenesisTransaction: `{"hash":"a48ff2bd1fb99d9170e2bae2f4ed94ed79dbc8c1002986f8054a369655e29276","type":0,"from":"e6098cc0d5c20c6c31c4d69f0201a02975264e94","to":"3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c","value":10000000,"data":"","time":0,"signature":"03c1fdb91cd10aa441e0025dd21def5ebe045762c1eeea0f6a3f7e63b27deb9c40e08b656a744f6c69c55f7cb41751eebd49c1eedfbd10b861834f0352c510b200","hertz":0,"fromName":"","toName":""}`,
+	}
 }
