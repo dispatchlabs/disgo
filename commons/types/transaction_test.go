@@ -17,7 +17,6 @@
 package types
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"testing"
@@ -304,151 +303,6 @@ func TestPrintNewExecuteTx(t *testing.T) {
 	var privateKey = "0f86ea981203b26b5b8244c8f661e30e5104555068a4bd168d3e3015db9bb25a"
 	var from = "3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c"
 	var to = "10412d6de794ab228e735eb0622f2deffca2edc5" // "c3be1a3a5c6134cca51896fadf032c4c61bc355e"
-	var abi = `[
-	{
-		"constant": true,
-		"inputs": [],
-		"name": "getVar5",
-		"outputs": [
-			{
-				"name": "",
-				"type": "string"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "value",
-				"type": "string"
-			}
-		],
-		"name": "setVar6Var4",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [],
-		"name": "var6",
-		"outputs": [
-			{
-				"name": "var1",
-				"type": "uint256"
-			},
-			{
-				"name": "var2",
-				"type": "bool"
-			},
-			{
-				"name": "var3",
-				"type": "uint8"
-			},
-			{
-				"name": "var4",
-				"type": "string"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "value1",
-				"type": "string"
-			},
-			{
-				"name": "value2",
-				"type": "string"
-			}
-		],
-		"name": "setMultiple",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [],
-		"name": "var5",
-		"outputs": [
-			{
-				"name": "",
-				"type": "string"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [],
-		"name": "incVar6Var1",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "value",
-				"type": "string"
-			}
-		],
-		"name": "setVar5",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [],
-		"name": "getVar55",
-		"outputs": [
-			{
-				"name": "",
-				"type": "string"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [],
-		"name": "var55",
-		"outputs": [
-			{
-				"name": "",
-				"type": "string"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	}
-]`
 
 	var theTime = utils.ToMilliSeconds(time.Now())
 	var method = "setMultiple"
@@ -459,7 +313,6 @@ func TestPrintNewExecuteTx(t *testing.T) {
 		privateKey,
 		from,
 		to,
-		hex.EncodeToString([]byte(abi)),
 		method,
 		params,
 		theTime,
@@ -479,7 +332,6 @@ func TestPrintNewExecuteTx(t *testing.T) {
 //		privateKey,
 //		from,
 //		"fe8fc34a2b981fbd86ed11bf27e7d54dfd0fc54a",
-//		"",
 //		method,
 //		params,
 //		theTime,
