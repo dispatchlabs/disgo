@@ -79,12 +79,8 @@ func (this Transaction) ToKey() string {
 }
 
 //Cache
-func (this *Transaction) Cache(cache *cache.Cache, time_optional ...time.Duration) {
-	TTL := TransactionTTL
-	if len(time_optional) > 0 {
-		TTL = time_optional[0]
-	}
-	cache.Set(this.Key(), this, TTL)
+func (this *Transaction) Cache(cache *cache.Cache) {
+	cache.Set(this.Key(), this, TransactionCacheTTL)
 }
 
 // Persist
@@ -367,6 +363,30 @@ func ToTransactionByKey(txn *badger.Txn, key []byte) (*Transaction, error) {
 	return transaction, err
 }
 
+// ToTransactionByAddress
+func ToTransactionByAddress(txn *badger.Txn, address string) (*Transaction, error) {
+	account, err := ToAccountByAddress(txn, address)
+	if err != nil {
+		return nil, err
+	}
+	if account.TransactionHash == "" {
+		return nil, ErrNotFound
+	}
+	item, err := txn.Get([]byte(fmt.Sprintf("table-transaction-%s", account.TransactionHash)))
+	if err != nil {
+		return nil, err
+	}
+	value, err := item.Value()
+	if err != nil {
+		return nil, err
+	}
+	transaction, err := ToTransactionFromJson(value)
+	if err != nil {
+		return nil, err
+	}
+	return transaction, err
+}
+
 // NewTransferTokensTransaction -
 func NewTransferTokensTransaction(privateKey string, from, to string, value int64, hertz int64, timeInMiliseconds int64) (*Transaction, error) {
 	var err error
@@ -421,10 +441,7 @@ func NewDeployContractTransaction(privateKey string, from string, code string, a
 }
 
 // NewExecuteContractTransaction -
-func NewExecuteContractTransaction(privateKey string, from string, to string, abi string, method string, params []interface{}, timeInMiliseconds int64) (*Transaction, error) {
-	if abi == "" {
-		return nil, errors.Errorf("cannot have empty abi")
-	}
+func NewExecuteContractTransaction(privateKey string, from string, to string, method string, params []interface{}, timeInMiliseconds int64) (*Transaction, error) {
 	if method == "" {
 		return nil, errors.Errorf("cannot have empty method")
 	}
@@ -433,7 +450,6 @@ func NewExecuteContractTransaction(privateKey string, from string, to string, ab
 	transaction.Type = TypeExecuteSmartContract
 	transaction.From = from
 	transaction.To = to
-	transaction.Abi = abi
 	transaction.Method = method
 	transaction.Params = params
 	transaction.Time, err = checkTime(timeInMiliseconds)
@@ -602,7 +618,7 @@ func (this Transaction) String() string {
 	return string(bytes)
 }
 
-// String
+// ToPrettyJson
 func (this Transaction) ToPrettyJson() string {
 	bytes, err := json.MarshalIndent(this, "", "  ")
 	if err != nil {
@@ -786,7 +802,7 @@ func (this *Transaction) setTransients(txn *badger.Txn) {
 	if err == nil {
 		this.ToName = toAccount.Name
 	}
-	receipt, err := ToReceiptFromTransactionHash(txn, this.Hash)
+	receipt, err := ToReceiptFromKey(txn, []byte(fmt.Sprintf("table-receipt-" + this.Hash)))
 	if err == nil {
 		this.Receipt = *receipt
 	}

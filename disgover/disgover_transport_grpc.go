@@ -52,12 +52,12 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.P
 
 	node := convertToDomainNode(pingSeed.Node)
 	authentication := convertToDomainAuthentication(pingSeed.Authentication)
-	authenticationAddress, err := authentication.GetAddress()
+	authenticationAddress, err := authentication.GetDerivedAddress()
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("unable to authentication you [error=%s]", err.Error()))
+		return nil, errors.New(fmt.Sprintf("unable to authenticate you [error=%s]", err.Error()))
 	}
 	if authenticationAddress != node.Address {
-		return nil, errors.New("unable to authentication you")
+		return nil, errors.New("unable to authenticate you")
 	}
 
 	// Persist and cache node.
@@ -76,15 +76,15 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.P
 				// Is this an authentic delegate?
 				err := authentication.Verify(services.GetCache(), node.Address)
 				if err != nil {
-					utils.Warn(fmt.Sprintf("unable to authentication delegate [address=%s]", node.Address))
-					return nil, errors.New("unable to authentication you as a delegate")
+					utils.Warn(fmt.Sprintf("unable to authenticate delegate [address=%s]", node.Address))
+					return nil, errors.New("unable to authenticate you as a delegate")
 				}
 				node.Type = types.TypeDelegate
 				break
 			}
 		}
 	}
-	node.PersistAndCache(txn, services.GetCache())
+	node.Set(txn, services.GetCache())
 
 	// Get cached delegates.
 	delegates, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
@@ -321,15 +321,15 @@ func (this *DisGoverService) verifySeedNode(protoAuthenticate *proto.Authenticat
 	}
 
 	authentication := convertToDomainAuthentication(protoAuthenticate)
-	authenticationAddress, err := authentication.GetAddress()
+	authenticationAddress, err := authentication.GetDerivedAddress()
 	if err != nil {
 		utils.Error(err)
 		return err
 	}
 
-	for _, SeedNode := range types.GetConfig().Seeds {
-		if SeedNode.Address == authenticationAddress {
-			err = authentication.Verify(services.GetCache(), SeedNode.Address)
+	for _, seedNode := range types.GetConfig().Seeds {
+		if seedNode.Address == authenticationAddress {
+			err = authentication.Verify(services.GetCache(), seedNode.Address)
 			if err != nil {
 				return errors.New("you are not an authorized seed node")
 			}
