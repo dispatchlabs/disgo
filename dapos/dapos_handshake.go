@@ -83,10 +83,8 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 	gossip.Rumors = append(gossip.Rumors, *rumor)
 	gossip.Cache(services.GetCache())
 
+	transaction.Receipt.Status = types.StatusReceived
 	transaction.Cache(services.GetCache())
-	if err != nil {
-		utils.Error(err)
-	}
 
 	this.gossipChan <- gossip
 

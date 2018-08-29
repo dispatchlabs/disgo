@@ -134,7 +134,13 @@ func (this *DAPoSService) GetTransaction(hash string) *types.Response {
 		transaction, err := types.ToTransactionByHash(txn, hash)
 		if err != nil {
 			if err == badger.ErrKeyNotFound {
-				response.Status = types.StatusNotFound
+				tx, _ := types.ToTransactionFromCache(services.GetCache(), hash)
+				if tx != nil {
+					response.Data = tx
+					response.Status = types.StatusOk
+				} else {
+					response.Status = types.StatusNotFound
+				}
 			} else {
 				response.Status = types.StatusInternalError
 			}

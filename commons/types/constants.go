@@ -37,6 +37,7 @@ const (
 
 // Statuses
 const (
+	StatusReceived                     = "Received"
 	StatusPending                      = "Pending"
 	StatusOk                           = "Ok"
 	StatusNotFound                     = "NotFound"
