@@ -49,7 +49,7 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 	elapsedMilliSeconds := utils.ToMilliSeconds(time.Now()) - transaction.Time
 	if elapsedMilliSeconds > types.TxReceiveTimeout {
 		utils.Error(fmt.Sprintf("Timed out [hash=%s]", transaction.Hash))
-		return types.NewResponseWithStatus(types.StatusTransactionTimeOut, "Transaction was received later than 1 second limit")
+		return types.NewResponseWithStatus(types.StatusTransactionTimeOut, "Transaction was received later than 3 second limit")
 	}
 
 	// Duplicate transaction?
@@ -429,7 +429,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 
 	// Save receipt.
 	receipt.Status = types.StatusOk
-	err = receipt.PersistAndCache(txn, services.GetCache())
+	err = receipt.Set(txn, services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
@@ -439,7 +439,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	}
 
 	// Save gossip.
-	err = gossip.PersistAndCache(txn, services.GetCache())
+	err = gossip.Set(txn, services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError

@@ -63,9 +63,13 @@ func (this *Node) Persist(txn *badger.Txn) error {
 }
 
 // PersistAndCache
-func (this *Node) PersistAndCache(txn *badger.Txn, cache *cache.Cache) error {
+func (this *Node) Set(txn *badger.Txn, cache *cache.Cache) error {
 	this.Cache(cache)
-	return this.Persist(txn)
+	err := this.Persist(txn)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // Unset

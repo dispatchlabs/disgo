@@ -53,7 +53,7 @@ func testMockTransaction(t *testing.T) *Transaction {
 //TestTransactionCache
 func TestTransactionCache(t *testing.T) {
 	tx := testMockTransaction(t)
-	tx.Cache(c, time.Second * 5)
+	tx.Cache(c)
 	testTx, err := ToTransactionFromCache(c, tx.Hash)
 	if err != nil {
 		t.Error(err)
@@ -594,37 +594,93 @@ func TestTransactionEquals(t *testing.T) {
 
 //TestTransactionSet
 func TestTransactionSet(t *testing.T) {
-	// TODO: Transaction.PersistAndCache()
-	t.Skip("Need a Badger DB mock")
-}
+	defer destruct()
+	txn := db.NewTransaction(true)
+	defer txn.Discard()
+	tx := testMockTransaction(t)
+	tx.Set(txn, c)
 
-//TestToTransactions
-func TestToTransactions(t *testing.T) {
-	// TODO: ToTransactions()
-	t.Skip("Need a Badger DB mock")
+	testTx, err := ToTransactionByKey(txn, []byte(tx.Key()))
+	if err != nil{
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testTx, tx) == false{
+		t.Error("tx not equal to testAccount")
+	}
+	testTx, err = ToTransactionFromCache(c, tx.Hash)
+	if err != nil {
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testTx, tx) == false{
+		t.Error("tx not equal to testReceipt")
+	}
 }
 
 //TestToTransactionsByFromAddress
 func TestToTransactionsByFromAddress(t *testing.T) {
-	// TODO: ToTransactionsByFromAddress()
-	t.Skip("Need a Badger DB mock")
+	defer destruct()
+	txn := db.NewTransaction(true)
+	defer txn.Discard()
+	tx := testMockTransaction(t)
+	tx.Set(txn, c)
+
+	testTx, err := ToTransactionsByFromAddress(txn, tx.From)
+	if err != nil{
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testTx[0], tx) == false{
+		t.Error("tx not equal to testAccount")
+	}
 }
 
 //TestToTransactionsByToAddress
 func TestToTransactionsByToAddress(t *testing.T) {
-	// TODO: ToTransactionsByToAddress()
-	t.Skip("Need a Badger DB mock")
+	defer destruct()
+	txn := db.NewTransaction(true)
+	defer txn.Discard()
+	tx := testMockTransaction(t)
+	tx.Set(txn, c)
+
+	testTx, err := ToTransactionsByToAddress(txn, tx.To)
+	if err != nil{
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testTx[0], tx) == false{
+		t.Error("tx not equal to testAccount")
+	}
 }
 
 //TestToTransactionsByType
 func TestToTransactionsByType(t *testing.T) {
-	// TODO: ToTransactionsByType()
-	t.Skip("Need a Badger DB mock")
+	defer destruct()
+	txn := db.NewTransaction(true)
+	defer txn.Discard()
+	tx := testMockTransaction(t)
+	tx.Set(txn, c)
+
+	testTx, err := ToTransactionsByType(txn, tx.Type)
+	if err != nil{
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testTx[0], tx) == false{
+		t.Error("tx not equal to testAccount")
+	}
 }
 
 func TestToTransactionsByKey(t *testing.T) {utils.ToMilliSeconds(time.Now())
-	// TODO: ToTransactionsByKey()
-	t.Skip("Need a Badger DB mock")
+	defer destruct()
+	txn := db.NewTransaction(true)
+	defer txn.Discard()
+	tx := testMockTransaction(t)
+	tx.Set(txn, c)
+
+	testTx, err := ToTransactionByKey(txn, []byte(tx.Key()))
+	if err != nil{
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testTx, tx) == false{
+		t.Error("tx not equal to testAccount")
+	}
 }
 
 //func TestStatusChange(t *testing.T) {

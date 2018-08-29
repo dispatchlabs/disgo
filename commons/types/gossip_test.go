@@ -22,6 +22,7 @@ import (
 	"testing"
 )
 
+
 //testMockNewGossip
 func testMockNewGossip(t *testing.T) (*Gossip, *Transaction) {
 	tx := testMockTransaction(t)
@@ -37,6 +38,7 @@ func TestNewGossip(t *testing.T) {
 
 //TestGossipCache
 func TestGossipCache(t *testing.T) {
+	defer destruct()
 	gossip, tx := testMockNewGossip(t)
 	gossip.Cache(c)
 	testGossip, err := ToGossipFromCache(c, tx.Hash)
@@ -50,6 +52,7 @@ func TestGossipCache(t *testing.T) {
 
 //TestToGossipFromJson
 func TestToGossipFromJson(t *testing.T) {
+	defer destruct()
 	//receipt := NewReceipt(RequestNewTransaction)
 	tx := testMockTransaction(t)
 	s := fmt.Sprintf(`{"Transaction":%s,"Rumors":[]}`, tx.String())
@@ -76,6 +79,7 @@ func TestToGossipFromJson(t *testing.T) {
 
 //TestToJsonByGossip
 func TestToJsonByGossip(t *testing.T) {
+	defer destruct()
 	gossip, tx := testMockNewGossip(t)
 	bytes, err := ToJsonByGossip(*gossip)
 	if err != nil {
@@ -89,6 +93,7 @@ func TestToJsonByGossip(t *testing.T) {
 
 //TestContainsRumor
 func TestContainsRumor(t *testing.T) {
+	defer destruct()
 	gossip, _ := testMockNewGossip(t)
 	r1 := testMockRumor()
 	r2 := NewRumor("0f86ea981203b26b5b8244c8f661e30e5104555068a4bd168d3e3015db9bb25a", "3ed25f42484d517cdfc72cafb7ebc9e8baa52c2b", "9c242afd4f2dcaedcfb0cff2bb9c38b5811ed29c249f5b49f7759642a473d5fb")
@@ -103,36 +108,49 @@ func TestContainsRumor(t *testing.T) {
 
 //TestToGossipByKey
 func TestToGossipByKey(t *testing.T) {
-	// TODO: ToGossipByKey()
-	t.Skip("Need a Badger DB mock")
-}
+	defer destruct()
+	txn := db.NewTransaction(true)
+	defer txn.Discard()
+	gossip, _ := testMockNewGossip(t)
+	gossip.Persist(txn)
 
-//TestToGossips
-func TestToGossips(t *testing.T) {
-	// TODO: ToGossips()
-	t.Skip("Need a Badger DB mock")
-}
-
-//TestToOldGossips
-func TestToOldGossips(t *testing.T) {
-	// TODO: ToOldGossips()
-	t.Skip("Need a Badger DB mock")
+	testGossip, err := ToGossipByKey(txn, []byte(gossip.Key()))
+	if err != nil{
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testGossip, gossip) == false{
+		t.Error("account not equal to testAccount")
+	}
 }
 
 //TestGossipSet
 func TestGossipSet(t *testing.T) {
-	// TODO: Gossip.PersistAndCache()
-	t.Skip("Need a Badger DB mock")
-}
+	defer destruct()
+	txn := db.NewTransaction(true)
+	defer txn.Discard()
+	gossip, _ := testMockNewGossip(t)
+	gossip.Set(txn,c)
 
-//TestGossipRefresh
-func TestGossipRefresh(t *testing.T) {
-	// TODO: Gossip.Refresh()
-	t.Skip("Need a Badger DB mock")
+	testGossip, err := ToGossipByKey(txn, []byte(gossip.Key()))
+	if err != nil{
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testGossip, gossip) == false{
+		t.Error("account not equal to testAccount")
+	}
+
+	testGossip, err = ToGossipFromCache(c, gossip.Transaction.Hash)
+	if err != nil {
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testGossip, gossip) == false{
+		t.Error("Gossip not equal to testGossip")
+	}
 }
 
 //testGossipStruct
 func testGossipStruct(t *testing.T, gossip *Gossip, tx *Transaction) {
+	defer destruct()
 	if reflect.DeepEqual(gossip.Transaction, *tx) == false {
 		t.Errorf("gossip contains invalid %s value.\nG: %s\nE: %s", "Transaction", gossip.Transaction, *tx)
 	}
