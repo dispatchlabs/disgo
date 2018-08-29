@@ -69,16 +69,16 @@ const (
 
 // Persistence TTLs
 const (
-	AccountTTL      = time.Hour * 24
-	PageTTL         = time.Hour * 24
-	TransactionTTL  = time.Hour * 48
+	AccountTTL = time.Hour * 24
+	PageTTL    = time.Hour * 24
 )
 
 // Cache TTLs
 const (
-	CacheTTL        = time.Hour
-	ReceiptCacheTTL = time.Hour * 24 * 3
-	GossipCacheTTL  = time.Minute * 5
+	CacheTTL               = time.Hour
+	TransactionCacheTTL    = time.Hour * 48
+	ReceiptCacheTTL        = time.Hour * 48
+	GossipCacheTTL         = time.Minute * 5
 	AuthenticationCacheTTL = time.Minute
 )
 

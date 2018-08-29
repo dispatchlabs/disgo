@@ -215,9 +215,9 @@ func DeploySmartContract(delegateNode types.Node, privateKey string, from string
 }
 
 // ExecuteSmartContractTransaction - Execute a smart contract, get the TX hash as result
-func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey string, from string, to string, abi string, method string, params []interface{}) (string, error) {
+func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey string, from string, to string, method string, params []interface{}) (string, error) {
 	// Create execute smart contract transaction.
-	transaction, err := types.NewExecuteContractTransaction(privateKey, from, to, abi, method, params, utils.ToMilliSeconds(time.Now()))
+	transaction, err := types.NewExecuteContractTransaction(privateKey, from, to, method, params, utils.ToMilliSeconds(time.Now()))
 	if err != nil {
 		return "", err
 	}

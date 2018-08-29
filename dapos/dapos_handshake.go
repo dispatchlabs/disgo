@@ -371,7 +371,6 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		utils.Info(fmt.Sprintf("deployed contract [hash=%s, contractAddress=%s]", transaction.Hash, contractAccount.Address))
 		break
 	case types.TypeExecuteSmartContract:
-		// TODO: Need to add a check that the contract address being called actually exists.
 		dvmService := dvm.GetDVMService()
 		dvmResult, err1 := dvmService.ExecuteSmartContract(transaction)
 		if err1 != nil {
@@ -429,7 +428,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 
 	// Save receipt.
 	receipt.Status = types.StatusOk
-	err = receipt.PersistAndCache(txn, services.GetCache())
+	err = receipt.Set(txn, services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError
@@ -439,7 +438,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	}
 
 	// Save gossip.
-	err = gossip.PersistAndCache(txn, services.GetCache())
+	err = gossip.Set(txn, services.GetCache())
 	if err != nil {
 		utils.Error(err)
 		receipt.Status = types.StatusInternalError

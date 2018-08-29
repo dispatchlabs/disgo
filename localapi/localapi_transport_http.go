@@ -165,7 +165,6 @@ func (this *LocalAPIService) executeHandler(responseWriter http.ResponseWriter, 
 		types.GetAccount().PrivateKey,
 		disgover.GetDisGoverService().ThisNode.Address,
 		execute.ContractAddress,
-		hex.EncodeToString([]byte(execute.Abi)),
 		execute.Method,
 		execute.Params,
 	)

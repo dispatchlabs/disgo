@@ -15,6 +15,7 @@ import (
 
 // Authentication
 type Authentication struct {
+	Address   string
 	Hash      string
 	Time      int64
 	Signature string
@@ -53,10 +54,12 @@ func (this *Authentication) UnmarshalJSON(bytes []byte) error {
 // MarshalJSON
 func (this Authentication) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
+		Address   string `json:"address"`
 		Hash      string `json:"hash"`
 		Time      int64  `json:"time"`
 		Signature string `json:"signature"`
 	}{
+		Address:   this.Address,
 		Hash:      this.Hash,
 		Time:      this.Time,
 		Signature: this.Signature,
@@ -119,9 +122,8 @@ func (this Authentication) NewSignature(privateKey string) (string, error) {
 	return hex.EncodeToString(signatureBytes), nil
 }
 
-// GetAddress
-func (this Authentication) GetAddress() (string, error) {
-
+// GetDerivedAddress
+func (this Authentication) GetDerivedAddress() (string, error) {
 	hashBytes, err := hex.DecodeString(this.Hash)
 	if err != nil {
 		utils.Error("unable to decode hash", err)
@@ -220,6 +222,15 @@ func NewAuthentication() (*Authentication, error) {
 	authenticate.Signature, err = authenticate.NewSignature(GetAccount().PrivateKey)
 	if err != nil {
 		return nil, err
+	}
+
+	// Verify address equals derived address?
+	address, err := authenticate.GetDerivedAddress()
+	if err != nil {
+		return nil, err
+	}
+	if address != GetAccount().Address {
+		return nil, errors.New("node address does not match derived address")
 	}
 
 	return authenticate, nil
