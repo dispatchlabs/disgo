@@ -84,7 +84,7 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.P
 			}
 		}
 	}
-	node.PersistAndCache(txn, services.GetCache())
+	node.Set(txn, services.GetCache())
 
 	// Get cached delegates.
 	delegates, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
