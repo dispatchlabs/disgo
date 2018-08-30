@@ -896,9 +896,14 @@ func (this Transaction) Equals(other string) bool {
 }
 
 func checkTime(txTime int64) (int64, error) {
-	now := utils.ToMilliSeconds(time.Now())
-	if now + TxReceiveWiggle < txTime { // Adding "wiggle room" to allow for clock variances
-		return txTime, errors.Errorf(fmt.Sprintf("transaction time cannot be in the future (delegate time: %v tx.time: %v)", now, txTime))
+	// Adding "future times managed by the constant"
+	now := time.Now()
+	futureTime := now.Add(TxFutureLimit)
+	nowWithFutureLimit := utils.ToMilliSeconds(futureTime)
+
+	if nowWithFutureLimit < txTime {
+		delta := time.Millisecond * time.Duration(txTime - utils.ToMilliSeconds(now))
+		return txTime, errors.Errorf(fmt.Sprintf("transaction time cannot be this far in the future (Ahead by: %v )", delta))
 	} else if txTime < 0 {
 		return txTime, errors.Errorf("transaction time cannot be negative")
 	}
