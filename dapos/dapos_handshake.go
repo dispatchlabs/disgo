@@ -187,7 +187,8 @@ func (this *DAPoSService) gossipWorker() {
 						go func() {
 							//adding timeout as a function of tx time.  If tx is in the future, add future delta to the default timeout
 							delta := gossip.Transaction.Time - utils.ToMilliSeconds(time.Now())
-							timeout := types.GossipQueueTimeout
+							totalMilliseconds := ( types.GossipTimeout * len(delegateNodes) ) + types.TxReceiveTimeout
+							timeout := time.Duration(totalMilliseconds)
 							if delta > 0 {
 								timeout = time.Millisecond * time.Duration(delta) + timeout
 							}
