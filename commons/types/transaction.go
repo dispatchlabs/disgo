@@ -219,9 +219,7 @@ func TransactionPaging(txn *badger.Txn, startingHash string, page, pageSize int)
 	}
 	if page <= 0 {
 		return nil, ErrInvalidRequestPage
-	}else if page == 1{
-		firstItem = 1
-	} else{
+	}else{
 		firstItem = (page * pageSize) - (pageSize - 1)
 	}
 	var item []byte
@@ -274,9 +272,7 @@ func ToTransactionsByFromAddress(txn *badger.Txn, address, startingHash string, 
 	}
 	if page <= 0 {
 		return nil, ErrInvalidRequestPage
-	}else if page == 1{
-		firstItem = 1
-	} else{
+	}else{
 		firstItem = (page * pageSize) - (pageSize - 1)
 	}
 	var item []byte
@@ -329,9 +325,7 @@ func ToTransactionsByToAddress(txn *badger.Txn, address, startingHash string, pa
 	}
 	if page <= 0 {
 		return nil, ErrInvalidRequestPage
-	}else if page == 1{
-		firstItem = 1
-	} else{
+	}else{
 		firstItem = (page * pageSize) - (pageSize - 1)
 	}
 	var item []byte
