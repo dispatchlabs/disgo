@@ -277,17 +277,28 @@ func ToAccountsByName(name string, txn *badger.Txn) ([]*Account, error) {
 	}
 	return Accounts, nil
 }
-
-func AccountPaging(page int,txn *badger.Txn) ([]*Account, error){
+					//txn, start, pageNumber, pageSize
+func AccountPaging(txn *badger.Txn, startingHash string, page, pageSize int) ([]*Account, error){
 	var iteratorCount = 0
 	var firstItem int
-	pageSize := 10
+	if pageSize <= 0 || pageSize > 100{
+		return nil, ErrInvalidRequestPageSize
+	}
 	if page <= 0 {
-		return nil, ErrInvalidRequest
-	}else if page == 1{
-		firstItem = 1
-	} else{
+		return nil, ErrInvalidRequestPage
+	}else{
 		firstItem = (page * pageSize) - (pageSize - 1)
+	}
+	var item []byte
+	prefix := []byte(fmt.Sprintf("table-account-"))
+	if startingHash != "" {
+		thing, err := ToAccountByAddress(txn,startingHash)
+		if err != nil {
+			return nil, ErrInvalidRequestHash
+		}
+		item = []byte(thing.Key())
+	} else{
+		item = prefix
 	}
 
 	defer txn.Discard()
@@ -295,11 +306,10 @@ func AccountPaging(page int,txn *badger.Txn) ([]*Account, error){
 	opts.PrefetchValues = false
 	iterator := txn.NewIterator(opts)
 	defer iterator.Close()
-	prefix := []byte(fmt.Sprintf("table-account-"))
 	var Accounts = make([]*Account, 0)
-	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
+	for iterator.Seek(item); iterator.ValidForPrefix(prefix); iterator.Next() {
 		iteratorCount++
-		if iteratorCount >= firstItem && iteratorCount <= (firstItem+9) {
+		if iteratorCount >= firstItem && iteratorCount < (firstItem+pageSize) {
 			item := iterator.Item()
 			value, err := item.Value()
 			if err != nil {
@@ -313,7 +323,7 @@ func AccountPaging(page int,txn *badger.Txn) ([]*Account, error){
 			}
 			Accounts = append(Accounts, Account)
 		}
-		if iteratorCount > (firstItem+9){
+		if iteratorCount >= (firstItem+pageSize){
 			break
 		}
 	}
