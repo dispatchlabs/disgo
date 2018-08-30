@@ -185,7 +185,13 @@ func (this *DAPoSService) gossipWorker() {
 						this.gossipQueue.Push(gossip)
 
 						go func() {
-							time.Sleep(types.GossipQueueTimeout)
+							//adding timeout as a function of tx time.  If tx is in the future, add future delta to the default timeout
+							delta := gossip.Transaction.Time - utils.ToMilliSeconds(time.Now())
+							timeout := types.GossipQueueTimeout
+							if delta > 0 {
+								timeout = time.Millisecond * time.Duration(delta) + timeout
+							}
+							time.Sleep(timeout)
 							this.timoutChan <- true
 						}()
 					}
