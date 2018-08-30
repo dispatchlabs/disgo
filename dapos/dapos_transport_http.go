@@ -139,28 +139,17 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 	responseWriter.Write([]byte(response.String()))
 }
 
-// getTransactionsByFromAddressHandler
-func (this *DAPoSService) getTransactionsByFromAddressHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	vars := mux.Vars(request)
-	response := this.GetTransactionsByFromAddress(vars["address"])
-	setHeaders(response, &responseWriter)
-	responseWriter.Write([]byte(response.String()))
-}
-
-// getTransactionsByToAddressHandler
-func (this *DAPoSService) getTransactionsByToAddressHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	vars := mux.Vars(request)
-	response := this.GetTransactionsByToAddress(vars["address"])
-	setHeaders(response, &responseWriter)
-	responseWriter.Write([]byte(response.String()))
-}
-
 func (this *DAPoSService) getTransactionsHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	response := types.NewResponse()
 	pageNumber := request.URL.Query().Get("page")
 	if pageNumber == "" {
 		pageNumber = "1"
 	}
+	pageLimit := request.URL.Query().Get("pageSize")
+	if pageLimit == "" {
+		pageLimit = "10"
+	}
+	startingHash := request.URL.Query().Get("pageStart")
 	from := request.URL.Query().Get("from")
 	to := request.URL.Query().Get("to")
 	if from != "" && to != "" {
@@ -169,11 +158,11 @@ func (this *DAPoSService) getTransactionsHandler(responseWriter http.ResponseWri
 		services.Error(responseWriter, response.String(), http.StatusBadRequest)
 		return
 	} else if from != "" {
-		response = this.GetTransactionsByFromAddress(from)
+		response = this.GetTransactionsByFromAddress(from, pageNumber, pageLimit, startingHash)
 	} else if to != "" {
-		response = this.GetTransactionsByToAddress(to)
+		response = this.GetTransactionsByToAddress(to, pageNumber, pageLimit, startingHash)
 	} else {
-		response = this.GetTransactions(pageNumber)
+		response = this.GetTransactions(pageNumber, pageLimit, startingHash)
 	}
 	setHeaders(response, &responseWriter)
 	responseWriter.Write([]byte(response.String()))
@@ -199,7 +188,12 @@ func (this *DAPoSService) getAccountsHandler(responseWriter http.ResponseWriter,
 	if pageNumber == "" {
 		pageNumber = "1"
 	}
-	response := this.GetAccounts(pageNumber)
+	pageLimit := request.URL.Query().Get("pageSize")
+	if pageLimit == "" {
+		pageLimit = "10"
+	}
+	startingAddress := request.URL.Query().Get("pageStart")
+	response := this.GetAccounts(pageNumber, pageLimit, startingAddress)
 	setHeaders(response, &responseWriter)
 	responseWriter.Write([]byte(response.String()))
 }

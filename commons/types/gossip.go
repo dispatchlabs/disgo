@@ -197,9 +197,7 @@ func GossipPaging(page int,txn *badger.Txn) ([]*Gossip, error){
 	pageSize := 10
 	if page <= 0 {
 		return nil, ErrInvalidRequest
-	}else if page == 1{
-		firstItem = 1
-	} else{
+	}else{
 		firstItem = (page * pageSize) - (pageSize - 1)
 	}
 

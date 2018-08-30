@@ -37,6 +37,7 @@ const (
 
 // Statuses
 const (
+	StatusReceived                     = "Received"
 	StatusPending                      = "Pending"
 	StatusOk                           = "Ok"
 	StatusNotFound                     = "NotFound"
@@ -86,4 +87,7 @@ const (
 var (
 	ErrNotFound       = errors.New("not found")
 	ErrInvalidRequest = errors.New("invalid request")
+	ErrInvalidRequestPage = errors.New("invalid request Page")
+	ErrInvalidRequestPageSize = errors.New("invalid request Page Size")
+	ErrInvalidRequestHash = errors.New("invalid request Hash")
 )
