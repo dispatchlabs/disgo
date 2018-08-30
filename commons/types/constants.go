@@ -28,6 +28,7 @@ const (
 	TxReceiveWiggle    = 100 // 100ms
 	GossipQueueTimeout = time.Second * 5
 	GossipTimeout      = 1000 //1 second  //will continue to decrease until we find best value
+	TxFutureLimit	   = time.Minute * 3
 )
 
 // Requests
