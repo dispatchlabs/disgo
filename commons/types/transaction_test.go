@@ -469,38 +469,38 @@ func TestTransactionSet(t *testing.T) {
 }
 
 //TestToTransactionsByFromAddress
-func TestToTransactionsByFromAddress(t *testing.T) {
-	defer destruct()
-	txn := db.NewTransaction(true)
-	defer txn.Discard()
-	tx := testMockTransaction(t)
-	tx.Set(txn, c)
+// func TestToTransactionsByFromAddress(t *testing.T) {
+// 	defer destruct()
+// 	txn := db.NewTransaction(true)
+// 	defer txn.Discard()
+// 	tx := testMockTransaction(t)
+// 	tx.Set(txn, c)
 
-	testTx, err := ToTransactionsByFromAddress(txn, tx.From)
-	if err != nil{
-		t.Error(err)
-	}
-	if reflect.DeepEqual(testTx[0], tx) == false{
-		t.Error("tx not equal to testAccount")
-	}
-}
+// 	testTx, err := ToTransactionsByFromAddress(txn, tx.From)
+// 	if err != nil{
+// 		t.Error(err)
+// 	}
+// 	if reflect.DeepEqual(testTx[0], tx) == false{
+// 		t.Error("tx not equal to testAccount")
+// 	}
+// }
 
 //TestToTransactionsByToAddress
-func TestToTransactionsByToAddress(t *testing.T) {
-	defer destruct()
-	txn := db.NewTransaction(true)
-	defer txn.Discard()
-	tx := testMockTransaction(t)
-	tx.Set(txn, c)
+// func TestToTransactionsByToAddress(t *testing.T) {
+// 	defer destruct()
+// 	txn := db.NewTransaction(true)
+// 	defer txn.Discard()
+// 	tx := testMockTransaction(t)
+// 	tx.Set(txn, c)
 
-	testTx, err := ToTransactionsByToAddress(txn, tx.To)
-	if err != nil{
-		t.Error(err)
-	}
-	if reflect.DeepEqual(testTx[0], tx) == false{
-		t.Error("tx not equal to testAccount")
-	}
-}
+// 	testTx, err := ToTransactionsByToAddress(txn, tx.To)
+// 	if err != nil{
+// 		t.Error(err)
+// 	}
+// 	if reflect.DeepEqual(testTx[0], tx) == false{
+// 		t.Error("tx not equal to testAccount")
+// 	}
+// }
 
 //TestToTransactionsByType
 func TestToTransactionsByType(t *testing.T) {
