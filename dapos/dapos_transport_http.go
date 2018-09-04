@@ -140,7 +140,12 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 		if err != nil {
 			utils.Error(err)
 		}
-		helper.GetConvertedParams(transaction)
+		transaction.Params, err = helper.GetConvertedParams(transaction)
+		if err != nil {
+			utils.Error("Paramater type error", err)
+			services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusJsonParseError, err), http.StatusInternalServerError)
+			return
+		}
 
 	}
 
