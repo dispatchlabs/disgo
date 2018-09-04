@@ -92,21 +92,23 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 }
 
 // Temp_ProcessTransaction -
-func (this *DAPoSService) Temp_ProcessTransaction(transaction *types.Transaction) {
-	go func(tx *types.Transaction) {
+func (this *DAPoSService) Temp_ProcessTransaction(transaction *types.Transaction) *types.Response {
+	// go func(tx *types.Transaction) {
 
-		// Cache receipt.
-		receipt := types.NewReceipt(transaction.Hash)
-		receipt.Cache(services.GetCache())
+	// Cache receipt.
+	receipt := types.NewReceipt(transaction.Hash)
+	receipt.Cache(services.GetCache())
 
-		// Cache gossip with my rumor.
-		gossip := types.NewGossip(*transaction)
-		rumor := types.NewRumor(types.GetAccount().PrivateKey, types.GetAccount().Address, transaction.Hash)
-		gossip.Rumors = append(gossip.Rumors, *rumor)
-		gossip.Cache(services.GetCache())
+	// Cache gossip with my rumor.
+	gossip := types.NewGossip(*transaction)
+	rumor := types.NewRumor(types.GetAccount().PrivateKey, types.GetAccount().Address, transaction.Hash)
+	gossip.Rumors = append(gossip.Rumors, *rumor)
+	gossip.Cache(services.GetCache())
 
-		this.gossipChan <- gossip
-	}(transaction)
+	this.gossipChan <- gossip
+
+	return types.NewResponseWithStatus(types.StatusPending, "Pending")
+	// }(transaction)
 }
 
 // synchronizeGossip
@@ -180,17 +182,17 @@ func (this *DAPoSService) gossipWorker() {
 				}
 
 				// Do we have 2/3 of rumors?
-				if float32(len(gossip.Rumors)) >= float32(len(delegateNodes)) * 2/3 {
+				if float32(len(gossip.Rumors)) >= float32(len(delegateNodes))*2/3 {
 					if !this.gossipQueue.Exists(gossip.Transaction.Hash) {
 						this.gossipQueue.Push(gossip)
 
 						go func() {
 							//adding timeout as a function of tx time.  If tx is in the future, add future delta to the default timeout
 							delta := gossip.Transaction.Time - utils.ToMilliSeconds(time.Now())
-							totalMilliseconds := ( types.GossipTimeout * len(delegateNodes) ) + types.TxReceiveTimeout
+							totalMilliseconds := (types.GossipTimeout * len(delegateNodes)) + types.TxReceiveTimeout
 							timeout := time.Duration(totalMilliseconds)
 							if delta > 0 {
-								timeout = time.Millisecond * time.Duration(delta) + timeout
+								timeout = time.Millisecond*time.Duration(delta) + timeout
 							}
 							time.Sleep(timeout)
 							this.timoutChan <- true
@@ -216,7 +218,7 @@ func (this *DAPoSService) gossipWorker() {
 				peerGossip, err := this.peerGossipGrpc(*node, gossip)
 				if err != nil {
 					utils.Warn(err)
-					time.Sleep(time.Second *2)
+					time.Sleep(time.Second * 2)
 					this.gossipChan <- gossip
 					return
 				}
@@ -277,7 +279,7 @@ func (this *DAPoSService) doWork() {
 		}
 		initialRcvDuration := gossip.Rumors[0].Time - gossip.Transaction.Time
 		utils.Info("Initial Receive Duration = ", initialRcvDuration, types.TxReceiveTimeout)
-		if  initialRcvDuration >= types.TxReceiveTimeout {
+		if initialRcvDuration >= types.TxReceiveTimeout {
 			utils.Error(fmt.Sprintf("Timed out [hash=%s] %v milliseconds", gossip.Transaction.Hash, initialRcvDuration))
 			receipt = types.NewReceipt(gossip.Transaction.Hash)
 			receipt.Status = types.StatusTransactionTimeOut
