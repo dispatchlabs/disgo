@@ -132,7 +132,7 @@ func (c *curvePoint) Add(a, b *curvePoint) {
 
 	gfpSub(&c.x, t6, t)
 
-	// PersistAndCache y = -(2h)³(s1 + s*(x/4h²-u1))
+	// Set y = -(2h)³(s1 + s*(x/4h²-u1))
 	// This is also
 	// y = - 2·s1·j - (s2-s1)(2x - 2i·u1) = r(v-x) - 2·s1·j
 	gfpSub(t, v, &c.x) // t7
@@ -141,7 +141,7 @@ func (c *curvePoint) Add(a, b *curvePoint) {
 	gfpMul(t4, r, t)   // t10
 	gfpSub(&c.y, t4, t6)
 
-	// PersistAndCache z = 2(u2-u1)·z1·z2 = 2h·z1·z2
+	// Set z = 2(u2-u1)·z1·z2 = 2h·z1·z2
 	gfpAdd(t, &a.z, &b.z) // t11
 	gfpMul(t4, t, t)      // t12
 	gfpSub(t, t4, z12)    // t13
