@@ -1,14 +1,15 @@
 package helper
 
 import (
-	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
 	"encoding/hex"
-	"reflect"
-	"math/big"
-	"github.com/pkg/errors"
-	"strings"
-	"github.com/dispatchlabs/disgo/commons/types"
 	"fmt"
+	"math/big"
+	"reflect"
+	"strings"
+
+	"github.com/dispatchlabs/disgo/commons/types"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
+	"github.com/pkg/errors"
 )
 
 //func GetConvertedParams(jsonMap map[string]interface{}) ([]interface{}, error) {
@@ -88,6 +89,14 @@ func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 						return nil, errors.New(msg)
 					}
 					result = append(result, value)
+					// } else if arg.Type.T == abi.AddressTy {
+					// 	addressAsString, valErr := getValue(arg, tx.Params[i])
+					// 	addressAsByteArray := crypto.GetAddressBytes(addressAsString.(string))
+					// 	if len(addressAsByteArray) < 0 {
+					// 		msg := fmt.Sprintf("Invalid value provided for method %s: %v", tx.Method, valErr.Error())
+					// 		return nil, errors.New(msg)
+					// 	}
+					// 	result = append(result, addressAsByteArray)
 				} else {
 					value, valErr := getValue(arg, tx.Params[i])
 					if valErr != nil {
@@ -107,11 +116,13 @@ func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 
 func getValues(arg abi.Argument, values []interface{}) (interface{}, error) {
 	var result interface{}
-	dataTypeString := arg.Type.String()[0:len(arg.Type.String())-2]
+	dataTypeString := arg.Type.String()[0 : len(arg.Type.String())-2]
 	if strings.HasPrefix(dataTypeString, "int") || strings.HasPrefix(dataTypeString, "uint") {
 		for _, value := range values {
 			_, isNumber := value.(float64)
-			if !isNumber {return nil, errors.Errorf("only number value required in input array, a provided value is '%v'", value)}
+			if !isNumber {
+				return nil, errors.Errorf("only number value required in input array, a provided value is '%v'", value)
+			}
 		}
 	}
 	switch dataTypeString {
@@ -192,39 +203,61 @@ func getValues(arg abi.Argument, values []interface{}) (interface{}, error) {
 func getValue(arg abi.Argument, value interface{}) (interface{}, error) {
 	nbrValue, isNumber := value.(float64)
 	if arg.Type.String() == "int256" || arg.Type.String() == "uint256" {
-		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		if !isNumber {
+			return nil, errors.Errorf("number value required, provided value is '%v'", value)
+		}
 		return big.NewInt(int64(value.(float64))), nil
 	}
 	switch arg.Type.Kind {
 	case reflect.Int:
-		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		if !isNumber {
+			return nil, errors.Errorf("number value required, provided value is '%v'", value)
+		}
 		return big.NewInt(int64(nbrValue)), nil
 	case reflect.Int8:
-		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		if !isNumber {
+			return nil, errors.Errorf("number value required, provided value is '%v'", value)
+		}
 		return int8(nbrValue), nil
 	case reflect.Int16:
-		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		if !isNumber {
+			return nil, errors.Errorf("number value required, provided value is '%v'", value)
+		}
 		return int16(nbrValue), nil
 	case reflect.Int32:
-		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		if !isNumber {
+			return nil, errors.Errorf("number value required, provided value is '%v'", value)
+		}
 		return int32(nbrValue), nil
 	case reflect.Int64:
-		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		if !isNumber {
+			return nil, errors.Errorf("number value required, provided value is '%v'", value)
+		}
 		return int64(nbrValue), nil
 	case reflect.Uint:
-		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		if !isNumber {
+			return nil, errors.Errorf("number value required, provided value is '%v'", value)
+		}
 		return big.NewInt(int64(nbrValue)), nil
 	case reflect.Uint8:
-		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		if !isNumber {
+			return nil, errors.Errorf("number value required, provided value is '%v'", value)
+		}
 		return uint8(nbrValue), nil
 	case reflect.Uint16:
-		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		if !isNumber {
+			return nil, errors.Errorf("number value required, provided value is '%v'", value)
+		}
 		return uint16(nbrValue), nil
 	case reflect.Uint32:
-		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		if !isNumber {
+			return nil, errors.Errorf("number value required, provided value is '%v'", value)
+		}
 		return uint32(nbrValue), nil
 	case reflect.Uint64:
-		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		if !isNumber {
+			return nil, errors.Errorf("number value required, provided value is '%v'", value)
+		}
 		return uint64(nbrValue), nil
 	case reflect.Bool:
 		val, ok := value.(bool)

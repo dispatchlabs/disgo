@@ -22,11 +22,11 @@ import (
 
 	"fmt"
 
+	"github.com/dispatchlabs/disgo/commons/helper"
 	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/gorilla/mux"
-	"github.com/dispatchlabs/disgo/commons/helper"
 )
 
 // WithHttp -

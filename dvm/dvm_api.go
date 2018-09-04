@@ -183,9 +183,9 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 	}
 
 	// Prepare the method params from ABI
-	// fromHexAsByteArray, _ := hex.DecodeString(contractTx.Abi)
-	// abiAsString := string(fromHexAsByteArray)
-	jsonABI, err := abi.JSON(strings.NewReader(tx.Abi))
+	fromHexAsByteArray, _ := hex.DecodeString(tx.Abi)
+	abiAsString := string(fromHexAsByteArray)
+	jsonABI, err := abi.JSON(strings.NewReader(abiAsString))
 	if err != nil {
 		utils.Error(err)
 		// return nil, err
