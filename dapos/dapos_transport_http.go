@@ -32,7 +32,7 @@ import (
 func (this *DAPoSService) WithHttp() *DAPoSService {
 	//Accounts
 	services.GetHttpRouter().HandleFunc("/v1/accounts/{address}", this.getAccountHandler).Methods("GET")
-	services.GetHttpRouter().HandleFunc("/v1/accounts", this.getAccountsHandler).Methods("GET")
+	services.GetHttpRouter().HandleFunc("/v1/accounts", this.unsupportedFunctionHandler).Methods("GET")
 	//Transactions
 	services.GetHttpRouter().HandleFunc("/v1/transactions", this.newTransactionHandler).Methods("POST")
 	services.GetHttpRouter().HandleFunc("/v1/transactions/{hash}", this.getTransactionHandler).Methods("GET")
@@ -183,20 +183,20 @@ func (this *DAPoSService) unsupportedFunctionHandler(responseWriter http.Respons
 }
 
 // getAccountsHandler
-func (this *DAPoSService) getAccountsHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	pageNumber := request.URL.Query().Get("page")
-	if pageNumber == "" {
-		pageNumber = "1"
-	}
-	pageLimit := request.URL.Query().Get("pageSize")
-	if pageLimit == "" {
-		pageLimit = "10"
-	}
-	startingAddress := request.URL.Query().Get("pageStart")
-	response := this.GetAccounts(pageNumber, pageLimit, startingAddress)
-	setHeaders(response, &responseWriter)
-	responseWriter.Write([]byte(response.String()))
-}
+// func (this *DAPoSService) getAccountsHandler(responseWriter http.ResponseWriter, request *http.Request) {
+// 	pageNumber := request.URL.Query().Get("page")
+// 	if pageNumber == "" {
+// 		pageNumber = "1"
+// 	}
+// 	pageLimit := request.URL.Query().Get("pageSize")
+// 	if pageLimit == "" {
+// 		pageLimit = "10"
+// 	}
+// 	startingAddress := request.URL.Query().Get("pageStart")
+// 	response := this.GetAccounts(pageNumber, pageLimit, startingAddress)
+// 	setHeaders(response, &responseWriter)
+// 	responseWriter.Write([]byte(response.String()))
+// }
 
 // getGossipsHandler
 func (this *DAPoSService) getGossipsHandler(responseWriter http.ResponseWriter, request *http.Request) {
