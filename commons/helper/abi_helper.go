@@ -10,6 +10,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
 	"github.com/pkg/errors"
+	"github.com/dispatchlabs/disgo/commons/crypto"
 )
 
 //func GetConvertedParams(jsonMap map[string]interface{}) ([]interface{}, error) {
@@ -89,14 +90,14 @@ func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 						return nil, errors.New(msg)
 					}
 					result = append(result, value)
-					// } else if arg.Type.T == abi.AddressTy {
-					// 	addressAsString, valErr := getValue(arg, tx.Params[i])
-					// 	addressAsByteArray := crypto.GetAddressBytes(addressAsString.(string))
-					// 	if len(addressAsByteArray) < 0 {
-					// 		msg := fmt.Sprintf("Invalid value provided for method %s: %v", tx.Method, valErr.Error())
-					// 		return nil, errors.New(msg)
-					// 	}
-					// 	result = append(result, addressAsByteArray)
+					} else if arg.Type.T == abi.AddressTy {
+						addressAsString, valErr := getValue(arg, tx.Params[i])
+						addressAsByteArray := crypto.GetAddressBytes(addressAsString.(string))
+						if len(addressAsByteArray) < 0 {
+							msg := fmt.Sprintf("Invalid value provided for method %s: %v", tx.Method, valErr.Error())
+							return nil, errors.New(msg)
+						}
+						result = append(result, addressAsByteArray)
 				} else {
 					value, valErr := getValue(arg, tx.Params[i])
 					if valErr != nil {
