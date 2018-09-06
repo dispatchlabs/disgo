@@ -211,6 +211,7 @@ func ToTransactions(txn *badger.Txn) ([]*Transaction, error) {
 	return transactions, nil
 }
 
+// TransactionPaging
 func TransactionPaging(txn *badger.Txn, startingHash string, page, pageSize int) ([]*Transaction, error){
 	var iteratorCount = 0
 	var firstItem int
@@ -260,6 +261,7 @@ func TransactionPaging(txn *badger.Txn, startingHash string, page, pageSize int)
 			break
 		}
 	}
+	SortByTime(transactions, false)
 	return transactions, nil //TODO: return error if empty?
 }
 
@@ -286,7 +288,6 @@ func ToTransactionsByFromAddress(txn *badger.Txn, address, startingHash string, 
 	} else{
 		item = prefix
 	}
-
 
 	opts := badger.DefaultIteratorOptions
 	opts.PrefetchValues = false
@@ -440,6 +441,7 @@ func ToTransactionsByType(txn *badger.Txn, tipe byte) ([]*Transaction, error) {
 		transaction.setTransients(txn)
 		transactions = append(transactions, transaction)
 	}
+	SortByTime(transactions, false)
 	return transactions, nil
 }
 
