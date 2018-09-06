@@ -8,42 +8,48 @@ import (
 	"github.com/pkg/errors"
 	"fmt"
 	"strings"
+	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/types"
 )
 
-func GetConvertedParams(jsonMap map[string]interface{}) ([]interface{}, error) {
-	params, ok := jsonMap["params"].([]interface{})
-	if !ok {
-		return nil, errors.Errorf("value for field 'params' must be an array")
+func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
+
+	if tx.Params == nil || len(tx.Params) == 0 {
+		return tx.Params, nil
 	}
-	if params == nil || len(params) == 0 {
-		return params, nil
-	}
-	theAbi, err := GetABI(jsonMap["abi"].(string))
+	theABI, err := GetABI(tx.Abi)
 	if err != nil {
 		return nil, err
 	}
-	method, _ := jsonMap["method"].(string)
 	var result []interface{}
 	found := false
-	for k, v := range theAbi.Methods {
-		if k == method {
+	for k, v := range theABI.Methods {
+		if k == tx.Method {
 			found = true
-			if len(v.Inputs) != len(params) {
-				return nil, errors.New(fmt.Sprintf("This method %s, requires %d parameters and %d are provided", method, len(v.Inputs), len(params)))
+			if len(v.Inputs) != len(tx.Params) {
+				return nil, errors.New(fmt.Sprintf("This method %s, requires %d parameters and %d are provided", tx.Method, len(v.Inputs), len(tx.Params)))
 			}
 			for i := 0; i < len(v.Inputs); i++ {
 				arg := v.Inputs[i]
 				if arg.Type.T == abi.SliceTy || arg.Type.T == abi.ArrayTy {
-					value, valErr := getValues(arg, params[i].([]interface{}))
+					value, valErr := getValues(arg, tx.Params[i].([]interface{}))
 					if valErr != nil {
-						msg := fmt.Sprintf("Invalid value provided for method %s: %v", method, valErr.Error())
+						msg := fmt.Sprintf("Invalid value provided for method %s: %v", tx.Method, valErr.Error())
 						return nil, errors.New(msg)
 					}
 					result = append(result, value)
+				} else if arg.Type.T == abi.AddressTy {
+					addressAsString, valErr := getValue(arg, tx.Params[i])
+					addressAsByteArray := crypto.GetAddressBytes(addressAsString.(string))
+					if len(addressAsByteArray) < 0 {
+						msg := fmt.Sprintf("Invalid value provided for method %s: %v", tx.Method, valErr.Error())
+						return nil, errors.New(msg)
+					}
+					result = append(result, addressAsByteArray)
 				} else {
-					value, valErr := getValue(arg, params[i])
+					value, valErr := getValue(arg, tx.Params[i])
 					if valErr != nil {
-						msg := fmt.Sprintf("Invalid value provided for method %s: %v", method, valErr.Error())
+						msg := fmt.Sprintf("Invalid value provided for method %s: %v", tx.Method, valErr.Error())
 						return nil, errors.New(msg)
 					}
 					result = append(result, value)
@@ -52,7 +58,7 @@ func GetConvertedParams(jsonMap map[string]interface{}) ([]interface{}, error) {
 		}
 	}
 	if !found {
-		return nil, errors.New(fmt.Sprintf("This method %s is not valid for this contract", method))
+		return nil, errors.New(fmt.Sprintf("This method %s is not valid for this contract", tx.Method))
 	}
 	return result, nil
 }
