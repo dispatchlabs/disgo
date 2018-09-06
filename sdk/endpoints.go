@@ -309,7 +309,7 @@ func GetReceipt(delegateNode types.Node, hash string) (*types.Receipt, error) {
 		return nil, err
 	}
 
-	return transaction.Receipt, nil
+	return &transaction.Receipt, nil
 }
 
 // GetTransactionsSent - Get details about sent transactions for a node
