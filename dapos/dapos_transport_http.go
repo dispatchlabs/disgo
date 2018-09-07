@@ -26,6 +26,8 @@ import (
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/gorilla/mux"
+	"encoding/hex"
+	"github.com/dispatchlabs/disgo/commons/helper"
 )
 
 // WithHttp -
@@ -54,7 +56,7 @@ func (this *DAPoSService) WithHttp() *DAPoSService {
 	services.GetHttpRouter().HandleFunc("/v1/gossips", this.getGossipsHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/gossips/{hash}", this.getGossipHandler).Methods("GET")
 
-	services.GetHttpRouter().HandleFunc("/v1/receipts/{hash}", this.getReceiptHandler).Methods("GET")
+	services.GetHttpRouter().HandleFunc("/v1/receipts/{hash}", this.unsupportedFunctionHandler).Methods("GET")
 
 	return this
 }
@@ -129,6 +131,25 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 
 	// New transaction.
 	transaction, err := types.ToTransactionFromJson(body)
+	txn := services.NewTxn(true)
+	defer txn.Discard()
+
+	if transaction.Type == types.TypeExecuteSmartContract {
+		contractTx, err := types.ToTransactionByAddress(txn, transaction.To)
+
+		transaction.Abi = hex.EncodeToString([]byte(contractTx.Abi))
+		if err != nil {
+			utils.Error(err)
+		}
+		transaction.Params, err = helper.GetConvertedParams(transaction)
+		if err != nil {
+			utils.Error("Paramater type error", err)
+			services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusJsonParseError, err), http.StatusInternalServerError)
+			return
+		}
+
+	}
+
 	if err != nil {
 		utils.Error("JSON parse error", err)
 		services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusJsonParseError, err), http.StatusInternalServerError)
@@ -218,9 +239,9 @@ func (this *DAPoSService) getGossipHandler(responseWriter http.ResponseWriter, r
 }
 
 // getReceiptHandler
-func (this *DAPoSService) getReceiptHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	vars := mux.Vars(request)
-	response := this.GetReceipt(vars["hash"])
-	setHeaders(response, &responseWriter)
-	responseWriter.Write([]byte(response.String()))
-}
+// func (this *DAPoSService) getReceiptHandler(responseWriter http.ResponseWriter, request *http.Request) {
+// 	vars := mux.Vars(request)
+// 	response := this.GetReceipt(vars["hash"])
+// 	setHeaders(response, &responseWriter)
+// 	responseWriter.Write([]byte(response.String()))
+// }

@@ -290,7 +290,7 @@ func GetTransaction(delegateNode types.Node, hash string) (*types.Transaction, e
 		return nil, errors.Errorf("'data' is missing from response")
 	}
 
-	// Unmarshal account.
+	// Unmarshal transaction.
 	var transaction *types.Transaction
 	err = json.Unmarshal(jsonMap["data"], &transaction)
 	if err != nil {
@@ -303,51 +303,13 @@ func GetTransaction(delegateNode types.Node, hash string) (*types.Transaction, e
 // GetReceipt - Get details about a transaction base on a TX hash
 func GetReceipt(delegateNode types.Node, hash string) (*types.Receipt, error) {
 
-	// Get status.
-	httpResponse, err := http.Get(fmt.Sprintf("http://%s:%d/v1/receipts/%s", delegateNode.HttpEndpoint.Host, delegateNode.HttpEndpoint.Port, hash))
-	if err != nil {
-		return nil, err
-	}
-	defer httpResponse.Body.Close()
-
-	// Ready body.
-	body, err := ioutil.ReadAll(httpResponse.Body)
+	// Get transaction.
+	transaction, err := GetTransaction(delegateNode, hash)
 	if err != nil {
 		return nil, err
 	}
 
-	// Unmarshal response.
-	var response *types.Response
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		return nil, err
-	}
-
-	// Status?
-	if response.Status != types.StatusOk {
-		return nil, errors.New(fmt.Sprintf("%s: %s", response.Status, response.HumanReadableStatus))
-	}
-
-	// Unmarshal to RawMessage.
-	var jsonMap map[string]json.RawMessage
-	err = json.Unmarshal(body, &jsonMap)
-	if err != nil {
-		return nil, err
-	}
-
-	// Data?
-	if jsonMap["data"] == nil {
-		return nil, errors.Errorf("'data' is missing from response")
-	}
-
-	// Unmarshal account.
-	var receipt *types.Receipt
-	err = json.Unmarshal(jsonMap["data"], &receipt)
-	if err != nil {
-		return nil, err
-	}
-
-	return receipt, nil
+	return &transaction.Receipt, nil
 }
 
 // GetTransactionsSent - Get details about sent transactions for a node
