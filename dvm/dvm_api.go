@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	commonTypes "github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
@@ -133,30 +132,6 @@ func (dvm *DVMService) DeploySmartContract(tx *commonTypes.Transaction) (*DVMRes
 func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMResult, error) {
 	utils.Debug(fmt.Sprintf("DVMServices-ExecuteSmartContract: %s", tx))
 
-	// Load the contract transaction
-	txn := services.NewTxn(true)
-	defer txn.Discard()
-	contractTx, err := commonTypes.ToTransactionByAddress(txn, tx.To)
-	if err != nil {
-		return &DVMResult{
-			From:                     crypto.GetAddressBytes(tx.From),
-			To:                       crypto.GetAddressBytes(tx.To),
-			ABI:                      "",
-			StorageState:             nil,
-			ContractAddress:          crypto.GetAddressBytes(tx.To),
-			ContractMethod:           tx.Method,
-			ContractMethodExecError:  err,
-			ContractMethodExecResult: nil,
-
-			Divvy:  _defaultDivvy,
-			Status: ethTypes.ReceiptStatusFailed,
-			// HertzCost:           receipt.GasUsed,
-			// CumulativeHertzUsed: receipt.CumulativeGasUsed,
-			// Bloom:               receipt.Bloom,
-			// Logs:                receipt.Logs,
-		}, err		
-	}
-
 	// Load the TRIE state for [FROM:TO] combo
 	stateHelper, err := NewVMStateHelper(crypto.GetAddressBytes(tx.From), crypto.GetAddressBytes(tx.To))
 	if err != nil {
@@ -165,7 +140,7 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 		return &DVMResult{
 			From:                     crypto.GetAddressBytes(tx.From),
 			To:                       crypto.GetAddressBytes(tx.To),
-			ABI:                      contractTx.Abi,
+			ABI:                      tx.Abi,
 			StorageState:             nil,
 			ContractAddress:          crypto.GetAddressBytes(tx.To),
 			ContractMethod:           tx.Method,
@@ -182,9 +157,9 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 	}
 
 	// Prepare the method params from ABI
-	// fromHexAsByteArray, _ := hex.DecodeString(contractTx.Abi)
-	// abiAsString := string(fromHexAsByteArray)
-	jsonABI, err := abi.JSON(strings.NewReader(contractTx.Abi))
+	fromHexAsByteArray, _ := hex.DecodeString(tx.Abi)
+	abiAsString := string(fromHexAsByteArray)
+	jsonABI, err := abi.JSON(strings.NewReader(abiAsString))
 	if err != nil {
 		utils.Error(err)
 		// return nil, err
@@ -192,7 +167,7 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 		return &DVMResult{
 			From:                     crypto.GetAddressBytes(tx.From),
 			To:                       crypto.GetAddressBytes(tx.To),
-			ABI:                      contractTx.Abi,
+			ABI:                      tx.Abi,
 			StorageState:             stateHelper,
 			ContractAddress:          crypto.GetAddressBytes(tx.To),
 			ContractMethod:           tx.Method,
@@ -217,7 +192,7 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 		return &DVMResult{
 			From:                     crypto.GetAddressBytes(tx.From),
 			To:                       crypto.GetAddressBytes(tx.To),
-			ABI:                      contractTx.Abi,
+			ABI:                      tx.Abi,
 			StorageState:             stateHelper,
 			ContractAddress:          crypto.GetAddressBytes(tx.To),
 			ContractMethod:           tx.Method,
@@ -254,7 +229,7 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 		return &DVMResult{
 			From:                     crypto.GetAddressBytes(tx.From),
 			To:                       crypto.GetAddressBytes(tx.To),
-			ABI:                      contractTx.Abi,
+			ABI:                      tx.Abi,
 			StorageState:             stateHelper,
 			ContractAddress:          crypto.GetAddressBytes(tx.To),
 			ContractMethod:           tx.Method,
@@ -279,7 +254,7 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 		return &DVMResult{
 			From:                     crypto.GetAddressBytes(tx.From),
 			To:                       crypto.GetAddressBytes(tx.To),
-			ABI:                      contractTx.Abi,
+			ABI:                      tx.Abi,
 			StorageState:             stateHelper,
 			ContractAddress:          crypto.GetAddressBytes(tx.To),
 			ContractMethod:           tx.Method,
@@ -303,7 +278,7 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 	return &DVMResult{
 		From:                     crypto.GetAddressBytes(tx.From),
 		To:                       crypto.GetAddressBytes(tx.To),
-		ABI:                      contractTx.Abi,
+		ABI:                      tx.Abi,
 		StorageState:             stateHelper,
 		ContractAddress:          crypto.GetAddressBytes(tx.To),
 		ContractMethod:           tx.Method,
