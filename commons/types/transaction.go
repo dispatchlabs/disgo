@@ -265,8 +265,14 @@ func TransactionPaging(txn *badger.Txn, startingHash string, page, pageSize int)
 			break
 		}
 	}
-	data.Transactions = transactions
-	data.StartingHash = startingHash
+	if transactions[0] != nil {
+		data.Transactions = transactions
+		if startingHash != "" {
+			data.StartingHash = startingHash
+		} else {
+			data.StartingHash = transactions[0].Hash
+		}
+	}
 	return data, nil //TODO: return error if empty?
 }
 
@@ -322,8 +328,14 @@ func ToTransactionsByFromAddress(txn *badger.Txn, address, startingHash string, 
 	}
 	SortByTime(transactions, false)
 
-	data.Transactions = transactions
-	data.StartingHash = startingHash
+	if transactions[0] != nil {
+		data.Transactions = transactions
+		if startingHash != "" {
+			data.StartingHash = startingHash
+		} else {
+			data.StartingHash = transactions[0].Hash
+		}
+	}
 	return data, nil
 }
 
@@ -377,8 +389,14 @@ func ToTransactionsByToAddress(txn *badger.Txn, address, startingHash string, pa
 		}
 	}
 	SortByTime(transactions, false)
-	data.Transactions = transactions
-	data.StartingHash = startingHash
+	if transactions[0] != nil {
+		data.Transactions = transactions
+		if startingHash != "" {
+			data.StartingHash = startingHash
+		} else {
+			data.StartingHash = transactions[0].Hash
+		}
+	}
 	return data, nil
 }
 
