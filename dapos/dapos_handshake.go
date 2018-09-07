@@ -216,7 +216,6 @@ func (this *DAPoSService) gossipWorker() {
 				peerGossip, err := this.peerGossipGrpc(*node, gossip)
 				if err != nil {
 					utils.Warn(err)
-					time.Sleep(time.Second *2)
 					this.gossipChan <- gossip
 					return
 				}
