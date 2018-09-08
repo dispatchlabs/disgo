@@ -18,6 +18,7 @@ package types
 
 import (
 	"io"
+
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/common/hexutil"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"

@@ -21,6 +21,7 @@ import (
 	"math/rand"
 
 	"github.com/dgraph-io/badger"
+	"github.com/dispatchlabs/disgo/commons/helper"
 	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
@@ -383,6 +384,29 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		utils.Info(fmt.Sprintf("deployed contract [hash=%s, contractAddress=%s]", transaction.Hash, contractAccount.Address))
 		break
 	case types.TypeExecuteSmartContract:
+
+		// READ PARAMS
+		// if transaction.Type == types.TypeExecuteSmartContract {
+		contractTx, err := types.ToTransactionByAddress(txn, transaction.To)
+		if err != nil {
+			utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
+			receipt.Status = types.StatusInternalError
+			receipt.HumanReadableStatus = err.Error()
+			receipt.Cache(services.GetCache())
+			return
+		}
+
+		transaction.Abi = contractTx.Abi
+		transaction.Params, err = helper.GetConvertedParams(transaction)
+		if err != nil {
+			utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
+			receipt.Status = types.StatusInternalError
+			receipt.HumanReadableStatus = err.Error()
+			receipt.Cache(services.GetCache())
+			return
+		}
+		// }
+
 		dvmService := dvm.GetDVMService()
 		dvmResult, err1 := dvmService.ExecuteSmartContract(transaction)
 		if err1 != nil {

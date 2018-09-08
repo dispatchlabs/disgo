@@ -19,6 +19,7 @@ package hexutil_test
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/dispatchlabs/disgo/dvm/ethereum/common/hexutil"
 )
 

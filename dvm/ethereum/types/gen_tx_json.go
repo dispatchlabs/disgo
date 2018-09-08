@@ -5,9 +5,10 @@ package types
 import (
 	"encoding/json"
 	"errors"
+	"math/big"
+
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/common/hexutil"
-	"math/big"
 )
 
 var _ = (*txdataMarshaling)(nil)

@@ -34,7 +34,7 @@ import (
 
 var (
 	chainID            = big.NewInt(1)
-	gasLimit           = big.NewInt(1000000000)
+	gasLimit           = big.NewInt(1000000000000)
 	txMetaSuffix       = []byte{0x01}
 	receiptsPrefix     = []byte("receipts-")
 	headTxKey          = []byte("LastTx")
@@ -43,9 +43,9 @@ var (
 	isDemo             = false
 
 	_defaultValue    = big.NewInt(0)
-	_defaultGas      = big.NewInt(1000000000)
+	_defaultGas      = big.NewInt(1000000000000)
 	_defaultGasPrice = big.NewInt(0)
-	_defaultGasLimit = 1000000000
+	_defaultGasLimit = 1000000000000
 	_defaultDivvy    = int64(0)
 )
 
@@ -80,7 +80,7 @@ func (self *DVMService) applyTransaction(tx *commonTypes.Transaction, stateHelpe
 		context,
 		stateHelper.ethStateDB,
 		&params.ChainConfig{
-			ChainId: chainID,
+			ChainID: chainID,
 		},
 		vm.Config{
 			Debug:  isDemo,
@@ -161,7 +161,7 @@ func (self *DVMService) call(tx *commonTypes.Transaction, callMsg ethTypes.Messa
 		context,
 		stateHelper.ethStateDB,
 		&params.ChainConfig{
-			ChainId: chainID,
+			ChainID: chainID,
 		},
 		vm.Config{
 			Debug:  isDemo,

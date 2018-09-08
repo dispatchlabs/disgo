@@ -27,6 +27,7 @@ import (
 
 	"reflect"
 
+	dvmCrypto "github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/crypto"
 )
@@ -646,7 +647,7 @@ func TestUnpackEvent(t *testing.T) {
 	}
 
 	type ReceivedEvent struct {
-		Address common.Address
+		Address dvmCrypto.AddressBytes
 		Amount  *big.Int
 		Memo    []byte
 	}
@@ -660,7 +661,7 @@ func TestUnpackEvent(t *testing.T) {
 	}
 
 	type ReceivedAddrEvent struct {
-		Address common.Address
+		Address dvmCrypto.AddressBytes
 	}
 	var receivedAddrEv ReceivedAddrEvent
 	err = abi.Unpack(&receivedAddrEv, "receivedAddr", data)
