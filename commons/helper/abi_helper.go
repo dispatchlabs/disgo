@@ -14,9 +14,6 @@ import (
 
 func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 
-	if tx.Params == nil || len(tx.Params) == 0 {
-		return tx.Params, nil
-	}
 	theABI, err := GetABI(tx.Abi)
 	if err != nil {
 		return nil, err
@@ -26,6 +23,9 @@ func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 	for k, v := range theABI.Methods {
 		if k == tx.Method {
 			found = true
+			if tx.Params == nil || len(tx.Params) == 0 {
+				return tx.Params, nil
+			}
 			if len(v.Inputs) != len(tx.Params) {
 				return nil, errors.New(fmt.Sprintf("This method %s, requires %d parameters and %d are provided", tx.Method, len(v.Inputs), len(tx.Params)))
 			}
