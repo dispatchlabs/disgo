@@ -1,6 +1,6 @@
 package types
 
-type commonServicesEvents struct {
+type events struct {
 	DbServiceInitFinished       string
 	GrpcServiceInitFinished     string
 	HttpServiceInitFinished     string
@@ -10,8 +10,7 @@ type commonServicesEvents struct {
 }
 
 var (
-	// Events - `services` events
-	Events = commonServicesEvents{
+	Events = events{
 		DbServiceInitFinished:       "DbServiceInitFinished",
 		GrpcServiceInitFinished:     "GrpcServiceInitFinished",
 		HttpServiceInitFinished:     "HttpServiceInitFinished",
