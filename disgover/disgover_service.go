@@ -129,28 +129,32 @@ func (this DisGoverService) updateWorker() {
 		select {
 		case <-timer.C:
 
-			// Is there a software update?
-			fileName := "." + string(os.PathSeparator) + "update" + string(os.PathSeparator) + "disgo"
-			if !utils.Exists(fileName) {
+			// Any files to update?
+			updateDirectory := "." + string(os.PathSeparator) + "update"
+			files, err := ioutil.ReadDir(updateDirectory)
+			if err != nil {
+				utils.Error(err)
 				continue
 			}
 
-			utils.Info("found software to update")
+			for _, file := range files {
+				utils.Info("found software to update")
 
-			// Read file?
-			bytes, err := ioutil.ReadFile(fileName)
-			if err != nil {
-				utils.Error(fmt.Sprintf("unable to load file %s", fileName), err)
-				continue
-			}
+				// Read file?
+				bytes, err := ioutil.ReadFile(updateDirectory + string(os.PathSeparator) + file.Name())
+				if err != nil {
+					utils.Error(fmt.Sprintf("unable to read file %s", file.Name()), err)
+					continue
+				}
 
-			// Update software.
-			this.peerUpdateSoftwareGrpc(bytes)
+				// Update software.
+				this.peerUpdateSoftwareGrpc(file.Name(), bytes)
 
-			// Delete file.
-			err = os.Remove(fileName)
-			if err != nil {
-				utils.Warn(fmt.Sprintf("unable to delete file %s", fileName), err)
+				// Delete file.
+				err = os.Remove(file.Name())
+				if err != nil {
+					utils.Warn(fmt.Sprintf("unable to delete file %s", file.Name()), err)
+				}
 			}
 		}
 	}

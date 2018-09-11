@@ -31,6 +31,8 @@ import (
 	"io/ioutil"
 	"os"
 	"github.com/jasonlvhit/gocron"
+	"github.com/dispatchlabs/disgo/commons/crypto"
+	"encoding/hex"
 )
 
 //TODO: we are going to drop delegates if we fail to communicate with them.  The exepctation will be that the seed will tell us when they come back on line
@@ -241,6 +243,17 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 		return &proto.Empty{}, err
 	}
 
+	// Valid software?
+	err = this.verifySoftwareUpdate(softwareUpdate)
+	if err != nil {
+		return &proto.Empty{}, err
+	}
+
+	// Alter
+	if softwareUpdate.FileName != "disgo" {
+
+	}
+
 	// Write file.
 	fileName := "." + string(os.PathSeparator) + "disgo"
 	err = ioutil.WriteFile(fileName, softwareUpdate.Software, 0)
@@ -266,7 +279,7 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 }
 
 // peerUpdateSoftwareGrpc
-func (this *DisGoverService) peerUpdateSoftwareGrpc(software []byte) {
+func (this *DisGoverService) peerUpdateSoftwareGrpc(fileName string, software []byte) {
 
 	// Get delegates in cache.
 	delegates, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
@@ -282,11 +295,17 @@ func (this *DisGoverService) peerUpdateSoftwareGrpc(software []byte) {
 		return
 	}
 
+	// Create hash and signature.
+	hash, signature, _, err := createSoftwareHashAndSignatureAndDerivedAddress(software)
+	if err != nil {
+		utils.Error(err)
+		return
+	}
+
 	txn := services.NewTxn(true)
 	defer txn.Discard()
 	reboot := time.Now()
 	reboot = reboot.Add(2 * time.Minute)
-
 	for _, delegate := range delegates {
 		maxSize := 1024 * 1024 * 1024 // TODO: Do we need this (ServerOptions sets this)?
 		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxSize), grpc.MaxCallSendMsgSize(maxSize)), grpc.WithInsecure())
@@ -302,7 +321,7 @@ func (this *DisGoverService) peerUpdateSoftwareGrpc(software []byte) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 
 		// Update software.
-		_, err = client.UpdateSoftwareGrpc(ctx, &proto.SoftwareUpdate{Authentication: convertToProtoAuthentication(authentication), Software: software, ScheduledReboot: reboot.Format("3:04")})
+		_, err = client.UpdateSoftwareGrpc(ctx, &proto.SoftwareUpdate{Authentication: convertToProtoAuthentication(authentication), Hash: hash, FileName: fileName, Software: software, Signature: signature, ScheduledReboot: reboot.Format("3:04")})
 		if err != nil {
 			utils.Warn(fmt.Sprintf("unable to update sofware [address=%s, host=%s, port=%d]", delegate.Address, delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port))
 			continue
@@ -339,6 +358,67 @@ func (this *DisGoverService) verifySeedNode(protoAuthenticate *proto.Authenticat
 
 	utils.Warn("attempted update by a non-authorized seed node")
 	return errors.New("you are not an authorized seed node")
+}
+
+// verifySoftwareUpdate
+func (this *DisGoverService) verifySoftwareUpdate(softwareUpdate *proto.SoftwareUpdate) error {
+
+	// Create hash and signature.
+	hash, signature, derivedAddress, err := createSoftwareHashAndSignatureAndDerivedAddress(softwareUpdate.Software)
+	if err != nil {
+		return err
+	}
+
+	// Hash valid?
+	if hash != softwareUpdate.Hash {
+		return errors.New("invalid hash")
+	}
+
+	// Signature valid?
+	if signature != softwareUpdate.Signature {
+		return errors.New("invalid signature")
+	}
+
+	for _, seedNode := range types.GetConfig().Seeds {
+		if seedNode.Address == derivedAddress {
+			return nil
+		}
+	}
+
+	utils.Warn("attempted update by a non-authorized seed node")
+	return errors.New("you are not an authorized seed node")
+}
+
+// createSoftwareHashAndSignatureAndDerivedAddress
+func createSoftwareHashAndSignatureAndDerivedAddress(software []byte) (string, string, string, error) {
+
+	// Create hash.
+	hashBytes := crypto.NewHash(software)
+	hash := hex.EncodeToString(hashBytes[:])
+
+	// Create signature of the hash.
+	privateKeyBytes, err := hex.DecodeString(types.GetAccount().PrivateKey)
+	if err != nil {
+		utils.Error("unable to decode privateKey", err)
+		return "", "", "", err
+	}
+	signatureBytes, err := crypto.NewSignature(privateKeyBytes, hashBytes[:])
+	if err != nil {
+		utils.Error("unable to create signature", err)
+		return "", "", "", err
+	}
+	signature := hex.EncodeToString(signatureBytes)
+
+	publicKeyBytes, err := crypto.ToPublicKey(hashBytes[:], signatureBytes)
+	if err != nil {
+		utils.Error("unable to generate public key from hash and signature", err)
+		return "", "", "", errors.New("unable to generate public key from hash and signature")
+	}
+
+	// Compute address.
+	derivedAddress := hex.EncodeToString(crypto.ToAddress(publicKeyBytes))
+
+	return hash, signature, derivedAddress, nil
 }
 
 /*

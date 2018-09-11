@@ -35,8 +35,11 @@ message Update {
 
 message SoftwareUpdate {
     Authentication Authentication = 1;
-    bytes          Software = 2;
-    string         ScheduledReboot = 3;
+    string         Hash = 2;
+    string         FileName = 3;
+    bytes          Software = 4;
+    string         Signature = 5;
+    string         ScheduledReboot = 6;
 }
 
 service DisgoverGrpc {
