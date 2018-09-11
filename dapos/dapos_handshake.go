@@ -33,7 +33,6 @@ import (
 
 	"github.com/dispatchlabs/disgo/dvm"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
-	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
 )
 
 // startGossiping
@@ -333,6 +332,10 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		}
 	}
 
+	//TODO: Check to see if there is enough Hertz to execute minimum
+	types.GetAccountRateLimit(txn, services.GetCache(), fromAccount.Address)
+
+
 	// Execute.
 	switch transaction.Type {
 	case types.TypeTransferTokens:
@@ -343,15 +346,16 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInsufficientTokens)
 			return
 		}
+
 		fromAccount.Balance.SetInt64(fromAccount.Balance.Int64() - transaction.Value)
 		toAccount.Balance.SetInt64(toAccount.Balance.Int64() + transaction.Value)
 		//TODO add intrinsic hertz
-		hertz := params.CallValueTransferGas
-		rateLimit, err := types.NewRateLimit(transaction.From, transaction.Hash,  "test", hertz)
+		//hertz := params.CallValueTransferGas
+		//rateLimit, err := types.NewRateLimit(transaction.From, transaction.Hash,  "test", hertz)
 		if err != nil {
 			utils.Error(err)
 		}
-		rateLimit.CalculateAndStore(txn, services.GetCache())
+		//rateLimit.CalculateAndStore(txn, services.GetCache())
 
 		utils.Info(fmt.Sprintf("transferred tokens [hash=%s, rumors=%d]", transaction.Hash, len(gossip.Rumors)))
 		break
