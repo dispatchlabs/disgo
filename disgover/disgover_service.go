@@ -35,17 +35,6 @@ import (
 var disGoverServiceInstance *DisGoverService
 var disGoverServiceOnce sync.Once
 
-type disgoverEvents struct {
-	DisGoverServiceInitFinished string
-}
-
-var (
-	// Events - `disgover` events
-	Events = disgoverEvents{
-		DisGoverServiceInitFinished: "DisGoverServiceInitFinished",
-	}
-)
-
 // GetDisGoverService
 func GetDisGoverService() *DisGoverService {
 	disGoverServiceOnce.Do(func() {
@@ -119,7 +108,7 @@ func (this *DisGoverService) Go() {
 	}
 
 	utils.Info(fmt.Sprintf("running as %s", this.ThisNode.Type))
-	utils.Events().Raise(Events.DisGoverServiceInitFinished)
+	utils.Events().Raise(types.Events.DisGoverServiceInitFinished)
 }
 
 // updateWorker
@@ -133,7 +122,6 @@ func (this DisGoverService) updateWorker() {
 			updateDirectory := "." + string(os.PathSeparator) + "update"
 			files, err := ioutil.ReadDir(updateDirectory)
 			if err != nil {
-				utils.Error(err)
 				continue
 			}
 
@@ -141,7 +129,8 @@ func (this DisGoverService) updateWorker() {
 				utils.Info("found software to update")
 
 				// Read file?
-				bytes, err := ioutil.ReadFile(updateDirectory + string(os.PathSeparator) + file.Name())
+				fileName := updateDirectory + string(os.PathSeparator) + file.Name()
+				bytes, err := ioutil.ReadFile(fileName)
 				if err != nil {
 					utils.Error(fmt.Sprintf("unable to read file %s", file.Name()), err)
 					continue
@@ -151,9 +140,9 @@ func (this DisGoverService) updateWorker() {
 				this.peerUpdateSoftwareGrpc(file.Name(), bytes)
 
 				// Delete file.
-				err = os.Remove(file.Name())
+				err = os.Remove(fileName)
 				if err != nil {
-					utils.Warn(fmt.Sprintf("unable to delete file %s", file.Name()), err)
+					utils.Warn(fmt.Sprintf("unable to delete file %s", fileName), err)
 				}
 			}
 		}

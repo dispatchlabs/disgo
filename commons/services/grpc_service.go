@@ -72,7 +72,7 @@ func (this *GrpcService) Go() {
 	utils.Info("listening on " + strconv.Itoa(this.Port))
 	reflection.Register(this.Server)
 
-	utils.Events().Raise(Events.GrpcServiceInitFinished)
+	utils.Events().Raise(types.Events.GrpcServiceInitFinished)
 
 	if error := this.Server.Serve(listener); error != nil {
 		utils.Fatal("failed to serve: %v", error)

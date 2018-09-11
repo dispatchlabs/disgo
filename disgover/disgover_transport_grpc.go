@@ -28,11 +28,11 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"io/ioutil"
 	"os"
-	"github.com/jasonlvhit/gocron"
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"encoding/hex"
+	"io/ioutil"
+	"github.com/jasonlvhit/gocron"
 )
 
 //TODO: we are going to drop delegates if we fail to communicate with them.  The exepctation will be that the seed will tell us when they come back on line
@@ -135,8 +135,8 @@ func (this *DisGoverService) peerPingSeedGrpc() ([]*types.Node, error) {
 			return nil, err
 		}
 
-		protoNode := convertToProtoNode(this.ThisNode)
 		// Ping seed.
+		protoNode := convertToProtoNode(this.ThisNode)
 		response, err := client.PingSeedGrpc(ctx, &proto.PingSeed{Authentication: convertToProtoAuthentication(authentication), Node: protoNode})
 		if err != nil {
 			conn.Close()
@@ -240,40 +240,46 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 	// Verify seed node is authentic?
 	err := this.verifySeedNode(softwareUpdate.Authentication)
 	if err != nil {
+		utils.Error(err)
 		return &proto.Empty{}, err
 	}
 
 	// Valid software?
 	err = this.verifySoftwareUpdate(softwareUpdate)
 	if err != nil {
+		utils.Error("unable to verify software update", err)
 		return &proto.Empty{}, err
 	}
 
-	// Alter
-	if softwareUpdate.FileName != "disgo" {
+	// Disgo software update?
+	if softwareUpdate.FileName == "disgo" {
+		fileName := "." + string(os.PathSeparator) + "disgo"
+		err = ioutil.WriteFile(fileName, softwareUpdate.Software, 0777)
+		if err != nil {
+			utils.Error(fmt.Sprintf("unable to save file %s", fileName), err)
+			return &proto.Empty{}, err
+		}
+		utils.Info(fmt.Sprintf("software updated from seed node [file=%s]", fileName))
 
+		// Schedule the reboot.
+		go func() {
+			gocron.Every(1).Day().At(softwareUpdate.ScheduledReboot).Do(func() {
+				gocron.Clear()
+				services.GetDbService().Close()
+				utils.Info("rebooting with new version of disgo...")
+				os.Exit(0)
+			})
+			<-gocron.Start()
+		}()
+	} else {
+		fileName := "." + string(os.PathSeparator) + "disgo-update"
+		err = ioutil.WriteFile(fileName, softwareUpdate.Software, 0777)
+		if err != nil {
+			utils.Error(fmt.Sprintf("unable to save file %s", fileName), err)
+			return &proto.Empty{}, err
+		}
+		utils.Info(fmt.Sprintf("software updated from seed node [file=%s]", fileName))
 	}
-
-	// Write file.
-	fileName := "." + string(os.PathSeparator) + "disgo"
-	err = ioutil.WriteFile(fileName, softwareUpdate.Software, 0)
-	if err != nil {
-		utils.Error(fmt.Sprintf("unable to save file %s", fileName), err)
-		return &proto.Empty{}, err
-	}
-
-	utils.Info(fmt.Sprintf("software updated from seed node"))
-
-	// Schedule the reboot.
-	go func() {
-		gocron.Every(1).Day().At(softwareUpdate.ScheduledReboot).Do(func() {
-			gocron.Clear()
-			services.GetDbService().Close()
-			utils.Info("rebooting with new version of disgo...")
-			os.Exit(0)
-		})
-		<-gocron.Start()
-	}()
 
 	return &proto.Empty{}, nil
 }
@@ -296,11 +302,21 @@ func (this *DisGoverService) peerUpdateSoftwareGrpc(fileName string, software []
 	}
 
 	// Create hash and signature.
-	hash, signature, _, err := createSoftwareHashAndSignatureAndDerivedAddress(software)
+	hashBytes := crypto.NewHash(software)
+	hash := hex.EncodeToString(hashBytes[:])
+
+	// Create signature of the hash.
+	privateKeyBytes, err := hex.DecodeString(types.GetAccount().PrivateKey)
 	if err != nil {
 		utils.Error(err)
 		return
 	}
+	signatureBytes, err := crypto.NewSignature(privateKeyBytes, hashBytes[:])
+	if err != nil {
+		utils.Error(err)
+		return
+	}
+	signature := hex.EncodeToString(signatureBytes)
 
 	txn := services.NewTxn(true)
 	defer txn.Discard()
@@ -323,7 +339,7 @@ func (this *DisGoverService) peerUpdateSoftwareGrpc(fileName string, software []
 		// Update software.
 		_, err = client.UpdateSoftwareGrpc(ctx, &proto.SoftwareUpdate{Authentication: convertToProtoAuthentication(authentication), Hash: hash, FileName: fileName, Software: software, Signature: signature, ScheduledReboot: reboot.Format("3:04")})
 		if err != nil {
-			utils.Warn(fmt.Sprintf("unable to update sofware [address=%s, host=%s, port=%d]", delegate.Address, delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port))
+			utils.Warn(fmt.Sprintf("unable to update sofware [address=%s, host=%s, port=%d]", delegate.Address, delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), err)
 			continue
 		}
 		conn.Close()
@@ -363,62 +379,35 @@ func (this *DisGoverService) verifySeedNode(protoAuthenticate *proto.Authenticat
 // verifySoftwareUpdate
 func (this *DisGoverService) verifySoftwareUpdate(softwareUpdate *proto.SoftwareUpdate) error {
 
-	// Create hash and signature.
-	hash, signature, derivedAddress, err := createSoftwareHashAndSignatureAndDerivedAddress(softwareUpdate.Software)
-	if err != nil {
-		return err
-	}
+	// Create hash.
+	hashBytes := crypto.NewHash(softwareUpdate.Software)
+	hash := hex.EncodeToString(hashBytes[:])
 
 	// Hash valid?
 	if hash != softwareUpdate.Hash {
 		return errors.New("invalid hash")
 	}
 
-	// Signature valid?
-	if signature != softwareUpdate.Signature {
-		return errors.New("invalid signature")
+	// Valid address?
+	signatureBytes, err := hex.DecodeString(softwareUpdate.Signature)
+	if err != nil {
+		return errors.New("unable to decode signature")
+	}
+	publicKeyBytes, err := crypto.ToPublicKey(hashBytes[:], signatureBytes)
+	if err != nil {
+		return errors.New("unable to generate public key from hash and signature")
 	}
 
+	// Is the computed address match a seed address?
+	computedAddress := hex.EncodeToString(crypto.ToAddress(publicKeyBytes))
 	for _, seedNode := range types.GetConfig().Seeds {
-		if seedNode.Address == derivedAddress {
+		if seedNode.Address == computedAddress {
 			return nil
 		}
 	}
 
-	utils.Warn("attempted update by a non-authorized seed node")
-	return errors.New("you are not an authorized seed node")
-}
-
-// createSoftwareHashAndSignatureAndDerivedAddress
-func createSoftwareHashAndSignatureAndDerivedAddress(software []byte) (string, string, string, error) {
-
-	// Create hash.
-	hashBytes := crypto.NewHash(software)
-	hash := hex.EncodeToString(hashBytes[:])
-
-	// Create signature of the hash.
-	privateKeyBytes, err := hex.DecodeString(types.GetAccount().PrivateKey)
-	if err != nil {
-		utils.Error("unable to decode privateKey", err)
-		return "", "", "", err
-	}
-	signatureBytes, err := crypto.NewSignature(privateKeyBytes, hashBytes[:])
-	if err != nil {
-		utils.Error("unable to create signature", err)
-		return "", "", "", err
-	}
-	signature := hex.EncodeToString(signatureBytes)
-
-	publicKeyBytes, err := crypto.ToPublicKey(hashBytes[:], signatureBytes)
-	if err != nil {
-		utils.Error("unable to generate public key from hash and signature", err)
-		return "", "", "", errors.New("unable to generate public key from hash and signature")
-	}
-
-	// Compute address.
-	derivedAddress := hex.EncodeToString(crypto.ToAddress(publicKeyBytes))
-
-	return hash, signature, derivedAddress, nil
+	utils.Warn("attempted update software by a non-authorized seed node")
+	return errors.New("you are not an authorized seed node to update software")
 }
 
 /*
