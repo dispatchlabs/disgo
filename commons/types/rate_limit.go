@@ -24,7 +24,7 @@ type RateLimit struct {
 }
 
 type TxRateLimit struct {
-	Amount 		int64
+	Amount 		uint64
 	TxHash  	string
 }
 
@@ -36,7 +36,7 @@ type AccountRateLimits struct {
 //  RateLimit
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-func NewRateLimit(address, txHash, page string, amount int64) (*RateLimit, error) {
+func NewRateLimit(address, txHash, page string, amount uint64) (*RateLimit, error) {
 	return &RateLimit {
 		Address:	address,
 		TxRateLimit: &TxRateLimit{amount, txHash},
@@ -227,4 +227,27 @@ func bytesToUint64(b []byte) uint64 {
 // Merge function to add two uint64 numbers
 func add(existing, new []byte) []byte {
 	return uint64ToBytes(bytesToUint64(existing) + bytesToUint64(new))
+}
+
+func (this *RateLimit) CalculateAndStore(txn *badger.Txn, c *cache.Cache) {
+	this.Set(txn, c)
+
+	addrsRateLimit, err := GetAccountRateLimit(txn, c, this.Address)
+	if err != nil {
+		utils.Error(err)
+	}
+
+	var totalDeduction uint64
+	for _, hash := range addrsRateLimit.TxHashes {
+		utils.Info("Getting Hash: ", hash)
+		txrl, err := GetTxRateLimit(txn, c, hash)
+		if err != nil {
+			utils.Error(err)
+		}
+		if txrl != nil {
+			totalDeduction += txrl.Amount
+			utils.Info(txrl.string())
+		}
+	}
+	utils.Info("\nTotal Hertz Deduction from account = ", totalDeduction)
 }

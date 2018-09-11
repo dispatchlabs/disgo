@@ -46,7 +46,7 @@ func addRateLimit(rateLimit *RateLimit) {
 	if err != nil {
 		utils.Error(err)
 	}
-	addrsRateLimit, err := GetAccountRateLimit(txn, c, rateLimit.Address)
+		addrsRateLimit, err := GetAccountRateLimit(txn, c, rateLimit.Address)
 	if err != nil {
 		utils.Error(err)
 	}
