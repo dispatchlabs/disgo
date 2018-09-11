@@ -14,9 +14,9 @@ import (
 
 func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 
-	if tx.Params == nil || len(tx.Params) == 0 {
-		return tx.Params, nil
-	}
+	//if tx.Params == nil || len(tx.Params) == 0 {
+	//	return tx.Params, nil
+	//}
 	theABI, err := GetABI(tx.Abi)
 	if err != nil {
 		return nil, err
