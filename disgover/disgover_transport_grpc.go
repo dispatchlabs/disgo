@@ -182,7 +182,7 @@ func (this *DisGoverService) UpdateGrpc(ctx context.Context, update *proto.Updat
 	// Cache delegates.
 	for _, delegate := range update.Delegates {
 		convertToDomainNode(delegate).Cache(services.GetCache())
-		utils.Info(fmt.Sprintf("delegates updated [count=%d] %s : %s:%d", len(update.Delegates), delegate.Address, delegate.GrpcEndpoint.Host ,delegate.GrpcEndpoint.Port))
+		utils.Info(fmt.Sprintf("delegates updated [count=%d] %s : %s:%d", len(update.Delegates), delegate.Address, delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port))
 	}
 	return &proto.Empty{}, nil
 }
@@ -259,7 +259,7 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 			utils.Error(fmt.Sprintf("unable to save file %s", fileName), err)
 			return &proto.Empty{}, err
 		}
-		utils.Info(fmt.Sprintf("software updated from seed node [file=%s]", fileName))
+		utils.Info(fmt.Sprintf("software updated from seed node [file=%s, scheduledReboot=%s]", fileName, softwareUpdate.ScheduledReboot))
 
 		// Schedule the reboot.
 		go func() {
@@ -337,7 +337,7 @@ func (this *DisGoverService) peerUpdateSoftwareGrpc(fileName string, software []
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 
 		// Update software.
-		_, err = client.UpdateSoftwareGrpc(ctx, &proto.SoftwareUpdate{Authentication: convertToProtoAuthentication(authentication), Hash: hash, FileName: fileName, Software: software, Signature: signature, ScheduledReboot: reboot.Format("3:04")})
+		_, err = client.UpdateSoftwareGrpc(ctx, &proto.SoftwareUpdate{Authentication: convertToProtoAuthentication(authentication), Hash: hash, FileName: fileName, Software: software, Signature: signature, ScheduledReboot: reboot.Format("15:04")})
 		if err != nil {
 			utils.Warn(fmt.Sprintf("unable to update sofware [address=%s, host=%s, port=%d]", delegate.Address, delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), err)
 			continue
@@ -366,7 +366,7 @@ func (this *DisGoverService) verifySeedNode(protoAuthenticate *proto.Authenticat
 		if seedNode.Address == authenticationAddress {
 			err = authentication.Verify(services.GetCache(), seedNode.Address)
 			if err != nil {
-				return errors.New("you are not an authorized seed node")
+				return errors.New(fmt.Sprintf("you are not an authorized seed node [err=%s]", err.Error()))
 			}
 			return nil
 		}

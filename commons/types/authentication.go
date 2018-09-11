@@ -155,7 +155,7 @@ func (this Authentication) Verify(cache *cache.Cache, address string) error {
 
 	// Time out?
 	elapsedMilliSeconds := utils.ToMilliSeconds(time.Now()) - this.Time
-	if elapsedMilliSeconds > 1500 {
+	if elapsedMilliSeconds > 5000 {
 		return errors.New("authentication timed out")
 	}
 

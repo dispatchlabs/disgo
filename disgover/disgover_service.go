@@ -126,8 +126,6 @@ func (this DisGoverService) updateWorker() {
 			}
 
 			for _, file := range files {
-				utils.Info("found software to update")
-
 				// Read file?
 				fileName := updateDirectory + string(os.PathSeparator) + file.Name()
 				bytes, err := ioutil.ReadFile(fileName)
@@ -135,6 +133,8 @@ func (this DisGoverService) updateWorker() {
 					utils.Error(fmt.Sprintf("unable to read file %s", file.Name()), err)
 					continue
 				}
+
+				utils.Info(fmt.Sprintf("found software to update [file=%s]", fileName))
 
 				// Update software.
 				this.peerUpdateSoftwareGrpc(file.Name(), bytes)
