@@ -41,6 +41,7 @@ import (
 	"github.com/dispatchlabs/disgo/disgover"
 	"github.com/dispatchlabs/disgo/dvm"
 	"github.com/dispatchlabs/disgo/localapi"
+	"os/exec"
 )
 
 // Server -
@@ -62,9 +63,30 @@ func NewServer() *Server {
 func (server *Server) Go() {
 	utils.Info(fmt.Sprintf("booting Disgo v%s...", types.Version))
 
+	// Run update?
+	fileName := "." + string(os.PathSeparator) + "disgo-update"
+	if utils.Exists(fileName) {
+
+		// Run.
+		command := exec.Command(fileName)
+		var out bytes.Buffer
+		command.Stdout = &out
+		err := command.Run()
+		if err != nil {
+			utils.Error(err)
+		}
+		utils.Info(fmt.Sprintf("executed %s - %s", fileName, out.String()))
+
+		// Delete update.
+		err = os.Remove(fileName)
+		if err != nil {
+			utils.Warn(fmt.Sprintf("unable to delete file %s", fileName), err)
+		}
+	}
+
 	// Add services.
-	server.services = append(server.services, dvm.GetDVMService())
 	server.services = append(server.services, services.GetDbService())
+	server.services = append(server.services, dvm.GetDVMService())
 	server.services = append(server.services, disgover.GetDisGoverService().WithGrpc().WithHttp())
 	server.services = append(server.services, dapos.GetDAPoSService().WithGrpc().WithHttp())
 	server.services = append(server.services, localapi.GetLocalAPIService().WithHttp())

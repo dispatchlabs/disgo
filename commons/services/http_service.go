@@ -105,7 +105,7 @@ func (this *HttpService) Go() {
 
 	}()
 
-	utils.Events().Raise(Events.HttpServiceInitFinished)
+	utils.Events().Raise(types.Events.HttpServiceInitFinished)
 
 	wg.Wait()
 }

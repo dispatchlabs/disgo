@@ -20,21 +20,11 @@ import (
 	"sync"
 
 	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/dispatchlabs/disgo/commons/types"
 )
 
 var dvmServiceInstance *DVMService
 var dvmServiceOnce sync.Once
-
-type dvmEvents struct {
-	DVMServiceInitFinished string
-}
-
-var (
-	// Events - `dvm` events
-	Events = dvmEvents{
-		DVMServiceInitFinished: "DVMServiceInitFinished",
-	}
-)
 
 // GetDVMService
 func GetDVMService() *DVMService {
@@ -59,5 +49,5 @@ func (dvm *DVMService) IsRunning() bool {
 func (dvm *DVMService) Go() {
 	dvm.running = true
 	utils.Info("running")
-	utils.Events().Raise(Events.DVMServiceInitFinished)
+	utils.Events().Raise(types.Events.DVMServiceInitFinished)
 }
