@@ -142,9 +142,6 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 			return
 		}
 	}
-	// DUPLICATE by mistake ??
-	// txn := services.NewTxn(true)
-	// defer txn.Discard()
 
 	if transaction.Type == types.TypeExecuteSmartContract {
 		contractTx, err := types.ToTransactionByAddress(txn, transaction.To)
