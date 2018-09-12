@@ -52,7 +52,7 @@ type Transaction struct {
 	ToName    string  // Transient
 }
 
-type response struct {
+type pagingResult struct {
 	Transactions []*Transaction
 	StartingHash string
 }
@@ -215,8 +215,8 @@ func ToTransactions(txn *badger.Txn) ([]*Transaction, error) {
 	return transactions, nil
 }
 
-func TransactionPaging(txn *badger.Txn, startingHash string, page, pageSize int) (response, error) {
-	var data response
+func TransactionPaging(txn *badger.Txn, startingHash string, page, pageSize int) (pagingResult, error) {
+	var data pagingResult
 	var iteratorCount = 0
 	var firstItem int
 	if pageSize <= 0 || pageSize > 100{
@@ -277,8 +277,8 @@ func TransactionPaging(txn *badger.Txn, startingHash string, page, pageSize int)
 }
 
 // ToTransactionsByFromAddress
-func ToTransactionsByFromAddress(txn *badger.Txn, address, startingHash string, page, pageSize int) (response, error) {
-	var data response
+func ToTransactionsByFromAddress(txn *badger.Txn, address, startingHash string, page, pageSize int) (pagingResult, error) {
+	var data pagingResult
 	var iteratorCount = 0
 	var firstItem int
 	if pageSize <= 0 || pageSize > 100{
@@ -340,8 +340,8 @@ func ToTransactionsByFromAddress(txn *badger.Txn, address, startingHash string, 
 }
 
 // ToTransactionsByToAddress
-func ToTransactionsByToAddress(txn *badger.Txn, address, startingHash string, page, pageSize int) (response, error) {
-	var data response
+func ToTransactionsByToAddress(txn *badger.Txn, address, startingHash string, page, pageSize int) (pagingResult, error) {
+	var data pagingResult
 	var iteratorCount = 0
 	var firstItem int
 	if pageSize <= 0 || pageSize > 100{
