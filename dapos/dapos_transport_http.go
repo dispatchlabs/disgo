@@ -131,6 +131,13 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 
 	// New transaction.
 	transaction, err := types.ToTransactionFromJson(body)
+	if err != nil {
+		if err != nil {
+			utils.Error("Paramater type error", err)
+			services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusJsonParseError, err), http.StatusBadRequest)
+			return
+		}
+	}
 	txn := services.NewTxn(true)
 	defer txn.Discard()
 
@@ -144,16 +151,10 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 		transaction.Params, err = helper.GetConvertedParams(transaction)
 		if err != nil {
 			utils.Error("Paramater type error", err)
-			services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusJsonParseError, err), http.StatusInternalServerError)
+			services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusJsonParseError, err), http.StatusBadRequest)
 			return
 		}
 
-	}
-
-	if err != nil {
-		utils.Error("JSON parse error", err)
-		services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusJsonParseError, err), http.StatusInternalServerError)
-		return
 	}
 	response := this.NewTransaction(transaction)
 	setHeaders(response, &responseWriter)
