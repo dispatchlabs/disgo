@@ -296,7 +296,7 @@ func (this *DAPoSService) doWork() {
 
 // executeTransaction
 func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, gossip *types.Gossip) {
-	utils.Debug("executeTransaction --> %s", transaction.Hash)
+	utils.Debug("executeTransaction --> ", transaction.Hash)
 	services.Lock(transaction.Hash)
 	defer services.Unlock(transaction.Hash)
 	txn := services.NewTxn(true)
@@ -519,13 +519,15 @@ func processDVMResult(transaction *types.Transaction, dvmResult *dvm.DVMResult, 
 		if err == nil {
 
 			if method, ok := jsonABI.Methods[dvmResult.ContractMethod]; ok {
-				marshalledValues, err := method.Outputs.UnpackValues(dvmResult.ContractMethodExecResult)
-				if err == nil {
-					utils.Info(fmt.Sprintf("CONTRACT-CALL-RES: %v", marshalledValues))
-					receipt.ContractResult = marshalledValues
-				} else {
-					errorToReturn = err
-					utils.Error(err)
+				if dvmResult.ContractMethodExecResult != nil && len(dvmResult.ContractMethodExecResult) > 0 {
+					marshalledValues, err := method.Outputs.UnpackValues(dvmResult.ContractMethodExecResult)
+					if err == nil {
+						utils.Info(fmt.Sprintf("CONTRACT-CALL-RES: %v", marshalledValues))
+						receipt.ContractResult = marshalledValues
+					} else {
+						errorToReturn = err
+						utils.Error(err)
+					}
 				}
 			}
 

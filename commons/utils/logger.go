@@ -42,7 +42,7 @@ func InitializeLogger() {
 		}
 		mw := io.MultiWriter(os.Stdout, logFile)
 		log.SetOutput(mw)
-		log.SetLevel(log.InfoLevel)
+		log.SetLevel(log.DebugLevel)
 	})
 }
 

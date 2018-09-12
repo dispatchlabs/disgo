@@ -53,8 +53,8 @@ type operation struct {
 var (
 	frontierInstructionSet       = newFrontierInstructionSet()
 	homesteadInstructionSet      = newHomesteadInstructionSet()
-	byzantiumInstructionSet      = newByzantiumInstructionSet()
-	constantinopleInstructionSet = newConstantinopleInstructionSet()
+	ByzantiumInstructionSet      = newByzantiumInstructionSet()
+	ConstantinopleInstructionSet = newConstantinopleInstructionSet()
 )
 
 // NewConstantinopleInstructionSet returns the frontier, homestead

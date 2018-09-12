@@ -21,12 +21,13 @@ import (
 	"fmt"
 	"math/big"
 
+	crypto2 "github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/common/math"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/crypto"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/types"
-	crypto2 "github.com/dispatchlabs/disgo/commons/crypto"
 )
 
 var (
@@ -35,7 +36,7 @@ var (
 	tt256                    = math.BigPow(2, 256)
 	errWriteProtection       = errors.New("evm: write protection")
 	errReturnDataOutOfBounds = errors.New("evm: return data out of bounds")
-	errExecutionReverted     = errors.New("evm: execution reverted")
+	ErrExecutionReverted     = errors.New("evm: execution reverted")
 	errMaxCodeSizeExceeded   = errors.New("evm: max code size exceeded")
 )
 
@@ -459,8 +460,28 @@ func opReturnDataCopy(pc *uint64, interpreter *EVMInterpreter, contract *Contrac
 }
 
 func opExtCodeSize(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+
+	// ORIGINAL
+	// slot := stack.peek()
+	// slot.SetUint64(uint64(interpreter.evm.StateDB.GetCodeSize(contract.Address(), contract.Caller(), common.BigToAddress(slot))))
+
+	// DISPATCH
 	slot := stack.peek()
-	slot.SetUint64(uint64(interpreter.evm.StateDB.GetCodeSize(common.BigToAddress(slot))))
+
+	var executingContractAddress = contract.Address()
+	var callerAddress = contract.Caller()
+	var toBeExecutedContractAddress = common.BigToAddress(slot)
+
+	utils.Debug(fmt.Sprintf("EVMInterpreter-opExtCodeSize: executingContractAddress    -> %s", crypto2.Encode(executingContractAddress[:])))
+	utils.Debug(fmt.Sprintf("EVMInterpreter-opExtCodeSize: callerAddress               -> %s", crypto2.Encode(callerAddress[:])))
+	utils.Debug(fmt.Sprintf("EVMInterpreter-opExtCodeSize: toBeExecutedContractAddress -> %s", crypto2.Encode(toBeExecutedContractAddress[:])))
+
+	var codeSize = uint64(interpreter.evm.StateDB.GetCodeSize(common.BigToAddress(slot)))
+	if codeSize == 0 && interpreter.evm.StateQueryHelper != nil {
+		codeSize = uint64(interpreter.evm.StateQueryHelper.GetCodeSize(contract.Address(), contract.Caller(), common.BigToAddress(slot)))
+	}
+
+	slot.SetUint64(codeSize)
 
 	return nil, nil
 }
@@ -694,7 +715,7 @@ func opCreate(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memor
 	contract.Gas += returnGas
 	interpreter.intPool.put(value, offset, size)
 
-	if suberr == errExecutionReverted {
+	if suberr == ErrExecutionReverted {
 		return res, nil
 	}
 	return nil, nil
@@ -722,7 +743,7 @@ func opCreate2(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memo
 	contract.Gas += returnGas
 	interpreter.intPool.put(endowment, offset, size, salt)
 
-	if suberr == errExecutionReverted {
+	if suberr == ErrExecutionReverted {
 		return res, nil
 	}
 	return nil, nil
@@ -739,16 +760,38 @@ func opCall(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory 
 	// Get the arguments from the memory.
 	args := memory.Get(inOffset.Int64(), inSize.Int64())
 
+	// DISPATCH
+	var executingContractAddress = contract.Address()
+	var callerAddress = contract.Caller()
+	var toBeExecutedContractAddress = toAddr
+
+	var executingContractAddressAsString = crypto2.Encode(executingContractAddress[:])
+	var callerAddressAsString = crypto2.Encode(callerAddress[:])
+	var toBeExecutedContractAddressAsString = crypto2.Encode(toBeExecutedContractAddress[:])
+
+	utils.Debug(fmt.Sprintf("EVMInterpreter-opCall: executingContractAddress    -> %s", executingContractAddressAsString))
+	utils.Debug(fmt.Sprintf("EVMInterpreter-opCall: callerAddress               -> %s", callerAddressAsString))
+	utils.Debug(fmt.Sprintf("EVMInterpreter-opCall: toBeExecutedContractAddress -> %s", toBeExecutedContractAddressAsString))
+	utils.Debug(fmt.Sprintf("EVMInterpreter-opCall: value                       -> %v", value))
+	utils.Debug(fmt.Sprintf("EVMInterpreter-opCall: args                        -> %v", args))
+
+	// DISPATCH - Swap StateDB conext
+	var prevEthDB = interpreter.evm.StateDB
+	interpreter.evm.StateDB = interpreter.evm.StateQueryHelper.NewEthStateLoader(toAddr)
+
 	if value.Sign() != 0 {
 		gas += params.CallStipend
 	}
 	ret, returnGas, err := interpreter.evm.Call(contract, toAddr, args, gas, value)
+
+	interpreter.evm.StateDB = prevEthDB
+
 	if err != nil {
 		stack.push(interpreter.intPool.getZero())
 	} else {
 		stack.push(interpreter.intPool.get().SetUint64(1))
 	}
-	if err == nil || err == errExecutionReverted {
+	if err == nil || err == ErrExecutionReverted {
 		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
 	}
 	contract.Gas += returnGas
@@ -777,7 +820,7 @@ func opCallCode(pc *uint64, interpreter *EVMInterpreter, contract *Contract, mem
 	} else {
 		stack.push(interpreter.intPool.get().SetUint64(1))
 	}
-	if err == nil || err == errExecutionReverted {
+	if err == nil || err == ErrExecutionReverted {
 		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
 	}
 	contract.Gas += returnGas
@@ -802,7 +845,7 @@ func opDelegateCall(pc *uint64, interpreter *EVMInterpreter, contract *Contract,
 	} else {
 		stack.push(interpreter.intPool.get().SetUint64(1))
 	}
-	if err == nil || err == errExecutionReverted {
+	if err == nil || err == ErrExecutionReverted {
 		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
 	}
 	contract.Gas += returnGas
@@ -827,7 +870,7 @@ func opStaticCall(pc *uint64, interpreter *EVMInterpreter, contract *Contract, m
 	} else {
 		stack.push(interpreter.intPool.get().SetUint64(1))
 	}
-	if err == nil || err == errExecutionReverted {
+	if err == nil || err == ErrExecutionReverted {
 		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
 	}
 	contract.Gas += returnGas

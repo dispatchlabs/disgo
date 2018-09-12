@@ -26,6 +26,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
 	ethTypes "github.com/dispatchlabs/disgo/dvm/ethereum/types"
+	"github.com/dispatchlabs/disgo/dvm/vmstatehelperimplemtations"
 )
 
 // DeploySmartContract -
@@ -33,7 +34,7 @@ func (dvm *DVMService) DeploySmartContract(tx *commonTypes.Transaction) (*DVMRes
 	utils.Debug(fmt.Sprintf("DVMServices-DeploySmartContract: %s", tx))
 
 	// Load the TRIE state for [FROM:TO] combo
-	stateHelper, err := NewVMStateHelper(crypto.GetAddressBytes(tx.From), crypto.GetAddressBytes(tx.To))
+	stateHelper, err := vmstatehelperimplemtations.NewVMStateHelper(crypto.GetAddressBytes(tx.To)) // crypto.GetAddressBytes(tx.From),
 	if err != nil {
 		// return nil, err
 
@@ -47,7 +48,7 @@ func (dvm *DVMService) DeploySmartContract(tx *commonTypes.Transaction) (*DVMRes
 			ContractMethodExecError:  nil,
 			ContractMethodExecResult: nil,
 
-			Divvy: _defaultDivvy,
+			Divvy: vmstatehelperimplemtations.DefaultDivvy,
 			// Status:              receipt.Status,
 			// HertzCost:           receipt.GasUsed,
 			// CumulativeHertzUsed: receipt.CumulativeGasUsed,
@@ -56,7 +57,7 @@ func (dvm *DVMService) DeploySmartContract(tx *commonTypes.Transaction) (*DVMRes
 		}, err
 	}
 
-	stateHelper.ethStateDB.SetNonce(crypto.GetAddressBytes(tx.From), uint64(tx.Time))
+	stateHelper.EthStateDB.SetNonce(crypto.GetAddressBytes(tx.From), uint64(tx.Time))
 	if err := dvm.applyTransaction(tx, stateHelper); err != nil {
 		utils.Error(err)
 		// return nil, err
@@ -71,7 +72,7 @@ func (dvm *DVMService) DeploySmartContract(tx *commonTypes.Transaction) (*DVMRes
 			ContractMethodExecError:  nil,
 			ContractMethodExecResult: nil,
 
-			Divvy: _defaultDivvy,
+			Divvy: vmstatehelperimplemtations.DefaultDivvy,
 			// Status:              receipt.Status,
 			// HertzCost:           receipt.GasUsed,
 			// CumulativeHertzUsed: receipt.CumulativeGasUsed,
@@ -96,7 +97,7 @@ func (dvm *DVMService) DeploySmartContract(tx *commonTypes.Transaction) (*DVMRes
 			ContractMethodExecError:  nil,
 			ContractMethodExecResult: nil,
 
-			Divvy: _defaultDivvy,
+			Divvy: vmstatehelperimplemtations.DefaultDivvy,
 			// Status:              receipt.Status,
 			// HertzCost:           receipt.GasUsed,
 			// CumulativeHertzUsed: receipt.CumulativeGasUsed,
@@ -119,7 +120,7 @@ func (dvm *DVMService) DeploySmartContract(tx *commonTypes.Transaction) (*DVMRes
 		ContractMethodExecError:  nil,
 		ContractMethodExecResult: nil,
 
-		Divvy:               _defaultDivvy,
+		Divvy:               vmstatehelperimplemtations.DefaultDivvy,
 		Status:              receipt.Status,
 		HertzCost:           receipt.GasUsed,
 		CumulativeHertzUsed: receipt.CumulativeGasUsed,
@@ -148,7 +149,7 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 				ContractMethodExecError:  err,
 				ContractMethodExecResult: nil,
 
-				Divvy:  _defaultDivvy,
+				Divvy:  DefaultDivvy,
 				Status: ethTypes.ReceiptStatusFailed,
 				// HertzCost:           receipt.GasUsed,
 				// CumulativeHertzUsed: receipt.CumulativeGasUsed,
@@ -159,7 +160,7 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 	*/
 
 	// Load the TRIE state for [FROM:TO] combo
-	stateHelper, err := NewVMStateHelper(crypto.GetAddressBytes(tx.From), crypto.GetAddressBytes(tx.To))
+	stateHelper, err := vmstatehelperimplemtations.NewVMStateHelper(crypto.GetAddressBytes(tx.To)) // crypto.GetAddressBytes(tx.From)
 	if err != nil {
 		// return nil, err
 
@@ -173,7 +174,7 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 			ContractMethodExecError:  err,
 			ContractMethodExecResult: nil,
 
-			Divvy:  _defaultDivvy,
+			Divvy:  vmstatehelperimplemtations.DefaultDivvy,
 			Status: ethTypes.ReceiptStatusFailed,
 			// HertzCost:           receipt.GasUsed,
 			// CumulativeHertzUsed: receipt.CumulativeGasUsed,
@@ -200,7 +201,7 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 			ContractMethodExecError:  err,
 			ContractMethodExecResult: nil,
 
-			Divvy:  _defaultDivvy,
+			Divvy:  vmstatehelperimplemtations.DefaultDivvy,
 			Status: ethTypes.ReceiptStatusFailed,
 			// HertzCost:           receipt.GasUsed,
 			// CumulativeHertzUsed: receipt.CumulativeGasUsed,
@@ -225,7 +226,7 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 			ContractMethodExecError:  err,
 			ContractMethodExecResult: nil,
 
-			Divvy:  _defaultDivvy,
+			Divvy:  vmstatehelperimplemtations.DefaultDivvy,
 			Status: ethTypes.ReceiptStatusFailed,
 			// HertzCost:           receipt.GasUsed,
 			// CumulativeHertzUsed: receipt.CumulativeGasUsed,
@@ -240,9 +241,9 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 		crypto.GetAddressBytes(tx.From),
 		&toAsBytes,
 		0, // nonce
-		_defaultValue,
-		_defaultGas.Uint64(),
-		_defaultGasPrice,
+		vmstatehelperimplemtations.DefaultValue,
+		vmstatehelperimplemtations.DefaultGas.Uint64(),
+		vmstatehelperimplemtations.DefaultGasPrice,
 		callData,
 		false,
 	)
@@ -262,7 +263,7 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 			ContractMethodExecError:  execError,
 			ContractMethodExecResult: nil,
 
-			Divvy:  _defaultDivvy,
+			Divvy:  vmstatehelperimplemtations.DefaultDivvy,
 			Status: ethTypes.ReceiptStatusFailed,
 			// HertzCost:           receipt.GasUsed,
 			// CumulativeHertzUsed: receipt.CumulativeGasUsed,
@@ -287,7 +288,7 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 			ContractMethodExecError:  execError,
 			ContractMethodExecResult: nil,
 
-			Divvy:  _defaultDivvy,
+			Divvy:  vmstatehelperimplemtations.DefaultDivvy,
 			Status: ethTypes.ReceiptStatusFailed,
 			// HertzCost:           receipt.GasUsed,
 			// CumulativeHertzUsed: receipt.CumulativeGasUsed,
@@ -311,7 +312,7 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 		ContractMethodExecError:  execError,
 		ContractMethodExecResult: execResult,
 
-		Divvy:               _defaultDivvy,
+		Divvy:               vmstatehelperimplemtations.DefaultDivvy,
 		Status:              receipt.Status,
 		HertzCost:           receipt.GasUsed,
 		CumulativeHertzUsed: receipt.CumulativeGasUsed,

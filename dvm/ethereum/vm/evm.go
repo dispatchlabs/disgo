@@ -17,13 +17,17 @@
 package vm
 
 import (
+	"fmt"
 	"math/big"
 	"sync/atomic"
 	"time"
 
+	"github.com/dispatchlabs/disgo/dvm/vmstatehelpercontracts"
+
 	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
 
 	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/utils"
 
 	evmCrypto "github.com/dispatchlabs/disgo/dvm/ethereum/crypto"
 )
@@ -102,6 +106,9 @@ type Context struct {
 //
 // The EVM should never be reused and is not thread safe.
 type EVM struct {
+	// DISPATCH
+	StateQueryHelper vmstatehelpercontracts.VMStateQueryHelper
+
 	// Context provides auxiliary blockchain related information
 	Context
 	// StateDB gives access to the underlying state
@@ -131,14 +138,15 @@ type EVM struct {
 
 // NewEVM returns a new EVM. The returned EVM is not thread safe and should
 // only ever be used *once*.
-func NewEVM(ctx Context, statedb StateDB, chainConfig *params.ChainConfig, vmConfig Config) *EVM {
+func NewEVM(ctx Context, statedb StateDB, chainConfig *params.ChainConfig, vmConfig Config, stateQueryHelper vmstatehelpercontracts.VMStateQueryHelper) *EVM {
 	evm := &EVM{
-		Context:      ctx,
-		StateDB:      statedb,
-		vmConfig:     vmConfig,
-		chainConfig:  chainConfig,
-		chainRules:   chainConfig.Rules(ctx.BlockNumber),
-		interpreters: make([]Interpreter, 1),
+		Context:          ctx,
+		StateDB:          statedb,
+		vmConfig:         vmConfig,
+		chainConfig:      chainConfig,
+		chainRules:       chainConfig.Rules(ctx.BlockNumber),
+		interpreters:     make([]Interpreter, 1),
+		StateQueryHelper: stateQueryHelper,
 	}
 
 	evm.interpreters[0] = NewEVMInterpreter(evm, vmConfig)
@@ -163,6 +171,13 @@ func (evm *EVM) Interpreter() Interpreter {
 // the necessary steps to create accounts and reverses the state in case of an
 // execution error or failed value transfer.
 func (evm *EVM) Call(caller ContractRef, addr crypto.AddressBytes, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error) {
+	var callerAddress = caller.Address()
+
+	utils.Debug(fmt.Sprintf("EVM-Call: caller -> %s", crypto.Encode(callerAddress[:])))
+	utils.Debug(fmt.Sprintf("EVM-Call: addr   -> %s", crypto.Encode(addr[:])))
+	utils.Debug(fmt.Sprintf("EVM-Call: input  -> %v", input))
+	utils.Debug(fmt.Sprintf("EVM-Call: input  -> %s", crypto.Encode(input[:])))
+
 	if evm.vmConfig.NoRecursion && evm.depth > 0 {
 		return nil, gas, nil
 	}
@@ -219,7 +234,7 @@ func (evm *EVM) Call(caller ContractRef, addr crypto.AddressBytes, input []byte,
 	// when we're in homestead this also counts for code storage gas errors.
 	if err != nil {
 		evm.StateDB.RevertToSnapshot(snapshot)
-		if err != errExecutionReverted {
+		if err != ErrExecutionReverted {
 			contract.UseGas(contract.Gas)
 		}
 	}
@@ -260,7 +275,7 @@ func (evm *EVM) CallCode(caller ContractRef, addr crypto.AddressBytes, input []b
 	ret, err = run(evm, contract, input)
 	if err != nil {
 		evm.StateDB.RevertToSnapshot(snapshot)
-		if err != errExecutionReverted {
+		if err != ErrExecutionReverted {
 			contract.UseGas(contract.Gas)
 		}
 	}
@@ -293,7 +308,7 @@ func (evm *EVM) DelegateCall(caller ContractRef, addr crypto.AddressBytes, input
 	ret, err = run(evm, contract, input)
 	if err != nil {
 		evm.StateDB.RevertToSnapshot(snapshot)
-		if err != errExecutionReverted {
+		if err != ErrExecutionReverted {
 			contract.UseGas(contract.Gas)
 		}
 	}
@@ -336,7 +351,7 @@ func (evm *EVM) StaticCall(caller ContractRef, addr crypto.AddressBytes, input [
 	ret, err = run(evm, contract, input)
 	if err != nil {
 		evm.StateDB.RevertToSnapshot(snapshot)
-		if err != errExecutionReverted {
+		if err != ErrExecutionReverted {
 			contract.UseGas(contract.Gas)
 		}
 	}
@@ -418,7 +433,7 @@ func (evm *EVM) create(caller ContractRef, code []byte, gas uint64, value *big.I
 	// when we're in homestead this also counts for code storage gas errors.
 	if maxCodeSizeExceeded || (err != nil && (evm.ChainConfig().IsHomestead(evm.BlockNumber) || err != ErrCodeStoreOutOfGas)) {
 		evm.StateDB.RevertToSnapshot(snapshot)
-		if err != errExecutionReverted {
+		if err != ErrExecutionReverted {
 			contract.UseGas(contract.Gas)
 		}
 	}

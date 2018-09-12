@@ -238,6 +238,12 @@ func (st *StateTransition) TransitionDb() (ret []byte, contractAddress crypto.Ad
 		}
 
 		err = vmerr
+
+		// if vmerr != vm.ErrExecutionReverted {
+		// }
+		// if vmerr == vm.ErrExecutionReverted {
+		// 	vmerr = nil
+		// }
 	}
 	st.refundGas()
 	st.state.AddBalance(st.evm.Coinbase, new(big.Int).Mul(new(big.Int).SetUint64(st.gasUsed()), st.gasPrice))

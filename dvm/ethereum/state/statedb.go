@@ -258,6 +258,9 @@ func (self *StateDB) GetCodeSize(addr crypto.AddressBytes) int {
 	if err != nil {
 		self.setError(err)
 	}
+
+	utils.Debug(fmt.Sprintf("StateDB-GetCodeSize: %v", size))
+
 	return size
 }
 

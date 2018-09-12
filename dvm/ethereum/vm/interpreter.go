@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"sync/atomic"
 
+	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/common/math"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
 )
@@ -86,9 +87,9 @@ func NewEVMInterpreter(evm *EVM, cfg Config) *EVMInterpreter {
 	if !cfg.JumpTable[STOP].valid {
 		switch {
 		case evm.ChainConfig().IsConstantinople(evm.BlockNumber):
-			cfg.JumpTable = constantinopleInstructionSet
+			cfg.JumpTable = ConstantinopleInstructionSet
 		case evm.ChainConfig().IsByzantium(evm.BlockNumber):
-			cfg.JumpTable = byzantiumInstructionSet
+			cfg.JumpTable = ByzantiumInstructionSet
 		case evm.ChainConfig().IsHomestead(evm.BlockNumber):
 			cfg.JumpTable = homesteadInstructionSet
 		default:
@@ -182,7 +183,12 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte) (ret []byte, err
 	// explicit STOP, RETURN or SELFDESTRUCT is executed, an error occurred during
 	// the execution of one of the operations or until the done flag is set by the
 	// parent context.
+	var instructionCounter = 0
 	for atomic.LoadInt32(&in.evm.abort) == 0 {
+
+		utils.Debug("OP-INTERPRETER-INST-COUNT: ", instructionCounter)
+		instructionCounter++
+
 		if in.cfg.Debug {
 			// Capture pre-execution values for tracing.
 			logged, pcCopy, gasCopy = false, pc, contract.Gas
@@ -250,7 +256,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte) (ret []byte, err
 		case err != nil:
 			return nil, err
 		case operation.reverts:
-			return res, errExecutionReverted
+			return res, ErrExecutionReverted
 		case operation.halts:
 			return res, nil
 		case !operation.jumps:
