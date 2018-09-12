@@ -11,64 +11,12 @@ import (
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
 	"github.com/pkg/errors"
+	"fmt"
+	"strings"
 )
-
-//func GetConvertedParams(jsonMap map[string]interface{}) ([]interface{}, error) {
-//	params, ok := jsonMap["params"].([]interface{})
-//	if !ok {
-//		return nil, errors.Errorf("value for field 'params' must be an array")
-//	}
-//	if params == nil || len(params) == 0 {
-//		return params, nil
-//	}
-//	txn := services.NewTxn(true)
-//	defer txn.Discard()
-//	contractTx, err := types.ToTransactionByAddress(txn, jsonMap["to"].(string))
-//
-//	theAbi := contractTx.Abi
-//	if err != nil {
-//		return nil, err
-//	}
-//	method, _ := jsonMap["method"].(string)
-//	var result []interface{}
-//	found := false
-//	for k, v := range theAbi.Methods {
-//		if k == method {
-//			found = true
-//			if len(v.Inputs) != len(params) {
-//				return nil, errors.New(fmt.Sprintf("This method %s, requires %d parameters and %d are provided", method, len(v.Inputs), len(params)))
-//			}
-//			for i := 0; i < len(v.Inputs); i++ {
-//				arg := v.Inputs[i]
-//				if arg.Type.T == abi.SliceTy || arg.Type.T == abi.ArrayTy {
-//					value, valErr := getValues(arg, params[i].([]interface{}))
-//					if valErr != nil {
-//						msg := fmt.Sprintf("Invalid value provided for method %s: %v", method, valErr.Error())
-//						return nil, errors.New(msg)
-//					}
-//					result = append(result, value)
-//				} else {
-//					value, valErr := getValue(arg, params[i])
-//					if valErr != nil {
-//						msg := fmt.Sprintf("Invalid value provided for method %s: %v", method, valErr.Error())
-//						return nil, errors.New(msg)
-//					}
-//					result = append(result, value)
-//				}
-//			}
-//		}
-//	}
-//	if !found {
-//		return nil, errors.New(fmt.Sprintf("This method %s is not valid for this contract", method))
-//	}
-//	return result, nil
-//}
 
 func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 
-	if tx.Params == nil || len(tx.Params) == 0 {
-		return tx.Params, nil
-	}
 	theABI, err := GetABI(tx.Abi)
 	if err != nil {
 		return nil, err
@@ -78,6 +26,9 @@ func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 	for k, v := range theABI.Methods {
 		if k == tx.Method {
 			found = true
+			if tx.Params == nil || len(tx.Params) == 0 {
+				return tx.Params, nil
+			}
 			if len(v.Inputs) != len(tx.Params) {
 				return nil, errors.New(fmt.Sprintf("This method %s, requires %d parameters and %d are provided", tx.Method, len(v.Inputs), len(tx.Params)))
 			}
@@ -93,7 +44,7 @@ func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 				} else if arg.Type.T == abi.AddressTy {
 					addressAsString, valErr := getValue(arg, tx.Params[i])
 					addressAsByteArray := crypto.GetAddressBytes(addressAsString.(string))
-					if valErr != nil {
+					if len(addressAsByteArray) < 0 {
 						msg := fmt.Sprintf("Invalid value provided for method %s: %v", tx.Method, valErr.Error())
 						return nil, errors.New(msg)
 					}
