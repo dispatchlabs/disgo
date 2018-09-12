@@ -11,8 +11,6 @@ import (
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
 	"github.com/pkg/errors"
-	"fmt"
-	"strings"
 )
 
 func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
