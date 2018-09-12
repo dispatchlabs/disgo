@@ -132,9 +132,6 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 
 	// New transaction.
 	transaction, err := types.ToTransactionFromJson(body)
-	txn := services.NewTxn(true)
-	defer txn.Discard()
-
 	if err != nil {
 		if err != nil {
 			utils.Error("Paramater type error", err)
@@ -142,6 +139,9 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 			return
 		}
 	}
+
+	txn := services.NewTxn(true)
+	defer txn.Discard()
 
 	if transaction.Type == types.TypeExecuteSmartContract {
 		contractTx, err := types.ToTransactionByAddress(txn, transaction.To)
