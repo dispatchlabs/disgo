@@ -27,7 +27,7 @@ const (
 	TxReceiveTimeout = 3000 //1 second
 	//TxReceiveWiggle    = 100 // 100ms
 	//GossipQueueTimeout = time.Second * 5
-	GossipTimeout = 3000 //1 second  //will continue to decrease until we find best value
+	GossipTimeout = 1000 //1 second  //will continue to decrease until we find best value
 	TxFutureLimit = time.Minute * 3
 )
 
