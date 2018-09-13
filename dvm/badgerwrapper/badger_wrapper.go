@@ -22,6 +22,7 @@ import (
 
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+
 	// "github.com/dispatchlabs/disgo/dvm/ethereum/ethdb"
 	"strings"
 
@@ -183,8 +184,27 @@ type memBatch struct {
 }
 
 func (b *memBatch) Put(key, value []byte) error {
-	b.writes = append(b.writes, kv{common.CopyBytes(key), common.CopyBytes(value)})
+	b.writes = append(b.writes, kv{
+		k: common.CopyBytes(key),
+		v: common.CopyBytes(value),
+	})
+
 	b.size += len(value)
+	return nil
+}
+
+func (b *memBatch) Delete(key []byte) error {
+	newWrites := []kv{}
+	for _, keyValues := range b.writes {
+		if string(keyValues.k) != string(key) {
+			newWrites = append(newWrites, kv{k: common.CopyBytes(keyValues.k), v: common.CopyBytes(keyValues.v)})
+		} else {
+			b.size -= len(keyValues.v)
+		}
+	}
+
+	b.writes = newWrites
+
 	return nil
 }
 

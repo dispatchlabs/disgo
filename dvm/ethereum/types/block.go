@@ -72,21 +72,21 @@ func (n *BlockNonce) UnmarshalText(input []byte) error {
 
 // Header represents a block header in the Ethereum blockchain.
 type Header struct {
-	ParentHash  crypto.HashBytes `json:"parentHash"       gencodec:"required"`
-	UncleHash   crypto.HashBytes `json:"sha3Uncles"       gencodec:"required"`
-	Coinbase    common.Address   `json:"miner"            gencodec:"required"`
-	Root        crypto.HashBytes `json:"stateRoot"        gencodec:"required"`
-	TxHash      crypto.HashBytes `json:"transactionsRoot" gencodec:"required"`
-	ReceiptHash crypto.HashBytes `json:"receiptsRoot"     gencodec:"required"`
-	Bloom       Bloom            `json:"logsBloom"        gencodec:"required"`
-	Difficulty  *big.Int         `json:"difficulty"       gencodec:"required"`
-	Number      *big.Int         `json:"number"           gencodec:"required"`
-	GasLimit    uint64           `json:"gasLimit"         gencodec:"required"`
-	GasUsed     uint64           `json:"gasUsed"          gencodec:"required"`
-	Time        *big.Int         `json:"timestamp"        gencodec:"required"`
-	Extra       []byte           `json:"extraData"        gencodec:"required"`
-	MixDigest   crypto.HashBytes `json:"mixHash"          gencodec:"required"`
-	Nonce       BlockNonce       `json:"nonce"            gencodec:"required"`
+	ParentHash  crypto.HashBytes    `json:"parentHash"       gencodec:"required"`
+	UncleHash   crypto.HashBytes    `json:"sha3Uncles"       gencodec:"required"`
+	Coinbase    crypto.AddressBytes `json:"miner"            gencodec:"required"`
+	Root        crypto.HashBytes    `json:"stateRoot"        gencodec:"required"`
+	TxHash      crypto.HashBytes    `json:"transactionsRoot" gencodec:"required"`
+	ReceiptHash crypto.HashBytes    `json:"receiptsRoot"     gencodec:"required"`
+	Bloom       Bloom               `json:"logsBloom"        gencodec:"required"`
+	Difficulty  *big.Int            `json:"difficulty"       gencodec:"required"`
+	Number      *big.Int            `json:"number"           gencodec:"required"`
+	GasLimit    uint64              `json:"gasLimit"         gencodec:"required"`
+	GasUsed     uint64              `json:"gasUsed"          gencodec:"required"`
+	Time        *big.Int            `json:"timestamp"        gencodec:"required"`
+	Extra       []byte              `json:"extraData"        gencodec:"required"`
+	MixDigest   crypto.HashBytes    `json:"mixHash"          gencodec:"required"`
+	Nonce       BlockNonce          `json:"nonce"            gencodec:"required"`
 }
 
 // field type overrides for gencodec
@@ -315,7 +315,7 @@ func (b *Block) NumberU64() uint64             { return b.header.Number.Uint64()
 func (b *Block) MixDigest() crypto.HashBytes   { return b.header.MixDigest }
 func (b *Block) Nonce() uint64                 { return binary.BigEndian.Uint64(b.header.Nonce[:]) }
 func (b *Block) Bloom() Bloom                  { return b.header.Bloom }
-func (b *Block) Coinbase() common.Address      { return b.header.Coinbase }
+func (b *Block) Coinbase() crypto.AddressBytes { return b.header.Coinbase }
 func (b *Block) Root() crypto.HashBytes        { return b.header.Root }
 func (b *Block) ParentHash() crypto.HashBytes  { return b.header.ParentHash }
 func (b *Block) TxHash() crypto.HashBytes      { return b.header.TxHash }

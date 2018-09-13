@@ -1,20 +1,36 @@
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
+//
+// The go-ethereum library is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The go-ethereum library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+
 package common
 
 import (
-	"math/big"
-	"github.com/dispatchlabs/disgo/dvm/ethereum/common/hexutil"
 	"encoding/hex"
-	"github.com/dispatchlabs/disgo/commons/utils"
+	"math/big"
+
 	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
+// Lengths of hashes and addresses in bytes.
 const (
-	HashLength    = 32
+	// HashLength is the expected length of the hash
+	HashLength = 32
+	// AddressLength is the expected length of the address
 	AddressLength = 20
 )
-
-//Address and its methods
-type Address [AddressLength]byte
 
 type Message struct {
 	to         crypto.AddressBytes
@@ -44,7 +60,6 @@ func EthAddressToDispatchAddress(address crypto.AddressBytes) string {
 	return hex.EncodeToString(address[:])
 }
 
-
 func BytesToAddress(bytes []byte) crypto.AddressBytes {
 	var addressBytes crypto.AddressBytes
 	if len(bytes) > len(addressBytes) {
@@ -56,46 +71,3 @@ func BytesToAddress(bytes []byte) crypto.AddressBytes {
 
 func BigToAddress(b *big.Int) crypto.AddressBytes { return BytesToAddress(b.Bytes()) }
 func HexToAddress(s string) crypto.AddressBytes   { return BytesToAddress(FromHex(s)) }
-func (a Address) Bytes() []byte       { return a[:] }
-
-func (a Address) Big() *big.Int { return new(big.Int).SetBytes(a[:]) }
-
-// Sets the address to the value of b. If b is larger than len(a) it will panic
-//func (a *Address) SetBytes(b []byte) {
-//	if len(b) > len(a) {
-//		b = b[len(b)-AddressLength:]
-//	}
-//	copy(a[AddressLength-len(b):], b)
-//}
-
-// Hash and its methods:
-
-// Hash represents the 32 byte Keccak256 hash of arbitrary data.
-type Hash [HashLength]byte
-
-func (h Hash) Str() string   { return string(h[:]) }
-func (h Hash) Bytes() []byte { return h[:] }
-func (h Hash) Big() *big.Int { return new(big.Int).SetBytes(h[:]) }
-func (h Hash) Hex() string   { return hexutil.Encode(h[:]) }
-
-// Sets the hash to the value of b. If b is larger than len(h), 'b' will be cropped (from the left).
-func (h *Hash) SetBytes(b []byte) {
-	if len(b) > len(h) {
-		b = b[len(b)-HashLength:]
-	}
-
-	copy(h[HashLength-len(b):], b)
-}
-func HexToHash(s string) Hash   { return BytesToHash(FromHex(s)) }
-func BigToHash(b *big.Int) Hash { return BytesToHash(b.Bytes()) }
-
-func BytesToHash(b []byte) Hash {
-	var h Hash
-	h.SetBytes(b)
-	return h
-}
-func EmptyHash(h Hash) bool {
-	return h == Hash{}
-}
-
-

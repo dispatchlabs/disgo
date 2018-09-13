@@ -17,10 +17,10 @@
 package vm
 
 import (
+	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/common/math"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
-	"github.com/dispatchlabs/disgo/commons/crypto"
 )
 
 // memoryGasCosts calculates the quadratic gas for memory expansion. It does so
@@ -128,9 +128,9 @@ func gasSStore(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, m
 	if crypto.EmptyHash(val) && !crypto.EmptyHash(crypto.BigToHash(y)) {
 		// 0 => non 0
 		return params.SstoreSetGas, nil
-	} else if !crypto.EmptyHash(val) && common.EmptyHash(common.BigToHash(y)) {
+	} else if !crypto.EmptyHash(val) && crypto.EmptyHash(crypto.BigToHash(y)) {
+		// non 0 => 0
 		evm.StateDB.AddRefund(params.SstoreRefundGas)
-
 		return params.SstoreClearGas, nil
 	} else {
 		// non 0 => non 0 (or 0 => 0)
@@ -242,6 +242,10 @@ func gasExtCodeCopy(gt params.GasTable, evm *EVM, contract *Contract, stack *Sta
 	return gas, nil
 }
 
+func gasExtCodeHash(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+	return gt.ExtcodeHash, nil
+}
+
 func gasMLoad(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
 	var overflow bool
 	gas, err := memoryGasCost(mem, memorySize)
@@ -285,6 +289,18 @@ func gasCreate(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, m
 		return 0, err
 	}
 	if gas, overflow = math.SafeAdd(gas, params.CreateGas); overflow {
+		return 0, errGasUintOverflow
+	}
+	return gas, nil
+}
+
+func gasCreate2(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+	var overflow bool
+	gas, err := memoryGasCost(mem, memorySize)
+	if err != nil {
+		return 0, err
+	}
+	if gas, overflow = math.SafeAdd(gas, params.Create2Gas); overflow {
 		return 0, errGasUintOverflow
 	}
 	return gas, nil

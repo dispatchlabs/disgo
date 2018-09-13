@@ -22,6 +22,7 @@ import (
 	"math/big"
 
 	"crypto/elliptic"
+
 	"github.com/dispatchlabs/disgo/commons/crypto/secp256k1"
 	"github.com/dispatchlabs/disgo/commons/math"
 	"github.com/dispatchlabs/disgo/commons/utils"
@@ -94,7 +95,6 @@ func NewSignature(privateKey []byte, hash []byte) ([]byte, error) {
 func VerifySignature(publicKey []byte, hash []byte, signature []byte) bool {
 	return secp256k1.VerifySignature(publicKey, hash, signature[:len(signature)-1])
 }
-
 
 func ToBytesFromECDSAPublicKey(pub *ecdsa.PublicKey) []byte {
 	if pub == nil || pub.X == nil || pub.Y == nil {

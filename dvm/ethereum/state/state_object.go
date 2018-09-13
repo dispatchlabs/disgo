@@ -24,8 +24,8 @@ import (
 
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/types"
-	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"
 	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"
 )
 
 var emptyCodeHash = crypto.NewHash(nil).Bytes()
