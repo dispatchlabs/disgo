@@ -351,6 +351,10 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		break
 	case types.TypeDeploySmartContract:
 		dvmService := dvm.GetDVMService()
+
+		// ENCODE to HEX here, the DECODE is happening in GetABI()
+		transaction.Abi = hex.EncodeToString([]byte(transaction.Abi))
+
 		dvmResult, err := dvmService.DeploySmartContract(transaction)
 		if err != nil {
 			utils.Error(err, utils.GetCallStackWithFileAndLineNumber())

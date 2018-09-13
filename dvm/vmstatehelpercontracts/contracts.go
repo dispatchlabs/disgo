@@ -26,5 +26,7 @@ import (
 type VMStateQueryHelper interface {
 	GetCode(smartContractAddress crypto.AddressBytes) []byte
 	GetCodeSize(executingContractAddress crypto.AddressBytes, callerAddress crypto.AddressBytes, toBeExecutedContractAddress crypto.AddressBytes) int
-	NewEthStateLoader(smartContractAddress crypto.AddressBytes) *ethState.StateDB
+	NewEthStateLoader(smartContractAddress crypto.AddressBytes) VMStateQueryHelper
+	CommitState()
+	GetEthStateDB() *ethState.StateDB
 }

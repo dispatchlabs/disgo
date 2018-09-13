@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/services"
 	commonTypes "github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
@@ -134,9 +135,10 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 	utils.Debug(fmt.Sprintf("DVMServices-ExecuteSmartContract: %s", tx))
 
 	// Load the contract transaction
+	txn := services.NewTxn(true)
+	defer txn.Discard()
+
 	/*
-		txn := services.NewTxn(true)
-		defer txn.Discard()
 		contractTx, err := commonTypes.ToTransactionByAddress(txn, tx.To)
 		if err != nil {
 			return &DVMResult{
@@ -149,7 +151,7 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 				ContractMethodExecError:  err,
 				ContractMethodExecResult: nil,
 
-				Divvy:  DefaultDivvy,
+				Divvy:  vmstatehelperimplemtations.DefaultDivvy,
 				Status: ethTypes.ReceiptStatusFailed,
 				// HertzCost:           receipt.GasUsed,
 				// CumulativeHertzUsed: receipt.CumulativeGasUsed,
@@ -158,7 +160,6 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 			}, err
 		}
 	*/
-
 	// Load the TRIE state for [FROM:TO] combo
 	stateHelper, err := vmstatehelperimplemtations.NewVMStateHelper(crypto.GetAddressBytes(tx.To)) // crypto.GetAddressBytes(tx.From)
 	if err != nil {

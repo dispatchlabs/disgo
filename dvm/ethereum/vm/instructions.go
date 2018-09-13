@@ -777,12 +777,18 @@ func opCall(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory 
 
 	// DISPATCH - Swap StateDB conext
 	var prevEthDB = interpreter.evm.StateDB
-	interpreter.evm.StateDB = interpreter.evm.StateQueryHelper.NewEthStateLoader(toAddr)
+
+	var newStateQueryHelper = interpreter.evm.StateQueryHelper.NewEthStateLoader(toAddr)
+	interpreter.evm.StateDB = newStateQueryHelper.GetEthStateDB()
 
 	if value.Sign() != 0 {
 		gas += params.CallStipend
 	}
 	ret, returnGas, err := interpreter.evm.Call(contract, toAddr, args, gas, value)
+
+	if interpreter.evm.StateDB != nil {
+		newStateQueryHelper.CommitState()
+	}
 
 	interpreter.evm.StateDB = prevEthDB
 

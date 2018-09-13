@@ -29,6 +29,7 @@ import (
 	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"
 	ethState "github.com/dispatchlabs/disgo/dvm/ethereum/state"
 	ethTypes "github.com/dispatchlabs/disgo/dvm/ethereum/types"
+	"github.com/dispatchlabs/disgo/dvm/vmstatehelpercontracts"
 )
 
 var (
@@ -39,7 +40,7 @@ var (
 	headTxKey          = []byte("LastTx")
 	acctounStatePrefix = []byte("AccountState-")
 	MIPMapLevels       = []uint64{1000000, 500000, 100000, 50000, 1000}
-	IsDemo             = true
+	IsDemo             = false
 
 	DefaultValue    = big.NewInt(0)
 	DefaultGas      = big.NewInt(1000000000000)
@@ -65,6 +66,9 @@ type VMStateHelper struct {
 
 // NewVMStateHelper - loads (if any) and returns the state for a Smart Contract
 func NewVMStateHelper(smartContractAddress crypto.AddressBytes) (*VMStateHelper, error) {
+	utils.Debug(fmt.Sprintf("NewVMStateHelper-CONTRACT: %s", crypto.Encode(smartContractAddress[:])))
+	// debug.PrintStack()
+
 	badgerWrapper, _ := badgerwrapper.NewBadgerDatabase()
 
 	vmStateHelper := &VMStateHelper{
@@ -85,6 +89,8 @@ func NewVMStateHelper(smartContractAddress crypto.AddressBytes) (*VMStateHelper,
 
 // Commit - Writes all the changes to the actual storage (aka Badger)
 func (stateHelper *VMStateHelper) Commit() (crypto.HashBytes, error) {
+	utils.Debug(fmt.Sprintf("VMStateHelper-Commit-CONTRACT    : %s", crypto.Encode(stateHelper.SmartContractAddress[:])))
+	utils.Debug(fmt.Sprintf("VMStateHelper-Commit-TrieRootNode: %s", crypto.Encode(stateHelper.HashOfTrieRootNode[:])))
 
 	// CLEAN up all flags and COMMIT all `Trie` changes to the memory
 	var err error
@@ -242,11 +248,19 @@ func (stateHelper *VMStateHelper) GetCodeSize(executingContractAddress crypto.Ad
 	return 0
 }
 
-func (stateHelper *VMStateHelper) NewEthStateLoader(smartContractAddress crypto.AddressBytes) *ethState.StateDB {
-	stateHelper, err := NewVMStateHelper(smartContractAddress)
+func (stateHelper *VMStateHelper) NewEthStateLoader(smartContractAddress crypto.AddressBytes) vmstatehelpercontracts.VMStateQueryHelper {
+	newStateHelper, err := NewVMStateHelper(smartContractAddress)
 	if err == nil {
-		return stateHelper.EthStateDB
+		return newStateHelper
 	}
 
 	return nil
+}
+
+func (stateHelper *VMStateHelper) CommitState() {
+	stateHelper.Commit()
+}
+
+func (stateHelper *VMStateHelper) GetEthStateDB() *ethState.StateDB {
+	return stateHelper.EthStateDB
 }
