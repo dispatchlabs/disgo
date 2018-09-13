@@ -365,7 +365,7 @@ func (t *Trie) delete(n node, prefix, key []byte) (bool, node, error) {
 		// value that is left in n or -2 if n contains at least two
 		// values.
 		pos := -1
-		for i, cld := range n.Children {
+		for i, cld := range &n.Children {
 			if cld != nil {
 				if pos == -1 {
 					pos = i
@@ -442,12 +442,10 @@ func (t *Trie) resolveHash(n hashNode, prefix []byte) (node, error) {
 	//cacheMissCounter.Inc(1)
 
 	hash := crypto.BytesToHash(n)
-
-	enc, err := t.db.Node(hash)
-	if err != nil || enc == nil {
-		return nil, &MissingNodeError{NodeHash: hash, Path: prefix}
+	if node := t.db.node(hash, t.cachegen); node != nil {
+		return node, nil
 	}
-	return mustDecodeNode(n, enc, t.cachegen), nil
+	return nil, &MissingNodeError{NodeHash: hash, Path: prefix}
 }
 
 // Root returns the root hash of the trie.
@@ -462,8 +460,8 @@ func (t *Trie) Hash() crypto.HashBytes {
 	return crypto.BytesToHash(hash.(hashNode))
 }
 
-//Commit writes all nodes to the trie's memory database, tracking the internal
-//and external (for account tries) references.
+// Commit writes all nodes to the trie's memory database, tracking the internal
+// and external (for account tries) references.
 func (t *Trie) Commit(onleaf LeafCallback) (root crypto.HashBytes, err error) {
 	if t.db == nil {
 		panic("commit called on trie with nil database")
@@ -486,6 +484,7 @@ func (t *Trie) hashRoot(db *Database, onleaf LeafCallback) (node, node, error) {
 	return h.hash(t.root, db, true)
 }
 
+// MissingNodeError -
 type MissingNodeError struct {
 	NodeHash crypto.HashBytes // hash of the missing node
 	Path     []byte           // hex-encoded path to the missing node

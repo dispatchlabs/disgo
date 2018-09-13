@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+	"github.com/dispatchlabs/disgo/commons/crypto"
 )
 
 // typeWithoutStringer is a alias for the Type type which simply doesn't implement
@@ -85,8 +85,8 @@ func TestTypeRegexp(t *testing.T) {
 		{"string[]", Type{T: SliceTy, Kind: reflect.Slice, Type: reflect.TypeOf([]string{}), Elem: &Type{Kind: reflect.String, Type: reflect.TypeOf(""), T: StringTy, stringKind: "string"}, stringKind: "string[]"}},
 		{"string[2]", Type{Kind: reflect.Array, T: ArrayTy, Size: 2, Type: reflect.TypeOf([2]string{}), Elem: &Type{Kind: reflect.String, T: StringTy, Type: reflect.TypeOf(""), stringKind: "string"}, stringKind: "string[2]"}},
 		{"address", Type{Kind: reflect.Array, Type: addressT, Size: 20, T: AddressTy, stringKind: "address"}},
-		{"address[]", Type{T: SliceTy, Kind: reflect.Slice, Type: reflect.TypeOf([]common.Address{}), Elem: &Type{Kind: reflect.Array, Type: addressT, Size: 20, T: AddressTy, stringKind: "address"}, stringKind: "address[]"}},
-		{"address[2]", Type{Kind: reflect.Array, T: ArrayTy, Size: 2, Type: reflect.TypeOf([2]common.Address{}), Elem: &Type{Kind: reflect.Array, Type: addressT, Size: 20, T: AddressTy, stringKind: "address"}, stringKind: "address[2]"}},
+		{"address[]", Type{T: SliceTy, Kind: reflect.Slice, Type: reflect.TypeOf([]crypto.AddressBytes{}), Elem: &Type{Kind: reflect.Array, Type: addressT, Size: 20, T: AddressTy, stringKind: "address"}, stringKind: "address[]"}},
+		{"address[2]", Type{Kind: reflect.Array, T: ArrayTy, Size: 2, Type: reflect.TypeOf([2]crypto.AddressBytes{}), Elem: &Type{Kind: reflect.Array, Type: addressT, Size: 20, T: AddressTy, stringKind: "address"}, stringKind: "address[2]"}},
 		// TODO when fixed types are implemented properly
 		// {"fixed", Type{}},
 		// {"fixed128x128", Type{}},
@@ -201,10 +201,10 @@ func TestTypeCheck(t *testing.T) {
 		{"uint16[3]", [4]uint16{1, 2, 3}, "abi: cannot use [4]uint16 as type [3]uint16 as argument"},
 		{"uint16[3]", []uint16{1, 2, 3}, ""},
 		{"uint16[3]", []uint16{1, 2, 3, 4}, "abi: cannot use [4]uint16 as type [3]uint16 as argument"},
-		{"address[]", []common.Address{{1}}, ""},
-		{"address[1]", []common.Address{{1}}, ""},
-		{"address[1]", [1]common.Address{{1}}, ""},
-		{"address[2]", [1]common.Address{{1}}, "abi: cannot use [1]array as type [2]array as argument"},
+		{"address[]", []crypto.AddressBytes{{1}}, ""},
+		{"address[1]", []crypto.AddressBytes{{1}}, ""},
+		{"address[1]", [1]crypto.AddressBytes{{1}}, ""},
+		{"address[2]", [1]crypto.AddressBytes{{1}}, "abi: cannot use [1]array as type [2]array as argument"},
 		{"bytes32", [32]byte{}, ""},
 		{"bytes31", [31]byte{}, ""},
 		{"bytes30", [30]byte{}, ""},
@@ -238,20 +238,20 @@ func TestTypeCheck(t *testing.T) {
 		{"bytes2", [2]byte{}, ""},
 		{"bytes1", [1]byte{}, ""},
 		{"bytes32", [33]byte{}, "abi: cannot use [33]uint8 as type [32]uint8 as argument"},
-		{"bytes32", common.Hash{1}, ""},
-		{"bytes31", common.Hash{1}, "abi: cannot use common.Hash as type [31]uint8 as argument"},
+		{"bytes32", crypto.HashBytes{1}, ""},
+		{"bytes31", crypto.HashBytes{1}, "abi: cannot use crypto.HashBytes as type [31]uint8 as argument"},
 		{"bytes31", [32]byte{}, "abi: cannot use [32]uint8 as type [31]uint8 as argument"},
 		{"bytes", []byte{0, 1}, ""},
 		{"bytes", [2]byte{0, 1}, "abi: cannot use array as type slice as argument"},
-		{"bytes", common.Hash{1}, "abi: cannot use array as type slice as argument"},
+		{"bytes", crypto.HashBytes{1}, "abi: cannot use array as type slice as argument"},
 		{"string", "hello world", ""},
 		{"string", string(""), ""},
 		{"string", []byte{}, "abi: cannot use slice as type string as argument"},
 		{"bytes32[]", [][32]byte{{}}, ""},
 		{"function", [24]byte{}, ""},
-		{"bytes20", common.Address{}, ""},
+		{"bytes20", crypto.AddressBytes{}, ""},
 		{"address", [20]byte{}, ""},
-		{"address", common.Address{}, ""},
+		{"address", crypto.AddressBytes{}, ""},
 		{"bytes32[]]", "", "invalid arg type in abi"},
 		{"invalidType", "", "unsupported arg type: invalidType"},
 		{"invalidSlice[]", "", "unsupported arg type: invalidSlice"},

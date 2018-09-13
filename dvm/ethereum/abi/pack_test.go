@@ -24,6 +24,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
 )
 
@@ -306,12 +307,12 @@ func TestPack(t *testing.T) {
 		},
 		{
 			"address[]",
-			[]common.Address{{1}, {2}},
+			[]crypto.AddressBytes{{1}, {2}},
 			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000000200000000000000000000000001000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000"),
 		},
 		{
 			"bytes32[]",
-			[]common.Hash{{1}, {2}},
+			[]crypto.HashBytes{{1}, {2}},
 			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000000201000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000"),
 		},
 		{
@@ -360,14 +361,14 @@ func TestMethodPack(t *testing.T) {
 		t.Errorf("expected %x got %x", sig, packed)
 	}
 
-	var addrA, addrB = common.Address{1}, common.Address{2}
+	var addrA, addrB = crypto.AddressBytes{1}, crypto.AddressBytes{2}
 	sig = abi.Methods["sliceAddress"].Id()
 	sig = append(sig, common.LeftPadBytes([]byte{32}, 32)...)
 	sig = append(sig, common.LeftPadBytes([]byte{2}, 32)...)
 	sig = append(sig, common.LeftPadBytes(addrA[:], 32)...)
 	sig = append(sig, common.LeftPadBytes(addrB[:], 32)...)
 
-	packed, err = abi.Pack("sliceAddress", []common.Address{addrA, addrB})
+	packed, err = abi.Pack("sliceAddress", []crypto.AddressBytes{addrA, addrB})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -375,7 +376,7 @@ func TestMethodPack(t *testing.T) {
 		t.Errorf("expected %x got %x", sig, packed)
 	}
 
-	var addrC, addrD = common.Address{3}, common.Address{4}
+	var addrC, addrD = crypto.AddressBytes{3}, crypto.AddressBytes{4}
 	sig = abi.Methods["sliceMultiAddress"].Id()
 	sig = append(sig, common.LeftPadBytes([]byte{64}, 32)...)
 	sig = append(sig, common.LeftPadBytes([]byte{160}, 32)...)
@@ -386,7 +387,7 @@ func TestMethodPack(t *testing.T) {
 	sig = append(sig, common.LeftPadBytes(addrC[:], 32)...)
 	sig = append(sig, common.LeftPadBytes(addrD[:], 32)...)
 
-	packed, err = abi.Pack("sliceMultiAddress", []common.Address{addrA, addrB}, []common.Address{addrC, addrD})
+	packed, err = abi.Pack("sliceMultiAddress", []crypto.AddressBytes{addrA, addrB}, []crypto.AddressBytes{addrC, addrD})
 	if err != nil {
 		t.Fatal(err)
 	}

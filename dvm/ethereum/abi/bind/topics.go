@@ -22,23 +22,23 @@ import (
 	"math/big"
 	"reflect"
 
+	dvmCrypto "github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
-	"github.com/dispatchlabs/disgo/dvm/ethereum/crypto"
 )
 
 // makeTopics converts a filter query argument list into a filter topic set.
-func makeTopics(query ...[]interface{}) ([][]common.Hash, error) {
-	topics := make([][]common.Hash, len(query))
+func makeTopics(query ...[]interface{}) ([][]dvmCrypto.HashBytes, error) {
+	topics := make([][]dvmCrypto.HashBytes, len(query))
 	for i, filter := range query {
 		for _, rule := range filter {
-			var topic common.Hash
+			var topic dvmCrypto.HashBytes
 
 			// Try to generate the topic based on simple types
 			switch rule := rule.(type) {
-			case common.Hash:
+			case dvmCrypto.HashBytes:
 				copy(topic[:], rule[:])
-			case common.Address:
+			case dvmCrypto.AddressBytes:
 				copy(topic[common.HashLength-common.AddressLength:], rule[:])
 			case *big.Int:
 				blob := rule.Bytes()
@@ -72,10 +72,10 @@ func makeTopics(query ...[]interface{}) ([][]common.Hash, error) {
 				blob := new(big.Int).SetUint64(rule).Bytes()
 				copy(topic[common.HashLength-len(blob):], blob)
 			case string:
-				hash := crypto.Keccak256Hash([]byte(rule))
+				hash := dvmCrypto.NewHash([]byte(rule))
 				copy(topic[:], hash[:])
 			case []byte:
-				hash := crypto.Keccak256Hash(rule)
+				hash := dvmCrypto.NewHash(rule)
 				copy(topic[:], hash[:])
 
 			default:
@@ -98,8 +98,8 @@ func makeTopics(query ...[]interface{}) ([][]common.Hash, error) {
 
 // Big batch of reflect types for topic reconstruction.
 var (
-	reflectHash    = reflect.TypeOf(common.Hash{})
-	reflectAddress = reflect.TypeOf(common.Address{})
+	reflectHash    = reflect.TypeOf(dvmCrypto.HashBytes{})
+	reflectAddress = reflect.TypeOf(dvmCrypto.AddressBytes{})
 	reflectBigInt  = reflect.TypeOf(new(big.Int))
 )
 
@@ -107,7 +107,7 @@ var (
 //
 // Note, dynamic types cannot be reconstructed since they get mapped to Keccak256
 // hashes as the topic value!
-func parseTopics(out interface{}, fields abi.Arguments, topics []common.Hash) error {
+func parseTopics(out interface{}, fields abi.Arguments, topics []dvmCrypto.HashBytes) error {
 	// Sanity check that the fields and topics match up
 	if len(fields) != len(topics) {
 		return errors.New("topic/field count mismatch")
@@ -164,7 +164,7 @@ func parseTopics(out interface{}, fields abi.Arguments, topics []common.Hash) er
 				field.Set(reflect.ValueOf(topics[0]))
 
 			case reflectAddress:
-				var addr common.Address
+				var addr dvmCrypto.AddressBytes
 				copy(addr[:], topics[0][common.HashLength-common.AddressLength:])
 				field.Set(reflect.ValueOf(addr))
 

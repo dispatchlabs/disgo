@@ -33,9 +33,10 @@ package secp256k1
 
 import (
 	"crypto/elliptic"
-	"github.com/dispatchlabs/disgo/commons/math"
 	"math/big"
 	"unsafe"
+
+	"github.com/dispatchlabs/disgo/commons/math"
 )
 
 /*
