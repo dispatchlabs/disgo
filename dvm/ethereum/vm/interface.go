@@ -19,8 +19,8 @@ package vm
 import (
 	"math/big"
 
-	"github.com/dispatchlabs/disgo/dvm/ethereum/types"
 	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/types"
 )
 
 // StateDB is an EVM database for full state querying.
