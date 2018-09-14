@@ -15,8 +15,6 @@
  *    along with the Disgo library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// +build go1.10
-
 package main
 
 import (
