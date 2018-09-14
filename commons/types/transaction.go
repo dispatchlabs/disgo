@@ -28,8 +28,8 @@ import (
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/utils"
-	"github.com/pkg/errors"
 	"github.com/patrickmn/go-cache"
+	"github.com/pkg/errors"
 )
 
 // Transaction - The transaction info
@@ -210,26 +210,26 @@ func ToTransactions(txn *badger.Txn) ([]*Transaction, error) {
 	return transactions, nil
 }
 
-func TransactionPaging(txn *badger.Txn, startingHash string, page, pageSize int) ([]*Transaction, error){
+func TransactionPaging(txn *badger.Txn, startingHash string, page, pageSize int) ([]*Transaction, error) {
 	var iteratorCount = 0
 	var firstItem int
-	if pageSize <= 0 || pageSize > 100{
+	if pageSize <= 0 || pageSize > 100 {
 		return nil, ErrInvalidRequestPageSize
 	}
 	if page <= 0 {
 		return nil, ErrInvalidRequestPage
-	}else{
+	} else {
 		firstItem = (page * pageSize) - (pageSize - 1)
 	}
 	var item []byte
 	prefix := []byte(fmt.Sprintf("table-transaction-"))
 	if startingHash != "" {
-		thing, err := ToTransactionByKey(txn,[]byte(fmt.Sprintf("table-transaction-%s", startingHash)))
+		thing, err := ToTransactionByKey(txn, []byte(fmt.Sprintf("table-transaction-%s", startingHash)))
 		if err != nil {
 			return nil, ErrInvalidRequestHash
 		}
 		item = []byte(thing.Key())
-	} else{
+	} else {
 		item = prefix
 	}
 
@@ -255,7 +255,7 @@ func TransactionPaging(txn *badger.Txn, startingHash string, page, pageSize int)
 			}
 			transactions = append(transactions, transaction)
 		}
-		if iteratorCount > (firstItem+pageSize){
+		if iteratorCount > (firstItem + pageSize) {
 			break
 		}
 	}
@@ -266,26 +266,25 @@ func TransactionPaging(txn *badger.Txn, startingHash string, page, pageSize int)
 func ToTransactionsByFromAddress(txn *badger.Txn, address, startingHash string, page, pageSize int) ([]*Transaction, error) {
 	var iteratorCount = 0
 	var firstItem int
-	if pageSize <= 0 || pageSize > 100{
+	if pageSize <= 0 || pageSize > 100 {
 		return nil, ErrInvalidRequestPageSize
 	}
 	if page <= 0 {
 		return nil, ErrInvalidRequestPage
-	}else{
+	} else {
 		firstItem = (page * pageSize) - (pageSize - 1)
 	}
 	var item []byte
 	prefix := []byte(fmt.Sprintf("key-transaction-from-%s", address))
 	if startingHash != "" {
-		thing, err := ToTransactionByKey(txn,[]byte(fmt.Sprintf("table-transaction-%s", startingHash)))
+		thing, err := ToTransactionByKey(txn, []byte(fmt.Sprintf("table-transaction-%s", startingHash)))
 		if err != nil {
 			return nil, ErrInvalidRequestHash
 		}
 		item = []byte(thing.FromKey())
-	} else{
+	} else {
 		item = prefix
 	}
-
 
 	opts := badger.DefaultIteratorOptions
 	opts.PrefetchValues = false
@@ -307,7 +306,7 @@ func ToTransactionsByFromAddress(txn *badger.Txn, address, startingHash string, 
 			transaction.setTransients(txn)
 			transactions = append(transactions, transaction)
 		}
-		if iteratorCount > (firstItem+pageSize){
+		if iteratorCount > (firstItem + pageSize) {
 			break
 		}
 	}
@@ -319,23 +318,23 @@ func ToTransactionsByFromAddress(txn *badger.Txn, address, startingHash string, 
 func ToTransactionsByToAddress(txn *badger.Txn, address, startingHash string, page, pageSize int) ([]*Transaction, error) {
 	var iteratorCount = 0
 	var firstItem int
-	if pageSize <= 0 || pageSize > 100{
+	if pageSize <= 0 || pageSize > 100 {
 		return nil, ErrInvalidRequestPageSize
 	}
 	if page <= 0 {
 		return nil, ErrInvalidRequestPage
-	}else{
+	} else {
 		firstItem = (page * pageSize) - (pageSize - 1)
 	}
 	var item []byte
 	prefix := []byte(fmt.Sprintf("key-transaction-to-%s", address))
 	if startingHash != "" {
-		thing, err := ToTransactionByKey(txn,[]byte(fmt.Sprintf("table-transaction-%s", startingHash)))
+		thing, err := ToTransactionByKey(txn, []byte(fmt.Sprintf("table-transaction-%s", startingHash)))
 		if err != nil {
 			return nil, ErrInvalidRequestHash
 		}
 		item = []byte(thing.ToKey())
-	} else{
+	} else {
 		item = prefix
 	}
 
@@ -359,7 +358,7 @@ func ToTransactionsByToAddress(txn *badger.Txn, address, startingHash string, pa
 			transaction.setTransients(txn)
 			transactions = append(transactions, transaction)
 		}
-		if iteratorCount > (firstItem+pageSize){
+		if iteratorCount > (firstItem + pageSize) {
 			break
 		}
 	}
@@ -416,7 +415,6 @@ func ToTransactionsByToAddressOld(txn *badger.Txn, address string) ([]*Transacti
 	SortByTime(transactions, false)
 	return transactions, nil
 }
-
 
 // ToTransactionsByType
 func ToTransactionsByType(txn *badger.Txn, tipe byte) ([]*Transaction, error) {
@@ -605,7 +603,7 @@ func (this Transaction) NewHash() (string, error) {
 		toBytes,
 		this.Value,
 		codeBytes,
-		//[]byte(this.Abi),
+		// []byte(this.Abi),
 		[]byte(this.Method),
 		// TODO: this.Params,
 		this.Time,
@@ -901,7 +899,7 @@ func checkTime(txTime int64) (int64, error) {
 	nowWithFutureLimit := utils.ToMilliSeconds(futureTime)
 
 	if nowWithFutureLimit < txTime {
-		delta := time.Millisecond * time.Duration(txTime - utils.ToMilliSeconds(now))
+		delta := time.Millisecond * time.Duration(txTime-utils.ToMilliSeconds(now))
 		return txTime, errors.Errorf(fmt.Sprintf("transaction time cannot be this far in the future (Ahead by: %v )", delta))
 	} else if txTime < 0 {
 		return txTime, errors.Errorf("transaction time cannot be negative")
@@ -922,7 +920,7 @@ func (this *Transaction) setTransients(txn *badger.Txn) {
 	if err == nil {
 		this.ToName = toAccount.Name
 	}
-	receipt, err := ToReceiptFromKey(txn, []byte(fmt.Sprintf("table-receipt-" + this.Hash)))
+	receipt, err := ToReceiptFromKey(txn, []byte(fmt.Sprintf("table-receipt-"+this.Hash)))
 	if err == nil {
 		this.Receipt = *receipt
 	}

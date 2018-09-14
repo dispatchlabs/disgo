@@ -14,40 +14,19 @@
  *    You should have received a copy of the GNU General Public License
  *    along with the DVM library.  If not, see <http://www.gnu.org/licenses/>.
  */
-package dvm
+package vmstatehelpercontracts
 
 import (
-	"sync"
-
-	"github.com/dispatchlabs/disgo/commons/utils"
-	"github.com/dispatchlabs/disgo/commons/types"
+	"github.com/dispatchlabs/disgo/commons/crypto"
+	ethState "github.com/dispatchlabs/disgo/dvm/ethereum/state"
 )
 
-var dvmServiceInstance *DVMService
-var dvmServiceOnce sync.Once
-
-// GetDVMService
-func GetDVMService() *DVMService {
-	dvmServiceOnce.Do(func() {
-		dvmServiceInstance = &DVMService{running: false}
-	})
-
-	return dvmServiceInstance
-}
-
-// DVMService -
-type DVMService struct {
-	running bool
-}
-
-// IsRunning -
-func (dvm *DVMService) IsRunning() bool {
-	return dvm.running
-}
-
-// Go -
-func (dvm *DVMService) Go() {
-	dvm.running = true
-	utils.Info("running")
-	utils.Events().Raise(types.Events.DVMServiceInitFinished)
+// VMStateQueryHelper - Decouples and helps load code/size from
+// the persistence layer + loads the Particia Merkle Trie
+type VMStateQueryHelper interface {
+	GetCode(smartContractAddress crypto.AddressBytes) []byte
+	GetCodeSize(executingContractAddress crypto.AddressBytes, callerAddress crypto.AddressBytes, toBeExecutedContractAddress crypto.AddressBytes) int
+	NewEthStateLoader(smartContractAddress crypto.AddressBytes) VMStateQueryHelper
+	CommitState()
+	GetEthStateDB() *ethState.StateDB
 }

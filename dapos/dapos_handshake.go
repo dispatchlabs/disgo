@@ -21,6 +21,7 @@ import (
 	"math/rand"
 
 	"github.com/dgraph-io/badger"
+	"github.com/dispatchlabs/disgo/commons/helper"
 	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
@@ -92,21 +93,23 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 }
 
 // Temp_ProcessTransaction -
-func (this *DAPoSService) Temp_ProcessTransaction(transaction *types.Transaction) {
-	go func(tx *types.Transaction) {
+func (this *DAPoSService) Temp_ProcessTransaction(transaction *types.Transaction) *types.Response {
+	// go func(tx *types.Transaction) {
 
-		// Cache receipt.
-		receipt := types.NewReceipt(transaction.Hash)
-		receipt.Cache(services.GetCache())
+	// Cache receipt.
+	receipt := types.NewReceipt(transaction.Hash)
+	receipt.Cache(services.GetCache())
 
-		// Cache gossip with my rumor.
-		gossip := types.NewGossip(*transaction)
-		rumor := types.NewRumor(types.GetAccount().PrivateKey, types.GetAccount().Address, transaction.Hash)
-		gossip.Rumors = append(gossip.Rumors, *rumor)
-		gossip.Cache(services.GetCache())
+	// Cache gossip with my rumor.
+	gossip := types.NewGossip(*transaction)
+	rumor := types.NewRumor(types.GetAccount().PrivateKey, types.GetAccount().Address, transaction.Hash)
+	gossip.Rumors = append(gossip.Rumors, *rumor)
+	gossip.Cache(services.GetCache())
 
-		this.gossipChan <- gossip
-	}(transaction)
+	this.gossipChan <- gossip
+
+	return types.NewResponseWithStatus(types.StatusPending, "Pending")
+	// }(transaction)
 }
 
 // synchronizeGossip
@@ -180,17 +183,17 @@ func (this *DAPoSService) gossipWorker() {
 				}
 
 				// Do we have 2/3 of rumors?
-				if float32(len(gossip.Rumors)) >= float32(len(delegateNodes)) * 2/3 {
+				if float32(len(gossip.Rumors)) >= float32(len(delegateNodes))*2/3 {
 					if !this.gossipQueue.Exists(gossip.Transaction.Hash) {
 						this.gossipQueue.Push(gossip)
 
 						go func() {
 							//adding timeout as a function of tx time.  If tx is in the future, add future delta to the default timeout
 							delta := gossip.Transaction.Time - utils.ToMilliSeconds(time.Now())
-							totalMilliseconds := ( types.GossipTimeout * len(delegateNodes) ) + types.TxReceiveTimeout
+							totalMilliseconds := (types.GossipTimeout * len(delegateNodes)) + types.TxReceiveTimeout
 							timeout := time.Duration(totalMilliseconds)
 							if delta > 0 {
-								timeout = time.Millisecond * time.Duration(delta) + timeout
+								timeout = time.Millisecond*time.Duration(delta) + timeout
 							}
 							time.Sleep(timeout)
 							this.timoutChan <- true
@@ -276,7 +279,7 @@ func (this *DAPoSService) doWork() {
 		}
 		initialRcvDuration := gossip.Rumors[0].Time - gossip.Transaction.Time
 		utils.Info("Initial Receive Duration = ", initialRcvDuration, types.TxReceiveTimeout)
-		if  initialRcvDuration >= types.TxReceiveTimeout {
+		if initialRcvDuration >= types.TxReceiveTimeout {
 			utils.Error(fmt.Sprintf("Timed out [hash=%s] %v milliseconds", gossip.Transaction.Hash, initialRcvDuration))
 			receipt = types.NewReceipt(gossip.Transaction.Hash)
 			receipt.Status = types.StatusTransactionTimeOut
@@ -292,7 +295,7 @@ func (this *DAPoSService) doWork() {
 
 // executeTransaction
 func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, gossip *types.Gossip) {
-	utils.Debug("executeTransaction --> %s", transaction.Hash)
+	utils.Debug("executeTransaction --> ", transaction.Hash)
 	services.Lock(transaction.Hash)
 	defer services.Unlock(transaction.Hash)
 	txn := services.NewTxn(true)
@@ -361,6 +364,10 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		break
 	case types.TypeDeploySmartContract:
 		dvmService := dvm.GetDVMService()
+
+		// ENCODE to HEX here, the DECODE is happening in GetABI()
+		transaction.Abi = hex.EncodeToString([]byte(transaction.Abi))
+
 		dvmResult, err := dvmService.DeploySmartContract(transaction)
 		if err != nil {
 			utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
@@ -393,6 +400,29 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		utils.Info(fmt.Sprintf("deployed contract [hash=%s, contractAddress=%s]", transaction.Hash, contractAccount.Address))
 		break
 	case types.TypeExecuteSmartContract:
+
+		// READ PARAMS
+		// if transaction.Type == types.TypeExecuteSmartContract {
+		contractTx, err := types.ToTransactionByAddress(txn, transaction.To)
+		if err != nil {
+			utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
+			receipt.Status = types.StatusInternalError
+			receipt.HumanReadableStatus = err.Error()
+			receipt.Cache(services.GetCache())
+			return
+		}
+
+		transaction.Abi = contractTx.Abi
+		transaction.Params, err = helper.GetConvertedParams(transaction)
+		if err != nil {
+			utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
+			receipt.Status = types.StatusInternalError
+			receipt.HumanReadableStatus = err.Error()
+			receipt.Cache(services.GetCache())
+			return
+		}
+		// }
+
 		dvmService := dvm.GetDVMService()
 		dvmResult, err1 := dvmService.ExecuteSmartContract(transaction)
 		if err1 != nil {
@@ -505,13 +535,15 @@ func processDVMResult(transaction *types.Transaction, dvmResult *dvm.DVMResult, 
 		if err == nil {
 
 			if method, ok := jsonABI.Methods[dvmResult.ContractMethod]; ok {
-				marshalledValues, err := method.Outputs.UnpackValues(dvmResult.ContractMethodExecResult)
-				if err == nil {
-					utils.Info(fmt.Sprintf("CONTRACT-CALL-RES: %v", marshalledValues))
-					receipt.ContractResult = marshalledValues
-				} else {
-					errorToReturn = err
-					utils.Error(err)
+				if dvmResult.ContractMethodExecResult != nil && len(dvmResult.ContractMethodExecResult) > 0 {
+					marshalledValues, err := method.Outputs.UnpackValues(dvmResult.ContractMethodExecResult)
+					if err == nil {
+						utils.Info(fmt.Sprintf("CONTRACT-CALL-RES: %v", marshalledValues))
+						receipt.ContractResult = marshalledValues
+					} else {
+						errorToReturn = err
+						utils.Error(err)
+					}
 				}
 			}
 

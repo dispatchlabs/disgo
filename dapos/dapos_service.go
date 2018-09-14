@@ -33,17 +33,6 @@ import (
 var daposServiceInstance *DAPoSService
 var daposServiceOnce sync.Once
 
-type daposEvents struct {
-	DAPoSServiceInitFinished string
-}
-
-var (
-	// Events - `dapos` events
-	Events = daposEvents{
-		DAPoSServiceInitFinished: "DAPoSServiceInitFinished",
-	}
-)
-
 // GetDAPoSService
 func GetDAPoSService() *DAPoSService {
 	daposServiceOnce.Do(func() {
@@ -78,7 +67,7 @@ func (this *DAPoSService) Go() {
 	utils.Info("running, waiting for delegates sync")
 
 	utils.Events().On(
-		disgover.Events.DisGoverServiceInitFinished,
+		types.Events.DisGoverServiceInitFinished,
 		this.disGoverServiceInitFinished,
 	)
 }
@@ -101,7 +90,7 @@ func (this *DAPoSService) disGoverServiceInitFinished() {
 	go this.transactionWorker()
 	//go this.queueWorker()
 
-	utils.Events().Raise(Events.DAPoSServiceInitFinished)
+	utils.Events().Raise(types.Events.DAPoSServiceInitFinished)
 }
 
 // createGenesisTransactionAndAccount
