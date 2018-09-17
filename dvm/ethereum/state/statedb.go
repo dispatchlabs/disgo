@@ -258,6 +258,9 @@ func (self *StateDB) GetCodeSize(addr crypto.AddressBytes) int {
 	if err != nil {
 		self.setError(err)
 	}
+
+	utils.Debug(fmt.Sprintf("StateDB-GetCodeSize: %v", size))
+
 	return size
 }
 
@@ -740,7 +743,7 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root crypto.HashBytes, err er
 		case isDirty:
 			// Write any contract code associated with the state object
 			if stateObject.code != nil && stateObject.dirtyCode {
-				s.db.TrieDB().Insert(crypto.BytesToHash(stateObject.account.CodeHash), stateObject.code)
+				s.db.TrieDB().InsertBlob(crypto.BytesToHash(stateObject.account.CodeHash), stateObject.code)
 				stateObject.dirtyCode = false
 			}
 			// Write any storage changes in the state object to its storage trie.

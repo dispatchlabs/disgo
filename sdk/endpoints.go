@@ -324,7 +324,22 @@ func GetReceipt(delegateNode types.Node, hash string) (*types.Receipt, error) {
 }
 
 // GetTransactions - Get details about sent transactions for a node
-func GetTransactions(delegateNode types.Node, page, pageStart, pageSize string) ([]types.Transaction, error) {
+func GetTransactions(delegateNode types.Node, pageOptions ...string) ([]types.Transaction, error) {
+	var page string
+	var pageSize string
+	var pageStart string
+
+	if pageOptions[0] != ""{
+		page = pageOptions[0]
+	}else{ page = "1" }
+
+	if pageOptions[1] != ""{
+		pageSize = pageOptions[1]
+	}else{ page = "1" }
+
+	if pageOptions[2] != ""{
+		pageStart = pageOptions[2]
+	}else{ page = "1" }
 
 	// Get sent transaction.
 	httpResponse, err := http.Get(fmt.Sprintf("http://%s:%d/v1/transactions?page=%s&pageSize=%s&pageStart=%s,", delegateNode.HttpEndpoint.Host, delegateNode.HttpEndpoint.Port, page,pageSize,pageStart))
@@ -374,7 +389,22 @@ func GetTransactions(delegateNode types.Node, page, pageStart, pageSize string) 
 }
 
 // GetTransactionsSent - Get details about sent transactions for a node
-func GetTransactionsSent(delegateNode types.Node, address, page, pageStart, pageSize string) ([]types.Transaction, error) {
+func GetTransactionsSent(delegateNode types.Node, address string,pageOptions ...string) ([]types.Transaction, error) {
+	var page string
+	var pageSize string
+	var pageStart string
+
+	if pageOptions[0] != ""{
+		page = pageOptions[0]
+	}else{ page = "1" }
+
+	if pageOptions[1] != ""{
+		pageSize = pageOptions[1]
+	}else{ page = "1" }
+
+	if pageOptions[2] != ""{
+		pageStart = pageOptions[2]
+	}else{ page = "1" }
 
 	// Get sent transaction.
 	httpResponse, err := http.Get(fmt.Sprintf("http://%s:%d/v1/transactions?from=%s&page=%s&pageSize=%s&pageStart=%s,", delegateNode.HttpEndpoint.Host, delegateNode.HttpEndpoint.Port, address,page,pageSize,pageStart))
@@ -424,8 +454,22 @@ func GetTransactionsSent(delegateNode types.Node, address, page, pageStart, page
 }
 
 // GetTransactionsReceived - Get details about received transactions for a node
-func GetTransactionsReceived(delegateNode types.Node, address, page, pageStart, pageSize string) ([]types.Transaction, error) {
+func GetTransactionsReceived(delegateNode types.Node, address string, pageOptions ...string) ([]types.Transaction, error) {
+	var page string
+	var pageSize string
+	var pageStart string
 
+	if pageOptions[0] != ""{
+		page = pageOptions[0]
+	}else{ page = "1" }
+
+	if pageOptions[1] != ""{
+		pageSize = pageOptions[1]
+	}else{ page = "1" }
+
+	if pageOptions[2] != ""{
+		pageStart = pageOptions[2]
+	}else{ page = "1" }
 	// Get received transactions.
 	httpResponse, err := http.Get(fmt.Sprintf("http://%s:%d/v1/transactions?to=%s&page=%s&pageSize=%s&pageStart=%s,", delegateNode.HttpEndpoint.Host, delegateNode.HttpEndpoint.Port, address,page,pageSize,pageStart))
 	if err != nil {

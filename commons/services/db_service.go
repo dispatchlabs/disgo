@@ -34,18 +34,8 @@ var dbServiceOnce sync.Once
 // GetDbService
 func GetDbService() *DbService {
 	dbServiceOnce.Do(func() {
-		fileName := "." + string(os.PathSeparator) + "db" + string(os.PathSeparator) + "LOCK"
-		if utils.Exists(fileName) {
-			err := os.Remove(fileName)
-			if err != nil {
-				utils.Fatal(err)
-			}
-		}
 		dbServiceInstance = &DbService{running: false, kmutex: utils.NewKmutex(), cache: cache.New(types.CacheTTL, types.CacheTTL*2)}
-		err := dbServiceInstance.openDb()
-		if err != nil {
-			utils.Fatal(err)
-		}
+		dbServiceInstance.openDb()
 	})
 	return dbServiceInstance
 }
@@ -71,11 +61,19 @@ func (this *DbService) Close() {
 // Go
 func (this *DbService) Go() {
 	this.running = true
-	utils.Events().Raise(Events.DbServiceInitFinished)
+	utils.Events().Raise(types.Events.DbServiceInitFinished)
 }
 
 // openDb
-func (this *DbService) openDb() error {
+func (this *DbService) openDb() {
+	fileName := "." + string(os.PathSeparator) + "db" + string(os.PathSeparator) + "LOCK"
+	if utils.Exists(fileName) {
+		err := os.Remove(fileName)
+		if err != nil {
+			utils.Fatal(err)
+		}
+	}
+
 	utils.Info("opening DB...")
 	opts := badger.DefaultOptions
 	opts.Dir = "." + string(os.PathSeparator) + "db"
@@ -83,10 +81,9 @@ func (this *DbService) openDb() error {
 	opts.ValueLogLoadingMode = badgerOptions.FileIO // https://github.com/dgraph-io/badger/issues/246
 	db, err := badger.Open(opts)
 	if err != nil {
-		return err
+		utils.Fatal(err)
 	}
 	this.db = db
-	return nil
 }
 
 // GetCache

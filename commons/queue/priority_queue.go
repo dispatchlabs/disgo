@@ -2,6 +2,7 @@ package queue
 
 import (
 	"container/heap"
+
 	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
@@ -9,9 +10,9 @@ type PriorityQueue []*Item
 
 // An Item is something we manage in a priority queue.
 type Item struct {
-	Data        interface{}
-	Priority 	int64    // The priority of the item in the queue.
-	Index 		int 	// The index of the item in the heap.
+	Data     interface{}
+	Priority int64 // The priority of the item in the queue.
+	Index    int   // The index of the item in the heap.
 	// The index is needed by update and is maintained by the heap.Interface methods.
 }
 
@@ -60,7 +61,7 @@ func (pq *PriorityQueue) Dump() []*Item {
 // - Get the top Priority to support making decision on priority from calling code
 func (pq PriorityQueue) Peek() int64 {
 	length := pq.Len()
-	utils.Debug("Peek --> %d", length)
+	utils.Debug("Peek --> ", length)
 	if length > 0 {
 		return pq[length-1].Priority
 	}

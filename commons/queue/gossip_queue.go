@@ -9,13 +9,14 @@ package queue
  */
 import (
 	"container/heap"
+
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
 type GossipQueue struct {
-	Queue 		*PriorityQueue
-	ExistsMap 	*ExistsMap
+	Queue     *PriorityQueue
+	ExistsMap *ExistsMap
 }
 
 // need to figure out best way to implement the lock time
@@ -29,7 +30,7 @@ func NewGossipQueue() *GossipQueue {
 // - Push onto the queue and then resort (latest to earliest) also add to fast Exists map for quick checks
 func (gq *GossipQueue) Push(gossip *types.Gossip) {
 	utils.Debug("GossipQueue --> Push")
-	itm := Item{gossip, gossip.Transaction.Time, gq.Queue.Len()+1}
+	itm := Item{gossip, gossip.Transaction.Time, gq.Queue.Len() + 1}
 	HeapPush(gq.Queue, &itm)
 	gq.ExistsMap.Put(gossip.Transaction.Hash)
 }
@@ -40,7 +41,7 @@ func (gq *GossipQueue) Pop() *types.Gossip {
 
 	itm := HeapPop(gq.Queue).(*Item)
 	gossip := itm.Data.(*types.Gossip)
-	utils.Debug("GossipQueue --> Pop: %v", gossip.Transaction.ToTime())
+	utils.Debug("GossipQueue --> Pop: ", gossip.Transaction.ToTime())
 	gq.ExistsMap.Delete(gossip.Transaction.Hash)
 	return gossip
 }

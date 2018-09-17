@@ -1,3 +1,20 @@
+// Copyright 2016 The go-ethereum Authors
+// This file is part of the go-ethereum library.
+//
+// The go-ethereum library is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The go-ethereum library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+
+// Package ethereum defines interfaces for interacting with Ethereum.
 package ethereum
 
 import (
@@ -5,7 +22,8 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/state"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/types"
 )
 
@@ -35,12 +53,12 @@ type Subscription interface {
 //
 // The returned error is NotFound if the requested item does not exist.
 type ChainReader interface {
-	BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error)
+	BlockByHash(ctx context.Context, hash crypto.HashBytes) (*types.Block, error)
 	BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error)
-	HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error)
+	HeaderByHash(ctx context.Context, hash crypto.HashBytes) (*types.Header, error)
 	HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error)
-	TransactionCount(ctx context.Context, blockHash common.Hash) (uint, error)
-	TransactionInBlock(ctx context.Context, blockHash common.Hash, index uint) (*types.Transaction, error)
+	TransactionCount(ctx context.Context, blockHash crypto.HashBytes) (uint, error)
+	TransactionInBlock(ctx context.Context, blockHash crypto.HashBytes, index uint) (*types.Transaction, error)
 
 	// This method subscribes to notifications about changes of the head block of
 	// the canonical chain.
@@ -61,21 +79,21 @@ type TransactionReader interface {
 	// blockchain. The isPending return value indicates whether the transaction has been
 	// mined yet. Note that the transaction may not be part of the canonical chain even if
 	// it's not pending.
-	TransactionByHash(ctx context.Context, txHash common.Hash) (tx *types.Transaction, isPending bool, err error)
+	TransactionByHash(ctx context.Context, txHash crypto.HashBytes) (tx *types.Transaction, isPending bool, err error)
 	// TransactionReceipt returns the receipt of a mined transaction. Note that the
 	// transaction may not be included in the current canonical chain even if a receipt
 	// exists.
-	TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
+	TransactionReceipt(ctx context.Context, txHash crypto.HashBytes) (*types.Receipt, error)
 }
 
 // ChainStateReader wraps access to the state trie of the canonical blockchain. Note that
 // implementations of the interface may be unable to return state values for old blocks.
 // In many cases, using CallContract can be preferable to reading raw contract storage.
 type ChainStateReader interface {
-	BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error)
-	StorageAt(ctx context.Context, account common.Address, key common.Hash, blockNumber *big.Int) ([]byte, error)
-	CodeAt(ctx context.Context, account common.Address, blockNumber *big.Int) ([]byte, error)
-	NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error)
+	BalanceAt(ctx context.Context, account crypto.AddressBytes, blockNumber *big.Int) (*big.Int, error)
+	StorageAt(ctx context.Context, account crypto.AddressBytes, key crypto.HashBytes, blockNumber *big.Int) ([]byte, error)
+	CodeAt(ctx context.Context, account crypto.AddressBytes, blockNumber *big.Int) ([]byte, error)
+	NonceAt(ctx context.Context, account crypto.AddressBytes, blockNumber *big.Int) (uint64, error)
 }
 
 // SyncProgress gives progress indications when the node is synchronising with
@@ -96,12 +114,12 @@ type ChainSyncReader interface {
 
 // CallMsg contains parameters for contract calls.
 type CallMsg struct {
-	From     common.Address  // the sender of the 'transaction'
-	To       *common.Address // the destination contract (nil for contract creation)
-	Gas      uint64          // if 0, the call executes with near-infinite gas
-	GasPrice *big.Int        // wei <-> gas exchange ratio
-	Value    *big.Int        // amount of wei sent along with the call
-	Data     []byte          // input data, usually an ABI-encoded contract method invocation
+	From     crypto.AddressBytes  // the sender of the 'transaction'
+	To       *crypto.AddressBytes // the destination contract (nil for contract creation)
+	Gas      uint64               // if 0, the call executes with near-infinite gas
+	GasPrice *big.Int             // wei <-> gas exchange ratio
+	Value    *big.Int             // amount of wei sent along with the call
+	Data     []byte               // input data, usually an ABI-encoded contract method invocation
 }
 
 // A ContractCaller provides contract calls, essentially transactions that are executed by
@@ -114,9 +132,10 @@ type ContractCaller interface {
 
 // FilterQuery contains options for contract log filtering.
 type FilterQuery struct {
-	FromBlock *big.Int         // beginning of the queried range, nil means genesis block
-	ToBlock   *big.Int         // end of the range, nil means latest block
-	Addresses []common.Address // restricts matches to events created by specific contracts
+	BlockHash *crypto.HashBytes     // used by eth_getLogs, return logs only from block with this hash
+	FromBlock *big.Int              // beginning of the queried range, nil means genesis block
+	ToBlock   *big.Int              // end of the range, nil means latest block
+	Addresses []crypto.AddressBytes // restricts matches to events created by specific contracts
 
 	// The Topic list restricts matches to particular event topics. Each event has a list
 	// of topics. Topics matches a prefix of that list. An empty element slice matches any
@@ -127,9 +146,9 @@ type FilterQuery struct {
 	// {} or nil          matches any topic list
 	// {{A}}              matches topic A in first position
 	// {{}, {B}}          matches any topic in first position, B in second position
-	// {{A}}, {B}}        matches topic A in first position, B in second position
+	// {{A}, {B}}         matches topic A in first position, B in second position
 	// {{A, B}}, {C, D}}  matches topic (A OR B) in first position, (C OR D) in second position
-	Topics [][]common.Hash
+	Topics [][]crypto.HashBytes
 }
 
 // LogFilterer provides access to contract log events using a one-off query or continuous
@@ -166,10 +185,10 @@ type GasPricer interface {
 // transfers) initiated by the user. The PendingNonceAt operation is a good way to
 // retrieve the next available transaction nonce for a specific account.
 type PendingStateReader interface {
-	PendingBalanceAt(ctx context.Context, account common.Address) (*big.Int, error)
-	PendingStorageAt(ctx context.Context, account common.Address, key common.Hash) ([]byte, error)
-	PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error)
-	PendingNonceAt(ctx context.Context, account common.Address) (uint64, error)
+	PendingBalanceAt(ctx context.Context, account crypto.AddressBytes) (*big.Int, error)
+	PendingStorageAt(ctx context.Context, account crypto.AddressBytes, key crypto.HashBytes) ([]byte, error)
+	PendingCodeAt(ctx context.Context, account crypto.AddressBytes) ([]byte, error)
+	PendingNonceAt(ctx context.Context, account crypto.AddressBytes) (uint64, error)
 	PendingTransactionCount(ctx context.Context) (uint, error)
 }
 
@@ -190,4 +209,70 @@ type GasEstimator interface {
 // pending state.
 type PendingStateEventer interface {
 	SubscribePendingTransactions(ctx context.Context, ch chan<- *types.Transaction) (Subscription, error)
+}
+
+// Engine is an algorithm agnostic consensus engine.
+type Engine interface {
+	// Author retrieves the Ethereum address of the account that minted the given
+	// block, which may be different from the header's coinbase if a consensus
+	// engine is based on signatures.
+	Author(header *types.Header) (crypto.AddressBytes, error)
+
+	// VerifyHeader checks whether a header conforms to the consensus rules of a
+	// given engine. Verifying the seal may be done optionally here, or explicitly
+	// via the VerifySeal method.
+	VerifyHeader(chain ChainReader, header *types.Header, seal bool) error
+
+	// VerifyHeaders is similar to VerifyHeader, but verifies a batch of headers
+	// concurrently. The method returns a quit channel to abort the operations and
+	// a results channel to retrieve the async verifications (the order is that of
+	// the input slice).
+	VerifyHeaders(chain ChainReader, headers []*types.Header, seals []bool) (chan<- struct{}, <-chan error)
+
+	// VerifyUncles verifies that the given block's uncles conform to the consensus
+	// rules of a given engine.
+	VerifyUncles(chain ChainReader, block *types.Block) error
+
+	// VerifySeal checks whether the crypto seal on a header is valid according to
+	// the consensus rules of the given engine.
+	VerifySeal(chain ChainReader, header *types.Header) error
+
+	// Prepare initializes the consensus fields of a block header according to the
+	// rules of a particular engine. The changes are executed inline.
+	Prepare(chain ChainReader, header *types.Header) error
+
+	// Finalize runs any post-transaction state modifications (e.g. block rewards)
+	// and assembles the final block.
+	// Note: The block header and state database might be updated to reflect any
+	// consensus rules that happen at finalization (e.g. block rewards).
+	Finalize(chain ChainReader, header *types.Header, state *state.StateDB, txs []*types.Transaction,
+		uncles []*types.Header, receipts []*types.Receipt) (*types.Block, error)
+
+	// Seal generates a new sealing request for the given input block and pushes
+	// the result into the given channel.
+	//
+	// Note, the method returns immediately and will send the result async. More
+	// than one result may also be returned depending on the consensus algorithm.
+	Seal(chain ChainReader, block *types.Block, results chan<- *types.Block, stop <-chan struct{}) error
+
+	// SealHash returns the hash of a block prior to it being sealed.
+	SealHash(header *types.Header) crypto.HashBytes
+
+	// CalcDifficulty is the difficulty adjustment algorithm. It returns the difficulty
+	// that a new block should have.
+	CalcDifficulty(chain ChainReader, time uint64, parent *types.Header) *big.Int
+
+	// APIs returns the RPC APIs this consensus engine provides.
+	APIs(chain ChainReader) []API
+
+	// Close terminates any background threads maintained by the consensus engine.
+	Close() error
+}
+
+// API describes the set of methods offered over the RPC interface
+type API struct {
+	Namespace string      // namespace under which the rpc methods of Service are exposed
+	Version   string      // api version for DApp's
+	Service   interface{} // receiver instance which holds the methods
+	Public    bool        // indication if the methods must be considered safe for public use
 }

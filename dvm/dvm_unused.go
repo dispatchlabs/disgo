@@ -2,7 +2,7 @@ package dvm
 
 /*
 func (self *DVMService) evaluateContract(fromAddress crypto.AddressBytes, contractAddress crypto.AddressBytes, root crypto.HashBytes, sHelper *stateHelper) {
-	theEthStateDb := sHelper.WAS.ethStateDB
+	theEthStateDb := sHelper.WAS.EthStateDB
 	contractStateObject := theEthStateDb.GetOrNewStateObject(contractAddress)
 	contractHash := crypto.NewHash(contractAddress[:])
 	stateHash := theEthStateDb.GetState(contractAddress, contractHash)
@@ -76,7 +76,7 @@ func iterateTrie(iterator trie.NodeIterator, isRoot bool) {
 func (self *DVMService) resetWAS() {
 	self.was = &WriteAheadState{
 		db:           self.db,
-		ethStateDB:   self.ethStateDB.Copy(),
+		EthStateDB:   self.EthStateDB.Copy(),
 		txIndex:      0,
 		totalUsedGas: big.NewInt(0),
 		gp:           new(ethereum.GasPool).AddGas(gasLimit.Uint64()),
@@ -97,7 +97,7 @@ func (self *DVMService) commit(stateHelper *VMStateHelper) (crypto.HashBytes, er
 
 	// reset the write ahead state for the next block
 	// with the latest eth state
-	// self.ethStateDB = stateHelper.ethStateDB
+	// self.EthStateDB = stateHelper.EthStateDB
 	utils.Info(fmt.Sprintf("root %s Committed", root.Hex()))
 
 	// self.resetWAS()
