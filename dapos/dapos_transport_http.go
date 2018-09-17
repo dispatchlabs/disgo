@@ -28,10 +28,6 @@ import (
 	"github.com/gorilla/mux"
 	"encoding/hex"
 	"github.com/dispatchlabs/disgo/commons/helper"
-	"strings"
-	"encoding/base64"
-	"time"
-	"strconv"
 )
 
 // WithHttp -
@@ -62,8 +58,6 @@ func (this *DAPoSService) WithHttp() *DAPoSService {
 
 	services.GetHttpRouter().HandleFunc("/v1/receipts/{hash}", this.unsupportedFunctionHandler).Methods("GET")
 
-	//Local SDK
-	services.GetHttpRouter().HandleFunc("/v1/SDK/packageTx", this.getPackageTxHandler).Methods("GET")
 
 	return this
 }
@@ -103,19 +97,6 @@ func setHeaders(response *types.Response, responseWriter *http.ResponseWriter) {
 			(*responseWriter).WriteHeader(http.StatusBadRequest)
 		}
 	}
-}
-
-func checkAuth(w http.ResponseWriter, r *http.Request) bool {
-	s := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
-	if len(s) != 2 { return false }
-
-	b, err := base64.StdEncoding.DecodeString(s[1])
-	if err != nil { return false }
-
-	pair := strings.SplitN(string(b), ":", 2)
-	if len(pair) != 2 { return false }
-
-	return pair[0] == "Disgo" && pair[1] == "Dance"
 }
 
 // getDelegatesHandler
@@ -266,35 +247,3 @@ func (this *DAPoSService) getGossipHandler(responseWriter http.ResponseWriter, r
 // 	responseWriter.Write([]byte(response.String()))
 // }
 
-// getDelegatesHandler
-func (this *DAPoSService) getPackageTxHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	if !checkAuth(responseWriter, request) {
-		responseWriter.Header().Set("WWW-Authenticate", `Basic realm="MY REALM"`)
-		responseWriter.WriteHeader(401)
-		responseWriter.Write([]byte("401 Unauthorized\n"))
-		return
-	}
-	response := types.NewResponse()
-	to := request.URL.Query().Get("to")
-	if to == "" {
-		response.Status = http.StatusText(http.StatusBadRequest)
-		response.HumanReadableStatus = "\"to\" must be provided"
-		services.Error(responseWriter, response.String(), http.StatusBadRequest)
-		return
-	}
-	tokens := request.URL.Query().Get("tokens")
-	if tokens == "" {
-		response.Status = http.StatusText(http.StatusBadRequest)
-		response.HumanReadableStatus = "\"tokens\" must be provided"
-		services.Error(responseWriter, response.String(), http.StatusBadRequest)
-		return
-	}
-	tim := request.URL.Query().Get("time")
-	if tim == "" {
-		tim = strconv.FormatInt(utils.ToMilliSeconds(time.Now()), 10)
-	}
-
-	response = this.GetPackagedTx(to,tokens,tim)
-	setHeaders(response, &responseWriter)
-	responseWriter.Write([]byte(response.String()))
-}

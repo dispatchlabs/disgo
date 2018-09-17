@@ -384,7 +384,6 @@ func (this *DAPoSService) GetGossip(hash string) *types.Response {
 // GetAccount
 func (this *DAPoSService) GetPackagedTx(to string, tokes string, tim string) *types.Response {
 	response := types.NewResponse()
-	var tx *types.Transaction
 
 	tokens, err := strconv.Atoi(tokes)
 	if err != nil {
@@ -399,9 +398,6 @@ func (this *DAPoSService) GetPackagedTx(to string, tokes string, tim string) *ty
 		response.HumanReadableStatus = err.Error()
 		return response
 	}
-
-	// Delegate?
-	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
 		tx, err := sdk.PackageTx(to, int64(tokens), int64(time))
 		if err != nil {
 				response.Status = types.StatusInternalError
@@ -409,10 +405,7 @@ func (this *DAPoSService) GetPackagedTx(to string, tokes string, tim string) *ty
 			response.Data = tx
 			response.Status = types.StatusOk
 		}
-	} else {
-		response.Status = types.StatusNotDelegate
-		response.HumanReadableStatus = types.StatusNotDelegateAsHumanReadable
-	}
+
 	utils.Info(fmt.Sprintf("packaged tx [tx hash=%s, status=%s]", tx, response.Status))
 
 	return response
