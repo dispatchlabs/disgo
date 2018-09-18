@@ -210,13 +210,28 @@ func (self *StateDB) Empty(addr crypto.AddressBytes) bool {
 func (self *StateDB) GetBalance(addr crypto.AddressBytes) *big.Int {
 	utils.Debug(fmt.Sprintf("StateDB-GetBalance: %s", crypto.Encode(addr[:])))
 
-	stateObject := self.getStateObject(addr)
-	if stateObject != nil {
-		// utils.Debug(fmt.Sprintf("%s : %d @ %s", common.EthAddressToDispatchAddress(addr), stateObject.Balance(), utils.GetCallStackWithFileAndLineNumber()))
+	txn := services.NewTxn(true)
+	defer txn.Discard()
 
-		return stateObject.account.Balance
+	addressAsString := crypto.EncodeNo0x(addr[:])
+	theBalance := common.Big0
+
+	account, err := dispatTypes.ToAccountByAddress(txn, addressAsString)
+	if err == nil {
+		theBalance = account.Balance
 	}
-	return common.Big0
+
+	utils.Debug(fmt.Sprintf("StateDB-GetBalance: %v", theBalance))
+
+	return theBalance
+
+	// stateObject := self.getStateObject(addr)
+	// if stateObject != nil {
+	// 	// utils.Debug(fmt.Sprintf("%s : %d @ %s", common.EthAddressToDispatchAddress(addr), stateObject.Balance(), utils.GetCallStackWithFileAndLineNumber()))
+
+	// 	return stateObject.account.Balance
+	// }
+	// return common.Big0
 }
 
 func (self *StateDB) GetNonce(addr crypto.AddressBytes) uint64 {
