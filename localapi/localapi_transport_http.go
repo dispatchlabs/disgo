@@ -31,7 +31,6 @@ import (
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/sdk"
-	"strconv"
 	"time"
 	"strings"
 	"encoding/base64"
@@ -44,7 +43,7 @@ func (this *LocalAPIService) WithHttp() *LocalAPIService {
 	services.GetHttpRouter().HandleFunc("/v1/local/transfer", this.tranferHandler).Methods("POST")
 	services.GetHttpRouter().HandleFunc("/v1/local/deploy", this.deployHandler).Methods("POST")
 	services.GetHttpRouter().HandleFunc("/v1/local/execute", this.executeHandler).Methods("POST")
-	services.GetHttpRouter().HandleFunc("/v1/local/packageTx", this.getPackageTxHandler).Methods("GET")
+	services.GetHttpRouter().HandleFunc("/v1/local/packageTx", this.getPackageTxHandler).Methods("POST")
 	services.GetHttpRouter().HandleFunc("/v1/local/getAccount", this.getAccountHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/local/getNewAccount", this.createAccountHandler).Methods("GET")
 
@@ -73,7 +72,7 @@ func checkAuth(w http.ResponseWriter, r *http.Request) bool {
 
 func (this *LocalAPIService) tranferHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	if !checkAuth(responseWriter, request) {
-		responseWriter.Header().Set("WWW-Authenticate", `Basic realm="MY REALM"`)
+		responseWriter.Header().Set("WWW-Authenticate", `Dis realm="Dispatch Local"`)
 		responseWriter.WriteHeader(401)
 		responseWriter.Write([]byte("401 Unauthorized\n"))
 		return
@@ -105,7 +104,7 @@ func (this *LocalAPIService) tranferHandler(responseWriter http.ResponseWriter, 
 	response, err := sdk.TransferTokens(
 		*delegates[0],
 		types.GetAccount().PrivateKey,
-		transfer.From,
+		types.GetAccount().Address,
 		transfer.To,
 		transfer.Amount,
 	)
@@ -123,7 +122,7 @@ func (this *LocalAPIService) tranferHandler(responseWriter http.ResponseWriter, 
 
 func (this *LocalAPIService) deployHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	if !checkAuth(responseWriter, request) {
-		responseWriter.Header().Set("WWW-Authenticate", `Basic realm="MY REALM"`)
+		responseWriter.Header().Set("WWW-Authenticate", `Dis realm="Dispatch Local"`)
 		responseWriter.WriteHeader(401)
 		responseWriter.Write([]byte("401 Unauthorized\n"))
 		return
@@ -173,7 +172,7 @@ func (this *LocalAPIService) deployHandler(responseWriter http.ResponseWriter, r
 
 func (this *LocalAPIService) executeHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	if !checkAuth(responseWriter, request) {
-		responseWriter.Header().Set("WWW-Authenticate", `Basic realm="MY REALM"`)
+		responseWriter.Header().Set("WWW-Authenticate", `Dis realm="Dispatch Local"`)
 		responseWriter.WriteHeader(401)
 		responseWriter.Write([]byte("401 Unauthorized\n"))
 		return
@@ -225,32 +224,35 @@ func (this *LocalAPIService) executeHandler(responseWriter http.ResponseWriter, 
 // getDelegatesHandler
 func (this *LocalAPIService) getPackageTxHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	if !checkAuth(responseWriter, request) {
-		responseWriter.Header().Set("WWW-Authenticate", `Basic realm="MY REALM"`)
+		responseWriter.Header().Set("WWW-Authenticate", `Dis realm="Dispatch Local"`)
 		responseWriter.WriteHeader(401)
 		responseWriter.Write([]byte("401 Unauthorized\n"))
 		return
 	}
 	response := types.NewResponse()
-	to := request.URL.Query().Get("to")
-	if to == "" {
-		response.Status = http.StatusText(http.StatusBadRequest)
-		response.HumanReadableStatus = "\"to\" must be provided"
-		services.Error(responseWriter, response.String(), http.StatusBadRequest)
+	// Read Object from payload
+	body, err := ioutil.ReadAll(request.Body)
+	if err != nil {
+		utils.Error("unable to read HTTP body of request", err)
+		services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusInternalError, err), http.StatusInternalServerError)
 		return
-	}
-	tokens := request.URL.Query().Get("tokens")
-	if tokens == "" {
-		response.Status = http.StatusText(http.StatusBadRequest)
-		response.HumanReadableStatus = "\"tokens\" must be provided"
-		services.Error(responseWriter, response.String(), http.StatusBadRequest)
-		return
-	}
-	tim := request.URL.Query().Get("time")
-	if tim == "" {
-		tim = strconv.FormatInt(utils.ToMilliSeconds(time.Now()), 10)
 	}
 
-	response = dapos.GetDAPoSService().GetPackagedTx(to,tokens,tim)
+	pack := &Package{}
+	err = json.Unmarshal(body, pack)
+	if err != nil {
+		utils.Error("unable to read HTTP body of request", err)
+		services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusInternalError, err), http.StatusInternalServerError)
+		return
+	}
+
+	tx, err := sdk.PackageTx(pack.To, pack.Amount, pack.Time)
+	if err != nil {
+		response.Status = types.StatusInternalError
+	} else {
+		response.Data = tx
+		response.Status = types.StatusOk
+	}
 	setHeaders(&responseWriter)
 	responseWriter.Write([]byte(response.String()))
 }
@@ -258,7 +260,7 @@ func (this *LocalAPIService) getPackageTxHandler(responseWriter http.ResponseWri
 // getDelegatesHandler
 func (this *LocalAPIService) getAccountHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	if !checkAuth(responseWriter, request) {
-		responseWriter.Header().Set("WWW-Authenticate", `Basic realm="MY REALM"`)
+		responseWriter.Header().Set("WWW-Authenticate", `Dis realm="Dispatch Local"`)
 		responseWriter.WriteHeader(401)
 		responseWriter.Write([]byte("401 Unauthorized\n"))
 		return
@@ -275,7 +277,7 @@ func (this *LocalAPIService) getAccountHandler(responseWriter http.ResponseWrite
 // getDelegatesHandler
 func (this *LocalAPIService) createAccountHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	if !checkAuth(responseWriter, request) {
-		responseWriter.Header().Set("WWW-Authenticate", `Basic realm="MY REALM"`)
+		responseWriter.Header().Set("WWW-Authenticate", `Dis realm="Dispatch Local"`)
 		responseWriter.WriteHeader(401)
 		responseWriter.Write([]byte("401 Unauthorized\n"))
 		return
