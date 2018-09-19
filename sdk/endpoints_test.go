@@ -116,7 +116,7 @@ func TestCreateAccount(t *testing.T) {
 //		t.Error(err)
 //	}
 //
-//	tx, err := GetTransactionsReceived(delegates[0], {address}, page, hash, pageSize)
+//	tx, err := GetTransactionsReceived(delegates[0], toAccount.Address, page, hash, pageSize)
 //	if err != nil {
 //		t.Error(err)
 //	}
