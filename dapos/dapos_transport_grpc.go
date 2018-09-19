@@ -58,10 +58,10 @@ func (this *DAPoSService) SynchronizeGrpc(constext context.Context, request *pro
 				return err
 			}
 			keyString := string(key)
-			if !strings.HasPrefix(keyString, "table-") && !strings.HasPrefix(keyString, "key-") && !strings.HasPrefix(keyString, "AccountState-") {
+			//fmt.Printf("Key: %s\n", keyString)
+			if !strings.HasPrefix(keyString, "table-") && !strings.HasPrefix(keyString, "key-") { //&& !strings.HasPrefix(keyString, "AccountState-") {
 				continue
 			}
-
 			if i < request.Index {
 				i++
 				continue
