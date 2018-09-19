@@ -72,7 +72,7 @@ func checkAuth(w http.ResponseWriter, r *http.Request) bool {
 
 func (this *LocalAPIService) tranferHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	if !checkAuth(responseWriter, request) {
-		responseWriter.Header().Set("WWW-Authenticate", `Dis realm="Dispatch Local"`)
+		responseWriter.Header().Set("WWW-Authenticate", `realm="Dispatch Local"`)
 		responseWriter.WriteHeader(401)
 		responseWriter.Write([]byte("401 Unauthorized\n"))
 		return
@@ -122,7 +122,7 @@ func (this *LocalAPIService) tranferHandler(responseWriter http.ResponseWriter, 
 
 func (this *LocalAPIService) deployHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	if !checkAuth(responseWriter, request) {
-		responseWriter.Header().Set("WWW-Authenticate", `Dis realm="Dispatch Local"`)
+		responseWriter.Header().Set("WWW-Authenticate", `realm="Dispatch Local"`)
 		responseWriter.WriteHeader(401)
 		responseWriter.Write([]byte("401 Unauthorized\n"))
 		return
@@ -172,7 +172,7 @@ func (this *LocalAPIService) deployHandler(responseWriter http.ResponseWriter, r
 
 func (this *LocalAPIService) executeHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	if !checkAuth(responseWriter, request) {
-		responseWriter.Header().Set("WWW-Authenticate", `Dis realm="Dispatch Local"`)
+		responseWriter.Header().Set("WWW-Authenticate", `realm="Dispatch Local"`)
 		responseWriter.WriteHeader(401)
 		responseWriter.Write([]byte("401 Unauthorized\n"))
 		return
@@ -224,7 +224,7 @@ func (this *LocalAPIService) executeHandler(responseWriter http.ResponseWriter, 
 // getDelegatesHandler
 func (this *LocalAPIService) getPackageTxHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	if !checkAuth(responseWriter, request) {
-		responseWriter.Header().Set("WWW-Authenticate", `Dis realm="Dispatch Local"`)
+		responseWriter.Header().Set("WWW-Authenticate", `realm="Dispatch Local"`)
 		responseWriter.WriteHeader(401)
 		responseWriter.Write([]byte("401 Unauthorized\n"))
 		return
@@ -260,7 +260,7 @@ func (this *LocalAPIService) getPackageTxHandler(responseWriter http.ResponseWri
 // getDelegatesHandler
 func (this *LocalAPIService) getAccountHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	if !checkAuth(responseWriter, request) {
-		responseWriter.Header().Set("WWW-Authenticate", `Dis realm="Dispatch Local"`)
+		responseWriter.Header().Set("WWW-Authenticate", `realm="Dispatch Local"`)
 		responseWriter.WriteHeader(401)
 		responseWriter.Write([]byte("401 Unauthorized\n"))
 		return
@@ -277,7 +277,7 @@ func (this *LocalAPIService) getAccountHandler(responseWriter http.ResponseWrite
 // getDelegatesHandler
 func (this *LocalAPIService) createAccountHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	if !checkAuth(responseWriter, request) {
-		responseWriter.Header().Set("WWW-Authenticate", `Dis realm="Dispatch Local"`)
+		responseWriter.Header().Set("WWW-Authenticate", `realm="Dispatch Local"`)
 		responseWriter.WriteHeader(401)
 		responseWriter.Write([]byte("401 Unauthorized\n"))
 		return
