@@ -352,7 +352,7 @@ func (this *DAPoSService) GetGossips(page string) *types.Response {
 	return response
 }
 
-// GetAccount
+// GetGossip
 func (this *DAPoSService) GetGossip(hash string) *types.Response {
 	txn := services.NewTxn(true)
 	defer txn.Discard()
@@ -379,3 +379,4 @@ func (this *DAPoSService) GetGossip(hash string) *types.Response {
 
 	return response
 }
+

@@ -18,7 +18,9 @@ package vm
 
 import (
 	"fmt"
+	"math/big"
 	"sync/atomic"
+	"time"
 
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/common/math"
@@ -240,6 +242,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte) (ret []byte, err
 		}
 
 		// execute the operation
+		in.evm.Time = big.NewInt(utils.ToNanoSeconds(time.Now()))
 		res, err := operation.execute(&pc, in, contract, mem, stack)
 		// verifyPool is a build flag. Pool verification makes sure the integrity
 		// of the integer pool by comparing values to a default value.
