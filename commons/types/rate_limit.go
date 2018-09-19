@@ -127,14 +127,14 @@ func getAccountRateLimitKey(address string) string {
 	return fmt.Sprintf("table-ratelimit-account%s", address)
 }
 
-func CheckMinimumAvailable(txn *badger.Txn, cache *cache.Cache, address string, balance int64) (int64, error) {
+func CheckMinimumAvailable(txn *badger.Txn, cache *cache.Cache, address string, balance uint64) (uint64, error) {
 
 	totalDeduction, err := CalculateLockedAmount(txn, cache, address)
 	if err != nil {
-		return int64(0), err
+		return uint64(0), err
 	}
 	utils.Info("\nTotal Hertz Deduction from account = ", totalDeduction)
-	available := balance - int64(totalDeduction)
+	available := balance - totalDeduction
 	return available, nil
 }
 
@@ -220,7 +220,6 @@ func (this TxRateLimit) string() string {
 	return string(bytes)
 }
 
-
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //  Helpers
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -241,22 +240,22 @@ func add(existing, new []byte) []byte {
 }
 
 func CalculateLockedAmount(txn *badger.Txn, c *cache.Cache, address string) (uint64, error) {
-	//this.Set(txn, c)
-
-	addrsRateLimit, err := GetAccountRateLimit(txn, c, address)
+	acctRateLimit, err := GetAccountRateLimit(txn, c, address)
 	if err != nil {
 		utils.Error(err)
 	}
 
 	var totalDeduction uint64
-	for _, hash := range addrsRateLimit.TxHashes {
-		txrl, err := GetTxRateLimit(txn, c, hash)
-		if err != nil {
-			return totalDeduction, err
-		}
-		if txrl != nil {
-			totalDeduction += txrl.Amount
-			utils.Info(txrl.string())
+	if acctRateLimit != nil {
+		for _, hash := range acctRateLimit.TxHashes {
+			txrl, err := GetTxRateLimit(txn, c, hash)
+			if err != nil {
+				return totalDeduction, err
+			}
+			if txrl != nil {
+				totalDeduction += txrl.Amount
+				utils.Info(txrl.string())
+			}
 		}
 	}
 	return totalDeduction, nil

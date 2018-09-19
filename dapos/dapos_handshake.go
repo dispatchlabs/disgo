@@ -34,6 +34,7 @@ import (
 
 	"github.com/dispatchlabs/disgo/dvm"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
 )
 
 // startGossiping
@@ -308,9 +309,13 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		return
 	}
 
+	//Get Min Hetz you will use (intrinsic hertz)
+	minHertzUsed := params.CallValueTransferGas
+
 	// Find/create fromAccount?
 	now := time.Now()
 	fromAccount, err := types.ToAccountByAddress(txn, transaction.From)
+	minHertzUsed += params.CallNewAccountGas
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
 			fromAccount = &types.Account{Address: transaction.From, Balance: big.NewInt(0), Created: now}
@@ -328,6 +333,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
 			toAccount = &types.Account{Address: transaction.To, Balance: big.NewInt(0), Created: now}
+			minHertzUsed += params.CallNewAccountGas
 		} else {
 			utils.Error(err)
 			receipt.SetInternalErrorWithNewTransaction(services.GetDb(), err)
@@ -335,14 +341,21 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		}
 	}
 
-	//TODO: Check to see if there is enough Hertz to execute minimum
-	types.GetAccountRateLimit(txn, services.GetCache(), fromAccount.Address)
-
-
+	//Check to see if there is enough Hertz to execute minimum
+	availableHertz, err := types.CheckMinimumAvailable(txn, services.GetCache(), fromAccount.Address, fromAccount.Balance.Uint64())
+	if err != nil {
+		utils.Error(err)
+	}
+	if availableHertz <= minHertzUsed {
+		msg := fmt.Sprintf("Account %s has a hertz balance of %d\n", fromAccount.Address, availableHertz)
+		utils.Error(msg)
+		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInsufficientTokens)
+		return
+	}
+	var hertz uint64
 	// Execute.
 	switch transaction.Type {
 	case types.TypeTransferTokens:
-
 		// Sufficient tokens?
 		if fromAccount.Balance.Int64() < transaction.Value {
 			utils.Error(fmt.Sprintf("insufficient tokens [hash=%s]", transaction.Hash))
@@ -352,14 +365,8 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 
 		fromAccount.Balance.SetInt64(fromAccount.Balance.Int64() - transaction.Value)
 		toAccount.Balance.SetInt64(toAccount.Balance.Int64() + transaction.Value)
-		//TODO add intrinsic hertz
-		//hertz := params.CallValueTransferGas
-		//rateLimit, err := types.NewRateLimit(transaction.From, transaction.Hash,  "test", hertz)
-		if err != nil {
-			utils.Error(err)
-		}
-		//rateLimit.CalculateAndStore(txn, services.GetCache())
 
+		hertz = minHertzUsed
 		utils.Info(fmt.Sprintf("transferred tokens [hash=%s, rumors=%d]", transaction.Hash, len(gossip.Rumors)))
 		break
 	case types.TypeDeploySmartContract:
@@ -397,6 +404,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			return
 		}
 		receipt.ContractAddress = contractAccount.Address
+		hertz = dvmResult.CumulativeHertzUsed
 		utils.Info(fmt.Sprintf("deployed contract [hash=%s, contractAddress=%s]", transaction.Hash, contractAccount.Address))
 		break
 	case types.TypeExecuteSmartContract:
@@ -438,6 +446,9 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			return
 		}
 		receipt.ContractAddress = transaction.To
+
+		hertz = dvmResult.CumulativeHertzUsed
+
 		utils.Info(fmt.Sprintf("executed contract [hash=%s, contractAddress=%s]", transaction.Hash, transaction.To))
 		break
 	default:
@@ -445,6 +456,13 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInvalidTransaction)
 		return
 	}
+
+	rateLimit, err := types.NewRateLimit(transaction.From, transaction.Hash,  "test-0", hertz)
+	if err != nil {
+		utils.Error(err)
+	}
+	rateLimit.Db = services.GetDb()
+	rateLimit.Set(txn, services.GetCache())
 
 	// Persist transaction
 	err = transaction.Persist(txn)
