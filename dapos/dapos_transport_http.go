@@ -56,6 +56,7 @@ func (this *DAPoSService) WithHttp() *DAPoSService {
 
 	services.GetHttpRouter().HandleFunc("/v1/receipts/{hash}", this.unsupportedFunctionHandler).Methods("GET")
 
+
 	return this
 }
 
@@ -230,3 +231,4 @@ func (this *DAPoSService) getGossipHandler(responseWriter http.ResponseWriter, r
 // 	setHeaders(response, &responseWriter)
 // 	responseWriter.Write([]byte(response.String()))
 // }
+

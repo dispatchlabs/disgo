@@ -184,6 +184,12 @@ func ToTransactionFromCache(cache *cache.Cache, hash string) (*Transaction, erro
 		return nil, ErrNotFound
 	}
 	transaction := value.(*Transaction)
+	receipt, err :=  ToReceiptFromCache(cache, transaction.Hash)
+	if err != nil {
+		utils.Error(err)
+	} else {
+		transaction.Receipt = *receipt
+	}
 	return transaction, nil
 }
 
