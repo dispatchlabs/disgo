@@ -394,7 +394,16 @@ func opAddress(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memo
 }
 
 func opBalance(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	traceOpcode(pc, interpreter, contract, memory, stack)
+	memory.Print()
+
 	slot := stack.peek()
+
+	// DISPATCH-DEBUG
+	b := interpreter.evm.StateDB.GetBalance(common.BigToAddress(slot))
+	utils.Debug(fmt.Sprintf("%v %v %v", slot.Uint64(), crypto2.Encode(common.BigToAddress(slot).Bytes()), b.Uint64()))
+	memory.Print()
+
 	slot.Set(interpreter.evm.StateDB.GetBalance(common.BigToAddress(slot)))
 	return nil, nil
 }
@@ -610,17 +619,29 @@ func opMload(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory
 }
 
 func opMstore(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	traceOpcode(pc, interpreter, contract, memory, stack)
+	memory.Print()
+
 	// pop value of the stack
 	mStart, val := stack.pop(), stack.pop()
 	memory.Set32(mStart.Uint64(), val)
 
+	utils.Debug(fmt.Sprintf("%v %v", mStart.Uint64(), val))
+	memory.Print()
+
 	interpreter.intPool.put(mStart, val)
+
 	return nil, nil
 }
 
 func opMstore8(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	traceOpcode(pc, interpreter, contract, memory, stack)
+	memory.Print()
+
 	off, val := stack.pop().Int64(), stack.pop().Int64()
 	memory.store[off] = byte(val & 0xff)
+
+	memory.Print()
 
 	return nil, nil
 }
@@ -886,7 +907,13 @@ func opStaticCall(pc *uint64, interpreter *EVMInterpreter, contract *Contract, m
 }
 
 func opReturn(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	traceOpcode(pc, interpreter, contract, memory, stack)
+
 	offset, size := stack.pop(), stack.pop()
+
+	utils.Debug(fmt.Sprintf("%v %v", offset.Int64(), size.Int64()))
+	memory.Print()
+
 	ret := memory.GetPtr(offset.Int64(), size.Int64())
 
 	interpreter.intPool.put(offset, size)
@@ -977,5 +1004,22 @@ func makeSwap(size int64) executionFunc {
 	return func(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 		stack.swap(int(size))
 		return nil, nil
+	}
+}
+
+func traceOpcode(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) {
+	var contractAddress = contract.Address()
+	var callerAddress = contract.Caller()
+
+	var opcode = contract.GetOp(*pc)
+	// var operation = interpreter.cfg.JumpTable[opcode]
+
+	utils.Debug(fmt.Sprintf("DVM-traceOpcode: contractAddress    -> %s", crypto2.Encode(contractAddress[:])))
+	utils.Debug(fmt.Sprintf("DVM-traceOpcode: callerAddress      -> %s", crypto2.Encode(callerAddress[:])))
+	utils.Debug(fmt.Sprintf("DVM-traceOpcode: opcode             -> %s", opcode))
+	utils.Debug(fmt.Sprintf("DVM-traceOpcode: func               -> %s", utils.GetFuncName(2)))
+
+	for index, val := range stack.data {
+		utils.Debug(fmt.Sprintf("DVM-traceOpcode: stack[%v]      -> %v", index, val))
 	}
 }
