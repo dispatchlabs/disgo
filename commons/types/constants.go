@@ -90,5 +90,6 @@ var (
 	ErrInvalidRequest         = errors.New("invalid request")
 	ErrInvalidRequestPage     = errors.New("invalid request Page")
 	ErrInvalidRequestPageSize = errors.New("invalid request Page Size")
+	ErrInvalidRequestStartingHash = errors.New("invalid request Starting Hash")
 	ErrInvalidRequestHash     = errors.New("invalid request Hash")
 )

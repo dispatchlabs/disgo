@@ -22,6 +22,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"time"
+	"strings"
+	"sort"
 
 	"fmt"
 
@@ -211,55 +213,74 @@ func ToTransactions(txn *badger.Txn) ([]*Transaction, error) {
 }
 
 func TransactionPaging(txn *badger.Txn, startingHash string, page, pageSize int) ([]*Transaction, error) {
-	var iteratorCount = 0
-	var firstItem int
 	if pageSize <= 0 || pageSize > 100 {
 		return nil, ErrInvalidRequestPageSize
 	}
 	if page <= 0 {
 		return nil, ErrInvalidRequestPage
-	} else {
-		firstItem = (page * pageSize) - (pageSize - 1)
-	}
-	var item []byte
-	prefix := []byte(fmt.Sprintf("table-transaction-"))
-	if startingHash != "" {
-		thing, err := ToTransactionByKey(txn, []byte(fmt.Sprintf("table-transaction-%s", startingHash)))
-		if err != nil {
-			return nil, ErrInvalidRequestHash
-		}
-		item = []byte(thing.Key())
-	} else {
-		item = prefix
 	}
 
 	defer txn.Discard()
+	
+	// Iterate over all of the time keys to add them into a string array
 	opts := badger.DefaultIteratorOptions
 	opts.PrefetchValues = false
 	iterator := txn.NewIterator(opts)
-	defer iterator.Close()
-	var transactions = make([]*Transaction, 0)
-	for iterator.Seek(item); iterator.ValidForPrefix(prefix); iterator.Next() {
-		iteratorCount++
-		if iteratorCount >= firstItem && iteratorCount < (firstItem+pageSize) {
-			item := iterator.Item()
-			value, err := item.Value()
-			if err != nil {
-				utils.Error(err)
-				continue
-			}
-			transaction, err := ToTransactionFromJson(value)
-			if err != nil {
-				utils.Error(err)
-				continue
-			}
-			transactions = append(transactions, transaction)
+	prefix := []byte(fmt.Sprintf("table-transaction-time-"))
+	timestamps := make([]string, 0)
+	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
+		item := iterator.Item()
+		timestamps = append(timestamps, string(item.Key()))
+	}
+	iterator.Close()
+	// Sort the string array; which will result in sorting by timestamp, hash (asc)
+	sort.Strings(timestamps)
+
+	// Capture the total number of items
+	totalCount := len(timestamps)
+
+	// Iterate over the strings
+	idx := 0
+	for idx, key := range timestamps {
+		// extract the hash from the key
+		k := strings.Split(key, "-")
+		hash := k[4]
+		// If no startingHash provided, use the first value
+		if startingHash == "" {
+			startingHash = hash
 		}
-		if iteratorCount > (firstItem + pageSize) {
+		// If we found the startingHash, idx will contain the starting index for pagination, counting, etc.
+		if startingHash == hash {
+			break
+		}
+		// If we reach the end without finding startingHash, throw an error
+		if idx + 1 == totalCount {
+			return nil, ErrInvalidRequestStartingHash
+		}
+	}
+
+	// Reduce the total count by the starting index
+	totalCount =- idx
+	// Shift idx forward by desired page
+	idx = idx + (page * pageSize) - pageSize
+
+	// Create a transactions collection equal to the desired page size
+	transactions := make([]*Transaction, pageSize)
+
+	for i := 0; i <= pageSize; i++ {
+		if (timestamps[idx] != "") {
+			k := strings.Split(timestamps[idx], "-")
+			hash := k[4]
+			tx, err := ToTransactionByKey(txn, []byte(fmt.Sprintf("table-transaction-%s", hash)))
+			if err != nil {
+				transactions[i] = tx
+			}
+			idx++
+		} else {
 			break
 		}
 	}
-	return transactions, nil //TODO: return error if empty?
+	return transactions, nil;
 }
 
 // ToTransactionsByFromAddress
