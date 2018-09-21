@@ -99,7 +99,7 @@ func (this RateLimit) getCurrentTTL() time.Duration {
 	}
 	nbrSeconds := math.Pow(float64(value), EXP_GROWTH)
 	ttl := time.Duration(nbrSeconds) * time.Second
-	utils.Info("Current TTL = ", ttl.String())
+	utils.Debug("Current TTL = ", ttl.String())
 	return ttl
 }
 
@@ -133,7 +133,7 @@ func CheckMinimumAvailable(txn *badger.Txn, cache *cache.Cache, address string, 
 	if err != nil {
 		return uint64(0), err
 	}
-	utils.Info("\nTotal Hertz Deduction from account = ", totalDeduction)
+	utils.Debug("\nTotal Hertz Deduction from account = ", totalDeduction)
 	available := balance - totalDeduction
 	return available, nil
 }
@@ -254,7 +254,7 @@ func CalculateLockedAmount(txn *badger.Txn, c *cache.Cache, address string) (uin
 			}
 			if txrl != nil {
 				totalDeduction += txrl.Amount
-				utils.Info(txrl.string())
+				//utils.Info(txrl.string())
 			}
 		}
 	}

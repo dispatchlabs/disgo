@@ -53,7 +53,7 @@ func addRateLimit(rateLimit *RateLimit) {
 	fmt.Printf("%s\n", txRateLimit.string())
 	fmt.Printf("%s\n", addrsRateLimit.string())
 
-	var totalDeduction int64
+	var totalDeduction uint64
 	for _, hash := range addrsRateLimit.TxHashes {
 		utils.Info("Getting Hash: ", hash)
 		txrl, err := GetTxRateLimit(txn, c, hash)
