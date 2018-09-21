@@ -128,6 +128,8 @@ func (this *DAPoSService) synchronizeGossip(gossip *types.Gossip) (*types.Gossip
 	ourGossip, err := types.ToGossipFromCache(services.GetCache(), gossip.Transaction.Hash)
 	if err != nil {
 		synchronizedGossip = gossip
+		gossip.Transaction.Cache(services.GetCache())
+
 	} else {
 		synchronizedGossip = ourGossip
 		for _, rumor := range gossip.Rumors {
@@ -172,6 +174,10 @@ func (this *DAPoSService) gossipWorker() {
 					if !types.ValidateTimeDelta(gossip.Rumors) {
 						utils.Warn("The rumors have an invalid time delta (greater than gossip timeout milliseconds")
 						//ignore this gossip's rumors and hopefully still hit 2/3 from well timed gossip, but keep listening
+						receipt := types.NewReceipt(gossip.Transaction.Hash)
+						receipt.Status = types.StatusGossipingTimedOut
+						receipt.Cache(services.GetCache())
+
 						return
 					}
 				}
@@ -200,6 +206,7 @@ func (this *DAPoSService) gossipWorker() {
 							this.timoutChan <- true
 						}()
 					}
+					return
 				}
 
 				// Did we already receive all the delegate's rumors?
@@ -213,11 +220,13 @@ func (this *DAPoSService) gossipWorker() {
 				if node == nil {
 					utils.Warn("did not find any delegates to rumor with")
 
+					gossip.Cache(services.GetCache())
+
 					receipt := types.NewReceipt(gossip.Transaction.Hash)
 					receipt.Status = types.StatusCouldNotReachConsensus
 					receipt.Cache(services.GetCache())
 
-					this.gossipChan <- gossip
+					//this.gossipChan <- gossip
 					return
 				}
 
@@ -314,6 +323,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	// Has this transaction already been processed?
 	_, err := txn.Get([]byte(transaction.Key()))
 	if err == nil {
+		utils.Warn ("Already executed this transaction", utils.GetCallStackWithFileAndLineNumber())
 		return
 	}
 
