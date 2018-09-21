@@ -58,10 +58,10 @@ func (this *DAPoSService) SynchronizeGrpc(constext context.Context, request *pro
 				return err
 			}
 			keyString := string(key)
-			//fmt.Printf("Key: %s\n", keyString)
-			if !strings.HasPrefix(keyString, "table-") && !strings.HasPrefix(keyString, "key-") { //&& !strings.HasPrefix(keyString, "AccountState-") {
+			if !strings.HasPrefix(keyString, "table-") && !strings.HasPrefix(keyString, "key-") && !strings.HasPrefix(keyString, "AccountState-") {
 				continue
 			}
+			//fmt.Printf("Key: %s\n", keyString)
 			if i < request.Index {
 				i++
 				continue
@@ -185,13 +185,16 @@ func (this *DAPoSService) peerGossipGrpc(node types.Node, gossip *types.Gossip) 
 	response, err := client.GossipGrpc(contextWithTimeout, &proto.Request{Payload: gossip.String()})
 	if err != nil {
 		utils.Error(fmt.Sprintf("cannot connect to node [host=%s, port=%d]", node.GrpcEndpoint.Host, node.GrpcEndpoint.Port), err)
-		//txn := services.NewTxn(true)
-		//defer txn.Discard()
-		//
-		//unsetErr := node.Unset(txn, services.GetCache())
-		//if unsetErr != nil {
-		//	utils.Error(unsetErr)
-		//}
+
+		txn := services.NewTxn(true)
+		defer txn.Discard()
+		node.Status = types.StatusNodeUnavailable
+		node.StatusTime = time.Now()
+
+		setErr := node.Set(txn, services.GetCache())
+		if setErr != nil {
+			utils.Error(setErr)
+		}
 		return nil, err
 	}
 	remoteGossip, err := types.ToGossipFromJson([]byte(response.Payload))

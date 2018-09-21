@@ -212,6 +212,11 @@ func (this *DAPoSService) gossipWorker() {
 				node := this.getRandomDelegate(gossip, delegateNodes)
 				if node == nil {
 					utils.Warn("did not find any delegates to rumor with")
+
+					receipt := types.NewReceipt(gossip.Transaction.Hash)
+					receipt.Status = types.StatusCouldNotReachConsensus
+					receipt.Cache(services.GetCache())
+
 					this.gossipChan <- gossip
 					return
 				}
@@ -238,7 +243,7 @@ func (this *DAPoSService) getRandomDelegate(gossip *types.Gossip, delegateNodes 
 	// Get delegates that have not rumored?
 	delegatesNotRumored := make([]*types.Node, 0)
 	for _, node := range delegateNodes {
-		if gossip.ContainsRumor(node.Address) || node.Address == disgover.GetDisGoverService().ThisNode.Address {
+		if gossip.ContainsRumor(node.Address) || node.Address == disgover.GetDisGoverService().ThisNode.Address || !node.IsAvailable() {
 			continue
 		}
 		delegatesNotRumored = append(delegatesNotRumored, node)
@@ -250,6 +255,9 @@ func (this *DAPoSService) getRandomDelegate(gossip *types.Gossip, delegateNodes 
 	// Find random delegate.
 	rand.Seed(time.Now().UTC().UnixNano())
 	index := rand.Intn(len(delegatesNotRumored))
+	for _, d := range delegatesNotRumored {
+		fmt.Printf("Available: %s", d.GrpcEndpoint.Host)
+	}
 	return delegatesNotRumored[index]
 }
 
