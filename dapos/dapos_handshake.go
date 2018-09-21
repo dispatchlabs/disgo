@@ -92,26 +92,6 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 	return types.NewResponseWithStatus(types.StatusPending, "Pending")
 }
 
-// Temp_ProcessTransaction -
-func (this *DAPoSService) Temp_ProcessTransaction(transaction *types.Transaction) *types.Response {
-	// go func(tx *types.Transaction) {
-
-	// Cache receipt.
-	receipt := types.NewReceipt(transaction.Hash)
-	receipt.Cache(services.GetCache())
-
-	// Cache gossip with my rumor.
-	gossip := types.NewGossip(*transaction)
-	rumor := types.NewRumor(types.GetAccount().PrivateKey, types.GetAccount().Address, transaction.Hash)
-	gossip.Rumors = append(gossip.Rumors, *rumor)
-	gossip.Cache(services.GetCache())
-
-	this.gossipChan <- gossip
-
-	return types.NewResponseWithStatus(types.StatusPending, "Pending")
-	// }(transaction)
-}
-
 // synchronizeGossip
 func (this *DAPoSService) synchronizeGossip(gossip *types.Gossip) (*types.Gossip, error) {
 
@@ -373,9 +353,32 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			return
 		}
 
-		// Persist contract account.
-		contractAccount := &types.Account{Address: hex.EncodeToString(dvmResult.ContractAddress[:]), Balance: big.NewInt(0), TransactionHash: transaction.Hash, Updated: now, Created: now}
-		err = contractAccount.Persist(txn)
+		// Update contract account.
+		smartContractAddress := hex.EncodeToString(dvmResult.ContractAddress[:])
+		smartContractAccount, err := types.ToAccountByAddress(txn, smartContractAddress)
+		if err != nil {
+			if err == badger.ErrKeyNotFound {
+				smartContractAccount = &types.Account{
+					Address:         smartContractAddress,
+					Balance:         big.NewInt(0),
+					TransactionHash: transaction.Hash,
+					Updated:         now,
+					Created:         now,
+				}
+			} else {
+				utils.Error(err)
+				receipt.Status = types.StatusInternalError
+				receipt.HumanReadableStatus = err.Error()
+				receipt.Cache(services.GetCache())
+				return
+			}
+		} else {
+			smartContractAccount.TransactionHash = transaction.Hash
+		}
+
+		// smartContractTxn := services.NewTxn(true)
+		// defer smartContractTxn.Commit(nil)
+		err = smartContractAccount.Persist(txn)
 		if err != nil {
 			utils.Error(err)
 			receipt.Status = types.StatusInternalError
@@ -383,8 +386,9 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			receipt.Cache(services.GetCache())
 			return
 		}
-		receipt.ContractAddress = contractAccount.Address
-		utils.Info(fmt.Sprintf("deployed contract [hash=%s, contractAddress=%s]", transaction.Hash, contractAccount.Address))
+
+		receipt.ContractAddress = smartContractAddress
+		utils.Info(fmt.Sprintf("deployed contract [hash=%s, contractAddress=%s]", transaction.Hash, smartContractAddress))
 		break
 	case types.TypeExecuteSmartContract:
 
@@ -551,4 +555,19 @@ func processDVMResult(transaction *types.Transaction, dvmResult *dvm.DVMResult, 
 	}
 
 	return errorToReturn
+}
+
+func getAccountFromBadgerByAddress(address string) (*types.Account, error) {
+	utils.Debug(fmt.Sprintf("toAccountByAddress: %s", address))
+
+	txn := services.NewTxn(true)
+	defer txn.Discard()
+
+	account, err := types.ToAccountByAddress(txn, address)
+	if err != nil {
+		utils.Error(fmt.Sprintf("toAccountByAddress: %v", err))
+		return nil, err
+	}
+
+	return account, nil
 }

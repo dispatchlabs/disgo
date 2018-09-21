@@ -18,10 +18,12 @@
 package state
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/services"
@@ -487,7 +489,11 @@ func (self *StateDB) createObject(addr crypto.AddressBytes) (newobj, prev *state
 	prev = self.getStateObject(addr)
 
 	// BadgerDatabase-look for Existing Account in Badger
-	var account = dispatTypes.Account{}
+	now := time.Now()
+	var account = dispatTypes.Account{
+		Updated: now,
+		Created: now,
+	}
 	if prev == nil {
 		// var receipt = dapos.DAPoSService().GetAccount(crypto.EncodeNo0x(addr))
 		// account = dispatTypes.Account.(receipt.Data)
@@ -498,22 +504,30 @@ func (self *StateDB) createObject(addr crypto.AddressBytes) (newobj, prev *state
 		if err == nil {
 			account = *a
 		} else {
-			account.Address = crypto.EncodeNo0x(addr.Bytes())
-
 			txn := services.NewTxn(true)
-			defer txn.Commit(nil)
+			defer txn.Discard()
 
+			account.Address = hex.EncodeToString(addr.Bytes()) // crypto.EncodeNo0x(addr.Bytes())
 			account.Balance = common.Big0
 			account.Persist(txn)
+
+			err := txn.Commit(nil)
+			if err != nil {
+				utils.Error(err)
+			}
 		}
 	} else {
-		account.Address = crypto.EncodeNo0x(addr.Bytes())
-
 		txn := services.NewTxn(true)
-		defer txn.Commit(nil)
+		defer txn.Discard()
 
+		account.Address = hex.EncodeToString(addr.Bytes()) // crypto.EncodeNo0x(addr.Bytes())
 		account.Balance = common.Big0
 		account.Persist(txn)
+
+		err := txn.Commit(nil)
+		if err != nil {
+			utils.Error(err)
+		}
 	}
 
 	newobj = newStateObject(self, addr, account)
@@ -766,10 +780,16 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root crypto.HashBytes, err er
 			s.updateStateObject(stateObject)
 
 			txn := services.NewTxn(true)
-			defer txn.Commit(nil)
+			defer txn.Discard()
+
 			stateObject.account.Persist(txn)
+			err := txn.Commit(nil)
+			if err != nil {
+				utils.Error(err)
+			}
+
+			delete(s.stateObjectsDirty, addr)
 		}
-		delete(s.stateObjectsDirty, addr)
 	}
 	// Write trie changes.
 	root, err = s.trie.Commit(func(leaf []byte, parent crypto.HashBytes) error {
