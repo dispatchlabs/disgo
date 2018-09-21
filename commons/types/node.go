@@ -40,7 +40,7 @@ func (this Node) IsAvailable() bool {
 	result := true
 	if this.Status == StatusNodeUnavailable {
 		delta := time.Now().Sub(this.StatusTime)
-		if delta.Seconds() < float64(5.0) {
+		if delta.Seconds() < UnavailableNodeTimeout {
 			result = false
 		}
 	}
