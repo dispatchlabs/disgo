@@ -53,6 +53,8 @@ const (
 	StatusJsonParseError               = "StatusJsonParseError"
 	StatusInternalError                = "InternalError"
 	StatusUnavailableFeature           = "UnavailableFeature"
+	StatusNodeUnavailable              = "NodeUnavailable"
+	StatusCouldNotReachConsensus       = "CouldNotReachConsensus"
 )
 
 const (
