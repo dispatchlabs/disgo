@@ -66,7 +66,7 @@ func (this *DAPoSService) SynchronizeGrpc(constext context.Context, request *pro
 				i++
 				continue
 			}
-			items = append(items, &proto.Item{Key: keyString, Value: string(value)})
+			items = append(items, &proto.Item{Key: keyString, Value: value})
 			i++
 			if len(items) == 50 {
 				break
@@ -126,7 +126,7 @@ func (this *DAPoSService) peerSynchronize() {
 				break
 			}
 			for _, item := range response.Items {
-				err = txn.Set([]byte(item.Key), []byte(item.Value))
+				err = txn.Set([]byte(item.Key), item.Value)
 				if err != nil {
 					utils.Error(err)
 				}
