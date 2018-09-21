@@ -218,12 +218,12 @@ func ToTransactions(txn *badger.Txn) ([]*Transaction, error) {
 	return transactions, nil
 }
 
-func TransactionPaging(txn *badger.Txn, startingHash string, page, pageSize int) ([]*Transaction, error) {
+func TransactionPaging(txn *badger.Txn, startingHash string, page, pageSize int) ([]*Transaction, *PagingResult, error) {
 	if pageSize <= 0 || pageSize > 100 {
-		return nil, ErrInvalidRequestPageSize
+		return nil, nil, ErrInvalidRequestPageSize
 	}
 	if page <= 0 {
-		return nil, ErrInvalidRequestPage
+		return nil, nil, ErrInvalidRequestPage
 	}
 
 	defer txn.Discard()
@@ -232,61 +232,89 @@ func TransactionPaging(txn *badger.Txn, startingHash string, page, pageSize int)
 	opts := badger.DefaultIteratorOptions
 	opts.PrefetchValues = false
 	iterator := txn.NewIterator(opts)
-	prefix := []byte(fmt.Sprintf("table-transaction-time-"))
+	prefix := []byte(fmt.Sprintf("key-transaction-time-"))
 	timestamps := make([]string, 0)
 	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
 		item := iterator.Item()
 		timestamps = append(timestamps, string(item.Key()))
 	}
 	iterator.Close()
-	// Sort the string array; which will result in sorting by timestamp, hash (asc)
-	sort.Strings(timestamps)
+
+	// Create a transactions collection
+	transactions := make([]*Transaction, 0)
 
 	// Capture the total number of items
 	totalCount := len(timestamps)
 
+	// utils.Info(fmt.Sprintf("totalCount (max) = %d", totalCount))
+
+	if totalCount == 0 {
+		return transactions, &PagingResult{ totalCount, "" }, nil
+	}
+
+	// Sort the string array; which will result in sorting by timestamp, hash (asc)
+	sort.Strings(timestamps)
+
 	// Iterate over the strings
 	idx := 0
-	for idx, key := range timestamps {
+	found := false
+	for _, key := range timestamps {
 		// extract the hash from the key
 		k := strings.Split(key, "-")
 		hash := k[4]
+
 		// If no startingHash provided, use the first value
 		if startingHash == "" {
 			startingHash = hash
 		}
 		// If we found the startingHash, idx will contain the starting index for pagination, counting, etc.
 		if startingHash == hash {
+			found = true
 			break
 		}
-		// If we reach the end without finding startingHash, throw an error
-		if idx + 1 == totalCount {
-			return nil, ErrInvalidRequestStartingHash
-		}
+		idx++
+	}
+	// utils.Info(fmt.Sprintf("startingHash = %s", startingHash))
+	// utils.Info(fmt.Sprintf("idx (starting) = %d", idx))
+	
+	// If we reach the end without finding startingHash, throw an error
+	if found == false {
+		return nil, nil, ErrInvalidRequestStartingHash
 	}
 
 	// Reduce the total count by the starting index
-	totalCount =- idx
+	totalCount = totalCount - idx
 	// Shift idx forward by desired page
 	idx = idx + (page * pageSize) - pageSize
 
-	// Create a transactions collection equal to the desired page size
-	transactions := make([]*Transaction, pageSize)
+	// utils.Info(fmt.Sprintf("totalCount (paged) = %d", totalCount))
+	// utils.Info(fmt.Sprintf("idx (paged - page=%d, pageSize=%d) = %d", page, pageSize, idx))
 
 	for i := 0; i <= pageSize; i++ {
-		if (timestamps[idx] != "") {
-			k := strings.Split(timestamps[idx], "-")
-			hash := k[4]
-			tx, err := ToTransactionByKey(txn, []byte(fmt.Sprintf("table-transaction-%s", hash)))
-			if err != nil {
-				transactions[i] = tx
+		if totalCount > idx {
+			// utils.Info(fmt.Sprintf("timestamps[idx] = %s", timestamps[idx]))
+			if (timestamps[idx] != "") {
+				k := strings.Split(timestamps[idx], "-")
+				hash := k[4]
+				utils.Info(fmt.Sprintf("hash = %s", hash))
+				tx, err := ToTransactionByKey(txn, []byte(fmt.Sprintf("table-transaction-%s", hash)))
+				if err != nil {
+					utils.Warn(fmt.Sprintf("Could not find transaction key: table-transaction-%s", hash, err))
+				}
+				if tx != nil {
+					transactions = append(transactions, tx)
+				} else {
+					transactions = append(transactions, nil)
+				}
+				idx++
+			} else {
+				break
 			}
-			idx++
 		} else {
-			break
+			continue
 		}
 	}
-	return transactions, nil;
+	return transactions, &PagingResult{ totalCount, startingHash }, nil;
 }
 
 // ToTransactionsByFromAddress
