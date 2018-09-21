@@ -276,7 +276,7 @@ func TransactionPaging(txn *badger.Txn, startingHash string, page, pageSize int)
 	}
 	// utils.Info(fmt.Sprintf("startingHash = %s", startingHash))
 	// utils.Info(fmt.Sprintf("idx (starting) = %d", idx))
-	
+
 	// If we reach the end without finding startingHash, throw an error
 	if found == false {
 		return nil, nil, ErrInvalidRequestStartingHash
@@ -299,7 +299,7 @@ func TransactionPaging(txn *badger.Txn, startingHash string, page, pageSize int)
 				utils.Info(fmt.Sprintf("hash = %s", hash))
 				tx, err := ToTransactionByKey(txn, []byte(fmt.Sprintf("table-transaction-%s", hash)))
 				if err != nil {
-					utils.Warn(fmt.Sprintf("Could not find transaction key: table-transaction-%s", hash, err))
+					utils.Warn(fmt.Sprintf("Could not find transaction key: table-transaction-%s", hash), err)
 				}
 				if tx != nil {
 					transactions = append(transactions, tx)
