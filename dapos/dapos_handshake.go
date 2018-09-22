@@ -278,6 +278,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	utils.Debug("executeTransaction --> ", transaction.Hash)
 	services.Lock(transaction.Hash)
 	defer services.Unlock(transaction.Hash)
+
 	txn := services.NewTxn(true)
 	defer txn.Discard()
 
@@ -355,36 +356,12 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 
 		// Update contract account.
 		smartContractAddress := hex.EncodeToString(dvmResult.ContractAddress[:])
-		smartContractAccount, err := types.ToAccountByAddress(txn, smartContractAddress)
-		if err != nil {
-			if err == badger.ErrKeyNotFound {
-				smartContractAccount = &types.Account{
-					Address:         smartContractAddress,
-					Balance:         big.NewInt(0),
-					TransactionHash: transaction.Hash,
-					Updated:         now,
-					Created:         now,
-				}
-			} else {
-				utils.Error(err)
-				receipt.Status = types.StatusInternalError
-				receipt.HumanReadableStatus = err.Error()
-				receipt.Cache(services.GetCache())
-				return
+		for _, stateObject := range dvmResult.StorageState.EthStateDB.StateObjects {
+			if stateObject.Account().Address == smartContractAddress {
+				stateObject.Account().TransactionHash = transaction.Hash
+				stateObject.Account().Persist(txn)
+				break
 			}
-		} else {
-			smartContractAccount.TransactionHash = transaction.Hash
-		}
-
-		// smartContractTxn := services.NewTxn(true)
-		// defer smartContractTxn.Commit(nil)
-		err = smartContractAccount.Persist(txn)
-		if err != nil {
-			utils.Error(err)
-			receipt.Status = types.StatusInternalError
-			receipt.HumanReadableStatus = err.Error()
-			receipt.Cache(services.GetCache())
-			return
 		}
 
 		receipt.ContractAddress = smartContractAddress

@@ -386,7 +386,7 @@ func (s *stateObject) deepCopy(db *StateDB) *stateObject {
 //
 // Attribute accessors
 //
-func (s stateObject) Account() *types.Account {
+func (s *stateObject) Account() *types.Account {
 	// var accountFromBadger = getAccountByAddressFromBadger(s.account.Address)
 	utils.Debug(fmt.Sprintf("stateObject-Account: %s -> %v", s.account.Address, s.account.Balance))
 
