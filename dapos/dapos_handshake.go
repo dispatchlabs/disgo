@@ -345,7 +345,6 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	// Find/create fromAccount?
 	now := time.Now()
 	fromAccount, err := types.ToAccountByAddress(txn, transaction.From)
-	minHertzUsed += params.CallNewAccountGas
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
 			fromAccount = &types.Account{Address: transaction.From, Balance: big.NewInt(0), Created: now}
@@ -356,6 +355,8 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			receipt.Cache(services.GetCache())
 			return
 		}
+		minHertzUsed += params.CallNewAccountGas
+
 	}
 
 	// Find/create toAccount?
