@@ -29,6 +29,7 @@ type Response struct {
 	HumanReadableStatus string
 	Data                interface{}
 	Created             time.Time
+	Paging							interface{}
 }
 
 // UnmarshalJSON
@@ -54,6 +55,9 @@ func (this *Response) UnmarshalJSON(bytes []byte) error {
 		}
 		this.Created = created
 	}
+	if jsonMap["paging"] != nil {
+		this.Paging = jsonMap["paging"]
+	}
 	return nil
 }
 
@@ -64,11 +68,13 @@ func (this Response) MarshalJSON() ([]byte, error) {
 		HumanReadableStatus string      `json:"humanReadableStatus,omitempty"`
 		Data                interface{} `json:"data,omitempty"`
 		Created             time.Time   `json:"created"`
+		Paging 		          interface{} `json:"paging,omitempty"`
 	}{
 		Status:              this.Status,
 		HumanReadableStatus: this.HumanReadableStatus,
 		Data:                this.Data,
 		Created:             this.Created,
+		Paging:							 this.Paging,
 	})
 }
 

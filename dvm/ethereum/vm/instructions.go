@@ -17,6 +17,7 @@
 package vm
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
@@ -41,6 +42,8 @@ var (
 )
 
 func opAdd(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	x, y := stack.pop(), stack.peek()
 	math.U256(y.Add(x, y))
 
@@ -49,6 +52,8 @@ func opAdd(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *
 }
 
 func opSub(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	x, y := stack.pop(), stack.peek()
 	math.U256(y.Sub(x, y))
 
@@ -57,6 +62,8 @@ func opSub(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *
 }
 
 func opMul(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	x, y := stack.pop(), stack.pop()
 	stack.push(math.U256(x.Mul(x, y)))
 
@@ -66,6 +73,8 @@ func opMul(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *
 }
 
 func opDiv(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	x, y := stack.pop(), stack.peek()
 	if y.Sign() != 0 {
 		math.U256(y.Div(x, y))
@@ -77,6 +86,8 @@ func opDiv(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *
 }
 
 func opSdiv(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	x, y := math.S256(stack.pop()), math.S256(stack.pop())
 	res := interpreter.intPool.getZero()
 
@@ -96,6 +107,8 @@ func opSdiv(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory 
 }
 
 func opMod(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	x, y := stack.pop(), stack.pop()
 	if y.Sign() == 0 {
 		stack.push(x.SetUint64(0))
@@ -107,6 +120,8 @@ func opMod(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *
 }
 
 func opSmod(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	x, y := math.S256(stack.pop()), math.S256(stack.pop())
 	res := interpreter.intPool.getZero()
 
@@ -126,6 +141,8 @@ func opSmod(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory 
 }
 
 func opExp(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	base, exponent := stack.pop(), stack.pop()
 	stack.push(math.Exp(base, exponent))
 
@@ -135,6 +152,8 @@ func opExp(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *
 }
 
 func opSignExtend(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	back := stack.pop()
 	if back.Cmp(big.NewInt(31)) < 0 {
 		bit := uint(back.Uint64()*8 + 7)
@@ -155,12 +174,16 @@ func opSignExtend(pc *uint64, interpreter *EVMInterpreter, contract *Contract, m
 }
 
 func opNot(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	x := stack.peek()
 	math.U256(x.Not(x))
 	return nil, nil
 }
 
 func opLt(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	x, y := stack.pop(), stack.peek()
 	if x.Cmp(y) < 0 {
 		y.SetUint64(1)
@@ -172,6 +195,8 @@ func opLt(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *M
 }
 
 func opGt(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	x, y := stack.pop(), stack.peek()
 	if x.Cmp(y) > 0 {
 		y.SetUint64(1)
@@ -183,6 +208,8 @@ func opGt(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *M
 }
 
 func opSlt(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	x, y := stack.pop(), stack.peek()
 
 	xSign := x.Cmp(tt255)
@@ -207,6 +234,8 @@ func opSlt(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *
 }
 
 func opSgt(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	x, y := stack.pop(), stack.peek()
 
 	xSign := x.Cmp(tt255)
@@ -231,6 +260,8 @@ func opSgt(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *
 }
 
 func opEq(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	x, y := stack.pop(), stack.peek()
 	if x.Cmp(y) == 0 {
 		y.SetUint64(1)
@@ -242,6 +273,8 @@ func opEq(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *M
 }
 
 func opIszero(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	x := stack.peek()
 	if x.Sign() > 0 {
 		x.SetUint64(0)
@@ -252,6 +285,8 @@ func opIszero(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memor
 }
 
 func opAnd(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	x, y := stack.pop(), stack.pop()
 	stack.push(x.And(x, y))
 
@@ -260,6 +295,8 @@ func opAnd(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *
 }
 
 func opOr(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	x, y := stack.pop(), stack.peek()
 	y.Or(x, y)
 
@@ -268,6 +305,8 @@ func opOr(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *M
 }
 
 func opXor(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	x, y := stack.pop(), stack.peek()
 	y.Xor(x, y)
 
@@ -276,6 +315,8 @@ func opXor(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *
 }
 
 func opByte(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	th, val := stack.pop(), stack.peek()
 	if th.Cmp(common.Big32) < 0 {
 		b := math.Byte(val, 32, int(th.Int64()))
@@ -288,6 +329,8 @@ func opByte(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory 
 }
 
 func opAddmod(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	x, y, z := stack.pop(), stack.pop(), stack.pop()
 	if z.Cmp(bigZero) > 0 {
 		x.Add(x, y)
@@ -301,6 +344,8 @@ func opAddmod(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memor
 }
 
 func opMulmod(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	x, y, z := stack.pop(), stack.pop(), stack.pop()
 	if z.Cmp(bigZero) > 0 {
 		x.Mul(x, y)
@@ -317,6 +362,8 @@ func opMulmod(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memor
 // The SHL instruction (shift left) pops 2 values from the stack, first arg1 and then arg2,
 // and pushes on the stack arg2 shifted to the left by arg1 number of bits.
 func opSHL(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	// Note, second operand is left in the stack; accumulate result into it, and no need to push it afterwards
 	shift, value := math.U256(stack.pop()), math.U256(stack.peek())
 	defer interpreter.intPool.put(shift) // First operand back into the pool
@@ -335,6 +382,8 @@ func opSHL(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *
 // The SHR instruction (logical shift right) pops 2 values from the stack, first arg1 and then arg2,
 // and pushes on the stack arg2 shifted to the right by arg1 number of bits with zero fill.
 func opSHR(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	// Note, second operand is left in the stack; accumulate result into it, and no need to push it afterwards
 	shift, value := math.U256(stack.pop()), math.U256(stack.peek())
 	defer interpreter.intPool.put(shift) // First operand back into the pool
@@ -353,6 +402,8 @@ func opSHR(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *
 // The SAR instruction (arithmetic shift right) pops 2 values from the stack, first arg1 and then arg2,
 // and pushes on the stack arg2 shifted to the right by arg1 number of bits with sign extension.
 func opSAR(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	// Note, S256 returns (potentially) a new bigint, so we're popping, not peeking this one
 	shift, value := math.U256(stack.pop()), math.S256(stack.pop())
 	defer interpreter.intPool.put(shift) // First operand back into the pool
@@ -374,6 +425,8 @@ func opSAR(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *
 }
 
 func opSha3(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	offset, size := stack.pop(), stack.pop()
 	data := memory.Get(offset.Int64(), size.Int64())
 	hash := crypto.Keccak256(data)
@@ -389,51 +442,65 @@ func opSha3(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory 
 }
 
 func opAddress(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	stack.push(contract.Address().Big())
 	return nil, nil
 }
 
 func opBalance(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	traceOpcode(pc, interpreter, contract, memory, stack)
-	memory.Print()
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+	//memory.Print()
 
 	slot := stack.peek()
 
 	// DISPATCH-DEBUG
 	b := interpreter.evm.StateDB.GetBalance(common.BigToAddress(slot))
 	utils.Debug(fmt.Sprintf("%v %v %v", slot.Uint64(), crypto2.Encode(common.BigToAddress(slot).Bytes()), b.Uint64()))
-	memory.Print()
+	//memory.Print()
 
 	slot.Set(interpreter.evm.StateDB.GetBalance(common.BigToAddress(slot)))
 	return nil, nil
 }
 
 func opOrigin(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	stack.push(interpreter.evm.Origin.Big())
 	return nil, nil
 }
 
 func opCaller(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	stack.push(contract.Caller().Big())
 	return nil, nil
 }
 
 func opCallValue(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	stack.push(interpreter.intPool.get().Set(contract.value))
 	return nil, nil
 }
 
 func opCallDataLoad(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	stack.push(interpreter.intPool.get().SetBytes(getDataBig(contract.Input, stack.pop(), big32)))
 	return nil, nil
 }
 
 func opCallDataSize(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	stack.push(interpreter.intPool.get().SetInt64(int64(len(contract.Input))))
 	return nil, nil
 }
 
 func opCallDataCopy(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	var (
 		memOffset  = stack.pop()
 		dataOffset = stack.pop()
@@ -446,11 +513,15 @@ func opCallDataCopy(pc *uint64, interpreter *EVMInterpreter, contract *Contract,
 }
 
 func opReturnDataSize(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	stack.push(interpreter.intPool.get().SetUint64(uint64(len(interpreter.returnData))))
 	return nil, nil
 }
 
 func opReturnDataCopy(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	var (
 		memOffset  = stack.pop()
 		dataOffset = stack.pop()
@@ -469,6 +540,7 @@ func opReturnDataCopy(pc *uint64, interpreter *EVMInterpreter, contract *Contrac
 }
 
 func opExtCodeSize(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
 
 	// ORIGINAL
 	// slot := stack.peek()
@@ -496,6 +568,8 @@ func opExtCodeSize(pc *uint64, interpreter *EVMInterpreter, contract *Contract, 
 }
 
 func opCodeSize(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	l := interpreter.intPool.get().SetInt64(int64(len(contract.Code)))
 	stack.push(l)
 
@@ -503,6 +577,8 @@ func opCodeSize(pc *uint64, interpreter *EVMInterpreter, contract *Contract, mem
 }
 
 func opCodeCopy(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	var (
 		memOffset  = stack.pop()
 		codeOffset = stack.pop()
@@ -516,6 +592,8 @@ func opCodeCopy(pc *uint64, interpreter *EVMInterpreter, contract *Contract, mem
 }
 
 func opExtCodeCopy(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	var (
 		addr       = common.BigToAddress(stack.pop())
 		memOffset  = stack.pop()
@@ -556,17 +634,23 @@ func opExtCodeCopy(pc *uint64, interpreter *EVMInterpreter, contract *Contract, 
 //   (6) Caller tries to get the code hash for an account which is marked as deleted,
 // this account should be regarded as a non-existent account and zero should be returned.
 func opExtCodeHash(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	slot := stack.peek()
 	slot.SetBytes(interpreter.evm.StateDB.GetCodeHash(common.BigToAddress(slot)).Bytes())
 	return nil, nil
 }
 
 func opGasprice(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	stack.push(interpreter.intPool.get().Set(interpreter.evm.GasPrice))
 	return nil, nil
 }
 
 func opBlockhash(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	num := stack.pop()
 
 	n := interpreter.intPool.get().Sub(interpreter.evm.BlockNumber, common.Big257)
@@ -580,36 +664,50 @@ func opBlockhash(pc *uint64, interpreter *EVMInterpreter, contract *Contract, me
 }
 
 func opCoinbase(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	stack.push(interpreter.evm.Coinbase.Big())
 	return nil, nil
 }
 
 func opTimestamp(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	stack.push(math.U256(interpreter.intPool.get().Set(interpreter.evm.Time)))
 	return nil, nil
 }
 
 func opNumber(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	stack.push(math.U256(interpreter.intPool.get().Set(interpreter.evm.BlockNumber)))
 	return nil, nil
 }
 
 func opDifficulty(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	stack.push(math.U256(interpreter.intPool.get().Set(interpreter.evm.Difficulty)))
 	return nil, nil
 }
 
 func opGasLimit(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	stack.push(math.U256(interpreter.intPool.get().SetUint64(interpreter.evm.GasLimit)))
 	return nil, nil
 }
 
 func opPop(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	interpreter.intPool.put(stack.pop())
 	return nil, nil
 }
 
 func opMload(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	offset := stack.pop()
 	val := interpreter.intPool.get().SetBytes(memory.Get(offset.Int64(), 32))
 	stack.push(val)
@@ -619,15 +717,15 @@ func opMload(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory
 }
 
 func opMstore(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	traceOpcode(pc, interpreter, contract, memory, stack)
-	memory.Print()
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+	//memory.Print()
 
 	// pop value of the stack
 	mStart, val := stack.pop(), stack.pop()
 	memory.Set32(mStart.Uint64(), val)
 
 	utils.Debug(fmt.Sprintf("%v %v", mStart.Uint64(), val))
-	memory.Print()
+	//memory.Print()
 
 	interpreter.intPool.put(mStart, val)
 
@@ -635,18 +733,22 @@ func opMstore(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memor
 }
 
 func opMstore8(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	traceOpcode(pc, interpreter, contract, memory, stack)
-	memory.Print()
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+	//memory.Print()
 
 	off, val := stack.pop().Int64(), stack.pop().Int64()
 	memory.store[off] = byte(val & 0xff)
 
-	memory.Print()
+	//memory.Print()
 
 	return nil, nil
 }
 
 func opSload(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	loc := stack.peek()
 	val := interpreter.evm.StateDB.GetState(contract.Address(), crypto2.BigToHash(loc))
 	loc.SetBytes(val.Bytes())
@@ -654,6 +756,8 @@ func opSload(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory
 }
 
 func opSstore(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	loc := crypto2.BigToHash(stack.pop())
 	val := stack.pop()
 	interpreter.evm.StateDB.SetState(contract.Address(), loc, crypto2.BigToHash(val))
@@ -663,6 +767,8 @@ func opSstore(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memor
 }
 
 func opJump(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	pos := stack.pop()
 	if !contract.jumpdests.has(contract.CodeHash, contract.Code, pos) {
 		nop := contract.GetOp(pos.Uint64())
@@ -675,6 +781,8 @@ func opJump(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory 
 }
 
 func opJumpi(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	pos, cond := stack.pop(), stack.pop()
 	if cond.Sign() != 0 {
 		if !contract.jumpdests.has(contract.CodeHash, contract.Code, pos) {
@@ -691,25 +799,35 @@ func opJumpi(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory
 }
 
 func opJumpdest(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	return nil, nil
 }
 
 func opPc(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	stack.push(interpreter.intPool.get().SetUint64(*pc))
 	return nil, nil
 }
 
 func opMsize(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	stack.push(interpreter.intPool.get().SetInt64(int64(memory.Len())))
 	return nil, nil
 }
 
 func opGas(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	stack.push(interpreter.intPool.get().SetUint64(contract.Gas))
 	return nil, nil
 }
 
 func opCreate(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	var (
 		value        = stack.pop()
 		offset, size = stack.pop(), stack.pop()
@@ -743,6 +861,8 @@ func opCreate(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memor
 }
 
 func opCreate2(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	var (
 		endowment    = stack.pop()
 		offset, size = stack.pop(), stack.pop()
@@ -771,6 +891,8 @@ func opCreate2(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memo
 }
 
 func opCall(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	// Pop gas. The actual gas in in interpreter.evm.callGasTemp.
 	interpreter.intPool.put(stack.pop())
 	gas := interpreter.evm.callGasTemp
@@ -828,6 +950,8 @@ func opCall(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory 
 }
 
 func opCallCode(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	// Pop gas. The actual gas is in interpreter.evm.callGasTemp.
 	interpreter.intPool.put(stack.pop())
 	gas := interpreter.evm.callGasTemp
@@ -857,6 +981,8 @@ func opCallCode(pc *uint64, interpreter *EVMInterpreter, contract *Contract, mem
 }
 
 func opDelegateCall(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	// Pop gas. The actual gas is in interpreter.evm.callGasTemp.
 	interpreter.intPool.put(stack.pop())
 	gas := interpreter.evm.callGasTemp
@@ -882,6 +1008,8 @@ func opDelegateCall(pc *uint64, interpreter *EVMInterpreter, contract *Contract,
 }
 
 func opStaticCall(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	// Pop gas. The actual gas is in interpreter.evm.callGasTemp.
 	interpreter.intPool.put(stack.pop())
 	gas := interpreter.evm.callGasTemp
@@ -907,12 +1035,12 @@ func opStaticCall(pc *uint64, interpreter *EVMInterpreter, contract *Contract, m
 }
 
 func opReturn(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	traceOpcode(pc, interpreter, contract, memory, stack)
+	//traceOpcode(pc, interpreter, contract, memory, stack)
 
 	offset, size := stack.pop(), stack.pop()
 
 	utils.Debug(fmt.Sprintf("%v %v", offset.Int64(), size.Int64()))
-	memory.Print()
+	//memory.Print()
 
 	ret := memory.GetPtr(offset.Int64(), size.Int64())
 
@@ -921,6 +1049,8 @@ func opReturn(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memor
 }
 
 func opRevert(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	offset, size := stack.pop(), stack.pop()
 	ret := memory.GetPtr(offset.Int64(), size.Int64())
 
@@ -929,10 +1059,14 @@ func opRevert(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memor
 }
 
 func opStop(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	return nil, nil
 }
 
 func opSuicide(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//traceOpcode(pc, interpreter, contract, memory, stack)
+
 	balance := interpreter.evm.StateDB.GetBalance(contract.Address())
 	interpreter.evm.StateDB.AddBalance(common.BigToAddress(stack.pop()), balance)
 
@@ -1021,5 +1155,6 @@ func traceOpcode(pc *uint64, interpreter *EVMInterpreter, contract *Contract, me
 
 	for index, val := range stack.data {
 		utils.Debug(fmt.Sprintf("DVM-traceOpcode: stack[%v]      -> %v", index, val))
+		utils.Debug(fmt.Sprintf("DVM-traceOpcode: stack[%v]      -> %s", index, hex.EncodeToString(val.Bytes())))
 	}
 }

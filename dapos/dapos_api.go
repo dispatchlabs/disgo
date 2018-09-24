@@ -179,7 +179,7 @@ func (this *DAPoSService) GetTransactions(page,size,start string) *types.Respons
 	// Delegate?
 	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
 
-		response.Data, err = types.TransactionPaging(txn, start,pageNumber,pageSize)
+		response.Data, response.Paging, err = types.TransactionPaging(txn, start,pageNumber,pageSize)
 		if err != nil {
 			response.Status = types.StatusInternalError
 			response.HumanReadableStatus = err.Error()
@@ -352,7 +352,7 @@ func (this *DAPoSService) GetGossips(page string) *types.Response {
 	return response
 }
 
-// GetAccount
+// GetGossip
 func (this *DAPoSService) GetGossip(hash string) *types.Response {
 	txn := services.NewTxn(true)
 	defer txn.Discard()
@@ -379,3 +379,4 @@ func (this *DAPoSService) GetGossip(hash string) *types.Response {
 
 	return response
 }
+
