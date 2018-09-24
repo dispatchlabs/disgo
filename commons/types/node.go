@@ -23,6 +23,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/patrickmn/go-cache"
 	"strings"
+	"time"
 )
 
 // Node - Is the DisGover's notion of what a node is
@@ -31,8 +32,20 @@ type Node struct {
 	GrpcEndpoint *Endpoint `json:"grpcEndpoint"`
 	HttpEndpoint *Endpoint `json:"httpEndpoint"`
 	Type         string    `json:"type,omitempty"`
+	Status       string    `json:"status,omitempty"`
+	StatusTime   time.Time `json:"statusTime,omitempty"`
 }
 
+func (this Node) IsAvailable() bool {
+	result := true
+	if this.Status == StatusNodeUnavailable {
+		delta := time.Now().Sub(this.StatusTime)
+		if delta.Seconds() < UnavailableNodeTimeout {
+			result = false
+		}
+	}
+	return result
+}
 // Key
 func (this Node) Key() string {
 	return fmt.Sprintf("table-node-%s", this.Address)

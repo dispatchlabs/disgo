@@ -29,6 +29,7 @@ const (
 	//GossipQueueTimeout = time.Second * 5
 	GossipTimeout = 1000 //1 second  //will continue to decrease until we find best value
 	TxFutureLimit = time.Minute * 3
+	UnavailableNodeTimeout = float64(time.Second * 5)
 )
 
 // Requests
@@ -53,6 +54,8 @@ const (
 	StatusJsonParseError               = "StatusJsonParseError"
 	StatusInternalError                = "InternalError"
 	StatusUnavailableFeature           = "UnavailableFeature"
+	StatusNodeUnavailable              = "NodeUnavailable"
+	StatusCouldNotReachConsensus       = "CouldNotReachConsensus"
 )
 
 const (
@@ -90,5 +93,6 @@ var (
 	ErrInvalidRequest         = errors.New("invalid request")
 	ErrInvalidRequestPage     = errors.New("invalid request Page")
 	ErrInvalidRequestPageSize = errors.New("invalid request Page Size")
+	ErrInvalidRequestStartingHash = errors.New("invalid request Starting Hash")
 	ErrInvalidRequestHash     = errors.New("invalid request Hash")
 )

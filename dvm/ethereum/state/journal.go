@@ -135,7 +135,7 @@ type (
 )
 
 func (ch createObjectChange) revert(s *StateDB) {
-	delete(s.stateObjects, ch.account)
+	delete(s.StateObjects, ch.account)
 	delete(s.stateObjectsDirty, ch.account)
 }
 

@@ -25,12 +25,14 @@ import (
 	"strings"
 	"sync"
 	"time"
+
 	"github.com/patrickmn/go-cache"
+
+	"math/big"
 
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/utils"
-	"math/big"
 )
 
 var accountInstance *Account
@@ -189,7 +191,6 @@ func (this Account) ToPrettyJson() string {
 	return string(bytes)
 }
 
-
 // GetAccount - Returns the singleton instance of the current account
 func GetAccount() *Account {
 	accountOnce.Do(func() {
@@ -277,27 +278,28 @@ func ToAccountsByName(name string, txn *badger.Txn) ([]*Account, error) {
 	}
 	return Accounts, nil
 }
-					//txn, start, pageNumber, pageSize
-func AccountPaging(txn *badger.Txn, startingHash string, page, pageSize int) ([]*Account, error){
+
+//txn, start, pageNumber, pageSize
+func AccountPaging(txn *badger.Txn, startingHash string, page, pageSize int) ([]*Account, error) {
 	var iteratorCount = 0
 	var firstItem int
-	if pageSize <= 0 || pageSize > 100{
+	if pageSize <= 0 || pageSize > 100 {
 		return nil, ErrInvalidRequestPageSize
 	}
 	if page <= 0 {
 		return nil, ErrInvalidRequestPage
-	}else{
+	} else {
 		firstItem = (page * pageSize) - (pageSize - 1)
 	}
 	var item []byte
 	prefix := []byte(fmt.Sprintf("table-account-"))
 	if startingHash != "" {
-		thing, err := ToAccountByAddress(txn,startingHash)
+		thing, err := ToAccountByAddress(txn, startingHash)
 		if err != nil {
 			return nil, ErrInvalidRequestHash
 		}
 		item = []byte(thing.Key())
-	} else{
+	} else {
 		item = prefix
 	}
 
@@ -323,7 +325,7 @@ func AccountPaging(txn *badger.Txn, startingHash string, page, pageSize int) ([]
 			}
 			Accounts = append(Accounts, Account)
 		}
-		if iteratorCount >= (firstItem+pageSize){
+		if iteratorCount >= (firstItem + pageSize) {
 			break
 		}
 	}

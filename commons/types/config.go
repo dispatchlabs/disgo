@@ -78,8 +78,6 @@ func ToConfigFromJson(payload []byte) (*Config, error) {
 func GetConfig() *Config {
 	configOnce.Do(func() {
 		configInstance = GetDefaultConfig()
-		temp, _ := json.MarshalIndent(configInstance, "", "   ")
-		fmt.Printf(string(temp))
 		var configFileName = utils.GetConfigDir() + string(os.PathSeparator) + "config.json"
 		if utils.Exists(configFileName) {
 			file, err := ioutil.ReadFile(configFileName)
@@ -106,6 +104,9 @@ func GetConfig() *Config {
 			utils.Info(fmt.Sprintf("generated default config file %s", configFileName))
 		}
 		utils.Info(fmt.Sprintf("node configuration: %s", configInstance.String()))
+		temp, _ := json.MarshalIndent(configInstance, "", "   ")
+		fmt.Printf(string(temp))
+
 	})
 
 	return configInstance
