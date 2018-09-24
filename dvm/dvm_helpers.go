@@ -40,11 +40,17 @@ func (self *DVMService) applyTransaction(tx *commonTypes.Transaction, stateHelpe
 		CanTransfer: ethereum.CanTransfer,
 		Transfer:    ethereum.Transfer,
 		GetHash:     func(uint64) crypto.HashBytes { return crypto.GetHashBytes(tx.Hash) },
+
 		// Message information
-		Origin:      crypto.GetAddressBytes(tx.From),
+		Origin:   crypto.GetAddressBytes(tx.From),
+		GasPrice: price,
+
+		// Block information
+		Coinbase:    crypto.GetAddressBytes(tx.From),
 		GasLimit:    vmstatehelperimplemtations.GasLimit.Uint64(),
-		GasPrice:    price,
-		BlockNumber: params.MainnetChainConfig.ByzantiumBlock, //the vm has a dependency on this..
+		BlockNumber: params.MainnetChainConfig.ByzantiumBlock, // the vm has a dependency on this
+		// Time: *big.Int                  // Provides information for TIME
+		// Difficulty  *big.Int            // Provides information for DIFFICULTY
 	}
 
 	// Prepare the ethState with transaction Hash so that it can be used in emitted logs
@@ -126,10 +132,17 @@ func (self *DVMService) call(tx *commonTypes.Transaction, callMsg ethTypes.Messa
 		CanTransfer: ethereum.CanTransfer,
 		Transfer:    ethereum.Transfer,
 		GetHash:     func(uint64) crypto.HashBytes { return crypto.GetHashBytes(tx.Hash) },
+
 		// Message information
-		Origin:      callMsg.From(),
-		GasPrice:    callMsg.GasPrice(),
-		BlockNumber: params.MainnetChainConfig.ByzantiumBlock, //the vm has a dependency on this..
+		Origin:   callMsg.From(),
+		GasPrice: callMsg.GasPrice(),
+
+		// Block information
+		Coinbase:    crypto.GetAddressBytes(tx.From),
+		GasLimit:    vmstatehelperimplemtations.GasLimit.Uint64(),
+		BlockNumber: params.MainnetChainConfig.ByzantiumBlock, // the vm has a dependency on this
+		// Time: *big.Int                  // Provides information for TIME
+		// Difficulty  *big.Int            // Provides information for DIFFICULTY
 	}
 
 	// The EVM should never be reused and is not thread safe.
