@@ -48,12 +48,15 @@ func NewRateLimit(address, txHash, page string, amount uint64) (*RateLimit, erro
 func (this *RateLimit) Set(txn *badger.Txn, cache *cache.Cache) error {
 	existing, err := GetAccountRateLimit(txn, cache, this.Address)
 	if err != nil {
-		utils.Error(err)
+		if err != badger.ErrKeyNotFound {
+			utils.Error(err)
+		}
 	}
 	if existing != nil {
 		existing.TxHashes = append(existing.TxHashes, this.TxRateLimit.TxHash)
 		this.Existing = existing
 	} else {
+		utils.Info("Adding new key for account: ", this.Address)
 		this.Existing.TxHashes = append(this.Existing.TxHashes, this.TxRateLimit.TxHash)
 	}
 
@@ -99,7 +102,7 @@ func (this RateLimit) getCurrentTTL() time.Duration {
 	}
 	nbrSeconds := math.Pow(float64(value), EXP_GROWTH)
 	ttl := time.Duration(nbrSeconds) * time.Second
-	utils.Debug("Current TTL = ", ttl.String())
+	utils.Info("Current TTL = ", ttl.String())
 	return ttl
 }
 
@@ -112,6 +115,7 @@ func (this *RateLimit) Merge() (uint64, error) {
 
 	res, err := m.Get()
 	if err != nil {
+		utils.Error("For Key: ", this.Page, err)
 		return 0, err
 	}
 	result := bytesToUint64(res)

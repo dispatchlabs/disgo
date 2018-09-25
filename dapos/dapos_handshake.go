@@ -435,7 +435,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			return
 		}
 		receipt.ContractAddress = contractAccount.Address
-		hertz = dvmResult.CumulativeHertzUsed
+		hertz = minHertzUsed + dvmResult.CumulativeHertzUsed
 		utils.Info(fmt.Sprintf("deployed contract [hash=%s, contractAddress=%s]", transaction.Hash, contractAccount.Address))
 		break
 	case types.TypeExecuteSmartContract:
