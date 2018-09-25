@@ -271,7 +271,7 @@ func TestSdiv(t *testing.T) {
 		{"0000000000000000000000000000000000000000000000000000000000000001", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
 		{"000000000000000000000000000000000000000000000000000000000000000f", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb"},
 		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "0000000000000000000000000000000000000000000000000000000000000005"},
-		{"f1", "fd", "0000000000000000000000000000000000000000000000000000000000000005"},
+		{"ff1", "fd", "0000000000000000000000000000000000000000000000000000000000000010"},
 	}
 	testTwoOperandOp(t, tests, nil, opSdiv)
 }
