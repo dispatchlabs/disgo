@@ -26,7 +26,6 @@ import (
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/gorilla/mux"
-	"encoding/hex"
 	"github.com/dispatchlabs/disgo/commons/helper"
 )
 
@@ -146,7 +145,7 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 	if transaction.Type == types.TypeExecuteSmartContract {
 		contractTx, err := types.ToTransactionByAddress(txn, transaction.To)
 
-		transaction.Abi = hex.EncodeToString([]byte(contractTx.Abi))
+		transaction.Abi = contractTx.Abi
 		if err != nil {
 			utils.Error(err)
 		}
