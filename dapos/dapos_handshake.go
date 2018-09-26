@@ -328,6 +328,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	utils.Debug("executeTransaction --> ", transaction.Hash)
 	services.Lock(transaction.Hash)
 	defer services.Unlock(transaction.Hash)
+
 	txn := services.NewTxn(true)
 	defer txn.Discard()
 
@@ -424,19 +425,19 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			return
 		}
 
-		// Persist contract account.
-		contractAccount := &types.Account{Address: hex.EncodeToString(dvmResult.ContractAddress[:]), Balance: big.NewInt(0), TransactionHash: transaction.Hash, Updated: now, Created: now}
-		err = contractAccount.Persist(txn)
-		if err != nil {
-			utils.Error(err)
-			receipt.Status = types.StatusInternalError
-			receipt.HumanReadableStatus = err.Error()
-			receipt.Cache(services.GetCache())
-			return
+		// Update contract account.
+		smartContractAddress := hex.EncodeToString(dvmResult.ContractAddress[:])
+		for _, stateObject := range dvmResult.StorageState.EthStateDB.StateObjects {
+			if stateObject.Account().Address == smartContractAddress {
+				stateObject.Account().TransactionHash = transaction.Hash
+				stateObject.Account().Persist(txn)
+				break
+			}
 		}
-		receipt.ContractAddress = contractAccount.Address
+		//receipt.ContractAddress = contractAccount.Address
+		receipt.ContractAddress = smartContractAddress
 		hertz = minHertzUsed + dvmResult.CumulativeHertzUsed
-		utils.Info(fmt.Sprintf("deployed contract [hash=%s, contractAddress=%s]", transaction.Hash, contractAccount.Address))
+		utils.Info(fmt.Sprintf("deployed contract [hash=%s, contractAddress=%s]", transaction.Hash, smartContractAddress))
 		break
 	case types.TypeExecuteSmartContract:
 
@@ -613,4 +614,19 @@ func processDVMResult(transaction *types.Transaction, dvmResult *dvm.DVMResult, 
 	}
 
 	return errorToReturn
+}
+
+func getAccountFromBadgerByAddress(address string) (*types.Account, error) {
+	utils.Debug(fmt.Sprintf("toAccountByAddress: %s", address))
+
+	txn := services.NewTxn(true)
+	defer txn.Discard()
+
+	account, err := types.ToAccountByAddress(txn, address)
+	if err != nil {
+		utils.Error(fmt.Sprintf("toAccountByAddress: %v", err))
+		return nil, err
+	}
+
+	return account, nil
 }

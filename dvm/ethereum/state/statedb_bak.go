@@ -54,7 +54,7 @@ package state
 // 	trie Trie
 
 // 	// This map holds 'live' objects, which will get modified while processing a state transition.
-// 	stateObjects      map[crypto.AddressBytes]*stateObject
+// 	StateObjects      map[crypto.AddressBytes]*stateObject
 // 	stateObjectsDirty map[crypto.AddressBytes]struct{}
 
 // 	// DB error.
@@ -92,7 +92,7 @@ package state
 // 	return &StateDB{
 // 		db:                db,
 // 		trie:              tr,
-// 		stateObjects:      make(map[crypto.AddressBytes]*stateObject),
+// 		StateObjects:      make(map[crypto.AddressBytes]*stateObject),
 // 		stateObjectsDirty: make(map[crypto.AddressBytes]struct{}),
 // 		logs:              make(map[crypto.HashBytes][]*types.Log),
 // 		preimages:         make(map[crypto.HashBytes][]byte),
@@ -119,7 +119,7 @@ package state
 // 		return err
 // 	}
 // 	self.trie = tr
-// 	self.stateObjects = make(map[crypto.AddressBytes]*stateObject)
+// 	self.StateObjects = make(map[crypto.AddressBytes]*stateObject)
 // 	self.stateObjectsDirty = make(map[crypto.AddressBytes]struct{})
 // 	self.thash = crypto.HashBytes{}
 // 	self.bhash = crypto.HashBytes{}
@@ -369,7 +369,7 @@ package state
 // // Retrieve a state object given my the address. Returns nil if not found.
 // func (self *StateDB) getStateObject(addr crypto.AddressBytes) (stateObject *stateObject) {
 // 	// Prefer 'live' objects.
-// 	if obj := self.stateObjects[addr]; obj != nil {
+// 	if obj := self.StateObjects[addr]; obj != nil {
 // 		if obj.deleted {
 // 			return nil
 // 		}
@@ -397,7 +397,7 @@ package state
 // 	self.lock.Lock()
 // 	defer self.lock.Unlock()
 
-// 	self.stateObjects[object.Address()] = object
+// 	self.StateObjects[object.Address()] = object
 // }
 
 // // Retrieve a state object or create a new state object if nil.
@@ -472,7 +472,7 @@ package state
 // 	state := &StateDB{
 // 		db:                self.db,
 // 		trie:              self.db.CopyTrie(self.trie),
-// 		stateObjects:      make(map[crypto.AddressBytes]*stateObject, len(self.journal.dirties)),
+// 		StateObjects:      make(map[crypto.AddressBytes]*stateObject, len(self.journal.dirties)),
 // 		stateObjectsDirty: make(map[crypto.AddressBytes]struct{}, len(self.journal.dirties)),
 // 		refund:            self.refund,
 // 		logs:              make(map[crypto.HashBytes][]*types.Log, len(self.logs)),
@@ -482,15 +482,15 @@ package state
 // 	}
 // 	// Copy the dirty states, logs, and preimages
 // 	for addr := range self.journal.dirties {
-// 		state.stateObjects[addr] = self.stateObjects[addr].deepCopy(state)
+// 		state.StateObjects[addr] = self.StateObjects[addr].deepCopy(state)
 // 		state.stateObjectsDirty[addr] = struct{}{}
 // 	}
 // 	// Above, we don't copy the actual journal. This means that if the copy is copied, the
 // 	// loop above will be a no-op, since the copy's journal is empty.
-// 	// Thus, here we iterate over stateObjects, to enable copies of copies
+// 	// Thus, here we iterate over StateObjects, to enable copies of copies
 // 	for addr := range self.stateObjectsDirty {
-// 		if _, exist := state.stateObjects[addr]; !exist {
-// 			state.stateObjects[addr] = self.stateObjects[addr].deepCopy(state)
+// 		if _, exist := state.StateObjects[addr]; !exist {
+// 			state.StateObjects[addr] = self.StateObjects[addr].deepCopy(state)
 // 			state.stateObjectsDirty[addr] = struct{}{}
 // 		}
 // 	}
@@ -538,13 +538,13 @@ package state
 // // and clears the journal as well as the refunds.
 // func (s *StateDB) Finalise(deleteEmptyObjects bool) {
 // 	for addr := range s.journal.dirties {
-// 		stateObject, exist := s.stateObjects[addr]
+// 		stateObject, exist := s.StateObjects[addr]
 // 		if !exist {
 // 			// ripeMD is 'touched' at block 1714175, in tx 0x1237f737031e40bcde4a8b7e717b2d15e3ecadfe49bb1bbc71ee9deb09c6fcf2
 // 			// That tx goes out of gas, and although the notion of 'touched' does not exist there, the
 // 			// touch-event will still be recorded in the journal. Since ripeMD is a special snowflake,
 // 			// it will persist in the journal even though the journal is reverted. In this special circumstance,
-// 			// it may exist in `s.journal.dirties` but not in `s.stateObjects`.
+// 			// it may exist in `s.journal.dirties` but not in `s.StateObjects`.
 // 			// Thus, we can safely ignore it here
 // 			continue
 // 		}
@@ -590,7 +590,7 @@ package state
 // 	s.clearJournalAndRefund()
 
 // 	for addr := range s.stateObjectsDirty {
-// 		stateObject := s.stateObjects[addr]
+// 		stateObject := s.StateObjects[addr]
 
 // 		// If the object has been removed by a suicide
 // 		// flag the object as deleted.
@@ -618,7 +618,7 @@ package state
 // 		s.stateObjectsDirty[addr] = struct{}{}
 // 	}
 // 	// Commit objects to the trie.
-// 	for addr, stateObject := range s.stateObjects {
+// 	for addr, stateObject := range s.StateObjects {
 // 		_, isDirty := s.stateObjectsDirty[addr]
 // 		switch {
 // 		case stateObject.suicided || (isDirty && deleteEmptyObjects && stateObject.empty()):

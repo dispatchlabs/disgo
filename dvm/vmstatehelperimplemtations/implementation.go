@@ -113,7 +113,6 @@ func (stateHelper *VMStateHelper) Commit() (crypto.HashBytes, error) {
 
 	utils.Debug(fmt.Sprintf("`acctounStatePrefix` is %v", crypto.Encode(acctounStatePrefix)))
 	utils.Debug(fmt.Sprintf("`smartContractAddress` is %v", crypto.Encode(stateHelper.SmartContractAddress.Bytes())))
-	// utils.Debug(fmt.Sprintf("`to` is %v", crypto.Encode(stateHelper.To.Bytes())))
 
 	var val = stateHelper.HashOfTrieRootNode.Bytes()
 	stateHelper.db.Put(key, val)

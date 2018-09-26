@@ -188,9 +188,6 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte) (ret []byte, err
 	var instructionCounter = 0
 	for atomic.LoadInt32(&in.evm.abort) == 0 {
 
-		utils.Debug("OP-INTERPRETER-INST-COUNT: ", instructionCounter)
-		instructionCounter++
-
 		if in.cfg.Debug {
 			// Capture pre-execution values for tracing.
 			logged, pcCopy, gasCopy = false, pc, contract.Gas
@@ -199,6 +196,10 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte) (ret []byte, err
 		// Get the operation from the jump table and validate the stack to ensure there are
 		// enough stack items available to perform the operation.
 		op = contract.GetOp(pc)
+
+		utils.Debug("OP-INTERPRETER: ", instructionCounter, " -> ", op)
+		instructionCounter++
+
 		operation := in.cfg.JumpTable[op]
 		if !operation.valid {
 			return nil, fmt.Errorf("invalid opcode 0x%x", int(op))
@@ -228,7 +229,6 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte) (ret []byte, err
 		// consume the gas and return an error if not enough gas is available.
 		// cost is explicitly set so that the capture state defer method can get the proper cost
 		cost, err = operation.gasCost(in.gasTable, in.evm, contract, stack, mem, memorySize)
-		// cost = 1 // NICOLAE: temp hack
 		if err != nil || !contract.UseGas(cost) {
 			return nil, ErrOutOfGas
 		}
@@ -243,6 +243,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte) (ret []byte, err
 
 		// execute the operation
 		in.evm.Time = big.NewInt(utils.ToNanoSeconds(time.Now()))
+
 		res, err := operation.execute(&pc, in, contract, mem, stack)
 		// verifyPool is a build flag. Pool verification makes sure the integrity
 		// of the integer pool by comparing values to a default value.
