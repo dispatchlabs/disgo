@@ -204,7 +204,9 @@ func (stateHelper *VMStateHelper) initOrLoadState() error {
 	stateHelper.HashOfTrieRootNode = crypto.HashBytes{}
 
 	// READ STATE mapping as [FROM_TO]->[TrieRootHash] pair
-	var key = append(acctounStatePrefix, stateHelper.SmartContractAddress.Bytes()...)
+	smartContractAddress := hex.EncodeToString(stateHelper.SmartContractAddress[:])
+	var key = append(acctounStatePrefix, smartContractAddress...)
+	//var key = append(acctounStatePrefix, stateHelper.SmartContractAddress.Bytes()...)
 	// key = append(key, stateHelper.To.Bytes()...)
 
 	utils.Debug(fmt.Sprintf("`acctounStatePrefix` is %v", crypto.Encode(acctounStatePrefix)))
