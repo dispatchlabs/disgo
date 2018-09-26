@@ -30,6 +30,7 @@ import (
 	ethState "github.com/dispatchlabs/disgo/dvm/ethereum/state"
 	ethTypes "github.com/dispatchlabs/disgo/dvm/ethereum/types"
 	"github.com/dispatchlabs/disgo/dvm/vmstatehelpercontracts"
+	"encoding/hex"
 )
 
 var (
@@ -108,7 +109,8 @@ func (stateHelper *VMStateHelper) Commit() (crypto.HashBytes, error) {
 	}
 
 	// STORE STATE mapping as [FROM_TO]->[TrieRootHash] pair
-	var key = append(acctounStatePrefix, stateHelper.SmartContractAddress.Bytes()...)
+	smartContractAddress := hex.EncodeToString(stateHelper.SmartContractAddress[:])
+	var key = append(acctounStatePrefix, smartContractAddress...)
 	// key = append(key, stateHelper.To.Bytes()...)
 
 	utils.Debug(fmt.Sprintf("`acctounStatePrefix` is %v", crypto.Encode(acctounStatePrefix)))
