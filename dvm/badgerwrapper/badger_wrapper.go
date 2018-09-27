@@ -57,7 +57,7 @@ func NewBadgerDatabase() (*BadgerDatabase, error) {
 // ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~
 func (db *BadgerDatabase) Put(key []byte, value []byte) error {
 	utils.Debug(fmt.Sprintf("BadgerDatabase-PUT-Key   : %s", crypto.Encode(key)))
-	utils.Info(fmt.Sprintf("BadgerDatabase-PUT-KeyString: %v", string(key)))
+	utils.Debug(fmt.Sprintf("BadgerDatabase-PUT-KeyString: %v", string(key)))
 	// utils.Debug(fmt.Sprintf("BadgerDatabase-PUT-Val: %s", crypto.Encode(value)))
 
 	// valEncoded := crypto.Encode(value)
@@ -75,7 +75,7 @@ func (db *BadgerDatabase) Put(key []byte, value []byte) error {
 
 func (db *BadgerDatabase) Get(key []byte) ([]byte, error) {
 	utils.Debug(fmt.Sprintf("BadgerDatabase-GET-Key   : %s", crypto.Encode(key)))
-	utils.Info(fmt.Sprintf("BadgerDatabase-GET-KeyString: %v", string(key)))
+	utils.Debug(fmt.Sprintf("BadgerDatabase-GET-KeyString: %v", string(key)))
 
 	var value []byte
 	err := disgoServices.GetDb().View(func(txn *badger.Txn) error {
