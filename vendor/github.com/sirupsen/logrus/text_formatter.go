@@ -55,9 +55,6 @@ type TextFormatter struct {
 	// be desired.
 	DisableSorting bool
 
-	// The keys sorting function, when uninitialized it uses sort.Strings.
-	SortingFunc func([]string)
-
 	// Disables the truncation of the level text to 4 characters.
 	DisableLevelTruncation bool
 
@@ -76,7 +73,7 @@ type TextFormatter struct {
 	//         FieldKeyMsg:   "@message"}}
 	FieldMap FieldMap
 
-	terminalInitOnce sync.Once
+	sync.Once
 }
 
 func (f *TextFormatter) init(entry *Entry) {
@@ -114,29 +111,8 @@ func (f *TextFormatter) Format(entry *Entry) ([]byte, error) {
 		keys = append(keys, k)
 	}
 
-	fixedKeys := make([]string, 0, 3+len(entry.Data))
-	if !f.DisableTimestamp {
-		fixedKeys = append(fixedKeys, f.FieldMap.resolve(FieldKeyTime))
-	}
-	fixedKeys = append(fixedKeys, f.FieldMap.resolve(FieldKeyLevel))
-	if entry.Message != "" {
-		fixedKeys = append(fixedKeys, f.FieldMap.resolve(FieldKeyMsg))
-	}
-
 	if !f.DisableSorting {
-		if f.SortingFunc == nil {
-			sort.Strings(keys)
-			fixedKeys = append(fixedKeys, keys...)
-		} else {
-			if !f.isColored() {
-				fixedKeys = append(fixedKeys, keys...)
-				f.SortingFunc(fixedKeys)
-			} else {
-				f.SortingFunc(keys)
-			}
-		}
-	} else {
-		fixedKeys = append(fixedKeys, keys...)
+		sort.Strings(keys)
 	}
 
 	var b *bytes.Buffer
@@ -146,7 +122,7 @@ func (f *TextFormatter) Format(entry *Entry) ([]byte, error) {
 		b = &bytes.Buffer{}
 	}
 
-	f.terminalInitOnce.Do(func() { f.init(entry) })
+	f.Do(func() { f.init(entry) })
 
 	timestampFormat := f.TimestampFormat
 	if timestampFormat == "" {
@@ -155,19 +131,15 @@ func (f *TextFormatter) Format(entry *Entry) ([]byte, error) {
 	if f.isColored() {
 		f.printColored(b, entry, keys, timestampFormat)
 	} else {
-		for _, key := range fixedKeys {
-			var value interface{}
-			switch key {
-			case f.FieldMap.resolve(FieldKeyTime):
-				value = entry.Time.Format(timestampFormat)
-			case f.FieldMap.resolve(FieldKeyLevel):
-				value = entry.Level.String()
-			case f.FieldMap.resolve(FieldKeyMsg):
-				value = entry.Message
-			default:
-				value = entry.Data[key]
-			}
-			f.appendKeyValue(b, key, value)
+		if !f.DisableTimestamp {
+			f.appendKeyValue(b, f.FieldMap.resolve(FieldKeyTime), entry.Time.Format(timestampFormat))
+		}
+		f.appendKeyValue(b, f.FieldMap.resolve(FieldKeyLevel), entry.Level.String())
+		if entry.Message != "" {
+			f.appendKeyValue(b, f.FieldMap.resolve(FieldKeyMsg), entry.Message)
+		}
+		for _, key := range keys {
+			f.appendKeyValue(b, key, entry.Data[key])
 		}
 	}
 

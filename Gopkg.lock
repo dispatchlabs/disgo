@@ -27,7 +27,7 @@
   name = "github.com/btcsuite/btcd"
   packages = ["btcec"]
   pruneopts = "UT"
-  revision = "2a560b2036bee5e3679ec2133eb6520b2f195213"
+  revision = "cff30e1d23fc9e800b2b5b4b41ef1817dda07e9f"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -49,7 +49,7 @@
     "y",
   ]
   pruneopts = "UT"
-  revision = "99233d725dbdd26d156c61b2f42ae1671b794656"
+  revision = "3a87f6d9c273c4a5aaf4a69eb82ecfafc8d767d7"
   version = "v1.5.4"
 
 [[projects]]
@@ -81,7 +81,7 @@
   name = "github.com/gogo/protobuf"
   packages = ["proto"]
   pruneopts = "UT"
-  revision = "636bf0302bc95575d69441b25a2603156ffdddf1"
+  revision = "e14cafb6a2c249986e51c4b65c3206bf18578715"
   version = "v1.1.1"
 
 [[projects]]
@@ -96,7 +96,7 @@
     "ptypes/timestamp",
   ]
   pruneopts = "UT"
-  revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
+  revision = "6e3d092c77c3bae25acf4925942b568e742c1c20"
   version = "v1.2.0"
 
 [[projects]]
@@ -112,7 +112,7 @@
   name = "github.com/google/uuid"
   packages = ["."]
   pruneopts = "UT"
-  revision = "d460ce9f8df2e77fb1ba55ca87fafed96c607494"
+  revision = "dec09d789f3dba190787f8b4454c7d3c936fed9e"
   version = "v1.0.0"
 
 [[projects]]
@@ -128,7 +128,7 @@
   name = "github.com/gorilla/mux"
   packages = ["."]
   pruneopts = "UT"
-  revision = "e3702bed27f0d39777b0b37b664b6280e8ef8fbf"
+  revision = "9e1f5955c0d22b55d9e20d6faa28589f83b2faca"
   version = "v1.6.2"
 
 [[projects]]
@@ -168,7 +168,7 @@
     "writer",
   ]
   pruneopts = "UT"
-  revision = "14e95105cbafcda64fdc36197fe6a30b23c693dc"
+  revision = "4040da784a6be3829112e12ed1ee4b8e2fc69341"
   version = "v1.5.7"
 
 [[projects]]
@@ -185,7 +185,7 @@
   name = "github.com/keybase/go-codec"
   packages = ["codec"]
   pruneopts = "UT"
-  revision = "a7011fe42ddcc32e5b55a8a09dd03e3431a533e5"
+  revision = "73210629e9f31ec8745db957708cbcc344c6f173"
 
 [[projects]]
   branch = "master"
@@ -211,7 +211,7 @@
     "pb",
   ]
   pruneopts = "UT"
-  revision = "274de1bb6c27780863df6b230c91324ab481dab2"
+  revision = "137c71cdda7aadcaad5eaf03301f7c4f173858e2"
   version = "v2.0.1"
 
 [[projects]]
@@ -222,7 +222,7 @@
     "keyspace",
   ]
   pruneopts = "UT"
-  revision = "36076693e35f150f4e170db360cb020632f57a8d"
+  revision = "b46d4a141886c4802a2fcbbb2e938685230c0228"
   version = "v2.2.8"
 
 [[projects]]
@@ -230,7 +230,7 @@
   name = "github.com/libp2p/go-libp2p-peer"
   packages = ["."]
   pruneopts = "UT"
-  revision = "993d742bc29dcf4894b7730ba610fd78900be76c"
+  revision = "e79fbd6ae779787504f963eddfead69494bb3e92"
   version = "v2.3.8"
 
 [[projects]]
@@ -238,7 +238,7 @@
   name = "github.com/libp2p/go-libp2p-peerstore"
   packages = ["."]
   pruneopts = "UT"
-  revision = "eef8402e045f9a9513070c30d2c4ee78fd54f10b"
+  revision = "9194e8fbdfb1b64dfc82b9ea4f2606dc9a9607e1"
   version = "v2.0.1"
 
 [[projects]]
@@ -246,7 +246,7 @@
   name = "github.com/mattn/go-colorable"
   packages = ["."]
   pruneopts = "UT"
-  revision = "167de6bfdfba052fa6b2d3664c8f5272e23c9072"
+  revision = "efa589957cd060542a26d2dd7832fd6a6c6c3ade"
   version = "v0.0.9"
 
 [[projects]]
@@ -254,7 +254,7 @@
   name = "github.com/mattn/go-isatty"
   packages = ["."]
   pruneopts = "UT"
-  revision = "6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c"
+  revision = "3fb116b820352b7f0c281308a4d6250c22d94e27"
   version = "v0.0.4"
 
 [[projects]]
@@ -279,14 +279,14 @@
   name = "github.com/mr-tron/base58"
   packages = ["base58"]
   pruneopts = "UT"
-  revision = "9ad991d48a423a0e52c77eac173b1b589665492a"
+  revision = "cee214dccb3e8160bdf79ed48a851f3a95a124ff"
 
 [[projects]]
   digest = "1:e54be212eca970f4d5d39899666aef429c437969783e360a0cab075ba1423a80"
   name = "github.com/multiformats/go-multiaddr"
   packages = ["."]
   pruneopts = "UT"
-  revision = "2b4e098f3e0aa2c8bc960f0e4bdc3247efc3749c"
+  revision = "de7d6d81956bd35b2b64ca4244b3abb6489827ec"
   version = "v1.3.0"
 
 [[projects]]
@@ -294,7 +294,7 @@
   name = "github.com/multiformats/go-multihash"
   packages = ["."]
   pruneopts = "UT"
-  revision = "8be2a682ab9f254311de1375145a2f78a809b07d"
+  revision = "66cd79b386e51ddf63270f2b71c57436a60035f3"
   version = "v1.0.8"
 
 [[projects]]
@@ -306,7 +306,7 @@
     "log",
   ]
   pruneopts = "UT"
-  revision = "1949ddbfd147afd4d964a9f00b24eb291e0e7c38"
+  revision = "6aa6febac7b98f836100ecaea478c04f30b6dbd0"
   version = "v1.0.2"
 
 [[projects]]
@@ -314,7 +314,7 @@
   name = "github.com/patrickmn/go-cache"
   packages = ["."]
   pruneopts = "UT"
-  revision = "a3647f8e31d79543b2d0f0ae2fe5c379d72cedc0"
+  revision = "5633e0862627c011927fa39556acae8b1f1df58a"
   version = "v2.1.0"
 
 [[projects]]
@@ -322,7 +322,7 @@
   name = "github.com/pborman/uuid"
   packages = ["."]
   pruneopts = "UT"
-  revision = "adf5a7427709b9deb95d29d3fa8a2bf9cfd388f1"
+  revision = "4c1ecd6722e83620ffa3e3dd51f961d3c445d9d6"
   version = "v1.2"
 
 [[projects]]
@@ -330,7 +330,7 @@
   name = "github.com/pkg/errors"
   packages = ["."]
   pruneopts = "UT"
-  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  revision = "c059e472caf75dbe73903f6521a20abac245b17f"
   version = "v0.8.0"
 
 [[projects]]
@@ -354,7 +354,7 @@
   name = "github.com/rs/cors"
   packages = ["."]
   pruneopts = "UT"
-  revision = "3fb1b69b103a84de38a19c3c6ec073dd6caa4d3f"
+  revision = "dc7332ab32be5dfec05dae2a6ab79cbfa53b6407"
   version = "v1.5.0"
 
 [[projects]]
@@ -362,7 +362,7 @@
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   pruneopts = "UT"
-  revision = "a67f783a3814b8729bd2dac5780b5f78f8dbd64d"
+  revision = "33a1e118e113c7d1dd24a80f80670864cd598519"
   version = "v1.1.0"
 
 [[projects]]
@@ -370,7 +370,7 @@
   name = "github.com/spaolacci/murmur3"
   packages = ["."]
   pruneopts = "UT"
-  revision = "9f5d223c60793748f04a9d5b4b4eacddfc1f755d"
+  revision = "f09979ecbc725b9e6d41a297405f65e7e8804acc"
   version = "v1.1"
 
 [[projects]]
@@ -381,7 +381,7 @@
     "require",
   ]
   pruneopts = "UT"
-  revision = "f35b8ab0b5a2cef36673838d662e249dd9c94686"
+  revision = "c679ae2cc0cb27ec3293fea7e254e47386f05d69"
   version = "v1.2.2"
 
 [[projects]]
@@ -442,7 +442,7 @@
     "trace",
   ]
   pruneopts = "UT"
-  revision = "4dfa2610cdf3b287375bbba5b8f2a14d3b01d8de"
+  revision = "26e67e76b6c3f6ce91f7c52def5af501b4e0f3a2"
 
 [[projects]]
   branch = "master"
@@ -454,7 +454,7 @@
     "windows",
   ]
   pruneopts = "UT"
-  revision = "c2ed4eda69e7f62900806e4cd6e45f0429f859fa"
+  revision = "1561086e645b2809fb9f8a1e2a38160bf8d53bf4"
 
 [[projects]]
   digest = "1:a2ab62866c75542dd18d2b069fec854577a20211d7c0ea6ae746072a1dccdd18"
@@ -476,7 +476,7 @@
     "unicode/rangetable",
   ]
   pruneopts = "UT"
-  revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
+  revision = "905a57155faa8230500121607930ebb9dd8e139c"
   version = "v0.3.0"
 
 [[projects]]
@@ -489,7 +489,7 @@
     "internal/fastwalk",
   ]
   pruneopts = "UT"
-  revision = "ef4a2a23bb352ec5208f5bb6cb3d7a8b15351afc"
+  revision = "90fa682c2a6e6a37b3a1364ce2fe1d5e41af9d6d"
 
 [[projects]]
   branch = "master"
