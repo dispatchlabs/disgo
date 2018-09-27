@@ -157,7 +157,7 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 
 		if err != nil {
 			utils.Error(err)
-			services.Error(responseWriter, fmt.Sprintf(`{"Could not find contract with address: %s status":"%s: %v"}`, transaction.To, types.StatusNotFound, err), http.StatusBadRequest)
+			services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: Could not find contract with address %s"}`, types.StatusNotFound, transaction.To), http.StatusBadRequest)
 			return
 		}
 		transaction.Abi = contractTx.Abi

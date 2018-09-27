@@ -229,7 +229,7 @@ func GetABI(data string) (*abi.ABI, error) {
 	var abi abi.ABI
 	err = abi.UnmarshalJSON(bytes)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("The ABI provided is not a valid ABI structure \n%v\n", string(bytes)))
+		return nil, errors.New(fmt.Sprintf("The ABI provided is not a valid ABI structure: %s", string(bytes)))
 	}
 	return &abi, nil
 }
