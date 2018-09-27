@@ -21,7 +21,6 @@ import (
 	"math/rand"
 
 	"github.com/dgraph-io/badger"
-	"github.com/dispatchlabs/disgo/commons/helper"
 	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
@@ -29,11 +28,12 @@ import (
 
 	"encoding/hex"
 	"math/big"
-	"strings"
 	"time"
 
 	"github.com/dispatchlabs/disgo/dvm"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
+	"strings"
 )
 
 // startGossiping
@@ -127,6 +127,8 @@ func (this *DAPoSService) synchronizeGossip(gossip *types.Gossip) (*types.Gossip
 		//This is the first time receiving this gossip
 		cacheOnFirstReceive(gossip)
 		synchronizedGossip = gossip
+		gossip.Transaction.Cache(services.GetCache())
+
 	} else {
 		synchronizedGossip = ourGossip
 		for _, rumor := range gossip.Rumors {
@@ -172,6 +174,10 @@ func (this *DAPoSService) gossipWorker() {
 						utils.Warn("The rumors have an invalid time delta (greater than gossip timeout milliseconds")
 						updateReceiptStatus(gossip.Transaction.Hash, types.StatusGossipingTimedOut)
 						//ignore this gossip's rumors and hopefully still hit 2/3 from well timed gossip, but keep listening
+						receipt := types.NewReceipt(gossip.Transaction.Hash)
+						receipt.Status = types.StatusGossipingTimedOut
+						receipt.Cache(services.GetCache())
+
 						return
 					}
 				}
@@ -269,6 +275,9 @@ func (this *DAPoSService) getRandomDelegate(gossip *types.Gossip, delegateNodes 
 	// Find random delegate.
 	rand.Seed(time.Now().UTC().UnixNano())
 	index := rand.Intn(len(delegatesNotRumored))
+	for _, d := range delegatesNotRumored {
+		fmt.Printf("Available: %s", d.GrpcEndpoint.Host)
+	}
 	return delegatesNotRumored[index]
 }
 
@@ -330,6 +339,9 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		return
 	}
 
+	//Get Min Hetz you will use (intrinsic hertz)
+	minHertzUsed := params.CallValueTransferGas
+
 	// Find/create fromAccount?
 	now := time.Now()
 	fromAccount, err := types.ToAccountByAddress(txn, transaction.From)
@@ -343,6 +355,8 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			receipt.Cache(services.GetCache())
 			return
 		}
+		minHertzUsed += params.CallNewAccountGas
+
 	}
 
 	// Find/create toAccount?
@@ -350,6 +364,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
 			toAccount = &types.Account{Address: transaction.To, Balance: big.NewInt(0), Created: now}
+			minHertzUsed += params.CallNewAccountGas
 		} else {
 			utils.Error(err)
 			receipt.SetInternalErrorWithNewTransaction(services.GetDb(), err)
@@ -357,18 +372,32 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		}
 	}
 
+	//Check to see if there is enough Hertz to execute minimum
+	availableHertz, err := types.CheckMinimumAvailable(txn, services.GetCache(), fromAccount.Address, fromAccount.Balance.Uint64())
+	if err != nil {
+		utils.Error(err)
+	}
+	if availableHertz <= minHertzUsed {
+		msg := fmt.Sprintf("Account %s has a hertz balance of %d\n", fromAccount.Address, availableHertz)
+		utils.Error(msg)
+		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInsufficientTokens)
+		return
+	}
+	var hertz uint64
 	// Execute.
 	switch transaction.Type {
 	case types.TypeTransferTokens:
-
 		// Sufficient tokens?
 		if fromAccount.Balance.Int64() < transaction.Value {
 			utils.Error(fmt.Sprintf("insufficient tokens [hash=%s]", transaction.Hash))
 			receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInsufficientTokens)
 			return
 		}
+
 		fromAccount.Balance.SetInt64(fromAccount.Balance.Int64() - transaction.Value)
 		toAccount.Balance.SetInt64(toAccount.Balance.Int64() + transaction.Value)
+
+		hertz = minHertzUsed
 		utils.Info(fmt.Sprintf("transferred tokens [hash=%s, rumors=%d]", transaction.Hash, len(gossip.Rumors)))
 		break
 	case types.TypeDeploySmartContract:
@@ -404,25 +433,26 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 				break
 			}
 		}
-
+		//receipt.ContractAddress = contractAccount.Address
 		receipt.ContractAddress = smartContractAddress
+		hertz = minHertzUsed + dvmResult.CumulativeHertzUsed
 		utils.Info(fmt.Sprintf("deployed contract [hash=%s, contractAddress=%s]", transaction.Hash, smartContractAddress))
 		break
 	case types.TypeExecuteSmartContract:
 
 		// READ PARAMS
 		// if transaction.Type == types.TypeExecuteSmartContract {
-		contractTx, err := types.ToTransactionByAddress(txn, transaction.To)
-		if err != nil {
-			utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
-			receipt.Status = types.StatusInternalError
-			receipt.HumanReadableStatus = err.Error()
-			receipt.Cache(services.GetCache())
-			return
-		}
+		//contractTx, err := types.ToTransactionByAddress(txn, transaction.To)
+		//if err != nil {
+		//	utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
+		//	receipt.Status = types.StatusInternalError
+		//	receipt.HumanReadableStatus = err.Error()
+		//	receipt.Cache(services.GetCache())
+		//	return
+		//}
 
-		transaction.Abi = contractTx.Abi
-		transaction.Params, err = helper.GetConvertedParams(transaction)
+		//transaction.Abi = contractTx.Abi
+		//transaction.Params, err = helper.GetConvertedParams(transaction)
 		if err != nil {
 			utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
 			receipt.Status = types.StatusInternalError
@@ -447,6 +477,9 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			return
 		}
 		receipt.ContractAddress = transaction.To
+
+		hertz = dvmResult.CumulativeHertzUsed
+
 		utils.Info(fmt.Sprintf("executed contract [hash=%s, contractAddress=%s]", transaction.Hash, transaction.To))
 		break
 	default:
@@ -454,6 +487,13 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInvalidTransaction)
 		return
 	}
+
+	rateLimit, err := types.NewRateLimit(transaction.From, transaction.Hash,  "test-0", hertz)
+	if err != nil {
+		utils.Error(err)
+	}
+	rateLimit.Db = services.GetDb()
+	rateLimit.Set(txn, services.GetCache())
 
 	// Persist transaction
 	err = transaction.Persist(txn)
