@@ -21,7 +21,8 @@ func NewTree(e StorageEngine, c Config) *Tree {
 
 // Build a tree from scratch, taking a batch input. Provide the
 // batch import (it should be sorted), and also an optional TxInfo.
-func (t *Tree) Build(ctx context.Context, sm *SortedMap, txi TxInfo) (err error) {
+func (t *Tree) Build(
+	ctx context.Context, sm *SortedMap, txi TxInfo) (err error) {
 	t.Lock()
 	defer t.Unlock()
 
@@ -40,7 +41,8 @@ func (t *Tree) Build(ctx context.Context, sm *SortedMap, txi TxInfo) (err error)
 	return err
 }
 
-func (t *Tree) hashTreeRecursive(ctx context.Context, level Level, sm *SortedMap, prevRoot Hash) (ret Hash, err error) {
+func (t *Tree) hashTreeRecursive(ctx context.Context,
+	level Level, sm *SortedMap, prevRoot Hash) (ret Hash, err error) {
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
@@ -109,7 +111,7 @@ func (t *Tree) lookupNode(ctx context.Context, h Hash) ([]byte, *Node, error) {
 		return nil, nil, NodeNotFoundError{H: h}
 	}
 	var node Node
-	err = DecodeFromBytes(&node, b)
+	err = decodeFromBytes(&node, b)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -168,7 +170,7 @@ func (t *Tree) findTyped(ctx context.Context, h Hash, skipVerify bool) (ret inte
 		return nil, nil, err
 	}
 	obj := t.cfg.v.Construct()
-	err = DecodeFromBytes(&obj, tmp)
+	err = decodeFromBytes(&obj, tmp)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -182,6 +184,7 @@ func (t *Tree) findTyped(ctx context.Context, h Hash, skipVerify bool) (ret inte
 func (t *Tree) Find(ctx context.Context, h Hash) (ret interface{}, root Hash, err error) {
 	return t.findTyped(ctx, h, false)
 }
+
 // findUnsafe shouldn't be used, since it will skip hash comparisons
 // at interior nodes.  It's mainly here for testing.
 func (t *Tree) findUnsafe(ctx context.Context, h Hash) (ret interface{}, root Hash, err error) {
@@ -296,13 +299,4 @@ func (t *Tree) Upsert(ctx context.Context, kvp KeyValuePair, txinfo TxInfo) (err
 	err = t.eng.CommitRoot(ctx, prevRoot, hsh, txinfo)
 
 	return err
-}
-
-
-func (t *Tree) GetRoot(ctx context.Context) Hash {
-	rootHash, err := t.eng.LookupRoot(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return rootHash
 }
