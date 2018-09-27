@@ -422,7 +422,7 @@ func TestMulmod(t *testing.T) {
 func TestSignExtend(t *testing.T) {
 	tests := []twoOperandTest{
 		{"08", "00000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001"},
-		{"16", "0xFFFFFFFF", "ffffffffffffffffFFFFFFFF"},
+		{"10", "0xFFFFFFFF", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
 	}
 	testTwoOperandOp(t, tests, nil, opSignExtend)
 }
