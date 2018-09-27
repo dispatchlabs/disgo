@@ -26,6 +26,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/gorilla/mux"
+	"github.com/dispatchlabs/disgo/commons/helper"
 )
 
 // WithHttp -
@@ -141,6 +142,21 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 	txn := services.NewTxn(true)
 	defer txn.Discard()
 
+	if transaction.Type == types.TypeExecuteSmartContract {
+		contractTx, err := types.ToTransactionByAddress(txn, transaction.To)
+
+		transaction.Abi = contractTx.Abi
+		if err != nil {
+			utils.Error(err)
+		}
+		transaction.Params, err = helper.GetConvertedParams(transaction)
+		if err != nil {
+			utils.Error("Paramater type error", err)
+			services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusJsonParseError, err), http.StatusBadRequest)
+			return
+		}
+
+	}
 	response := this.NewTransaction(transaction)
 	setHeaders(response, &responseWriter)
 	responseWriter.Write([]byte(response.String()))
