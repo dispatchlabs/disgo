@@ -206,10 +206,7 @@ func toGoType(index int, t Type, output []byte) (interface{}, error) {
 	case BoolTy:
 		return readBool(returnOutput)
 	case AddressTy:
-		// if len(returnOutput) > crypto.AddressLength {
-		// 	returnOutput = returnOutput[len(returnOutput)-crypto.AddressLength:]
-		// }
-		return crypto.GetAddressBytes(string(returnOutput)), nil
+		return common.BytesToAddress(returnOutput), nil
 	case HashTy:
 		return crypto.BytesToHash(returnOutput), nil
 	case BytesTy:
