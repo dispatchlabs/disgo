@@ -225,6 +225,7 @@ func getValue(arg abi.Argument, value interface{}) (interface{}, error) {
 
 func GetABI(data string) (*abi.ABI, error) {
 	bytes, err := hex.DecodeString(data)
+	//print("ABI: %v\n", string(bytes) )
 	var abi abi.ABI
 	err = abi.UnmarshalJSON(bytes)
 	if err != nil {
