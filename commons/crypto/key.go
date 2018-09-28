@@ -21,7 +21,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"github.com/pborman/uuid"
-	"io"
 	"github.com/dispatchlabs/disgo/commons/math"
 )
 
@@ -85,11 +84,23 @@ func (k *Key) UnmarshalJSON(j []byte) (err error) {
 	return nil
 }
 
-func NewKey(rand io.Reader) (*Key, error) {
+func NewKey() (*Key, error) {
 	privateKeyECDSA, err := GeneratePrivateKey()
 	if err != nil {
 		return nil, err
 	}
+	id := uuid.NewRandom()
+	address := PubkeyToAddress(privateKeyECDSA.PublicKey)
+
+	key := &Key{
+		Id:         id,
+		Address:    address,
+		PrivateKey: privateKeyECDSA,
+	}
+	return key, nil
+}
+
+func NewKeyFromECDSAKey(privateKeyECDSA *ecdsa.PrivateKey )(*Key, error){
 	id := uuid.NewRandom()
 	address := PubkeyToAddress(privateKeyECDSA.PublicKey)
 
