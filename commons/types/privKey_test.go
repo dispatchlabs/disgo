@@ -35,7 +35,7 @@ func TestDecrypt(t *testing.T) {
 		utils.Fatal("unable to read ", keyfilepath, err)
 	}
 
-	key, err := Decrypt(bytes,testing_pass)
+	key, err := DecryptKey(bytes,testing_pass)
 
 	if key.GetPrivateKeyString() != testing_key{
 		t.Error("key value not the same")
@@ -47,7 +47,7 @@ func TestDecrypt(t *testing.T) {
 func TestCreate(t *testing.T) {
 	defer destructKey()
 
-	err := create(testing_pass, testing_key_name)
+	err := createPKey(testing_pass, testing_key_name)
 	if err != nil{
 		t.Error(err)
 	}
