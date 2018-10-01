@@ -1,0 +1,130 @@
+# Gopkg.toml example
+#
+# Refer to https://golang.github.io/dep/docs/Gopkg.toml.html
+# for detailed Gopkg.toml documentation.
+#
+# required = ["github.com/user/thing/cmd/thing"]
+# ignored = ["github.com/user/project/pkgX", "bitbucket.org/user/project/pkgA/pkgY"]
+#
+# [[constraint]]
+#   name = "github.com/user/project"
+#   version = "1.0.0"
+#
+# [[constraint]]
+#   name = "github.com/user/project2"
+#   branch = "dev"
+#   source = "github.com/myfork/project2"
+#
+# [[override]]
+#   name = "github.com/x/y"
+#   version = "2.4.0"
+#
+# [prune]
+#   non-go = false
+#   go-tests = true
+#   unused-packages = true
+
+
+[[constraint]]
+  name = "github.com/davecgh/go-spew"
+  version = "1.1.1"
+
+[[constraint]]
+  name = "github.com/dgraph-io/badger"
+  version = "1.5.4"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/ebfe/keccak"
+
+[[constraint]]
+  name = "github.com/go-stack/stack"
+  version = "1.8.0"
+
+[[constraint]]
+  name = "github.com/golang/protobuf"
+  version = "1.2.0"
+
+[[constraint]]
+  name = "github.com/gorilla/mux"
+  version = "1.6.2"
+
+[[constraint]]
+  name = "github.com/hashicorp/golang-lru"
+  version = "0.5.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/jasonlvhit/gocron"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/keybase/go-merkle-tree"
+
+[[constraint]]
+  name = "github.com/libp2p/go-libp2p-kbucket"
+  version = "2.2.8"
+
+[[constraint]]
+  name = "github.com/libp2p/go-libp2p-peer"
+  version = "2.3.8"
+
+[[constraint]]
+  name = "github.com/libp2p/go-libp2p-peerstore"
+  version = "2.0.1"
+
+[[constraint]]
+  name = "github.com/patrickmn/go-cache"
+  version = "2.1.0"
+
+[[constraint]]
+  name = "github.com/pborman/uuid"
+  version = "1.2.0"
+
+[[constraint]]
+  name = "github.com/pkg/errors"
+  version = "0.8.0"
+
+[[constraint]]
+  name = "github.com/processout/grpc-go-pool"
+  version = "1.2.1"
+
+[[constraint]]
+  name = "github.com/rs/cors"
+  version = "1.5.0"
+
+[[constraint]]
+  name = "github.com/sirupsen/logrus"
+  version = "1.1.0"
+
+[[constraint]]
+  name = "github.com/stretchr/testify"
+  version = "1.2.2"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/syndtr/goleveldb"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/crypto"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/net"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/sys"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/tools"
+
+[[constraint]]
+  name = "google.golang.org/grpc"
+  version = "1.15.0"
+
+[prune]
+  go-tests = true
+  unused-packages = true
