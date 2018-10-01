@@ -1,20 +1,20 @@
 package state
 
-import (
-	"github.com/dispatchlabs/disgo/commons/tree"
-	"github.com/dispatchlabs/disgo/commons/utils"
-)
+// import (
+// 	"github.com/dispatchlabs/disgo/commons/tree"
+// 	"github.com/dispatchlabs/disgo/commons/utils"
+// )
 
-func NewMerkleTree(content []tree.MerkleTreeContent) *tree.MerkleTree {
+// func NewMerkleTree(content []tree.MerkleTreeContent) *tree.MerkleTree {
 
-	merkleTree, err := tree.NewTree(content)
-	if err != nil {
-		utils.Error(err.Error())
-	}
+// 	merkleTree, err := tree.NewTree(content)
+// 	if err != nil {
+// 		utils.Error(err.Error())
+// 	}
 
-	utils.Info(merkleTree.String())
-	return merkleTree
-}
+// 	utils.Info(merkleTree.String())
+// 	return merkleTree
+// }
 
 /*
 	TryGet(key []byte) ([]byte, error)
