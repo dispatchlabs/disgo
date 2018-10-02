@@ -68,6 +68,7 @@ func (this *RateLimit) Set(txn *badger.Txn, cache *cache.Cache) error {
 	return nil
 }
 
+
 func (this *RateLimit) cache(cache *cache.Cache) {
 	cache.Set(getAccountRateLimitKey(this.Address), this.Existing, TransactionCacheTTL)
 	cache.Set(getTxRateLimitKey(this.TxRateLimit.TxHash), this.TxRateLimit, this.getCurrentTTL())
@@ -251,15 +252,23 @@ func CalculateLockedAmount(txn *badger.Txn, c *cache.Cache, address string) (uin
 
 	var totalDeduction uint64
 	if acctRateLimit != nil {
+		heldTxs := make([]string, 0)
 		for _, hash := range acctRateLimit.TxHashes {
 			txrl, err := GetTxRateLimit(txn, c, hash)
 			if err != nil {
 				return totalDeduction, err
 			}
 			if txrl != nil {
+				heldTxs = append(heldTxs, txrl.TxHash)
 				totalDeduction += txrl.Amount
 				//utils.Info(txrl.string())
 			}
+		}
+		acctRateLimit.TxHashes = heldTxs
+		c.Set(getAccountRateLimitKey(address), acctRateLimit, TransactionCacheTTL)
+		err := txn.Set([]byte(getAccountRateLimitKey(address)), []byte(acctRateLimit.string()))
+		if err != nil {
+			return totalDeduction, err
 		}
 	}
 	return totalDeduction, nil
