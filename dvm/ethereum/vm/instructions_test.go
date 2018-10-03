@@ -89,11 +89,13 @@ func testTwoOperandOp(t *testing.T, tests []twoOperandTest, memory *Memory, opFn
 	for i, test := range tests {
 		x := new(big.Int).SetBytes(common.Hex2Bytes(test.x))
 		shift := new(big.Int).SetBytes(common.Hex2Bytes(test.y))
+
 		expected := new(big.Int).SetBytes(common.Hex2Bytes(test.expected))
 		stack.push(shift)
 		stack.push(x)
 		opFn(&pc, evmInterpreter, nil, memory, stack)
 		actual := stack.pop()
+
 		if actual.Cmp(expected) != 0 {
 			t.Errorf("Testcase %d, expected  %v, got %v", i, expected, actual)
 		}
@@ -271,7 +273,7 @@ func TestSdiv(t *testing.T) {
 		{"0000000000000000000000000000000000000000000000000000000000000001", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
 		{"000000000000000000000000000000000000000000000000000000000000000f", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb"},
 		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "0000000000000000000000000000000000000000000000000000000000000005"},
-		{"ff1", "fd", "0000000000000000000000000000000000000000000000000000000000000010"},
+		{"fff1", "fd", "0000000000000000000000000000000000000000000000000000000000000102"},
 	}
 	testTwoOperandOp(t, tests, nil, opSdiv)
 }
@@ -279,10 +281,10 @@ func TestSdiv(t *testing.T) {
 func TestSmod(t *testing.T) {
 	tests := []twoOperandTest{
 		{"000000000000000000000000000000000000000000000000000000000000000f", "0000000000000000000000000000000000000000000000000000000000000007", "0000000000000000000000000000000000000000000000000000000000000001"},
-		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1", "0000000000000000000000000000000000000000000000000000000000000007", "0000000000000000000000000000000000000000000000000000000000000006"},
+		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1", "0000000000000000000000000000000000000000000000000000000000000007", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
 		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff9", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
-		{"000000000000000000000000000000000000000000000000000000000000000f", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff9", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa"},
-		{"f1", "f9", "fa"},
+		{"000000000000000000000000000000000000000000000000000000000000000f", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff9", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"f1", "f9", "f1"},
 	}
 	testTwoOperandOp(t, tests, nil, opSmod)
 }
@@ -422,7 +424,7 @@ func TestMulmod(t *testing.T) {
 func TestSignExtend(t *testing.T) {
 	tests := []twoOperandTest{
 		{"08", "00000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001"},
-		{"10", "0xFFFFFFFF", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"7", "FFFFFFFFFFFFFFFF", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
 	}
 	testTwoOperandOp(t, tests, nil, opSignExtend)
 }
