@@ -985,6 +985,6 @@ func (this *Transaction) setTransients(txn *badger.Txn) {
 	}
 	abi, err := hex.DecodeString(this.Abi)
 	if err == nil {
-		this.Abi = abi
+		this.Abi = string(abi)
 	}
 }
