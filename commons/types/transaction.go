@@ -983,4 +983,8 @@ func (this *Transaction) setTransients(txn *badger.Txn) {
 	if err == nil {
 		this.Gossip = gossip.Rumors
 	}
+	abi, err := hex.DecodeString(this.Abi)
+	if err == nil {
+		this.Abi = abi
+	}
 }
