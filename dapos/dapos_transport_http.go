@@ -58,7 +58,6 @@ func (this *DAPoSService) WithHttp() *DAPoSService {
 
 	services.GetHttpRouter().HandleFunc("/v1/receipts/{hash}", this.unsupportedFunctionHandler).Methods("GET")
 
-
 	return this
 }
 
@@ -154,7 +153,6 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 
 	if transaction.Type == types.TypeExecuteSmartContract {
 		contractTx, err := types.ToTransactionByAddress(txn, transaction.To)
-
 		if err != nil {
 			utils.Error(err)
 			services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: Could not find contract with address %s"}`, types.StatusNotFound, transaction.To), http.StatusBadRequest)
