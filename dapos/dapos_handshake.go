@@ -74,7 +74,7 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 
 	// Cache gossip with my rumor.
 	gossip := types.NewGossip(*transaction)
-	rumor := types.NewRumor(types.GetAccount().PrivateKey, types.GetAccount().Address, transaction.Hash)
+	rumor := types.NewRumor(types.GetKey(), types.GetAccount().Address, transaction.Hash)
 	gossip.Rumors = append(gossip.Rumors, *rumor)
 
 	cacheOnFirstReceive(gossip)
@@ -106,7 +106,7 @@ func (this *DAPoSService) Temp_ProcessTransaction(transaction *types.Transaction
 
 	// Cache gossip with my rumor.
 	gossip := types.NewGossip(*transaction)
-	rumor := types.NewRumor(types.GetAccount().PrivateKey, types.GetAccount().Address, transaction.Hash)
+	rumor := types.NewRumor(types.GetKey(), types.GetAccount().Address, transaction.Hash)
 	gossip.Rumors = append(gossip.Rumors, *rumor)
 	gossip.Cache(services.GetCache())
 
@@ -147,7 +147,7 @@ func (this *DAPoSService) synchronizeGossip(gossip *types.Gossip) (*types.Gossip
 		// We don't want to propagate cryptographic lies.
 		err = gossip.Transaction.Verify()
 		if err == nil {
-			synchronizedGossip.Rumors = append(gossip.Rumors, *types.NewRumor(types.GetAccount().PrivateKey, types.GetAccount().Address, gossip.Transaction.Hash))
+			synchronizedGossip.Rumors = append(gossip.Rumors, *types.NewRumor(types.GetKey(), types.GetAccount().Address, gossip.Transaction.Hash))
 		} else {
 			utils.Error(err)
 			return synchronizedGossip, err

@@ -306,7 +306,7 @@ func (this *DisGoverService) peerUpdateSoftwareGrpc(fileName string, software []
 	hash := hex.EncodeToString(hashBytes[:])
 
 	// Create signature of the hash.
-	privateKeyBytes, err := hex.DecodeString(types.GetAccount().PrivateKey)
+	privateKeyBytes, err := hex.DecodeString(types.GetKey())
 	if err != nil {
 		utils.Error(err)
 		return

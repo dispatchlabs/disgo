@@ -338,9 +338,12 @@ func readAccountFile(name_optional ...string) *Account {
 	if len(name_optional) > 0 {
 		name = name_optional[0]
 	}
+
 	fileName := utils.GetConfigDir() + string(os.PathSeparator) + name
 	if !utils.Exists(fileName) {
+		
 		publicKey, privateKey := crypto.GenerateKeyPair()
+		createFromKey(hex.EncodeToString(privateKey),getPass("Make a password to secure your Private Key (DO NOT FORGET!!!)\n"),GetConfig().KeyLocation)
 		address := crypto.ToAddress(publicKey)
 		account := &Account{}
 		account.Address = hex.EncodeToString(address)

@@ -25,7 +25,7 @@ func destructKey(){
 func TestDecrypt(t *testing.T) {
 	defer destructKey()
 
-	err := createFromKey(testing_key,testing_pass, testing_key_name)
+	err := createFromKey(testing_key,testing_pass,keyfilepath)
 	if err != nil{
 		t.Error(err)
 	}
@@ -47,7 +47,7 @@ func TestDecrypt(t *testing.T) {
 func TestCreate(t *testing.T) {
 	defer destructKey()
 
-	err := createPKey(testing_pass, testing_key_name)
+	err := createPKey(testing_pass, keyfilepath)
 	if err != nil{
 		t.Error(err)
 	}

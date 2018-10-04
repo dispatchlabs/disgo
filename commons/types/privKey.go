@@ -20,10 +20,11 @@ var key string
 
 // Getkey - Returns the singleton instance of the current private key
 func GetKey() string {
-	accountOnce.Do(func() {
-		key = readKeyFile("mypass")
-	})
-	return key
+	key := GetAccount().PrivateKey
+	if key != ""{
+		return key
+	}
+	return readKeyFile()
 }
 
 func DecryptKey(bytes []byte,password string) (*crypto.Key, error){
@@ -35,12 +36,7 @@ func DecryptKey(bytes []byte,password string) (*crypto.Key, error){
 	return key, nil
 }
 
-func createPKey(password string, name_optional ...string) error{
-
-	name := "myDisgoKey.json"
-	if len(name_optional) > 0 {
-		name = name_optional[0]
-	}
+func createPKey(password string, name string) error{
 
 	pKey,err := crypto.NewKey()
 	if err != nil {
@@ -53,16 +49,12 @@ func createPKey(password string, name_optional ...string) error{
 		return err
 	}
 
-	writeAccountFile(keystore, name)
+	writeFile(keystore, name)
 
 	return nil
 }
 
-func createFromKey(key, password string, name_optional ...string) error{
-	name := "myDisgoKey.json"
-	if len(name_optional) > 0 {
-		name = name_optional[0]
-	}
+func createFromKey(key, password string, name string) error{
 
 	ECDSAKey,err := crypto.HexToECDSA(key)
 	if err !=nil{
@@ -78,23 +70,20 @@ func createFromKey(key, password string, name_optional ...string) error{
 		return err
 	}
 
-	writeAccountFile(keystore, name)
+	writeFile(keystore, name)
 
 	return nil
 }
 
-func readKeyFile(name_optional ...string) string {
-	name := "myDisgoKey.json"
-	if len(name_optional) > 0 {
-		name = name_optional[0]
-	}
-	fileName := utils.GetConfigDir() + string(os.PathSeparator) + name
+func readKeyFile() string {
+
+	fileName := GetConfig().KeyLocation
 	if !utils.Exists(fileName) {
 		for {
 			pass := getPass("enter a password to secure your key\n")
 			conf := getPass("confirm password\n")
 			if pass == conf && pass != ""{
-				createPKey(pass,name)
+				createPKey(pass,fileName)
 				break
 			}
 			fmt.Printf("did not match")
@@ -141,4 +130,15 @@ func getPass(s string)string{
 	}
 	password := string(bytePassword)
 	return password
+}
+
+// writeFile -
+func writeFile(bytes []byte, path string) {
+
+	file, err := os.Create(path)
+	defer file.Close()
+	if err != nil {
+		utils.Fatal(fmt.Sprintf("unable to write %s", path), err)
+	}
+	fmt.Fprintf(file, string(bytes))
 }
