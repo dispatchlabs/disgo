@@ -29,19 +29,17 @@ func NewGossipQueue() *GossipQueue {
 
 // - Push onto the queue and then resort (latest to earliest) also add to fast Exists map for quick checks
 func (gq *GossipQueue) Push(gossip *types.Gossip) {
-	utils.Debug("GossipQueue --> Push")
+	utils.Debug("GossipQueue.Push --> ", gossip.Transaction.Hash)
 	itm := Item{gossip, gossip.Transaction.Time, gq.Queue.Len() + 1}
-	HeapPush(gq.Queue, &itm)
 	gq.ExistsMap.Put(gossip.Transaction.Hash)
+	HeapPush(gq.Queue, &itm)
 }
 
 // - Push onto the queue and then resort (latest to earliest) also add to fast Exists map for quick checks
 func (gq *GossipQueue) Pop() *types.Gossip {
-	utils.Debug("GossipQueue --> Pop: ")
-
 	itm := HeapPop(gq.Queue).(*Item)
 	gossip := itm.Data.(*types.Gossip)
-	utils.Debug("GossipQueue --> Pop: ", gossip.Transaction.ToTime())
+	utils.Debug("GossipQueue.Pop --> ", gossip.Transaction.Hash)
 	gq.ExistsMap.Delete(gossip.Transaction.Hash)
 	return gossip
 }
