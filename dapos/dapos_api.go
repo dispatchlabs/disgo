@@ -119,7 +119,7 @@ func (this *DAPoSService) NewTransaction(transaction *types.Transaction) *types.
 		response.HumanReadableStatus = types.StatusNotDelegateAsHumanReadable
 	}
 
-	utils.Info(fmt.Sprintf("new transaction [hash=%s, status=%s]", transaction.Hash, response.Status))
+	utils.Debug(fmt.Sprintf("new transaction [hash=%s, status=%s]", transaction.Hash, response.Status))
 	return response
 }
 
@@ -152,7 +152,7 @@ func (this *DAPoSService) GetTransaction(hash string) *types.Response {
 		response.Status = types.StatusNotDelegate
 		response.HumanReadableStatus = types.StatusNotDelegateAsHumanReadable
 	}
-	utils.Info(fmt.Sprintf("retrieved transaction [hash=%s, status=%s]", hash, response.Status))
+	utils.Debug(fmt.Sprintf("retrieved transaction [hash=%s, status=%s]", hash, response.Status))
 
 	return response
 }
