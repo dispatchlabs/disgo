@@ -89,9 +89,31 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.P
 	node.Set(txn, services.GetCache())
 
 	// Get cached delegates.
-	delegates, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
+	cDelegates, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
 	if err != nil {
 		return nil, err
+	}
+
+	//get stored delegates
+	sDelegates, err := types.ToNodesByType(txn, types.TypeDelegate)
+	//utils.Info(fmt.Sprintf(sDelegates[0].Address))
+	if err != nil {
+		return nil, err
+	}
+
+	txn.Commit(nil)
+
+	//merge slices
+	sDelegates = append(sDelegates, cDelegates...)
+
+	//only allow unique values
+	keys := make(map[string]bool)
+	delegates := []*types.Node{}
+	for _, node := range sDelegates {
+		if _, value := keys[node.Address]; !value {
+			keys[node.Address] = true
+			delegates = append(delegates, node)
+		}
 	}
 
 	var nodes = make([]*proto.Node, 0)
