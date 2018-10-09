@@ -252,8 +252,8 @@ func TransactionPaging(txn *badger.Txn, startingHash string, page, pageSize int)
 		return transactions, &PagingResult{ totalCount, "" }, nil
 	}
 
-	// Sort the string array; which will result in sorting by timestamp, hash (asc)
-	sort.Strings(timestamps)
+	// Sort the string array in reverse; which will result in sorting by timestamp, hash - desc (eg; most recent first)
+	sort.Sort(sort.Reverse(sort.StringSlice(timestamps)))
 
 	// Iterate over the strings
 	idx := 0
@@ -290,7 +290,7 @@ func TransactionPaging(txn *badger.Txn, startingHash string, page, pageSize int)
 	// utils.Info(fmt.Sprintf("totalCount (paged) = %d", totalCount))
 	// utils.Info(fmt.Sprintf("idx (paged - page=%d, pageSize=%d) = %d", page, pageSize, idx))
 
-	for i := 0; i <= pageSize; i++ {
+	for i := 0; i < pageSize; i++ {
 		if totalCount > idx {
 			// utils.Info(fmt.Sprintf("timestamps[idx] = %s", timestamps[idx]))
 			if (timestamps[idx] != "") {
