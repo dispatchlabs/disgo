@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"math/big"
@@ -48,6 +49,13 @@ func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 						return nil, errors.New(msg)
 					}
 					result = append(result, addressAsByteArray)
+				} else if arg.Type.T == abi.BytesTy{
+					params, valErr := base64.StdEncoding.DecodeString(tx.Params[i].(string))
+					if err != nil{
+						msg := fmt.Sprintf("Invalid value provided for method %s: %v", tx.Method, valErr.Error())
+						return nil, errors.New(msg)
+					}
+					result = append(result, params)
 				} else {
 					value, valErr := getValue(arg, tx.Params[i])
 					if valErr != nil {
@@ -238,3 +246,4 @@ func GetABI(data string) (*abi.ABI, error) {
 	}
 	return &abi, nil
 }
+
