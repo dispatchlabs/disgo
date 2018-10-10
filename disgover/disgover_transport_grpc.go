@@ -34,6 +34,7 @@ import (
 	"io/ioutil"
 	"os/exec"
 	"bytes"
+	"github.com/jasonlvhit/gocron"
 )
 
 //TODO: we are going to drop delegates if we fail to communicate with them.  The exepctation will be that the seed will tell us when they come back on line
@@ -290,36 +291,28 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 	}
 	utils.Info(fmt.Sprintf("unzipped software update %s", fileName))
 
-
-	fileName = fmt.Sprintf("%s%sdisgo_update.sh", directoryName, string(os.PathSeparator))
-
-		// Execute script nohup.
-	command = exec.Command("nohup", fileName, "&")
-	command.Stdout = &out
-	err = command.Run()
-	if err != nil {
-		utils.Error(fmt.Sprintf("executed %s - %s", fileName, out.String()))
-		return &proto.Empty{}, err
-	}
-
-	// Delete update directory.
-	//err = os.Remove(directoryName)
-	//if err != nil {
-	//	utils.Warn(fmt.Sprintf("unable to delete file %s", fileName), err)
-	//}
-
-
-
 	// Schedule the reboot.
-	//go func() {
-	//	gocron.Every(1).Day().At(softwareUpdate.ScheduledReboot).Do(func() {
-	//		gocron.Clear()
-	//		services.GetDbService().Close()
-	//		utils.Info("rebooting with new version of disgo...")
-	//		os.Exit(0)
-	//	})
-	//	<-gocron.Start()
-	//}()
+	go func() {
+		gocron.Every(1).Day().At(softwareUpdate.ScheduledReboot).Do(func() {
+			gocron.Clear()
+			services.GetDbService().Close()
+
+			// Chmod.
+			fileName = fmt.Sprintf("%s%supdate.sh", directoryName, string(os.PathSeparator))
+			os.Chmod(fileName, 0777)
+
+			// Execute update script.
+			command = exec.Command("sh", fileName)
+			command.Stdout = &out
+			err = command.Start()
+			if err != nil {
+				utils.Error(fmt.Sprintf("executed %s - %s", fileName, out.String()))
+			}
+			utils.Info("executing update.sh and exiting...")
+			os.Exit(0)
+		})
+		<-gocron.Start()
+	}()
 
 	return &proto.Empty{}, nil
 }
