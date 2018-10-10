@@ -27,6 +27,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/gorilla/mux"
 	"github.com/dispatchlabs/disgo/commons/helper"
+	"encoding/hex"
 )
 
 // WithHttp -
@@ -56,7 +57,6 @@ func (this *DAPoSService) WithHttp() *DAPoSService {
 	services.GetHttpRouter().HandleFunc("/v1/gossips/{hash}", this.getGossipHandler).Methods("GET")
 
 	services.GetHttpRouter().HandleFunc("/v1/receipts/{hash}", this.unsupportedFunctionHandler).Methods("GET")
-
 
 	return this
 }
@@ -142,13 +142,23 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 	txn := services.NewTxn(true)
 	defer txn.Discard()
 
+	if transaction.Type == types.TypeDeploySmartContract {
+		_, err := helper.GetABI(hex.EncodeToString([]byte(transaction.Abi)))
+		if err != nil {
+			utils.Error("Paramater type error", err)
+			services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusJsonParseError, err), http.StatusBadRequest)
+			return
+		}
+	}
+
 	if transaction.Type == types.TypeExecuteSmartContract {
 		contractTx, err := types.ToTransactionByAddress(txn, transaction.To)
-
-		transaction.Abi = contractTx.Abi
 		if err != nil {
 			utils.Error(err)
+			services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: Could not find contract with address %s"}`, types.StatusNotFound, transaction.To), http.StatusBadRequest)
+			return
 		}
+		transaction.Abi = contractTx.Abi
 		transaction.Params, err = helper.GetConvertedParams(transaction)
 		if err != nil {
 			utils.Error("Paramater type error", err)

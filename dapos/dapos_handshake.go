@@ -19,25 +19,27 @@ package dapos
 import (
 	"fmt"
 	"math/rand"
+	"math/big"
+	"strings"
+	"time"
+	"encoding/hex"
 
 	"github.com/dgraph-io/badger"
+	"github.com/dispatchlabs/disgo/commons/helper"
 	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/disgover"
-
-	"encoding/hex"
-	"math/big"
-	"time"
-
 	"github.com/dispatchlabs/disgo/dvm"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
-	"strings"
 )
+
+var delegateMap = map[string]*types.Node{}
 
 // startGossiping
 func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.Response {
+	utils.Debug("startGossiping")
 	txn := services.NewTxn(false)
 	defer txn.Discard()
 
@@ -72,21 +74,20 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 		utils.Info(fmt.Sprintf("already processing this transaction [hash=%s]", transaction.Hash))
 		return types.NewResponseWithStatus(types.StatusAlreadyProcessingTransaction, "Transaction is already being processed")
 	}
-
 	// Cache gossip with my rumor.
 	gossip := types.NewGossip(*transaction)
 	rumor := types.NewRumor(types.GetAccount().PrivateKey, types.GetAccount().Address, transaction.Hash)
 	gossip.Rumors = append(gossip.Rumors, *rumor)
 
-	cacheOnFirstReceive(gossip)
+	this.cacheOnFirstReceive(gossip)
 	this.gossipChan <- gossip
 
 	return types.NewResponseWithStatus(types.StatusPending, "Pending")
 }
 
-func cacheOnFirstReceive(gossip *types.Gossip) {
+func (this *DAPoSService) cacheOnFirstReceive(gossip *types.Gossip) {
 	// Cache receipt.
-	utils.Info("Cache receipt")
+	utils.Debug(fmt.Sprintf("First receipt of transaction [hash=%s] [Rumors=%d]", gossip.Transaction.Hash, len(gossip.Rumors)))
 	receipt := types.NewReceipt(gossip.Transaction.Hash)
 	receipt.Cache(services.GetCache())
 
@@ -95,6 +96,21 @@ func cacheOnFirstReceive(gossip *types.Gossip) {
 
 	// transaction.Receipt.Status = types.StatusReceived
 	gossip.Transaction.Cache(services.GetCache())
+
+	delegateNodes, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
+	if err != nil {
+		utils.Error(err)
+		return
+	}
+	for _, node := range delegateNodes {
+		haveSent := gossip.HaveSent(services.GetCache(), gossip.Transaction.Hash, node.Address)
+		isThisAddress := node.Address == disgover.GetDisGoverService().ThisNode.Address
+
+		if !haveSent && !isThisAddress {
+			this.peerGossipGrpc(*node, gossip)
+		}
+	}
+
 }
 
 // Temp_ProcessTransaction -
@@ -118,24 +134,28 @@ func (this *DAPoSService) Temp_ProcessTransaction(transaction *types.Transaction
 }
 
 // synchronizeGossip
-func (this *DAPoSService) synchronizeGossip(gossip *types.Gossip) (*types.Gossip, error) {
+func (this *DAPoSService) synchronizeGossip(gossip *types.Gossip) (*types.Gossip, error, bool) {
 
 	// PersistAndCache synchronizedGossip.
 	var synchronizedGossip *types.Gossip
+	hasAll := false
 	ourGossip, err := types.ToGossipFromCache(services.GetCache(), gossip.Transaction.Hash)
 	if err != nil {
-		//This is the first time receiving this gossip
-		cacheOnFirstReceive(gossip)
 		synchronizedGossip = gossip
 		gossip.Transaction.Cache(services.GetCache())
 
 	} else {
 		synchronizedGossip = ourGossip
 		for _, rumor := range gossip.Rumors {
+			hasAll = true
+			if !ourGossip.ContainsRumor(rumor.Address) {
+				hasAll = false
+			}
 			if !synchronizedGossip.ContainsRumor(rumor.Address) && rumor.Verify() { // We don't want to propagate cryptographic lies.
 				synchronizedGossip.Rumors = append(synchronizedGossip.Rumors, rumor)
 			}
 		}
+		//we have already seen all of these rumors, so we don't want to put them back into our Gossip worker
 	}
 
 	// Did rumor?
@@ -150,13 +170,15 @@ func (this *DAPoSService) synchronizeGossip(gossip *types.Gossip) (*types.Gossip
 		// We don't want to propagate cryptographic lies.
 		err = gossip.Transaction.Verify()
 		if err == nil {
-			synchronizedGossip.Rumors = append(gossip.Rumors, *types.NewRumor(types.GetAccount().PrivateKey, types.GetAccount().Address, gossip.Transaction.Hash))
+			synchronizedGossip.Rumors = append(synchronizedGossip.Rumors, *types.NewRumor(types.GetAccount().PrivateKey, types.GetAccount().Address, gossip.Transaction.Hash))
 		} else {
 			utils.Error(err)
-			return synchronizedGossip, err
+			return synchronizedGossip, err, true
 		}
+		//This is the first time receiving this gossip
+		this.cacheOnFirstReceive(synchronizedGossip)
 	}
-	return synchronizedGossip, nil
+	return synchronizedGossip, nil, !hasAll
 }
 
 // gossipWorker
@@ -167,6 +189,17 @@ func (this *DAPoSService) gossipWorker() {
 		case gossip = <-this.gossipChan:
 
 			go func(gossip *types.Gossip) {
+				// Find nodes in cache?
+				delegateNodes, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
+				if err != nil {
+					utils.Error(err)
+					return
+				}
+				if delegateMap == nil || len(delegateMap) == 0 {
+					for _, d := range delegateNodes {
+						delegateMap[d.Address] = d
+					}
+				}
 
 				// Gossip timeout?
 				if len(gossip.Rumors) > 1 {
@@ -181,30 +214,34 @@ func (this *DAPoSService) gossipWorker() {
 						return
 					}
 				}
-
-				// Find nodes in cache?
-				delegateNodes, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
-				if err != nil {
-					utils.Error(err)
-					return
-				}
-
 				// Do we have 2/3 of rumors?
 				if float32(len(gossip.Rumors)) >= float32(len(delegateNodes))*2/3 {
 					if !this.gossipQueue.Exists(gossip.Transaction.Hash) {
+						//for _, rumor := range gossip.Rumors {
+						//	utils.Info(fmt.Sprintf("rumor from: [address=%s] for [tx=%s] with [hash=%s]", rumor.Address, rumor.TransactionHash, rumor.Hash))
+						//}
 						this.gossipQueue.Push(gossip)
 
 						go func() {
 							//adding timeout as a function of tx time.  If tx is in the future, add future delta to the default timeout
 							delta := gossip.Transaction.Time - utils.ToMilliSeconds(time.Now())
 							totalMilliseconds := (types.GossipTimeout * len(delegateNodes)) + types.TxReceiveTimeout
-							timeout := time.Duration(totalMilliseconds)
+							timeout := time.Duration(totalMilliseconds) * time.Millisecond
+							utils.Debug("Timeout Queue value: ", timeout)
 							if delta > 0 {
 								timeout = time.Millisecond*time.Duration(delta) + timeout
 							}
 							time.Sleep(timeout)
 							this.timoutChan <- true
 						}()
+						//for _, node := range delegateNodes {
+						//	haveSent := gossip.HaveSent(services.GetCache(), gossip.Transaction.Hash, node.Address)
+						//
+						//	if !haveSent {
+						//		utils.Info(fmt.Sprintf("*********** Last send after 2/3 [hash=%s] to delegate [Port %d] [address=%s]", gossip.Transaction.Hash, node.HttpEndpoint.Port, node.Address))
+						//		this.peerGossipGrpc(*node, gossip)
+						//	}
+						//}
 					}
 					//No reason to keep gossiping if we are executing the transaction
 					return
@@ -225,18 +262,23 @@ func (this *DAPoSService) gossipWorker() {
 
 					//Commented out because if we have no-one left to talk to, why are we continuing?
 					//Plus it was causing me all kinds of timeout problems
-					//this.gossipChan <- gossip
+					if len(gossip.Rumors) != len(delegateNodes) {
+						utils.Debug(fmt.Sprintf("Stopped Gossiping when there are %d nodes that don't have a rumor", len(delegateNodes)-len(gossip.Rumors)))
+					}
+
 					return
 				}
+				utils.Debug(fmt.Sprintf("Picked RandomDelegate = [hash=%s] to delegate [Port %d] [address=%s]", gossip.Transaction.Hash, node.HttpEndpoint.Port, node.Address))
 
 				// Peer gossip.
-				peerGossip, err := this.peerGossipGrpc(*node, gossip)
+				//peerGossip, err := this.peerGossipGrpc(*node, gossip)
+				_, err = this.peerGossipGrpc(*node, gossip)
 				if err != nil {
-					utils.Warn(err)
+					utils.Error(err)
 					this.gossipChan <- gossip
 					return
 				}
-				this.gossipChan <- peerGossip
+				//this.gossipChan <- peerGossip
 			}(gossip)
 		}
 	}
@@ -255,15 +297,27 @@ func updateReceiptStatus(txHash, status string) {
 // getRandomDelegate
 func (this *DAPoSService) getRandomDelegate(gossip *types.Gossip, delegateNodes []*types.Node) *types.Node {
 	if len(delegateNodes) == 0 {
+		utils.Error("Delegate Nodes length is 0")
 		return nil
 	}
 
 	// Get delegates that have not rumored?
 	delegatesNotRumored := make([]*types.Node, 0)
 	for _, node := range delegateNodes {
-		if gossip.ContainsRumor(node.Address) ||
-			node.Address == disgover.GetDisGoverService().ThisNode.Address ||
-			!node.IsAvailable() {
+		haveSent := gossip.HaveSent(services.GetCache(), gossip.Transaction.Hash, node.Address)
+		containsRumor := gossip.ContainsRumor(node.Address)
+		isThisAddress := node.Address == disgover.GetDisGoverService().ThisNode.Address
+
+		if !node.IsAvailable() {
+			utils.Debug(fmt.Sprintf("Node is not available: [hash=%s] to delegate [Port %d] [address=%s]", gossip.Transaction.Hash, node.HttpEndpoint.Port, node.Address))
+		}
+		if haveSent {
+			utils.Debug(fmt.Sprintf("Have Sent: [hash=%s] to delegate [Port %d] [address=%s]", gossip.Transaction.Hash, node.HttpEndpoint.Port, node.Address))
+		}
+		if !containsRumor {
+			utils.Debug(fmt.Sprintf("Don't have a Rumor for: [hash=%s] to delegate [Port %d] [address=%s]", gossip.Transaction.Hash, node.HttpEndpoint.Port, node.Address))
+		}
+		if isThisAddress || haveSent || !node.IsAvailable() {
 			continue
 		}
 		delegatesNotRumored = append(delegatesNotRumored, node)
@@ -271,7 +325,6 @@ func (this *DAPoSService) getRandomDelegate(gossip *types.Gossip, delegateNodes 
 	if len(delegatesNotRumored) == 0 {
 		return nil
 	}
-
 	// Find random delegate.
 	rand.Seed(time.Now().UTC().UnixNano())
 	index := rand.Intn(len(delegatesNotRumored))
@@ -307,7 +360,7 @@ func (this *DAPoSService) doWork() {
 			return
 		}
 		initialRcvDuration := gossip.Rumors[0].Time - gossip.Transaction.Time
-		utils.Info("Initial Receive Duration = ", initialRcvDuration, types.TxReceiveTimeout)
+		utils.Debug("Initial Receive Duration = ", initialRcvDuration, types.TxReceiveTimeout)
 		if initialRcvDuration >= types.TxReceiveTimeout {
 			utils.Error(fmt.Sprintf("Timed out [hash=%s] %v milliseconds", gossip.Transaction.Hash, initialRcvDuration))
 			receipt = types.NewReceipt(gossip.Transaction.Hash)
@@ -324,18 +377,17 @@ func (this *DAPoSService) doWork() {
 
 // executeTransaction
 func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, gossip *types.Gossip) {
-	utils.Debug("executeTransaction --> ", transaction.Hash)
+	utils.Info("executeTransaction --> ", transaction.Hash)
 	services.Lock(transaction.Hash)
 	defer services.Unlock(transaction.Hash)
 
 	txn := services.NewTxn(true)
 	defer txn.Discard()
 
-	utils.Debug("executing transaction")
 	// Has this transaction already been processed?
 	_, err := txn.Get([]byte(transaction.Key()))
 	if err == nil {
-		utils.Warn ("Already executed this transaction")
+		utils.Info("Already executed this transaction --> ", transaction.Hash)
 		return
 	}
 
@@ -441,18 +493,17 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	case types.TypeExecuteSmartContract:
 
 		// READ PARAMS
-		// if transaction.Type == types.TypeExecuteSmartContract {
-		//contractTx, err := types.ToTransactionByAddress(txn, transaction.To)
-		//if err != nil {
-		//	utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
-		//	receipt.Status = types.StatusInternalError
-		//	receipt.HumanReadableStatus = err.Error()
-		//	receipt.Cache(services.GetCache())
-		//	return
-		//}
+		contractTx, err := types.ToTransactionByAddress(txn, transaction.To)
+		if err != nil {
+			utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
+			receipt.Status = types.StatusInternalError
+			receipt.HumanReadableStatus = err.Error()
+			receipt.Cache(services.GetCache())
+			return
+		}
 
-		//transaction.Abi = contractTx.Abi
-		//transaction.Params, err = helper.GetConvertedParams(transaction)
+		transaction.Abi = contractTx.Abi
+		transaction.Params, err = helper.GetConvertedParams(transaction)
 		if err != nil {
 			utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
 			receipt.Status = types.StatusInternalError

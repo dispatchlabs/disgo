@@ -31,11 +31,34 @@ import (
 func (this *DAPoSService) GetDelegateNodes() *types.Response {
 
 	// Find nodes.
-	nodes, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
+	cDelegates, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
 	if err != nil {
 		utils.Error(err)
 		return types.NewResponseWithError(err)
 	}
+
+	txn := services.NewTxn(false)
+	defer txn.Discard()
+	//get stored delegates
+	sDelegates, err := types.ToNodesByType(txn, types.TypeDelegate)
+	if err != nil {
+		utils.Error(err)
+		return types.NewResponseWithError(err)
+	}
+
+	//merge slices
+	sDelegates = append(sDelegates, cDelegates...)
+
+	//only allow unique values
+	keys := make(map[string]bool)
+	nodes := []*types.Node{}
+	for _, entry := range sDelegates {
+		if _, value := keys[entry.Address]; !value {
+			keys[entry.Address] = true
+			nodes = append(nodes, entry)
+		}
+	}
+
 
 	// Create response.
 	response := types.NewResponse()
@@ -119,7 +142,7 @@ func (this *DAPoSService) NewTransaction(transaction *types.Transaction) *types.
 		response.HumanReadableStatus = types.StatusNotDelegateAsHumanReadable
 	}
 
-	utils.Info(fmt.Sprintf("new transaction [hash=%s, status=%s]", transaction.Hash, response.Status))
+	utils.Debug(fmt.Sprintf("new transaction [hash=%s, status=%s]", transaction.Hash, response.Status))
 	return response
 }
 
@@ -152,7 +175,7 @@ func (this *DAPoSService) GetTransaction(hash string) *types.Response {
 		response.Status = types.StatusNotDelegate
 		response.HumanReadableStatus = types.StatusNotDelegateAsHumanReadable
 	}
-	utils.Info(fmt.Sprintf("retrieved transaction [hash=%s, status=%s]", hash, response.Status))
+	utils.Debug(fmt.Sprintf("retrieved transaction [hash=%s, status=%s]", hash, response.Status))
 
 	return response
 }
