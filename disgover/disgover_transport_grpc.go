@@ -32,7 +32,8 @@ import (
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"encoding/hex"
 	"io/ioutil"
-	"github.com/jasonlvhit/gocron"
+	"os/exec"
+	"bytes"
 )
 
 //TODO: we are going to drop delegates if we fail to communicate with them.  The exepctation will be that the seed will tell us when they come back on line
@@ -251,35 +252,74 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 		return &proto.Empty{}, err
 	}
 
-	// Disgo software update?
-	if softwareUpdate.FileName == "disgo" {
-		fileName := "." + string(os.PathSeparator) + "disgo"
-		err = ioutil.WriteFile(fileName, softwareUpdate.Software, 0777)
+	// Remove Update directory.
+	directoryName := fmt.Sprintf(".%supdate", string(os.PathSeparator))
+	if utils.Exists(directoryName) {
+		err = os.RemoveAll(directoryName)
 		if err != nil {
-			utils.Error(fmt.Sprintf("unable to save file %s", fileName), err)
+			utils.Error(fmt.Sprintf("unable to directory %s", directoryName), err)
 			return &proto.Empty{}, err
 		}
-		utils.Info(fmt.Sprintf("software updated from seed node [file=%s, scheduledReboot=%s]", fileName, softwareUpdate.ScheduledReboot))
-
-		// Schedule the reboot.
-		go func() {
-			gocron.Every(1).Day().At(softwareUpdate.ScheduledReboot).Do(func() {
-				gocron.Clear()
-				services.GetDbService().Close()
-				utils.Info("rebooting with new version of disgo...")
-				os.Exit(0)
-			})
-			<-gocron.Start()
-		}()
-	} else {
-		fileName := "." + string(os.PathSeparator) + "disgo-update"
-		err = ioutil.WriteFile(fileName, softwareUpdate.Software, 0777)
-		if err != nil {
-			utils.Error(fmt.Sprintf("unable to save file %s", fileName), err)
-			return &proto.Empty{}, err
-		}
-		utils.Info(fmt.Sprintf("software updated from seed node [file=%s]", fileName))
 	}
+
+	// Create update directory exists?
+	err = os.MkdirAll(directoryName, 0755)
+	if err != nil {
+		utils.Error(fmt.Sprintf("unable to create directory %s", directoryName), err)
+		return &proto.Empty{}, err
+	}
+	os.MkdirAll(directoryName, 0755)
+
+	// Write file to update directory.
+	fileName := fmt.Sprintf("%s%s%s", directoryName, string(os.PathSeparator), softwareUpdate.FileName)
+	err = ioutil.WriteFile(fileName, softwareUpdate.Software, 0755)
+	if err != nil {
+		utils.Error(fmt.Sprintf("unable to save file %s", fileName), err)
+		return &proto.Empty{}, err
+	}
+	utils.Info(fmt.Sprintf("software updated from seed node [file=%s, scheduledReboot=%s]", fileName, softwareUpdate.ScheduledReboot))
+
+	// Unzip file.
+	command := exec.Command("unzip", fileName, "-d", directoryName)
+	var out bytes.Buffer
+	command.Stdout = &out
+	err = command.Run()
+	if err != nil {
+		utils.Error(fmt.Sprintf("executed %s - %s", fileName, out.String()))
+		return &proto.Empty{}, err
+	}
+	utils.Info(fmt.Sprintf("unzipped software update %s", fileName))
+
+
+	fileName = fmt.Sprintf("%s%sdisgo_update.sh", directoryName, string(os.PathSeparator))
+
+		// Execute script nohup.
+	command = exec.Command("nohup", fileName, "&")
+	command.Stdout = &out
+	err = command.Run()
+	if err != nil {
+		utils.Error(fmt.Sprintf("executed %s - %s", fileName, out.String()))
+		return &proto.Empty{}, err
+	}
+
+	// Delete update directory.
+	//err = os.Remove(directoryName)
+	//if err != nil {
+	//	utils.Warn(fmt.Sprintf("unable to delete file %s", fileName), err)
+	//}
+
+
+
+	// Schedule the reboot.
+	//go func() {
+	//	gocron.Every(1).Day().At(softwareUpdate.ScheduledReboot).Do(func() {
+	//		gocron.Clear()
+	//		services.GetDbService().Close()
+	//		utils.Info("rebooting with new version of disgo...")
+	//		os.Exit(0)
+	//	})
+	//	<-gocron.Start()
+	//}()
 
 	return &proto.Empty{}, nil
 }
