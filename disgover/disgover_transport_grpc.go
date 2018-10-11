@@ -28,8 +28,10 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"io/ioutil"
 	"os"
+	"github.com/dispatchlabs/disgo/commons/crypto"
+	"encoding/hex"
+	"io/ioutil"
 	"github.com/jasonlvhit/gocron"
 )
 
@@ -52,12 +54,12 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.P
 
 	node := convertToDomainNode(pingSeed.Node)
 	authentication := convertToDomainAuthentication(pingSeed.Authentication)
-	authenticationAddress, err := authentication.GetAddress()
+	authenticationAddress, err := authentication.GetDerivedAddress()
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("unable to authentication you [error=%s]", err.Error()))
+		return nil, errors.New(fmt.Sprintf("unable to authenticate you [error=%s]", err.Error()))
 	}
 	if authenticationAddress != node.Address {
-		return nil, errors.New("unable to authentication you")
+		return nil, errors.New("unable to authenticate you")
 	}
 
 	// Persist and cache node.
@@ -76,20 +78,42 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.P
 				// Is this an authentic delegate?
 				err := authentication.Verify(services.GetCache(), node.Address)
 				if err != nil {
-					utils.Warn(fmt.Sprintf("unable to authentication delegate [address=%s]", node.Address))
-					return nil, errors.New("unable to authentication you as a delegate")
+					utils.Warn(fmt.Sprintf("unable to authenticate delegate [address=%s]", node.Address))
+					return nil, errors.New("unable to authenticate you as a delegate")
 				}
 				node.Type = types.TypeDelegate
 				break
 			}
 		}
 	}
-	node.PersistAndCache(txn, services.GetCache())
+	node.Set(txn, services.GetCache())
 
 	// Get cached delegates.
-	delegates, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
+	cDelegates, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
 	if err != nil {
 		return nil, err
+	}
+
+	//get stored delegates
+	sDelegates, err := types.ToNodesByType(txn, types.TypeDelegate)
+	//utils.Info(fmt.Sprintf(sDelegates[0].Address))
+	if err != nil {
+		return nil, err
+	}
+
+	txn.Commit(nil)
+
+	//merge slices
+	sDelegates = append(sDelegates, cDelegates...)
+
+	//only allow unique values
+	keys := make(map[string]bool)
+	delegates := []*types.Node{}
+	for _, node := range sDelegates {
+		if _, value := keys[node.Address]; !value {
+			keys[node.Address] = true
+			delegates = append(delegates, node)
+		}
 	}
 
 	var nodes = make([]*proto.Node, 0)
@@ -133,8 +157,8 @@ func (this *DisGoverService) peerPingSeedGrpc() ([]*types.Node, error) {
 			return nil, err
 		}
 
-		protoNode := convertToProtoNode(this.ThisNode)
 		// Ping seed.
+		protoNode := convertToProtoNode(this.ThisNode)
 		response, err := client.PingSeedGrpc(ctx, &proto.PingSeed{Authentication: convertToProtoAuthentication(authentication), Node: protoNode})
 		if err != nil {
 			conn.Close()
@@ -180,7 +204,7 @@ func (this *DisGoverService) UpdateGrpc(ctx context.Context, update *proto.Updat
 	// Cache delegates.
 	for _, delegate := range update.Delegates {
 		convertToDomainNode(delegate).Cache(services.GetCache())
-		utils.Info(fmt.Sprintf("delegates updated [count=%d] %s : %s:%d", len(update.Delegates), delegate.Address, delegate.GrpcEndpoint.Host ,delegate.GrpcEndpoint.Port))
+		utils.Info(fmt.Sprintf("delegates updated [count=%d] %s : %s:%d", len(update.Delegates), delegate.Address, delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port))
 	}
 	return &proto.Empty{}, nil
 }
@@ -238,35 +262,52 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 	// Verify seed node is authentic?
 	err := this.verifySeedNode(softwareUpdate.Authentication)
 	if err != nil {
+		utils.Error(err)
 		return &proto.Empty{}, err
 	}
 
-	// Write file.
-	fileName := "." + string(os.PathSeparator) + "disgo"
-	err = ioutil.WriteFile(fileName, softwareUpdate.Software, 0)
+	// Valid software?
+	err = this.verifySoftwareUpdate(softwareUpdate)
 	if err != nil {
-		utils.Error(fmt.Sprintf("unable to save file %s", fileName), err)
+		utils.Error("unable to verify software update", err)
 		return &proto.Empty{}, err
 	}
 
-	utils.Info(fmt.Sprintf("software updated from seed node"))
+	// Disgo software update?
+	if softwareUpdate.FileName == "disgo" {
+		fileName := "." + string(os.PathSeparator) + "disgo"
+		err = ioutil.WriteFile(fileName, softwareUpdate.Software, 0777)
+		if err != nil {
+			utils.Error(fmt.Sprintf("unable to save file %s", fileName), err)
+			return &proto.Empty{}, err
+		}
+		utils.Info(fmt.Sprintf("software updated from seed node [file=%s, scheduledReboot=%s]", fileName, softwareUpdate.ScheduledReboot))
 
-	// Schedule the reboot.
-	go func() {
-		gocron.Every(1).Day().At(softwareUpdate.ScheduledReboot).Do(func() {
-			gocron.Clear()
-			services.GetDbService().Close()
-			utils.Info("rebooting with new version of disgo...")
-			os.Exit(0)
-		})
-		<-gocron.Start()
-	}()
+		// Schedule the reboot.
+		go func() {
+			gocron.Every(1).Day().At(softwareUpdate.ScheduledReboot).Do(func() {
+				gocron.Clear()
+				services.GetDbService().Close()
+				utils.Info("rebooting with new version of disgo...")
+				os.Exit(0)
+			})
+			<-gocron.Start()
+		}()
+	} else {
+		fileName := "." + string(os.PathSeparator) + "disgo-update"
+		err = ioutil.WriteFile(fileName, softwareUpdate.Software, 0777)
+		if err != nil {
+			utils.Error(fmt.Sprintf("unable to save file %s", fileName), err)
+			return &proto.Empty{}, err
+		}
+		utils.Info(fmt.Sprintf("software updated from seed node [file=%s]", fileName))
+	}
 
 	return &proto.Empty{}, nil
 }
 
 // peerUpdateSoftwareGrpc
-func (this *DisGoverService) peerUpdateSoftwareGrpc(software []byte) {
+func (this *DisGoverService) peerUpdateSoftwareGrpc(fileName string, software []byte) {
 
 	// Get delegates in cache.
 	delegates, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
@@ -282,11 +323,27 @@ func (this *DisGoverService) peerUpdateSoftwareGrpc(software []byte) {
 		return
 	}
 
+	// Create hash and signature.
+	hashBytes := crypto.NewHash(software)
+	hash := hex.EncodeToString(hashBytes[:])
+
+	// Create signature of the hash.
+	privateKeyBytes, err := hex.DecodeString(types.GetAccount().PrivateKey)
+	if err != nil {
+		utils.Error(err)
+		return
+	}
+	signatureBytes, err := crypto.NewSignature(privateKeyBytes, hashBytes[:])
+	if err != nil {
+		utils.Error(err)
+		return
+	}
+	signature := hex.EncodeToString(signatureBytes)
+
 	txn := services.NewTxn(true)
 	defer txn.Discard()
 	reboot := time.Now()
 	reboot = reboot.Add(2 * time.Minute)
-
 	for _, delegate := range delegates {
 		maxSize := 1024 * 1024 * 1024 // TODO: Do we need this (ServerOptions sets this)?
 		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxSize), grpc.MaxCallSendMsgSize(maxSize)), grpc.WithInsecure())
@@ -302,9 +359,9 @@ func (this *DisGoverService) peerUpdateSoftwareGrpc(software []byte) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 
 		// Update software.
-		_, err = client.UpdateSoftwareGrpc(ctx, &proto.SoftwareUpdate{Authentication: convertToProtoAuthentication(authentication), Software: software, ScheduledReboot: reboot.Format("3:04")})
+		_, err = client.UpdateSoftwareGrpc(ctx, &proto.SoftwareUpdate{Authentication: convertToProtoAuthentication(authentication), Hash: hash, FileName: fileName, Software: software, Signature: signature, ScheduledReboot: reboot.Format("15:04")})
 		if err != nil {
-			utils.Warn(fmt.Sprintf("unable to update sofware [address=%s, host=%s, port=%d]", delegate.Address, delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port))
+			utils.Warn(fmt.Sprintf("unable to update sofware [address=%s, host=%s, port=%d]", delegate.Address, delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), err)
 			continue
 		}
 		conn.Close()
@@ -321,17 +378,17 @@ func (this *DisGoverService) verifySeedNode(protoAuthenticate *proto.Authenticat
 	}
 
 	authentication := convertToDomainAuthentication(protoAuthenticate)
-	authenticationAddress, err := authentication.GetAddress()
+	authenticationAddress, err := authentication.GetDerivedAddress()
 	if err != nil {
 		utils.Error(err)
 		return err
 	}
 
-	for _, SeedNode := range types.GetConfig().Seeds {
-		if SeedNode.Address == authenticationAddress {
-			err = authentication.Verify(services.GetCache(), SeedNode.Address)
+	for _, seedNode := range types.GetConfig().Seeds {
+		if seedNode.Address == authenticationAddress {
+			err = authentication.Verify(services.GetCache(), seedNode.Address)
 			if err != nil {
-				return errors.New("you are not an authorized seed node")
+				return errors.New(fmt.Sprintf("you are not an authorized seed node [err=%s]", err.Error()))
 			}
 			return nil
 		}
@@ -339,6 +396,40 @@ func (this *DisGoverService) verifySeedNode(protoAuthenticate *proto.Authenticat
 
 	utils.Warn("attempted update by a non-authorized seed node")
 	return errors.New("you are not an authorized seed node")
+}
+
+// verifySoftwareUpdate
+func (this *DisGoverService) verifySoftwareUpdate(softwareUpdate *proto.SoftwareUpdate) error {
+
+	// Create hash.
+	hashBytes := crypto.NewHash(softwareUpdate.Software)
+	hash := hex.EncodeToString(hashBytes[:])
+
+	// Hash valid?
+	if hash != softwareUpdate.Hash {
+		return errors.New("invalid hash")
+	}
+
+	// Valid address?
+	signatureBytes, err := hex.DecodeString(softwareUpdate.Signature)
+	if err != nil {
+		return errors.New("unable to decode signature")
+	}
+	publicKeyBytes, err := crypto.ToPublicKey(hashBytes[:], signatureBytes)
+	if err != nil {
+		return errors.New("unable to generate public key from hash and signature")
+	}
+
+	// Is the computed address match a seed address?
+	computedAddress := hex.EncodeToString(crypto.ToAddress(publicKeyBytes))
+	for _, seedNode := range types.GetConfig().Seeds {
+		if seedNode.Address == computedAddress {
+			return nil
+		}
+	}
+
+	utils.Warn("attempted update software by a non-authorized seed node")
+	return errors.New("you are not an authorized seed node to update software")
 }
 
 /*

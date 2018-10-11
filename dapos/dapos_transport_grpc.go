@@ -40,8 +40,8 @@ func (this *DAPoSService) WithGrpc() *DAPoSService {
 }
 
 
-// Synchronize
-func (this *DAPoSService) SynchronizeGrpc(context.Context, *proto.Empty) (*proto.SynchronizeResponse, error) {
+// SynchronizeGrpc
+func (this *DAPoSService) SynchronizeGrpc(constext context.Context, request *proto.SynchronizeRequest) (*proto.SynchronizeResponse, error) {
 	utils.Info("synchronizing DB with a delegate...")
 	var items = make([]*proto.Item, 0)
 	err := services.GetDb().View(func(txn *badger.Txn) error {
@@ -49,6 +49,7 @@ func (this *DAPoSService) SynchronizeGrpc(context.Context, *proto.Empty) (*proto
 		opts.PrefetchSize = 100
 		it := txn.NewIterator(opts)
 		defer it.Close()
+		var i int64 = 0
 		for it.Rewind(); it.Valid(); it.Next() {
 			item := it.Item()
 			key := item.Key()
@@ -57,9 +58,18 @@ func (this *DAPoSService) SynchronizeGrpc(context.Context, *proto.Empty) (*proto
 				return err
 			}
 			keyString := string(key)
-			//fmt.Printf("Key = %v\n", keyString)
-			if strings.HasPrefix(keyString, "key") {
-				items = append(items, &proto.Item{Key: keyString, Value: string(value)})
+			if !strings.HasPrefix(keyString, "table-") && !strings.HasPrefix(keyString, "key-") && !strings.HasPrefix(keyString, "AccountState-") {
+				continue
+			}
+
+			if i < request.Index {
+				i++
+				continue
+			}
+			items = append(items, &proto.Item{Key: keyString, Value: value})
+			i++
+			if len(items) == 50 {
+				break
 			}
 		}
 		return nil
@@ -73,7 +83,7 @@ func (this *DAPoSService) SynchronizeGrpc(context.Context, *proto.Empty) (*proto
 
 // peerDelegateExecuteGrpc
 func (this *DAPoSService) peerSynchronize() {
-	utils.Info("synchronizing DB with a delegate...")
+	utils.Info("synchronizing DB with peer delegate...")
 
 	// Find delegate nodes.
 	delegates, err := types.ToNodesByTypeFromCache(services.GetCache(),types.TypeDelegate)
@@ -99,25 +109,35 @@ func (this *DAPoSService) peerSynchronize() {
 		}
 		defer conn.Close()
 		client := proto.NewDAPoSGrpcClient(conn)
-		contextWithTimeout, cancel := context.WithTimeout(context.Background(), 2000*time.Millisecond)
+		contextWithTimeout, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
 		// Synchronize
-		response, err := client.SynchronizeGrpc(contextWithTimeout, &proto.Empty{})
-		if err != nil {
-			utils.Warn(fmt.Sprintf("unable to synchronize with delegate [host=%s, port=%d]", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), err)
-			continue
-		}
-		txn := services.NewTxn(true)
-		defer txn.Discard()
-		for _, item := range response.Items {
-			err = txn.Set([]byte(item.Key), []byte(item.Value))
+		var index int64 = 0
+		for {
+			txn := services.NewTxn(true)
+			defer txn.Discard()
+			response, err := client.SynchronizeGrpc(contextWithTimeout, &proto.SynchronizeRequest{Index: index})
+			if err != nil {
+				utils.Warn(fmt.Sprintf("unable to synchronize with delegate [host=%s, port=%d]", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), err)
+				continue
+			}
+			if len(response.Items) == 0 {
+				break
+			}
+			for _, item := range response.Items {
+				err = txn.Set([]byte(item.Key), item.Value)
+				if err != nil {
+					utils.Error(err)
+				}
+			}
+			index += int64(len(response.Items))
+			err = txn.Commit(nil)
 			if err != nil {
 				utils.Error(err)
 			}
 		}
-		txn.Commit(nil)
-		utils.Info("DB synchronized from peer delegate")
+		utils.Info(fmt.Sprintf("synchronized %d records from peer delegate's DB", index))
 		return
 	}
 }
@@ -131,14 +151,16 @@ func (this *DAPoSService) GossipGrpc(context context.Context, request *proto.Req
 	}
 
 	// Synchronize gossip.
-	synchronizedGossip, err := this.synchronizeGossip(gossip)
+	synchronizedGossip, err, addToChan := this.synchronizeGossip(gossip)
 	if err != nil {
 		utils.Error(err)
 		return nil, err
 	}
 
 	// Gossip what we got from our peer delegate.
-	this.gossipChan <- gossip
+	if(addToChan) {
+		this.gossipChan <- gossip
+	}
 
 	return &proto.Response{Payload: synchronizedGossip.String()}, nil
 }
@@ -147,15 +169,11 @@ func (this *DAPoSService) GossipGrpc(context context.Context, request *proto.Req
 func (this *DAPoSService) peerGossipGrpc(node types.Node, gossip *types.Gossip) (*types.Gossip, error) {
 	utils.Debug(fmt.Sprintf("attempting to gossip with delegate [address=%s]", node.Address))
 
-	//conn, err := grpc.Dial(fmt.Sprintf("%s:%d", node.GrpcEndpoint.Host, node.GrpcEndpoint.Port), grpc.WithInsecure())
-	//if err != nil {
-	//	utils.Error(fmt.Sprintf("cannot dial seed [host=%s, port=%d]",  node.GrpcEndpoint.Host,  node.GrpcEndpoint.Port), err)
-	//	return nil, err
-	//}
-	//defer conn.Close()
-
 	conn, err := services.GetGrpcConnection(node.Address, node.GrpcEndpoint.Host, node.GrpcEndpoint.Port)
-
+	if err != nil {
+		utils.Error(fmt.Sprintf("cannot dial seed [host=%s, port=%d]",  node.GrpcEndpoint.Host,  node.GrpcEndpoint.Port), err)
+		return nil, err
+	}
 	client := proto.NewDAPoSGrpcClient(conn)
 
 	contextWithTimeout, cancel := context.WithTimeout(context.Background(), 20000*time.Millisecond)
@@ -165,19 +183,25 @@ func (this *DAPoSService) peerGossipGrpc(node types.Node, gossip *types.Gossip) 
 	response, err := client.GossipGrpc(contextWithTimeout, &proto.Request{Payload: gossip.String()})
 	if err != nil {
 		utils.Error(fmt.Sprintf("cannot connect to node [host=%s, port=%d]", node.GrpcEndpoint.Host, node.GrpcEndpoint.Port), err)
+
 		txn := services.NewTxn(true)
 		defer txn.Discard()
+		node.Status = types.StatusNodeUnavailable
+		node.StatusTime = time.Now()
 
-		unsetErr := node.Unset(txn, services.GetCache())
-		if unsetErr != nil {
-			utils.Error(unsetErr)
+		setErr := node.Set(txn, services.GetCache())
+		if setErr != nil {
+			utils.Error(setErr)
 		}
 		return nil, err
 	}
 	remoteGossip, err := types.ToGossipFromJson([]byte(response.Payload))
 	if err != nil {
+		utils.Error(err)
 		return nil, err
 	}
+	utils.Debug(fmt.Sprintf("sent gossip [hash=%s] to delegate [Port %d] [address=%s]", gossip.Transaction.Hash, node.HttpEndpoint.Port, node.Address))
+	remoteGossip.CacheSentDelegate(services.GetCache(), gossip.Transaction.Hash, node.Address)
 
 	return remoteGossip, err
 }

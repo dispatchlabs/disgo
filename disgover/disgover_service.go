@@ -35,17 +35,6 @@ import (
 var disGoverServiceInstance *DisGoverService
 var disGoverServiceOnce sync.Once
 
-type disgoverEvents struct {
-	DisGoverServiceInitFinished string
-}
-
-var (
-	// Events - `disgover` events
-	Events = disgoverEvents{
-		DisGoverServiceInitFinished: "DisGoverServiceInitFinished",
-	}
-)
-
 // GetDisGoverService
 func GetDisGoverService() *DisGoverService {
 	disGoverServiceOnce.Do(func() {
@@ -86,8 +75,8 @@ func (this *DisGoverService) Go() {
 	this.running = true
 
 	// Check if we are a seed.
-	for _, seedHost := range types.GetConfig().Seeds {
-		if seedHost.GrpcEndpoint.Host == types.GetConfig().GrpcEndpoint.Host && seedHost.GrpcEndpoint.Port == types.GetConfig().GrpcEndpoint.Port {
+	for _, seed := range types.GetConfig().Seeds {
+		if seed.Address == types.GetAccount().Address {
 			this.ThisNode.Type = types.TypeSeed
 			break
 		}
@@ -119,7 +108,7 @@ func (this *DisGoverService) Go() {
 	}
 
 	utils.Info(fmt.Sprintf("running as %s", this.ThisNode.Type))
-	utils.Events().Raise(Events.DisGoverServiceInitFinished)
+	utils.Events().Raise(types.Events.DisGoverServiceInitFinished)
 }
 
 // updateWorker
@@ -129,28 +118,32 @@ func (this DisGoverService) updateWorker() {
 		select {
 		case <-timer.C:
 
-			// Is there a software update?
-			fileName := "." + string(os.PathSeparator) + "update" + string(os.PathSeparator) + "disgo"
-			if !utils.Exists(fileName) {
+			// Any files to update?
+			updateDirectory := "." + string(os.PathSeparator) + "update"
+			files, err := ioutil.ReadDir(updateDirectory)
+			if err != nil {
 				continue
 			}
 
-			utils.Info("found software to update")
+			for _, file := range files {
+				// Read file?
+				fileName := updateDirectory + string(os.PathSeparator) + file.Name()
+				bytes, err := ioutil.ReadFile(fileName)
+				if err != nil {
+					utils.Error(fmt.Sprintf("unable to read file %s", file.Name()), err)
+					continue
+				}
 
-			// Read file?
-			bytes, err := ioutil.ReadFile(fileName)
-			if err != nil {
-				utils.Error(fmt.Sprintf("unable to load file %s", fileName), err)
-				continue
-			}
+				utils.Info(fmt.Sprintf("found software to update [file=%s]", fileName))
 
-			// Update software.
-			this.peerUpdateSoftwareGrpc(bytes)
+				// Update software.
+				this.peerUpdateSoftwareGrpc(file.Name(), bytes)
 
-			// Delete file.
-			err = os.Remove(fileName)
-			if err != nil {
-				utils.Warn(fmt.Sprintf("unable to delete file %s", fileName), err)
+				// Delete file.
+				err = os.Remove(fileName)
+				if err != nil {
+					utils.Warn(fmt.Sprintf("unable to delete file %s", fileName), err)
+				}
 			}
 		}
 	}

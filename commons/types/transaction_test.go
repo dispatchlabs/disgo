@@ -17,7 +17,6 @@
 package types
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"testing"
@@ -53,7 +52,7 @@ func testMockTransaction(t *testing.T) *Transaction {
 //TestTransactionCache
 func TestTransactionCache(t *testing.T) {
 	tx := testMockTransaction(t)
-	tx.Cache(c, time.Second * 5)
+	tx.Cache(c)
 	testTx, err := ToTransactionFromCache(c, tx.Hash)
 	if err != nil {
 		t.Error(err)
@@ -304,151 +303,6 @@ func TestPrintNewExecuteTx(t *testing.T) {
 	var privateKey = "0f86ea981203b26b5b8244c8f661e30e5104555068a4bd168d3e3015db9bb25a"
 	var from = "3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c"
 	var to = "10412d6de794ab228e735eb0622f2deffca2edc5" // "c3be1a3a5c6134cca51896fadf032c4c61bc355e"
-	var abi = `[
-	{
-		"constant": true,
-		"inputs": [],
-		"name": "getVar5",
-		"outputs": [
-			{
-				"name": "",
-				"type": "string"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "value",
-				"type": "string"
-			}
-		],
-		"name": "setVar6Var4",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [],
-		"name": "var6",
-		"outputs": [
-			{
-				"name": "var1",
-				"type": "uint256"
-			},
-			{
-				"name": "var2",
-				"type": "bool"
-			},
-			{
-				"name": "var3",
-				"type": "uint8"
-			},
-			{
-				"name": "var4",
-				"type": "string"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "value1",
-				"type": "string"
-			},
-			{
-				"name": "value2",
-				"type": "string"
-			}
-		],
-		"name": "setMultiple",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [],
-		"name": "var5",
-		"outputs": [
-			{
-				"name": "",
-				"type": "string"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [],
-		"name": "incVar6Var1",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "value",
-				"type": "string"
-			}
-		],
-		"name": "setVar5",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [],
-		"name": "getVar55",
-		"outputs": [
-			{
-				"name": "",
-				"type": "string"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [],
-		"name": "var55",
-		"outputs": [
-			{
-				"name": "",
-				"type": "string"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	}
-]`
 
 	var theTime = utils.ToMilliSeconds(time.Now())
 	var method = "setMultiple"
@@ -459,7 +313,6 @@ func TestPrintNewExecuteTx(t *testing.T) {
 		privateKey,
 		from,
 		to,
-		hex.EncodeToString([]byte(abi)),
 		method,
 		params,
 		theTime,
@@ -479,7 +332,6 @@ func TestPrintNewExecuteTx(t *testing.T) {
 //		privateKey,
 //		from,
 //		"fe8fc34a2b981fbd86ed11bf27e7d54dfd0fc54a",
-//		"",
 //		method,
 //		params,
 //		theTime,
@@ -594,37 +446,93 @@ func TestTransactionEquals(t *testing.T) {
 
 //TestTransactionSet
 func TestTransactionSet(t *testing.T) {
-	// TODO: Transaction.PersistAndCache()
-	t.Skip("Need a Badger DB mock")
-}
+	defer destruct()
+	txn := db.NewTransaction(true)
+	defer txn.Discard()
+	tx := testMockTransaction(t)
+	tx.Set(txn, c)
 
-//TestToTransactions
-func TestToTransactions(t *testing.T) {
-	// TODO: ToTransactions()
-	t.Skip("Need a Badger DB mock")
+	testTx, err := ToTransactionByKey(txn, []byte(tx.Key()))
+	if err != nil{
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testTx, tx) == false{
+		t.Error("tx not equal to testAccount")
+	}
+	testTx, err = ToTransactionFromCache(c, tx.Hash)
+	if err != nil {
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testTx, tx) == false{
+		t.Error("tx not equal to testReceipt")
+	}
 }
 
 //TestToTransactionsByFromAddress
-func TestToTransactionsByFromAddress(t *testing.T) {
-	// TODO: ToTransactionsByFromAddress()
-	t.Skip("Need a Badger DB mock")
-}
+// func TestToTransactionsByFromAddress(t *testing.T) {
+// 	defer destruct()
+// 	txn := db.NewTransaction(true)
+// 	defer txn.Discard()
+// 	tx := testMockTransaction(t)
+// 	tx.Set(txn, c)
+
+// 	testTx, err := ToTransactionsByFromAddress(txn, tx.From)
+// 	if err != nil{
+// 		t.Error(err)
+// 	}
+// 	if reflect.DeepEqual(testTx[0], tx) == false{
+// 		t.Error("tx not equal to testAccount")
+// 	}
+// }
 
 //TestToTransactionsByToAddress
-func TestToTransactionsByToAddress(t *testing.T) {
-	// TODO: ToTransactionsByToAddress()
-	t.Skip("Need a Badger DB mock")
-}
+// func TestToTransactionsByToAddress(t *testing.T) {
+// 	defer destruct()
+// 	txn := db.NewTransaction(true)
+// 	defer txn.Discard()
+// 	tx := testMockTransaction(t)
+// 	tx.Set(txn, c)
+
+// 	testTx, err := ToTransactionsByToAddress(txn, tx.To)
+// 	if err != nil{
+// 		t.Error(err)
+// 	}
+// 	if reflect.DeepEqual(testTx[0], tx) == false{
+// 		t.Error("tx not equal to testAccount")
+// 	}
+// }
 
 //TestToTransactionsByType
 func TestToTransactionsByType(t *testing.T) {
-	// TODO: ToTransactionsByType()
-	t.Skip("Need a Badger DB mock")
+	defer destruct()
+	txn := db.NewTransaction(true)
+	defer txn.Discard()
+	tx := testMockTransaction(t)
+	tx.Set(txn, c)
+
+	testTx, err := ToTransactionsByType(txn, tx.Type)
+	if err != nil{
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testTx[0], tx) == false{
+		t.Error("tx not equal to testAccount")
+	}
 }
 
 func TestToTransactionsByKey(t *testing.T) {utils.ToMilliSeconds(time.Now())
-	// TODO: ToTransactionsByKey()
-	t.Skip("Need a Badger DB mock")
+	defer destruct()
+	txn := db.NewTransaction(true)
+	defer txn.Discard()
+	tx := testMockTransaction(t)
+	tx.Set(txn, c)
+
+	testTx, err := ToTransactionByKey(txn, []byte(tx.Key()))
+	if err != nil{
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testTx, tx) == false{
+		t.Error("tx not equal to testAccount")
+	}
 }
 
 //func TestStatusChange(t *testing.T) {

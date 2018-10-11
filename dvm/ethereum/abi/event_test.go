@@ -25,6 +25,8 @@ import (
 	"strings"
 	"testing"
 
+	dvmCrypto "github.com/dispatchlabs/disgo/commons/crypto"
+
 	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/crypto"
 	"github.com/stretchr/testify/assert"
@@ -58,23 +60,39 @@ var jsonEventPledge = []byte(`{
   "type": "event"
 }`)
 
+var jsonEventMixedCase = []byte(`{
+	"anonymous": false,
+	"inputs": [{
+		"indexed": false, "name": "value", "type": "uint256"
+	  }, {
+		"indexed": false, "name": "_value", "type": "uint256"
+	  }, {
+		"indexed": false, "name": "Value", "type": "uint256"
+	}],
+	"name": "MixedCase",
+	"type": "event"
+  }`)
+
 // 1000000
 var transferData1 = "00000000000000000000000000000000000000000000000000000000000f4240"
 
 // "0x00Ce0d46d924CC8437c806721496599FC3FFA268", 2218516807680, "usd"
 var pledgeData1 = "00000000000000000000000000ce0d46d924cc8437c806721496599fc3ffa2680000000000000000000000000000000000000000000000000000020489e800007573640000000000000000000000000000000000000000000000000000000000"
 
+// 1000000,2218516807680,1000001
+var mixedCaseData1 = "00000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000000020489e8000000000000000000000000000000000000000000000000000000000000000f4241"
+
 func TestEventId(t *testing.T) {
 	var table = []struct {
 		definition   string
-		expectations map[string]common.Hash
+		expectations map[string]dvmCrypto.HashBytes
 	}{
 		{
 			definition: `[
 			{ "type" : "event", "name" : "balance", "inputs": [{ "name" : "in", "type": "uint256" }] },
 			{ "type" : "event", "name" : "check", "inputs": [{ "name" : "t", "type": "address" }, { "name": "b", "type": "uint256" }] }
 			]`,
-			expectations: map[string]common.Hash{
+			expectations: map[string]dvmCrypto.HashBytes{
 				"balance": crypto.Keccak256Hash([]byte("balance(uint256)")),
 				"check":   crypto.Keccak256Hash([]byte("check(address,uint256)")),
 			},

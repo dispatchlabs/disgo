@@ -22,6 +22,7 @@ import (
 
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+
 	// "github.com/dispatchlabs/disgo/dvm/ethereum/ethdb"
 	"strings"
 
@@ -56,7 +57,7 @@ func NewBadgerDatabase() (*BadgerDatabase, error) {
 // ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~
 func (db *BadgerDatabase) Put(key []byte, value []byte) error {
 	utils.Debug(fmt.Sprintf("BadgerDatabase-PUT-Key   : %s", crypto.Encode(key)))
-	utils.Debug(fmt.Sprintf("BadgerDatabase-PUT-KeyRAW: %v", key))
+	utils.Debug(fmt.Sprintf("BadgerDatabase-PUT-KeyString: %v", string(key)))
 	// utils.Debug(fmt.Sprintf("BadgerDatabase-PUT-Val: %s", crypto.Encode(value)))
 
 	// valEncoded := crypto.Encode(value)
@@ -74,7 +75,7 @@ func (db *BadgerDatabase) Put(key []byte, value []byte) error {
 
 func (db *BadgerDatabase) Get(key []byte) ([]byte, error) {
 	utils.Debug(fmt.Sprintf("BadgerDatabase-GET-Key   : %s", crypto.Encode(key)))
-	utils.Debug(fmt.Sprintf("BadgerDatabase-GET-KeyRAW: %v", key))
+	utils.Debug(fmt.Sprintf("BadgerDatabase-GET-KeyString: %v", string(key)))
 
 	var value []byte
 	err := disgoServices.GetDb().View(func(txn *badger.Txn) error {
@@ -183,8 +184,27 @@ type memBatch struct {
 }
 
 func (b *memBatch) Put(key, value []byte) error {
-	b.writes = append(b.writes, kv{common.CopyBytes(key), common.CopyBytes(value)})
+	b.writes = append(b.writes, kv{
+		k: common.CopyBytes(key),
+		v: common.CopyBytes(value),
+	})
+
 	b.size += len(value)
+	return nil
+}
+
+func (b *memBatch) Delete(key []byte) error {
+	newWrites := []kv{}
+	for _, keyValues := range b.writes {
+		if string(keyValues.k) != string(key) {
+			newWrites = append(newWrites, kv{k: common.CopyBytes(keyValues.k), v: common.CopyBytes(keyValues.v)})
+		} else {
+			b.size -= len(keyValues.v)
+		}
+	}
+
+	b.writes = newWrites
+
 	return nil
 }
 

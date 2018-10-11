@@ -9,14 +9,15 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/types"
+	"github.com/dispatchlabs/disgo/dvm/vmstatehelperimplemtations"
 )
 
 // DVMResult - represents a result after a `Deploy` or `Execute` of a Smart Contract
 type DVMResult struct {
-	From                     crypto.AddressBytes //
-	To                       crypto.AddressBytes //
-	ABI                      string              // The ABI for the smart contract
-	StorageState             *VMStateHelper      // The state of the storage
+	From                     crypto.AddressBytes                       //
+	To                       crypto.AddressBytes                       //
+	ABI                      string                                    // The ABI for the smart contract
+	StorageState             *vmstatehelperimplemtations.VMStateHelper // The state of the storage
 	ContractAddress          crypto.AddressBytes
 	ContractMethod           string // Method
 	ContractMethodExecError  error  // Method Execution error
@@ -95,7 +96,7 @@ func (this DVMResult) MarshalJSON() ([]byte, error) {
 		ContractAddress:          crypto.Encode(this.ContractAddress[:]),
 		ContractMethod:           this.ContractMethod,
 		ContractMethodExecResult: methodResult,
-		Divvy:     this.Divvy,
-		HertzCost: this.HertzCost,
+		Divvy:                    this.Divvy,
+		HertzCost:                this.HertzCost,
 	})
 }

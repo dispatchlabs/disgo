@@ -2,7 +2,7 @@
  
 &nbsp;
 
-![Go Version 1.9.2](http://b.repl.ca/v1/Go_Version-1.9.2-brightgreen.png)
+![Go Version 1.10.3](http://b.repl.ca/v1/Go_Version-1.10.3-brightgreen.png)
 [![Build status](https://ci.appveyor.com/api/projects/status/9hil01is3aflgg6l?svg=true)](https://ci.appveyor.com/project/DispatchLabs/disgo-26m8t)
 
 <a name="overview"></a>

@@ -22,15 +22,16 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"time"
+	"strings"
+	"sort"
 
 	"fmt"
 
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/utils"
-	"github.com/pkg/errors"
 	"github.com/patrickmn/go-cache"
-	"github.com/dispatchlabs/disgo/commons/helper"
+	"github.com/pkg/errors"
 )
 
 // Transaction - The transaction info
@@ -79,12 +80,8 @@ func (this Transaction) ToKey() string {
 }
 
 //Cache
-func (this *Transaction) Cache(cache *cache.Cache, time_optional ...time.Duration) {
-	TTL := TransactionTTL
-	if len(time_optional) > 0 {
-		TTL = time_optional[0]
-	}
-	cache.Set(this.Key(), this, TTL)
+func (this *Transaction) Cache(cache *cache.Cache) {
+	cache.Set(this.Key(), this, TransactionCacheTTL)
 }
 
 // Persist
@@ -187,6 +184,12 @@ func ToTransactionFromCache(cache *cache.Cache, hash string) (*Transaction, erro
 		return nil, ErrNotFound
 	}
 	transaction := value.(*Transaction)
+	receipt, err :=  ToReceiptFromCache(cache, transaction.Hash)
+	if err != nil {
+		utils.Error(err)
+	} else {
+		transaction.Receipt = *receipt
+	}
 	return transaction, nil
 }
 
@@ -215,50 +218,211 @@ func ToTransactions(txn *badger.Txn) ([]*Transaction, error) {
 	return transactions, nil
 }
 
-func TransactionPaging(page int,txn *badger.Txn) ([]*Transaction, error){
-	var iteratorCount = 0
-	var firstItem int
-	pageSize := 100
+func TransactionPaging(txn *badger.Txn, startingHash string, page, pageSize int) ([]*Transaction, *PagingResult, error) {
+	if pageSize <= 0 || pageSize > 100 {
+		return nil, nil, ErrInvalidRequestPageSize
+	}
 	if page <= 0 {
-		return nil, ErrInvalidRequest
-	}else if page == 1{
-		firstItem = 1
-	} else{
-		firstItem = (page * pageSize) - (pageSize - 1)
+		return nil, nil, ErrInvalidRequestPage
 	}
 
 	defer txn.Discard()
+	
+	// Iterate over all of the time keys to add them into a string array
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = false
+	iterator := txn.NewIterator(opts)
+	prefix := []byte(fmt.Sprintf("key-transaction-time-"))
+	timestamps := make([]string, 0)
+	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
+		item := iterator.Item()
+		timestamps = append(timestamps, string(item.Key()))
+	}
+	iterator.Close()
+
+	// Create a transactions collection
+	transactions := make([]*Transaction, 0)
+
+	// Capture the total number of items
+	totalCount := len(timestamps)
+
+	// utils.Info(fmt.Sprintf("totalCount (max) = %d", totalCount))
+
+	if totalCount == 0 {
+		return transactions, &PagingResult{ totalCount, "" }, nil
+	}
+
+	// Sort the string array in reverse; which will result in sorting by timestamp, hash - desc (eg; most recent first)
+	sort.Sort(sort.Reverse(sort.StringSlice(timestamps)))
+
+	// Iterate over the strings
+	idx := 0
+	found := false
+	for _, key := range timestamps {
+		// extract the hash from the key
+		k := strings.Split(key, "-")
+		hash := k[4]
+
+		// If no startingHash provided, use the first value
+		if startingHash == "" {
+			startingHash = hash
+		}
+		// If we found the startingHash, idx will contain the starting index for pagination, counting, etc.
+		if startingHash == hash {
+			found = true
+			break
+		}
+		idx++
+	}
+	// utils.Info(fmt.Sprintf("startingHash = %s", startingHash))
+	// utils.Info(fmt.Sprintf("idx (starting) = %d", idx))
+
+	// If we reach the end without finding startingHash, throw an error
+	if found == false {
+		return nil, nil, ErrInvalidRequestStartingHash
+	}
+
+	// Reduce the total count by the starting index
+	totalCount = totalCount - idx
+	// Shift idx forward by desired page
+	idx = idx + (page * pageSize) - pageSize
+
+	// utils.Info(fmt.Sprintf("totalCount (paged) = %d", totalCount))
+	// utils.Info(fmt.Sprintf("idx (paged - page=%d, pageSize=%d) = %d", page, pageSize, idx))
+
+	for i := 0; i < pageSize; i++ {
+		if totalCount > idx {
+			// utils.Info(fmt.Sprintf("timestamps[idx] = %s", timestamps[idx]))
+			if (timestamps[idx] != "") {
+				k := strings.Split(timestamps[idx], "-")
+				hash := k[4]
+				utils.Info(fmt.Sprintf("hash = %s", hash))
+				tx, err := ToTransactionByKey(txn, []byte(fmt.Sprintf("table-transaction-%s", hash)))
+				if err != nil {
+					utils.Warn(fmt.Sprintf("Could not find transaction key: table-transaction-%s", hash), err)
+				}
+				if tx != nil {
+					transactions = append(transactions, tx)
+				} else {
+					transactions = append(transactions, nil)
+				}
+				idx++
+			} else {
+				break
+			}
+		} else {
+			continue
+		}
+	}
+	return transactions, &PagingResult{ totalCount, startingHash }, nil;
+}
+
+// ToTransactionsByFromAddress
+func ToTransactionsByFromAddress(txn *badger.Txn, address, startingHash string, page, pageSize int) ([]*Transaction, error) {
+	var iteratorCount = 0
+	var firstItem int
+	if pageSize <= 0 || pageSize > 100 {
+		return nil, ErrInvalidRequestPageSize
+	}
+	if page <= 0 {
+		return nil, ErrInvalidRequestPage
+	} else {
+		firstItem = (page * pageSize) - (pageSize - 1)
+	}
+	var item []byte
+	prefix := []byte(fmt.Sprintf("key-transaction-from-%s", address))
+	if startingHash != "" {
+		thing, err := ToTransactionByKey(txn, []byte(fmt.Sprintf("table-transaction-%s", startingHash)))
+		if err != nil {
+			return nil, ErrInvalidRequestHash
+		}
+		item = []byte(thing.FromKey())
+	} else {
+		item = prefix
+	}
+
 	opts := badger.DefaultIteratorOptions
 	opts.PrefetchValues = false
 	iterator := txn.NewIterator(opts)
 	defer iterator.Close()
-	prefix := []byte(fmt.Sprintf("table-transaction-"))
 	var transactions = make([]*Transaction, 0)
-	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
+	for iterator.Seek(item); iterator.ValidForPrefix(prefix); iterator.Next() {
 		iteratorCount++
-		if iteratorCount >= firstItem && iteratorCount <= (firstItem+pageSize) {
+		if iteratorCount >= firstItem && iteratorCount < (firstItem+pageSize) {
 			item := iterator.Item()
 			value, err := item.Value()
 			if err != nil {
-				utils.Error(err)
-				continue
+				return nil, err
 			}
-			transaction, err := ToTransactionFromJson(value)
+			transaction, err := ToTransactionByKey(txn, value)
 			if err != nil {
-				utils.Error(err)
-				continue
+				return nil, err
 			}
+			transaction.setTransients(txn)
 			transactions = append(transactions, transaction)
 		}
-		if iteratorCount > (firstItem+pageSize){
+		if iteratorCount > (firstItem + pageSize) {
 			break
 		}
 	}
-	return transactions, nil //TODO: return error if empty?
+	SortByTime(transactions, false)
+	return transactions, nil
+}
+
+// ToTransactionsByToAddress
+func ToTransactionsByToAddress(txn *badger.Txn, address, startingHash string, page, pageSize int) ([]*Transaction, error) {
+	var iteratorCount = 0
+	var firstItem int
+	if pageSize <= 0 || pageSize > 100 {
+		return nil, ErrInvalidRequestPageSize
+	}
+	if page <= 0 {
+		return nil, ErrInvalidRequestPage
+	} else {
+		firstItem = (page * pageSize) - (pageSize - 1)
+	}
+	var item []byte
+	prefix := []byte(fmt.Sprintf("key-transaction-to-%s", address))
+	if startingHash != "" {
+		thing, err := ToTransactionByKey(txn, []byte(fmt.Sprintf("table-transaction-%s", startingHash)))
+		if err != nil {
+			return nil, ErrInvalidRequestHash
+		}
+		item = []byte(thing.ToKey())
+	} else {
+		item = prefix
+	}
+
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = false
+	iterator := txn.NewIterator(opts)
+	defer iterator.Close()
+	var transactions = make([]*Transaction, 0)
+	for iterator.Seek(item); iterator.ValidForPrefix(prefix); iterator.Next() {
+		iteratorCount++
+		if iteratorCount >= firstItem && iteratorCount < (firstItem+pageSize) {
+			item := iterator.Item()
+			value, err := item.Value()
+			if err != nil {
+				return nil, err
+			}
+			transaction, err := ToTransactionByKey(txn, value)
+			if err != nil {
+				return nil, err
+			}
+			transaction.setTransients(txn)
+			transactions = append(transactions, transaction)
+		}
+		if iteratorCount > (firstItem + pageSize) {
+			break
+		}
+	}
+	SortByTime(transactions, false)
+	return transactions, nil
 }
 
 // ToTransactionsByFromAddress
-func ToTransactionsByFromAddress(txn *badger.Txn, address string) ([]*Transaction, error) {
+func ToTransactionsByFromAddressOld(txn *badger.Txn, address string) ([]*Transaction, error) {
 	opts := badger.DefaultIteratorOptions
 	opts.PrefetchValues = false
 	iterator := txn.NewIterator(opts)
@@ -283,7 +447,7 @@ func ToTransactionsByFromAddress(txn *badger.Txn, address string) ([]*Transactio
 }
 
 // ToTransactionsByToAddress
-func ToTransactionsByToAddress(txn *badger.Txn, address string) ([]*Transaction, error) {
+func ToTransactionsByToAddressOld(txn *badger.Txn, address string) ([]*Transaction, error) {
 	opts := badger.DefaultIteratorOptions
 	opts.PrefetchValues = false
 	iterator := txn.NewIterator(opts)
@@ -367,6 +531,30 @@ func ToTransactionByKey(txn *badger.Txn, key []byte) (*Transaction, error) {
 	return transaction, err
 }
 
+// ToTransactionByAddress
+func ToTransactionByAddress(txn *badger.Txn, address string) (*Transaction, error) {
+	account, err := ToAccountByAddress(txn, address)
+	if err != nil {
+		return nil, err
+	}
+	if account.TransactionHash == "" {
+		return nil, ErrNotFound
+	}
+	item, err := txn.Get([]byte(fmt.Sprintf("table-transaction-%s", account.TransactionHash)))
+	if err != nil {
+		return nil, err
+	}
+	value, err := item.Value()
+	if err != nil {
+		return nil, err
+	}
+	transaction, err := ToTransactionFromJson(value)
+	if err != nil {
+		return nil, err
+	}
+	return transaction, err
+}
+
 // NewTransferTokensTransaction -
 func NewTransferTokensTransaction(privateKey string, from, to string, value int64, hertz int64, timeInMiliseconds int64) (*Transaction, error) {
 	var err error
@@ -421,10 +609,7 @@ func NewDeployContractTransaction(privateKey string, from string, code string, a
 }
 
 // NewExecuteContractTransaction -
-func NewExecuteContractTransaction(privateKey string, from string, to string, abi string, method string, params []interface{}, timeInMiliseconds int64) (*Transaction, error) {
-	if abi == "" {
-		return nil, errors.Errorf("cannot have empty abi")
-	}
+func NewExecuteContractTransaction(privateKey string, from string, to string, method string, params []interface{}, timeInMiliseconds int64) (*Transaction, error) {
 	if method == "" {
 		return nil, errors.Errorf("cannot have empty method")
 	}
@@ -433,7 +618,6 @@ func NewExecuteContractTransaction(privateKey string, from string, to string, ab
 	transaction.Type = TypeExecuteSmartContract
 	transaction.From = from
 	transaction.To = to
-	transaction.Abi = abi
 	transaction.Method = method
 	transaction.Params = params
 	transaction.Time, err = checkTime(timeInMiliseconds)
@@ -474,7 +658,7 @@ func (this Transaction) NewHash() (string, error) {
 		toBytes,
 		this.Value,
 		codeBytes,
-		[]byte(this.Abi),
+		// []byte(this.Abi),
 		[]byte(this.Method),
 		// TODO: this.Params,
 		this.Time,
@@ -602,7 +786,7 @@ func (this Transaction) String() string {
 	return string(bytes)
 }
 
-// String
+// ToPrettyJson
 func (this Transaction) ToPrettyJson() string {
 	bytes, err := json.MarshalIndent(this, "", "  ")
 	if err != nil {
@@ -677,9 +861,9 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		}
 	}
 	if jsonMap["params"] != nil {
-		params, err := helper.GetConvertedParams(jsonMap)
-		if err != nil {
-			return err
+		params, ok := jsonMap["params"].([]interface{})
+		if !ok {
+			return errors.Errorf("value for field 'params' must be an array")
 		}
 		this.Params = params
 	}
@@ -706,6 +890,15 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 			return errors.Errorf("value for field 'hertz' must be a number")
 		}
 		this.Hertz = int64(hertz)
+	}
+	if jsonMap["receipt"] != nil {
+		var receipt Receipt
+		b, err := json.Marshal(jsonMap["receipt"])
+		if err != nil {
+			utils.Error(err)
+		}
+		receipt.UnmarshalJSON(b)
+		this.Receipt = receipt
 	}
 	return nil
 }
@@ -755,9 +948,14 @@ func (this Transaction) Equals(other string) bool {
 }
 
 func checkTime(txTime int64) (int64, error) {
-	now := utils.ToMilliSeconds(time.Now())
-	if now + TxReceiveWiggle < txTime { // Adding "wiggle room" to allow for clock variances
-		return txTime, errors.Errorf(fmt.Sprintf("transaction time cannot be in the future (delegate time: %v tx.time: %v)", now, txTime))
+	// Adding "future times managed by the constant"
+	now := time.Now()
+	futureTime := now.Add(TxFutureLimit)
+	nowWithFutureLimit := utils.ToMilliSeconds(futureTime)
+
+	if nowWithFutureLimit < txTime {
+		delta := time.Millisecond * time.Duration(txTime-utils.ToMilliSeconds(now))
+		return txTime, errors.Errorf(fmt.Sprintf("transaction time cannot be this far in the future (Ahead by: %v )", delta))
 	} else if txTime < 0 {
 		return txTime, errors.Errorf("transaction time cannot be negative")
 	}
@@ -777,12 +975,16 @@ func (this *Transaction) setTransients(txn *badger.Txn) {
 	if err == nil {
 		this.ToName = toAccount.Name
 	}
-	receipt, err := ToReceiptFromTransactionHash(txn, this.Hash)
+	receipt, err := ToReceiptFromKey(txn, []byte(fmt.Sprintf("table-receipt-"+this.Hash)))
 	if err == nil {
 		this.Receipt = *receipt
 	}
 	gossip, err := ToGossipByTransactionHash(txn, this.Hash)
 	if err == nil {
 		this.Gossip = gossip.Rumors
+	}
+	abi, err := hex.DecodeString(this.Abi)
+	if err == nil {
+		this.Abi = string(abi)
 	}
 }

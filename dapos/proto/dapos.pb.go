@@ -33,7 +33,7 @@ func (m *Empty) Reset()         { *m = Empty{} }
 func (m *Empty) String() string { return proto.CompactTextString(m) }
 func (*Empty) ProtoMessage()    {}
 func (*Empty) Descriptor() ([]byte, []int) {
-	return fileDescriptor_dapos_9e0f8e991373648c, []int{0}
+	return fileDescriptor_dapos_95fabd77f80e7399, []int{0}
 }
 func (m *Empty) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Empty.Unmarshal(m, b)
@@ -65,7 +65,7 @@ func (m *Request) Reset()         { *m = Request{} }
 func (m *Request) String() string { return proto.CompactTextString(m) }
 func (*Request) ProtoMessage()    {}
 func (*Request) Descriptor() ([]byte, []int) {
-	return fileDescriptor_dapos_9e0f8e991373648c, []int{1}
+	return fileDescriptor_dapos_95fabd77f80e7399, []int{1}
 }
 func (m *Request) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Request.Unmarshal(m, b)
@@ -110,7 +110,7 @@ func (m *Response) Reset()         { *m = Response{} }
 func (m *Response) String() string { return proto.CompactTextString(m) }
 func (*Response) ProtoMessage()    {}
 func (*Response) Descriptor() ([]byte, []int) {
-	return fileDescriptor_dapos_9e0f8e991373648c, []int{2}
+	return fileDescriptor_dapos_95fabd77f80e7399, []int{2}
 }
 func (m *Response) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Response.Unmarshal(m, b)
@@ -139,7 +139,7 @@ func (m *Response) GetPayload() string {
 
 type Item struct {
 	Key                  string   `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	Value                string   `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+	Value                []byte   `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -149,7 +149,7 @@ func (m *Item) Reset()         { *m = Item{} }
 func (m *Item) String() string { return proto.CompactTextString(m) }
 func (*Item) ProtoMessage()    {}
 func (*Item) Descriptor() ([]byte, []int) {
-	return fileDescriptor_dapos_9e0f8e991373648c, []int{3}
+	return fileDescriptor_dapos_95fabd77f80e7399, []int{3}
 }
 func (m *Item) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Item.Unmarshal(m, b)
@@ -176,11 +176,49 @@ func (m *Item) GetKey() string {
 	return ""
 }
 
-func (m *Item) GetValue() string {
+func (m *Item) GetValue() []byte {
 	if m != nil {
 		return m.Value
 	}
-	return ""
+	return nil
+}
+
+type SynchronizeRequest struct {
+	Index                int64    `protobuf:"varint,1,opt,name=Index,proto3" json:"Index,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *SynchronizeRequest) Reset()         { *m = SynchronizeRequest{} }
+func (m *SynchronizeRequest) String() string { return proto.CompactTextString(m) }
+func (*SynchronizeRequest) ProtoMessage()    {}
+func (*SynchronizeRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_dapos_95fabd77f80e7399, []int{4}
+}
+func (m *SynchronizeRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_SynchronizeRequest.Unmarshal(m, b)
+}
+func (m *SynchronizeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_SynchronizeRequest.Marshal(b, m, deterministic)
+}
+func (dst *SynchronizeRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SynchronizeRequest.Merge(dst, src)
+}
+func (m *SynchronizeRequest) XXX_Size() int {
+	return xxx_messageInfo_SynchronizeRequest.Size(m)
+}
+func (m *SynchronizeRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_SynchronizeRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_SynchronizeRequest proto.InternalMessageInfo
+
+func (m *SynchronizeRequest) GetIndex() int64 {
+	if m != nil {
+		return m.Index
+	}
+	return 0
 }
 
 type SynchronizeResponse struct {
@@ -194,7 +232,7 @@ func (m *SynchronizeResponse) Reset()         { *m = SynchronizeResponse{} }
 func (m *SynchronizeResponse) String() string { return proto.CompactTextString(m) }
 func (*SynchronizeResponse) ProtoMessage()    {}
 func (*SynchronizeResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_dapos_9e0f8e991373648c, []int{4}
+	return fileDescriptor_dapos_95fabd77f80e7399, []int{5}
 }
 func (m *SynchronizeResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SynchronizeResponse.Unmarshal(m, b)
@@ -226,6 +264,7 @@ func init() {
 	proto.RegisterType((*Request)(nil), "proto.Request")
 	proto.RegisterType((*Response)(nil), "proto.Response")
 	proto.RegisterType((*Item)(nil), "proto.Item")
+	proto.RegisterType((*SynchronizeRequest)(nil), "proto.SynchronizeRequest")
 	proto.RegisterType((*SynchronizeResponse)(nil), "proto.SynchronizeResponse")
 }
 
@@ -241,7 +280,7 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type DAPoSGrpcClient interface {
-	SynchronizeGrpc(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*SynchronizeResponse, error)
+	SynchronizeGrpc(ctx context.Context, in *SynchronizeRequest, opts ...grpc.CallOption) (*SynchronizeResponse, error)
 	GossipGrpc(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
 }
 
@@ -253,7 +292,7 @@ func NewDAPoSGrpcClient(cc *grpc.ClientConn) DAPoSGrpcClient {
 	return &dAPoSGrpcClient{cc}
 }
 
-func (c *dAPoSGrpcClient) SynchronizeGrpc(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*SynchronizeResponse, error) {
+func (c *dAPoSGrpcClient) SynchronizeGrpc(ctx context.Context, in *SynchronizeRequest, opts ...grpc.CallOption) (*SynchronizeResponse, error) {
 	out := new(SynchronizeResponse)
 	err := c.cc.Invoke(ctx, "/proto.DAPoSGrpc/SynchronizeGrpc", in, out, opts...)
 	if err != nil {
@@ -273,7 +312,7 @@ func (c *dAPoSGrpcClient) GossipGrpc(ctx context.Context, in *Request, opts ...g
 
 // DAPoSGrpcServer is the server API for DAPoSGrpc service.
 type DAPoSGrpcServer interface {
-	SynchronizeGrpc(context.Context, *Empty) (*SynchronizeResponse, error)
+	SynchronizeGrpc(context.Context, *SynchronizeRequest) (*SynchronizeResponse, error)
 	GossipGrpc(context.Context, *Request) (*Response, error)
 }
 
@@ -282,7 +321,7 @@ func RegisterDAPoSGrpcServer(s *grpc.Server, srv DAPoSGrpcServer) {
 }
 
 func _DAPoSGrpc_SynchronizeGrpc_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Empty)
+	in := new(SynchronizeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -294,7 +333,7 @@ func _DAPoSGrpc_SynchronizeGrpc_Handler(srv interface{}, ctx context.Context, de
 		FullMethod: "/proto.DAPoSGrpc/SynchronizeGrpc",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DAPoSGrpcServer).SynchronizeGrpc(ctx, req.(*Empty))
+		return srv.(DAPoSGrpcServer).SynchronizeGrpc(ctx, req.(*SynchronizeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -334,24 +373,25 @@ var _DAPoSGrpc_serviceDesc = grpc.ServiceDesc{
 	Metadata: "dapos.proto",
 }
 
-func init() { proto.RegisterFile("dapos.proto", fileDescriptor_dapos_9e0f8e991373648c) }
+func init() { proto.RegisterFile("dapos.proto", fileDescriptor_dapos_95fabd77f80e7399) }
 
-var fileDescriptor_dapos_9e0f8e991373648c = []byte{
-	// 242 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x50, 0xc1, 0x4a, 0xc3, 0x40,
-	0x10, 0x35, 0xb6, 0x31, 0x76, 0x22, 0x56, 0x46, 0x0f, 0x21, 0xa7, 0xba, 0x78, 0xe8, 0x29, 0x42,
-	0x3d, 0xe8, 0xc5, 0x83, 0xa0, 0x14, 0x6f, 0xb2, 0xfd, 0x82, 0xb5, 0x1d, 0xb0, 0xd8, 0x66, 0xc6,
-	0xec, 0x56, 0x58, 0xfd, 0x79, 0xc9, 0x66, 0x5b, 0x2c, 0xf4, 0xb4, 0xf3, 0xde, 0xbc, 0xf7, 0x86,
-	0xb7, 0x90, 0x2f, 0x8c, 0xb0, 0xad, 0xa4, 0x61, 0xc7, 0x98, 0x86, 0x47, 0x65, 0x90, 0xbe, 0xac,
-	0xc5, 0x79, 0x75, 0x0f, 0x99, 0xa6, 0xaf, 0x0d, 0x59, 0x87, 0x08, 0x7d, 0xe7, 0x85, 0x8a, 0x64,
-	0x94, 0x8c, 0x07, 0x3a, 0xcc, 0x58, 0x40, 0x26, 0xc6, 0xaf, 0xd8, 0x2c, 0x8a, 0xe3, 0x40, 0x6f,
-	0xa1, 0xba, 0x81, 0x53, 0x4d, 0x56, 0xb8, 0xb6, 0x7b, 0xaa, 0x64, 0x5f, 0x55, 0x41, 0xff, 0xd5,
-	0xd1, 0x1a, 0x2f, 0xa0, 0xf7, 0x49, 0x3e, 0x6e, 0xdb, 0x11, 0xaf, 0x20, 0xfd, 0x36, 0xab, 0x0d,
-	0xc5, 0xdc, 0x0e, 0xa8, 0x07, 0xb8, 0x9c, 0xf9, 0x7a, 0xfe, 0xd1, 0x70, 0xbd, 0xfc, 0xa1, 0xdd,
-	0x81, 0x6b, 0x48, 0xdb, 0x18, 0x5b, 0x24, 0xa3, 0xde, 0x38, 0x9f, 0xe4, 0x5d, 0x99, 0xaa, 0xe5,
-	0x74, 0xb7, 0x99, 0xfc, 0xc2, 0xe0, 0xf9, 0xe9, 0x8d, 0x67, 0xd3, 0x46, 0xe6, 0xf8, 0x08, 0xc3,
-	0x7f, 0x31, 0x81, 0x3a, 0x8b, 0x9e, 0x50, 0xbb, 0x2c, 0x23, 0x3a, 0x70, 0x4c, 0x1d, 0xe1, 0x2d,
-	0xc0, 0x94, 0xad, 0x5d, 0x4a, 0x70, 0x9e, 0x47, 0x6d, 0xfc, 0xa7, 0x72, 0xb8, 0xc3, 0x5b, 0xc3,
-	0xfb, 0x49, 0x60, 0xee, 0xfe, 0x02, 0x00, 0x00, 0xff, 0xff, 0x8b, 0x4f, 0xbd, 0x99, 0x6b, 0x01,
-	0x00, 0x00,
+var fileDescriptor_dapos_95fabd77f80e7399 = []byte{
+	// 261 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x4f, 0x41, 0x4e, 0xc3, 0x30,
+	0x10, 0xc4, 0xa4, 0x26, 0x74, 0x83, 0x28, 0x5a, 0x7a, 0x08, 0x3d, 0x15, 0x8b, 0x43, 0xc5, 0x21,
+	0x48, 0xe5, 0x00, 0x57, 0x24, 0x50, 0x55, 0x4e, 0xc8, 0x7d, 0x41, 0x68, 0x56, 0xa2, 0xa2, 0x8d,
+	0x4d, 0xec, 0x20, 0xcc, 0x0b, 0x78, 0x36, 0x8a, 0x9d, 0x20, 0x22, 0x38, 0x79, 0x67, 0x76, 0x66,
+	0x76, 0x0c, 0x49, 0x91, 0x6b, 0x65, 0x32, 0x5d, 0x29, 0xab, 0x90, 0xfb, 0x47, 0xc4, 0xc0, 0x1f,
+	0x76, 0xda, 0x3a, 0x71, 0x03, 0xb1, 0xa4, 0xb7, 0x9a, 0x8c, 0x45, 0x84, 0x81, 0x75, 0x9a, 0x52,
+	0x36, 0x65, 0xb3, 0xa1, 0xf4, 0x33, 0xa6, 0x10, 0xeb, 0xdc, 0x6d, 0x55, 0x5e, 0xa4, 0xfb, 0x9e,
+	0xee, 0xa0, 0xb8, 0x80, 0x43, 0x49, 0x46, 0xab, 0xd2, 0xf4, 0x54, 0xac, 0xaf, 0xca, 0x60, 0xb0,
+	0xb4, 0xb4, 0xc3, 0x13, 0x88, 0x5e, 0xc9, 0xb5, 0xdb, 0x66, 0xc4, 0x31, 0xf0, 0xf7, 0x7c, 0x5b,
+	0x93, 0xcf, 0x3d, 0x92, 0x01, 0x88, 0x4b, 0xc0, 0x95, 0x2b, 0xd7, 0x2f, 0x95, 0x2a, 0x37, 0x9f,
+	0xd4, 0x35, 0x1b, 0x03, 0x5f, 0x96, 0x05, 0x7d, 0x78, 0x7f, 0x24, 0x03, 0x10, 0xb7, 0x70, 0xda,
+	0xd3, 0xb6, 0x65, 0xce, 0x81, 0x37, 0x27, 0x4d, 0xca, 0xa6, 0xd1, 0x2c, 0x99, 0x27, 0xe1, 0xe3,
+	0x59, 0xc3, 0xc9, 0xb0, 0x99, 0x7f, 0x31, 0x18, 0xde, 0xdf, 0x3d, 0xa9, 0xd5, 0xa2, 0xd2, 0x6b,
+	0x7c, 0x84, 0xd1, 0xaf, 0x1c, 0x4f, 0x9d, 0xb5, 0xa6, 0xbf, 0x5d, 0x26, 0x93, 0xff, 0x56, 0xe1,
+	0xb4, 0xd8, 0xc3, 0x2b, 0x80, 0x85, 0x32, 0x66, 0xa3, 0x7d, 0xcc, 0x71, 0xab, 0xed, 0xbc, 0xa3,
+	0x1f, 0xdc, 0x19, 0x9e, 0x0f, 0x3c, 0x73, 0xfd, 0x1d, 0x00, 0x00, 0xff, 0xff, 0x00, 0xbb, 0xfd,
+	0xcc, 0xa5, 0x01, 0x00, 0x00,
 }

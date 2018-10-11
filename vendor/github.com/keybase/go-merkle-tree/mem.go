@@ -1,10 +1,10 @@
 package merkleTree
 
 import (
+	"crypto/sha512"
 	"encoding/hex"
 
 	"golang.org/x/net/context"
-	"github.com/dispatchlabs/disgo/commons/crypto"
 )
 
 // MemEngine is an in-memory MerkleTree engine, used now mainly for testing
@@ -28,9 +28,10 @@ func (m *MemEngine) CommitRoot(_ context.Context, prev Hash, curr Hash, txinfo T
 	return nil
 }
 
-// Hash uses our Keckak256
+// Hash runs SHA512
 func (m *MemEngine) Hash(_ context.Context, d []byte) Hash {
-	return crypto.NewHash(d).Bytes()
+	sum := sha512.Sum512(d)
+	return Hash(sum[:])
 }
 
 // LookupNode looks up a MerkleTree node by hash

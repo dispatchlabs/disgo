@@ -17,7 +17,7 @@ func encodeToBytes(i interface{}) ([]byte, error) {
 	return encoded, err
 }
 
-func DecodeFromBytes(p interface{}, b []byte) error {
+func decodeFromBytes(p interface{}, b []byte) error {
 	return codec.NewDecoderBytes(b, codecHandle()).Decode(p)
 }
 

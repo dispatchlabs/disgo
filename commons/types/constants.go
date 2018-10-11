@@ -24,10 +24,12 @@ import (
 //TODO: I think we need to convert these timouts and their calculations in code to nano seconds
 // Timouts -- currently calculated in milliseconds.
 const (
-	TxReceiveTimeout   = 3000 //1 second
-	TxReceiveWiggle    = 3000 // 3 seconds
-	GossipQueueTimeout = time.Second * 5
-	GossipTimeout      = 1000 //1 second  //will continue to decrease until we find best value
+	TxReceiveTimeout = 3000 //1 second
+	//TxReceiveWiggle    = 100 // 100ms
+	//GossipQueueTimeout = time.Second * 5
+	GossipTimeout = 1000 //1 second  //will continue to decrease until we find best value
+	TxFutureLimit = time.Minute * 3
+	UnavailableNodeTimeout = float64(time.Second * 5)
 )
 
 // Requests
@@ -37,6 +39,7 @@ const (
 
 // Statuses
 const (
+	StatusReceived                     = "Received"
 	StatusPending                      = "Pending"
 	StatusOk                           = "Ok"
 	StatusNotFound                     = "NotFound"
@@ -51,6 +54,8 @@ const (
 	StatusJsonParseError               = "StatusJsonParseError"
 	StatusInternalError                = "InternalError"
 	StatusUnavailableFeature           = "UnavailableFeature"
+	StatusNodeUnavailable              = "NodeUnavailable"
+	StatusCouldNotReachConsensus       = "CouldNotReachConsensus"
 )
 
 const (
@@ -69,21 +74,25 @@ const (
 
 // Persistence TTLs
 const (
-	AccountTTL      = time.Hour * 24
-	PageTTL         = time.Hour * 24
-	TransactionTTL  = time.Hour * 48
+	AccountTTL = time.Hour * 24
+	PageTTL    = time.Hour * 24
 )
 
 // Cache TTLs
 const (
-	CacheTTL        = time.Hour
-	ReceiptCacheTTL = time.Hour * 24 * 3
-	GossipCacheTTL  = time.Minute * 5
+	CacheTTL               = time.Hour
+	TransactionCacheTTL    = time.Hour * 48
+	ReceiptCacheTTL        = time.Hour * 48
+	GossipCacheTTL         = time.Minute * 5
 	AuthenticationCacheTTL = time.Minute
 )
 
 // Errors
 var (
-	ErrNotFound       = errors.New("not found")
-	ErrInvalidRequest = errors.New("invalid request")
+	ErrNotFound               = errors.New("not found")
+	ErrInvalidRequest         = errors.New("invalid request")
+	ErrInvalidRequestPage     = errors.New("invalid request Page")
+	ErrInvalidRequestPageSize = errors.New("invalid request Page Size")
+	ErrInvalidRequestStartingHash = errors.New("invalid request Starting Hash")
+	ErrInvalidRequestHash     = errors.New("invalid request Hash")
 )

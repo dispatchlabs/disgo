@@ -23,10 +23,30 @@ import (
 	"math/big"
 
 	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/types"
-	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"
 	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/rlp"
 )
+
+// func getAccountByAddressFromBadger(address crypto.AddressBytes) *types.Account {
+func getAccountByAddressFromBadger(address string) *types.Account {
+	// utils.Debug(fmt.Sprintf("state_object-getAccountByAddressFromBadger: %s", crypto.Encode(address[:])))
+	utils.Debug(fmt.Sprintf("state_object-getAccountByAddressFromBadger: %s", address))
+
+	txn := services.NewTxn(true)
+	defer txn.Discard()
+
+	// addressAsString := crypto.EncodeNo0x(address[:])
+
+	account, err := types.ToAccountByAddress(txn, address)
+	if err != nil {
+		utils.Debug(fmt.Sprintf("state_object-getAccountByAddressFromBadger: %v", err))
+		return nil
+	}
+
+	return account
+}
 
 var emptyCodeHash = crypto.NewHash(nil).Bytes()
 
@@ -89,6 +109,9 @@ type stateObject struct {
 
 // empty returns whether the account is considered empty.
 func (s *stateObject) empty() bool {
+	// var accountFromBadger = getAccountByAddressFromBadger(s.account.Address)
+	utils.Debug(fmt.Sprintf("stateObject-empty: %s -> %v", s.account.Address, s.account.Balance))
+
 	return s.account.Nonce == 0 && s.account.Balance.Sign() == 0 && bytes.Equal(s.account.CodeHash, emptyCodeHash)
 }
 
@@ -123,245 +146,324 @@ func newStateObject(db *StateDB, address crypto.AddressBytes, data types.Account
 }
 
 // EncodeRLP implements rlp.Encoder.
-func (c *stateObject) EncodeRLP(w io.Writer) error {
-	return rlp.Encode(w, c.account)
+func (s *stateObject) EncodeRLP(w io.Writer) error {
+	// var accountFromBadger = getAccountByAddressFromBadger(s.account.Address)
+	utils.Debug(fmt.Sprintf("stateObject-EncodeRLP: %s -> %v", s.account.Address, s.account.Balance))
+
+	return rlp.Encode(w, s.account)
 }
 
 // setError remembers the first non-nil error it is called with.
-func (self *stateObject) setError(err error) {
-	if self.dbErr == nil {
-		self.dbErr = err
+func (s *stateObject) setError(err error) {
+	// var accountFromBadger = getAccountByAddressFromBadger(s.account.Address)
+	utils.Debug(fmt.Sprintf("stateObject-setError: %s -> %v", s.account.Address, s.account.Balance))
+
+	if s.dbErr == nil {
+		s.dbErr = err
 	}
 }
 
-func (self *stateObject) markSuicided() {
-	self.suicided = true
+func (s *stateObject) markSuicided() {
+	// var accountFromBadger = getAccountByAddressFromBadger(s.account.Address)
+	utils.Debug(fmt.Sprintf("stateObject-markSuicided: %s -> %v", s.account.Address, s.account.Balance))
+
+	s.suicided = true
 }
 
-func (c *stateObject) touch() {
-	var addressAsBytes = crypto.GetAddressBytes(c.account.Address)
+func (s *stateObject) touch() {
+	// var accountFromBadger = getAccountByAddressFromBadger(s.account.Address)
+	utils.Debug(fmt.Sprintf("stateObject-touch: %s -> %v", s.account.Address, s.account.Balance))
 
-	c.db.journal.append(touchChange{
+	var addressAsBytes = crypto.GetAddressBytes(s.account.Address)
+
+	s.db.journal.append(touchChange{
 		account: addressAsBytes,
 	})
 	if addressAsBytes == ripemd {
 		// Explicitly put it in the dirty-cache, which is otherwise generated from
 		// flattened journals.
-		c.db.journal.dirty(addressAsBytes)
+		s.db.journal.dirty(addressAsBytes)
 	}
 }
 
-func (c *stateObject) getTrie(db Database) Trie {
-	if c.trie == nil {
+func (s *stateObject) getTrie(db Database) Trie {
+	// var accountFromBadger = getAccountByAddressFromBadger(s.account.Address)
+	utils.Debug(fmt.Sprintf("stateObject-getTrie: %s -> %v", s.account.Address, s.account.Balance))
+
+	if s.trie == nil {
 		var err error
 
-		var addressAsBytes = crypto.GetAddressBytes(c.account.Address)
+		var addressAsBytes = crypto.GetAddressBytes(s.account.Address)
 		var addressHash = crypto.NewHash(addressAsBytes[:])
 
-		c.trie, err = db.OpenStorageTrie(addressHash, c.account.Root)
+		s.trie, err = db.OpenStorageTrie(addressHash, s.account.Root)
 		if err != nil {
-			c.trie, _ = db.OpenStorageTrie(addressHash, crypto.HashBytes{})
-			c.setError(fmt.Errorf("can't create storage trie: %v", err))
+			s.trie, _ = db.OpenStorageTrie(addressHash, crypto.HashBytes{})
+			s.setError(fmt.Errorf("can't create storage trie: %v", err))
 		}
 	}
-	return c.trie
+	return s.trie
 }
 
 // GetState returns a value in account storage.
-func (self *stateObject) GetState(db Database, key crypto.HashBytes) crypto.HashBytes {
-	value, exists := self.cachedStorage[key]
+func (s *stateObject) GetState(db Database, key crypto.HashBytes) crypto.HashBytes {
+	// var accountFromBadger = getAccountByAddressFromBadger(s.account.Address)
+	utils.Debug(fmt.Sprintf("stateObject-GetState: %s -> %v", s.account.Address, s.account.Balance))
+
+	value, exists := s.cachedStorage[key]
 	if exists {
 		return value
 	}
 	// Load from DB in case it is missing.
-	enc, err := self.getTrie(db).TryGet(key[:])
+	enc, err := s.getTrie(db).TryGet(key[:])
 	if err != nil {
-		self.setError(err)
+		s.setError(err)
 		return crypto.HashBytes{}
 	}
 	if len(enc) > 0 {
 		_, content, _, err := rlp.Split(enc)
 		if err != nil {
-			self.setError(err)
+			s.setError(err)
 		}
 		value.SetBytes(content)
 	}
 	if (value != crypto.HashBytes{}) {
-		self.cachedStorage[key] = value
+		s.cachedStorage[key] = value
 	}
 	return value
 }
 
 // SetState updates a value in account storage.
-func (self *stateObject) SetState(db Database, key, value crypto.HashBytes) {
+func (s *stateObject) SetState(db Database, key, value crypto.HashBytes) {
+	// var accountFromBadger = getAccountByAddressFromBadger(s.account.Address)
 	utils.Debug("***** DB SetState: %s\n", crypto.HashBytesToHashString(key))
-	var addressAsBytes = crypto.GetAddressBytes(self.account.Address)
+	utils.Debug(fmt.Sprintf("stateObject-SetState: %s -> %v", s.account.Address, s.account.Balance))
 
-	self.db.journal.append(storageChange{
+	var addressAsBytes = crypto.GetAddressBytes(s.account.Address)
+
+	s.db.journal.append(storageChange{
 		account:  addressAsBytes,
 		key:      key,
-		prevalue: self.GetState(db, key),
+		prevalue: s.GetState(db, key),
 	})
-	self.setState(key, value)
+	s.setState(key, value)
 }
 
-func (self *stateObject) setState(key, value crypto.HashBytes) {
-	self.cachedStorage[key] = value
-	self.dirtyStorage[key] = value
+func (s *stateObject) setState(key, value crypto.HashBytes) {
+	// var accountFromBadger = getAccountByAddressFromBadger(s.account.Address)
+	utils.Debug(fmt.Sprintf("stateObject-setState: %s -> %v", s.account.Address, s.account.Balance))
 
+	s.cachedStorage[key] = value
+	s.dirtyStorage[key] = value
 }
 
 // updateTrie writes cached storage modifications into the object's storage trie.
-func (self *stateObject) updateTrie(db Database) Trie {
-	tr := self.getTrie(db)
-	for key, value := range self.dirtyStorage {
-		delete(self.dirtyStorage, key)
+func (s *stateObject) updateTrie(db Database) Trie {
+	// var accountFromBadger = getAccountByAddressFromBadger(s.account.Address)
+	utils.Debug(fmt.Sprintf("stateObject-updateTrie: %s -> %v", s.account.Address, s.account.Balance))
+
+	tr := s.getTrie(db)
+	for key, value := range s.dirtyStorage {
+		delete(s.dirtyStorage, key)
 		if (value == crypto.HashBytes{}) {
-			self.setError(tr.TryDelete(key[:]))
+			s.setError(tr.TryDelete(key[:]))
 			continue
 		}
 		// Encoding []byte cannot fail, ok to ignore the error.
 		v, _ := rlp.EncodeToBytes(bytes.TrimLeft(value[:], "\x00"))
-		self.setError(tr.TryUpdate(key[:], v))
+		s.setError(tr.TryUpdate(key[:], v))
 	}
 	return tr
 }
 
 // UpdateRoot sets the trie root to the current root hash of
-func (self *stateObject) updateRoot(db Database) {
-	self.updateTrie(db)
-	self.account.Root = self.trie.Hash()
+func (s *stateObject) updateRoot(db Database) {
+	// var accountFromBadger = getAccountByAddressFromBadger(s.account.Address)
+	utils.Debug(fmt.Sprintf("stateObject-updateRoot: %s -> %v", s.account.Address, s.account.Balance))
+
+	s.updateTrie(db)
+	s.account.Root = s.trie.Hash()
 }
 
 // CommitTrie the storage trie of the object to dwb.
 // This updates the trie root.
-func (self *stateObject) CommitTrie(db Database) error {
-	self.updateTrie(db)
-	if self.dbErr != nil {
-		return self.dbErr
+func (s *stateObject) CommitTrie(db Database) error {
+	// var accountFromBadger = getAccountByAddressFromBadger(s.account.Address)
+	utils.Debug(fmt.Sprintf("stateObject-CommitTrie: %s -> %v", s.account.Address, s.account.Balance))
+
+	s.updateTrie(db)
+	if s.dbErr != nil {
+		return s.dbErr
 	}
-	root, err := self.trie.Commit(nil)
+	root, err := s.trie.Commit(nil)
 	if err == nil {
-		self.account.Root = root
+		s.account.Root = root
 	}
 	return err
 }
 
 // AddBalance removes amount from c's balance.
 // It is used to add funds to the destination account of a transfer.
-func (c *stateObject) AddBalance(amount *big.Int) {
+func (s *stateObject) AddBalance(amount *big.Int) {
+	// var accountFromBadger = getAccountByAddressFromBadger(s.account.Address)
+	utils.Debug(fmt.Sprintf("stateObject-AddBalance: %s -> %v", s.account.Address, s.account.Balance))
+
 	// EIP158: We must check emptiness for the objects such that the account
 	// clearing (0,0,0 objects) can take effect.
 	if amount.Sign() == 0 {
-		if c.empty() {
-			c.touch()
+		if s.empty() {
+			s.touch()
 		}
 
 		return
 	}
-	c.SetBalance(new(big.Int).Add(c.account.Balance, amount))
+
+	s.SetBalance(new(big.Int).Add(s.account.Balance, amount))
 }
 
 // SubBalance removes amount from c's balance.
 // It is used to remove funds from the origin account of a transfer.
-func (c *stateObject) SubBalance(amount *big.Int) {
+func (s *stateObject) SubBalance(amount *big.Int) {
+	// var accountFromBadger = getAccountByAddressFromBadger(s.account.Address)
+	utils.Debug(fmt.Sprintf("stateObject-SubBalance: %s -> %v", s.account.Address, s.account.Balance))
+
 	if amount.Sign() == 0 {
 		return
 	}
-	c.SetBalance(new(big.Int).Sub(c.account.Balance, amount))
+	s.SetBalance(new(big.Int).Sub(s.account.Balance, amount))
 }
 
-func (self *stateObject) SetBalance(amount *big.Int) {
-	var addressAsBytes = crypto.GetAddressBytes(self.account.Address)
+func (s *stateObject) SetBalance(amount *big.Int) {
+	// var accountFromBadger = getAccountByAddressFromBadger(s.account.Address)
+	utils.Debug(fmt.Sprintf("stateObject-SetBalance: %s -> %v", s.account.Address, s.account.Balance))
 
-	self.db.journal.append(balanceChange{
+	var addressAsBytes = crypto.GetAddressBytes(s.account.Address)
+
+	s.db.journal.append(balanceChange{
 		account: addressAsBytes,
-		prev:    self.account.Balance,
+		prev:    s.account.Balance,
 	})
-	self.setBalance(amount)
+	s.setBalance(amount)
 }
 
-func (self *stateObject) setBalance(amount *big.Int) {
-	self.account.Balance = amount
+func (s *stateObject) setBalance(amount *big.Int) {
+	// var accountFromBadger = getAccountByAddressFromBadger(s.account.Address)
+	utils.Debug(fmt.Sprintf("stateObject-setBalance: %s -> %v", s.account.Address, s.account.Balance))
+
+	s.account.Balance = amount
+
+	// txn := services.NewTxn(true)
+	// defer txn.Discard()
+
+	// account.Balance = amount
+	// account.Persist(txn)
 }
 
 // Return the gas back to the origin. Used by the Virtual machine or Closures
-func (c *stateObject) ReturnGas(gas *big.Int) {}
+func (s *stateObject) ReturnGas(gas *big.Int) {
+	// IMPLEMENT-ME: ???
+}
 
-func (self *stateObject) deepCopy(db *StateDB) *stateObject {
-	var addressAsBytes = crypto.GetAddressBytes(self.account.Address)
+func (s *stateObject) deepCopy(db *StateDB) *stateObject {
+	// var accountFromBadger = getAccountByAddressFromBadger(s.account.Address)
+	utils.Debug(fmt.Sprintf("stateObject-deepCopy: %s -> %v", s.account.Address, s.account.Balance))
 
-	stateObject := newStateObject(db, addressAsBytes, self.account)
-	if self.trie != nil {
-		stateObject.trie = db.db.CopyTrie(self.trie)
+	var addressAsBytes = crypto.GetAddressBytes(s.account.Address)
+
+	stateObject := newStateObject(db, addressAsBytes, s.account)
+	if s.trie != nil {
+		stateObject.trie = db.db.CopyTrie(s.trie)
 	}
-	stateObject.code = self.code
-	stateObject.dirtyStorage = self.dirtyStorage.Copy()
-	stateObject.cachedStorage = self.dirtyStorage.Copy()
-	stateObject.suicided = self.suicided
-	stateObject.dirtyCode = self.dirtyCode
-	stateObject.deleted = self.deleted
+	stateObject.code = s.code
+	stateObject.dirtyStorage = s.dirtyStorage.Copy()
+	stateObject.cachedStorage = s.dirtyStorage.Copy()
+	stateObject.suicided = s.suicided
+	stateObject.dirtyCode = s.dirtyCode
+	stateObject.deleted = s.deleted
 	return stateObject
 }
 
 //
 // Attribute accessors
 //
-func (self stateObject) Account() *types.Account {
-	return &self.account
+func (s *stateObject) Account() *types.Account {
+	// var accountFromBadger = getAccountByAddressFromBadger(s.account.Address)
+	utils.Debug(fmt.Sprintf("stateObject-Account: %s -> %v", s.account.Address, s.account.Balance))
+
+	return &s.account
 }
 
 // Code returns the contract code associated with this object, if any.
-func (self *stateObject) Code(db Database) []byte {
-	if self.code != nil {
-		return self.code
+func (s *stateObject) Code(db Database) []byte {
+	// var accountFromBadger = getAccountByAddressFromBadger(s.account.Address)
+	utils.Debug(fmt.Sprintf("stateObject-Code: %s -> %v", s.account.Address, s.account.Balance))
+
+	if s.code != nil {
+		return s.code
 	}
-	if bytes.Equal(self.account.CodeHash, emptyCodeHash) {
+	if s.account.CodeHash == nil || len(s.account.CodeHash) <= 0 || bytes.Equal(s.account.CodeHash, emptyCodeHash) {
 		return nil
 	}
 
-	var addressAsBytes = crypto.GetAddressBytes(self.account.Address)
+	var addressAsBytes = crypto.GetAddressBytes(s.account.Address)
 	var addressHash = crypto.NewHash(addressAsBytes[:])
 
-	code, err := db.ContractCode(addressHash, crypto.BytesToHash(self.account.CodeHash))
+	code, err := db.ContractCode(addressHash, crypto.BytesToHash(s.account.CodeHash))
 	if err != nil {
-		self.setError(fmt.Errorf("can't load code hash %x: %v", self.account.CodeHash, err))
+		s.setError(fmt.Errorf("can't load code hash %x: %v", s.account.CodeHash, err))
 	}
-	self.code = code
+	s.code = code
 	return code
 }
 
-func (self *stateObject) SetCode(codeHash crypto.HashBytes, code []byte) {
-	var addressAsBytes = crypto.GetAddressBytes(self.account.Address)
+func (s *stateObject) SetCode(codeHash crypto.HashBytes, code []byte) {
+	// var accountFromBadger = getAccountByAddressFromBadger(s.account.Address)
+	utils.Debug(fmt.Sprintf("stateObject-SetCode: %s -> %v", s.account.Address, s.account.Balance))
 
-	prevcode := self.Code(self.db.db)
-	self.db.journal.append(codeChange{
+	var addressAsBytes = crypto.GetAddressBytes(s.account.Address)
+
+	prevcode := s.Code(s.db.db)
+	s.db.journal.append(codeChange{
 		account:  addressAsBytes,
-		prevhash: self.account.CodeHash,
+		prevhash: s.account.CodeHash,
 		prevcode: prevcode,
 	})
-	self.setCode(codeHash, code)
+	s.setCode(codeHash, code)
 }
 
-func (self *stateObject) setCode(codeHash crypto.HashBytes, code []byte) {
-	self.code = code
-	self.account.CodeHash = codeHash[:]
-	self.dirtyCode = true
+func (s *stateObject) setCode(codeHash crypto.HashBytes, code []byte) {
+	// var accountFromBadger = getAccountByAddressFromBadger(s.account.Address)
+	utils.Debug(fmt.Sprintf("stateObject-setCode: %s -> %v", s.account.Address, s.account.Balance))
+
+	// txn := services.NewTxn(true)
+	// defer txn.Commit(nil)
+	// account.CodeHash = codeHash[:]
+	// account.Persist(txn)
+
+	s.code = code
+	s.account.CodeHash = codeHash[:]
+	s.dirtyCode = true
 }
 
-func (self *stateObject) SetNonce(nonce uint64) {
-	var addressAsBytes = crypto.GetAddressBytes(self.account.Address)
+func (s *stateObject) SetNonce(nonce uint64) {
+	// var accountFromBadger = getAccountByAddressFromBadger(s.account.Address)
+	utils.Debug(fmt.Sprintf("stateObject-SetNonce: %s -> %v", s.account.Address, s.account.Balance))
 
-	self.db.journal.append(nonceChange{
+	var addressAsBytes = crypto.GetAddressBytes(s.account.Address)
+
+	s.db.journal.append(nonceChange{
 		account: addressAsBytes,
-		prev:    self.account.Nonce,
+		prev:    s.account.Nonce,
 	})
-	self.account.Nonce = nonce
+	s.account.Nonce = nonce
 }
 
 // Never called, but must be present to allow stateObject to be used
 // as a vm.Account interface that also satisfies the vm.ContractRef
 // interface. Interfaces are awesome.
-func (self *stateObject) Value() *big.Int {
+func (s *stateObject) Value() *big.Int {
+	// var accountFromBadger = getAccountByAddressFromBadger(s.account.Address)
+	utils.Debug(fmt.Sprintf("stateObject-Value: %s -> %v", s.account.Address, s.account.Balance))
+
 	panic("Value on stateObject should never be called")
 }

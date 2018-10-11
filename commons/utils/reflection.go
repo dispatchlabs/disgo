@@ -123,8 +123,6 @@ func GetFuncName(skip int) string {
 
 // GetCallStackWithFileAndLineNumber - traces a call with line number
 func GetCallStackWithFileAndLineNumber() string {
-	mainPackagePath = "/home/nicu/go/src/github.com/dispatchlabs"
-
 	pc := make([]uintptr, 15)
 	n := runtime.Callers(2, pc)
 	frames := runtime.CallersFrames(pc[:n])

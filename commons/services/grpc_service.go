@@ -72,7 +72,7 @@ func (this *GrpcService) Go() {
 	utils.Info("listening on " + strconv.Itoa(this.Port))
 	reflection.Register(this.Server)
 
-	utils.Events().Raise(Events.GrpcServiceInitFinished)
+	utils.Events().Raise(types.Events.GrpcServiceInitFinished)
 
 	if error := this.Server.Serve(listener); error != nil {
 		utils.Fatal("failed to serve: %v", error)
@@ -96,6 +96,7 @@ func GetGrpcConnection(address string, host string, port int64) (*grpc.ClientCon
 	clientConn, err := pool.Get(context.Background())
 	if err != nil {
 		utils.Error("Client connection error ", err)
+		return nil, err
 	}
 	defer clientConn.Close()
 	return clientConn.ClientConn, nil
@@ -109,7 +110,7 @@ func setupConnectionPoolForPeer(address string, host string, port int64) {
 		if err != nil {
 			utils.Error("Failed to start gRPC connection: %v", err)
 		}
-		utils.Info("Connected to node at", host, port)
+		utils.Debug("Connected to node at", host, port)
 		return conn, err
 	}
 	pool, err := grpcpool.New(factory, 5, 5, time.Second* 5)

@@ -31,11 +31,34 @@ import (
 func (this *DAPoSService) GetDelegateNodes() *types.Response {
 
 	// Find nodes.
-	nodes, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
+	cDelegates, err := types.ToNodesByTypeFromCache(services.GetCache(), types.TypeDelegate)
 	if err != nil {
 		utils.Error(err)
 		return types.NewResponseWithError(err)
 	}
+
+	txn := services.NewTxn(false)
+	defer txn.Discard()
+	//get stored delegates
+	sDelegates, err := types.ToNodesByType(txn, types.TypeDelegate)
+	if err != nil {
+		utils.Error(err)
+		return types.NewResponseWithError(err)
+	}
+
+	//merge slices
+	sDelegates = append(sDelegates, cDelegates...)
+
+	//only allow unique values
+	keys := make(map[string]bool)
+	nodes := []*types.Node{}
+	for _, entry := range sDelegates {
+		if _, value := keys[entry.Address]; !value {
+			keys[entry.Address] = true
+			nodes = append(nodes, entry)
+		}
+	}
+
 
 	// Create response.
 	response := types.NewResponse()
@@ -55,7 +78,7 @@ func (this *DAPoSService) GetReceipt(transactionHash string) *types.Response {
 	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
 		receipt, err := types.ToReceiptFromCache(services.GetCache(), transactionHash)
 		if err != nil {
-			receipt, err = types.ToReceiptFromTransactionHash(txn, transactionHash)
+			receipt, err = types.ToReceiptFromKey(txn, []byte(fmt.Sprintf("table-receipt-" +transactionHash)))
 			if err != nil {
 				if err == badger.ErrKeyNotFound {
 					response.Status = types.StatusNotFound
@@ -119,7 +142,7 @@ func (this *DAPoSService) NewTransaction(transaction *types.Transaction) *types.
 		response.HumanReadableStatus = types.StatusNotDelegateAsHumanReadable
 	}
 
-	utils.Info(fmt.Sprintf("new transaction [hash=%s, status=%s]", transaction.Hash, response.Status))
+	utils.Debug(fmt.Sprintf("new transaction [hash=%s, status=%s]", transaction.Hash, response.Status))
 	return response
 }
 
@@ -134,7 +157,13 @@ func (this *DAPoSService) GetTransaction(hash string) *types.Response {
 		transaction, err := types.ToTransactionByHash(txn, hash)
 		if err != nil {
 			if err == badger.ErrKeyNotFound {
-				response.Status = types.StatusNotFound
+				tx, _ := types.ToTransactionFromCache(services.GetCache(), hash)
+				if tx != nil {
+					response.Data = tx
+					response.Status = types.StatusOk
+				} else {
+					response.Status = types.StatusNotFound
+				}
 			} else {
 				response.Status = types.StatusInternalError
 			}
@@ -146,39 +175,13 @@ func (this *DAPoSService) GetTransaction(hash string) *types.Response {
 		response.Status = types.StatusNotDelegate
 		response.HumanReadableStatus = types.StatusNotDelegateAsHumanReadable
 	}
-	utils.Info(fmt.Sprintf("retrieved transaction [hash=%s, status=%s]", hash, response.Status))
+	utils.Debug(fmt.Sprintf("retrieved transaction [hash=%s, status=%s]", hash, response.Status))
 
 	return response
 }
 
 // GetTransactions
-func (this *DAPoSService) GetTransactionsOld() *types.Response { //TODO: to be depricated
-	txn := services.NewTxn(true)
-	defer txn.Discard()
-	response := types.NewResponse()
-
-	// Delegate?
-	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
-		var err error
-		response.Data, err = types.ToTransactions(txn)
-		if err != nil {
-			response.Status = types.StatusInternalError
-			response.HumanReadableStatus = err.Error()
-		} else {
-			response.Status = types.StatusOk
-		}
-	} else {
-		response.Status = types.StatusNotDelegate
-		response.HumanReadableStatus = types.StatusNotDelegateAsHumanReadable
-	}
-
-	utils.Info(fmt.Sprintf("retrieved transactions [status=%s]", response.Status))
-
-	return response
-}
-
-// GetTransactions
-func (this *DAPoSService) GetTransactions(page string) *types.Response {
+func (this *DAPoSService) GetTransactions(page,size,start string) *types.Response {
 	txn := services.NewTxn(true)
 	defer txn.Discard()
 	response := types.NewResponse()
@@ -189,11 +192,17 @@ func (this *DAPoSService) GetTransactions(page string) *types.Response {
 		response.HumanReadableStatus = err.Error()
 		return response
 	}
+	pageSize, err := strconv.Atoi(size)
+	if err != nil {
+		response.Status = types.StatusInternalError
+		response.HumanReadableStatus = err.Error()
+		return response
+	}
 
 	// Delegate?
 	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
 
-		response.Data, err = types.TransactionPaging(pageNumber, txn)
+		response.Data, response.Paging, err = types.TransactionPaging(txn, start,pageNumber,pageSize)
 		if err != nil {
 			response.Status = types.StatusInternalError
 			response.HumanReadableStatus = err.Error()
@@ -211,15 +220,26 @@ func (this *DAPoSService) GetTransactions(page string) *types.Response {
 }
 
 // GetTransactionsByFromAddress
-func (this *DAPoSService) GetTransactionsByFromAddress(address string) *types.Response {
+func (this *DAPoSService) GetTransactionsByFromAddress(address,page,size,start string) *types.Response {
 	txn := services.NewTxn(true)
 	defer txn.Discard()
 	response := types.NewResponse()
+	pageNumber, err := strconv.Atoi(page)
+	if err != nil {
+		response.Status = types.StatusInternalError
+		response.HumanReadableStatus = err.Error()
+		return response
+	}
+	pageSize, err := strconv.Atoi(size)
+	if err != nil {
+		response.Status = types.StatusInternalError
+		response.HumanReadableStatus = err.Error()
+		return response
+	}
 
 	// Delegate?
 	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
-		var err error
-		response.Data, err = types.ToTransactionsByFromAddress(txn, address)
+		response.Data, err = types.ToTransactionsByFromAddress(txn, address, start, pageNumber, pageSize)
 		if err != nil {
 			response.Status = types.StatusInternalError
 			response.HumanReadableStatus = err.Error()
@@ -237,15 +257,26 @@ func (this *DAPoSService) GetTransactionsByFromAddress(address string) *types.Re
 }
 
 // GetTransactionsByToAddress
-func (this *DAPoSService) GetTransactionsByToAddress(address string) *types.Response {
+func (this *DAPoSService) GetTransactionsByToAddress(address,page,size,start string ) *types.Response {
 	txn := services.NewTxn(true)
 	defer txn.Discard()
 	response := types.NewResponse()
+	pageNumber, err := strconv.Atoi(page)
+	if err != nil {
+		response.Status = types.StatusInternalError
+		response.HumanReadableStatus = err.Error()
+		return response
+	}
+	pageSize, err := strconv.Atoi(size)
+	if err != nil {
+		response.Status = types.StatusInternalError
+		response.HumanReadableStatus = err.Error()
+		return response
+	}
 
 	// Delegate?
 	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
-		var err error
-		response.Data, err = types.ToTransactionsByToAddress(txn, address)
+		response.Data, err = types.ToTransactionsByToAddress(txn, address, start,pageNumber,pageSize)
 		if err != nil {
 			response.Status = types.StatusInternalError
 			response.HumanReadableStatus = err.Error()
@@ -274,7 +305,7 @@ func (this *DAPoSService) ToBeSupported() *types.Response {
 	return response
 }
 
-func (this *DAPoSService) GetAccounts(page string) *types.Response {
+func (this *DAPoSService) GetAccounts(page, size, start string) *types.Response {
 	txn := services.NewTxn(true)
 	defer txn.Discard()
 	response := types.NewResponse()
@@ -285,11 +316,17 @@ func (this *DAPoSService) GetAccounts(page string) *types.Response {
 		response.HumanReadableStatus = err.Error()
 		return response
 	}
+	pageSize, err := strconv.Atoi(size)
+	if err != nil {
+		response.Status = types.StatusInternalError
+		response.HumanReadableStatus = err.Error()
+		return response
+	}
 
 	// Delegate?
 	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
 
-		response.Data, err = types.AccountPaging(pageNumber, txn)
+		response.Data, err = types.AccountPaging(txn, start, pageNumber, pageSize)
 		if err != nil {
 			response.Status = types.StatusInternalError
 			response.HumanReadableStatus = err.Error()
@@ -338,7 +375,7 @@ func (this *DAPoSService) GetGossips(page string) *types.Response {
 	return response
 }
 
-// GetAccount
+// GetGossip
 func (this *DAPoSService) GetGossip(hash string) *types.Response {
 	txn := services.NewTxn(true)
 	defer txn.Discard()
@@ -365,3 +402,4 @@ func (this *DAPoSService) GetGossip(hash string) *types.Response {
 
 	return response
 }
+

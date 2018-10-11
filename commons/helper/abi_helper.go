@@ -1,49 +1,65 @@
 package helper
 
 import (
-	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
+	"encoding/base64"
 	"encoding/hex"
-	"reflect"
-	"math/big"
-	"github.com/pkg/errors"
 	"fmt"
+	"math/big"
+	"reflect"
 	"strings"
+
+	"github.com/dispatchlabs/disgo/commons/crypto"
+	"github.com/dispatchlabs/disgo/commons/types"
+	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
+	"github.com/pkg/errors"
 )
 
-func GetConvertedParams(jsonMap map[string]interface{}) ([]interface{}, error) {
-	params, ok := jsonMap["params"].([]interface{})
-	if !ok {
-		return nil, errors.Errorf("value for field 'params' must be an array")
-	}
-	if params == nil || len(params) == 0 {
-		return params, nil
-	}
-	theAbi, err := GetABI(jsonMap["abi"].(string))
+func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
+	utils.Info("GetConvertedParams --> ", tx.Params)
+	theABI, err := GetABI(tx.Abi)
 	if err != nil {
 		return nil, err
 	}
-	method, _ := jsonMap["method"].(string)
 	var result []interface{}
 	found := false
-	for k, v := range theAbi.Methods {
-		if k == method {
+	for k, v := range theABI.Methods {
+		if k == tx.Method {
 			found = true
-			if len(v.Inputs) != len(params) {
-				return nil, errors.New(fmt.Sprintf("This method %s, requires %d parameters and %d are provided", method, len(v.Inputs), len(params)))
+			if tx.Params == nil || len(tx.Params) == 0 {
+				return tx.Params, nil
+			}
+			if len(v.Inputs) != len(tx.Params) {
+				return nil, errors.New(fmt.Sprintf("The method %s, requires %d parameters and %d are provided", tx.Method, len(v.Inputs), len(tx.Params)))
 			}
 			for i := 0; i < len(v.Inputs); i++ {
 				arg := v.Inputs[i]
 				if arg.Type.T == abi.SliceTy || arg.Type.T == abi.ArrayTy {
-					value, valErr := getValues(arg, params[i].([]interface{}))
+					value, valErr := getValues(arg, tx.Params[i].([]interface{}))
 					if valErr != nil {
-						msg := fmt.Sprintf("Invalid value provided for method %s: %v", method, valErr.Error())
+						msg := fmt.Sprintf("Invalid value provided for method %s: %v", tx.Method, valErr.Error())
 						return nil, errors.New(msg)
 					}
 					result = append(result, value)
+				} else if arg.Type.T == abi.AddressTy {
+					addressAsString, valErr := getValue(arg, tx.Params[i])
+					addressAsByteArray := crypto.GetAddressBytes(addressAsString.(string))
+					if len(addressAsByteArray) < 0 {
+						msg := fmt.Sprintf("Invalid value provided for method %s: %v", tx.Method, valErr.Error())
+						return nil, errors.New(msg)
+					}
+					result = append(result, addressAsByteArray)
+				} else if arg.Type.T == abi.BytesTy{
+					params, valErr := base64.StdEncoding.DecodeString(tx.Params[i].(string))
+					if err != nil{
+						msg := fmt.Sprintf("Invalid value provided for method %s: %v", tx.Method, valErr.Error())
+						return nil, errors.New(msg)
+					}
+					result = append(result, params)
 				} else {
-					value, valErr := getValue(arg, params[i])
+					value, valErr := getValue(arg, tx.Params[i])
 					if valErr != nil {
-						msg := fmt.Sprintf("Invalid value provided for method %s: %v", method, valErr.Error())
+						msg := fmt.Sprintf("Invalid value provided for method %s: %v", tx.Method, valErr.Error())
 						return nil, errors.New(msg)
 					}
 					result = append(result, value)
@@ -52,18 +68,20 @@ func GetConvertedParams(jsonMap map[string]interface{}) ([]interface{}, error) {
 		}
 	}
 	if !found {
-		return nil, errors.New(fmt.Sprintf("This method %s is not valid for this contract", method))
+		return nil, errors.New(fmt.Sprintf("This method '%s' is not valid for this contract", tx.Method))
 	}
 	return result, nil
 }
 
 func getValues(arg abi.Argument, values []interface{}) (interface{}, error) {
 	var result interface{}
-	dataTypeString := arg.Type.String()[0:len(arg.Type.String())-2]
+	dataTypeString := arg.Type.String()[0 : len(arg.Type.String())-2]
 	if strings.HasPrefix(dataTypeString, "int") || strings.HasPrefix(dataTypeString, "uint") {
 		for _, value := range values {
 			_, isNumber := value.(float64)
-			if !isNumber {return nil, errors.Errorf("only number value required in input array, a provided value is '%v'", value)}
+			if !isNumber {
+				return nil, errors.Errorf("only number value required in input array, a provided value is '%v'", value)
+			}
 		}
 	}
 	switch dataTypeString {
@@ -144,39 +162,61 @@ func getValues(arg abi.Argument, values []interface{}) (interface{}, error) {
 func getValue(arg abi.Argument, value interface{}) (interface{}, error) {
 	nbrValue, isNumber := value.(float64)
 	if arg.Type.String() == "int256" || arg.Type.String() == "uint256" {
-		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		if !isNumber {
+			return nil, errors.Errorf("number value required, provided value is '%v'", value)
+		}
 		return big.NewInt(int64(value.(float64))), nil
 	}
 	switch arg.Type.Kind {
 	case reflect.Int:
-		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		if !isNumber {
+			return nil, errors.Errorf("number value required, provided value is '%v'", value)
+		}
 		return big.NewInt(int64(nbrValue)), nil
 	case reflect.Int8:
-		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		if !isNumber {
+			return nil, errors.Errorf("number value required, provided value is '%v'", value)
+		}
 		return int8(nbrValue), nil
 	case reflect.Int16:
-		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		if !isNumber {
+			return nil, errors.Errorf("number value required, provided value is '%v'", value)
+		}
 		return int16(nbrValue), nil
 	case reflect.Int32:
-		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		if !isNumber {
+			return nil, errors.Errorf("number value required, provided value is '%v'", value)
+		}
 		return int32(nbrValue), nil
 	case reflect.Int64:
-		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		if !isNumber {
+			return nil, errors.Errorf("number value required, provided value is '%v'", value)
+		}
 		return int64(nbrValue), nil
 	case reflect.Uint:
-		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		if !isNumber {
+			return nil, errors.Errorf("number value required, provided value is '%v'", value)
+		}
 		return big.NewInt(int64(nbrValue)), nil
 	case reflect.Uint8:
-		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		if !isNumber {
+			return nil, errors.Errorf("number value required, provided value is '%v'", value)
+		}
 		return uint8(nbrValue), nil
 	case reflect.Uint16:
-		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		if !isNumber {
+			return nil, errors.Errorf("number value required, provided value is '%v'", value)
+		}
 		return uint16(nbrValue), nil
 	case reflect.Uint32:
-		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		if !isNumber {
+			return nil, errors.Errorf("number value required, provided value is '%v'", value)
+		}
 		return uint32(nbrValue), nil
 	case reflect.Uint64:
-		if !isNumber {return nil, errors.Errorf("number value required, provided value is '%v'", value)}
+		if !isNumber {
+			return nil, errors.Errorf("number value required, provided value is '%v'", value)
+		}
 		return uint64(nbrValue), nil
 	case reflect.Bool:
 		val, ok := value.(bool)
@@ -193,11 +233,17 @@ func getValue(arg abi.Argument, value interface{}) (interface{}, error) {
 }
 
 func GetABI(data string) (*abi.ABI, error) {
+	runes := []rune(data)
+	// ... Convert back into a string from rune slice.
+	safeSubstring := string(runes[0:10])
+	utils.Info("GetAbi %s\n%s\n", safeSubstring, utils.GetCallStackWithFileAndLineNumber())
 	bytes, err := hex.DecodeString(data)
 	var abi abi.ABI
 	err = abi.UnmarshalJSON(bytes)
 	if err != nil {
-		return nil, errors.New("The ABI provided is not a valid ABI structure")
+		utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
+		return nil, errors.New(fmt.Sprintf("The ABI provided is not a valid ABI structure: %s", string(bytes)))
 	}
 	return &abi, nil
 }
+

@@ -142,6 +142,17 @@ func GetAccount(delegateNode types.Node, address string) (*types.Account, error)
 	return account, nil
 }
 
+// PackageTx - Package a Transaction
+func PackageTx(to string, tokens int64, time int64 ) (*types.Transaction, error) {
+
+	transaction, err := types.NewTransferTokensTransaction(types.GetAccount().PrivateKey, types.GetAccount().Address, to, tokens, 0, time)
+	if err != nil {
+		return nil, err
+	}
+
+	return transaction, nil
+}
+
 // TransferTokens - Send tokens FROM TO
 func TransferTokens(delegateNode types.Node, privateKey string, from string, to string, tokens int64) (string, error) {
 	// Create transfer tokens transaction.
@@ -215,9 +226,9 @@ func DeploySmartContract(delegateNode types.Node, privateKey string, from string
 }
 
 // ExecuteSmartContractTransaction - Execute a smart contract, get the TX hash as result
-func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey string, from string, to string, abi string, method string, params []interface{}) (string, error) {
+func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey string, from string, to string, method string, params []interface{}) (string, error) {
 	// Create execute smart contract transaction.
-	transaction, err := types.NewExecuteContractTransaction(privateKey, from, to, abi, method, params, utils.ToMilliSeconds(time.Now()))
+	transaction, err := types.NewExecuteContractTransaction(privateKey, from, to, method, params, utils.ToMilliSeconds(time.Now()))
 	if err != nil {
 		return "", err
 	}
@@ -290,7 +301,7 @@ func GetTransaction(delegateNode types.Node, hash string) (*types.Transaction, e
 		return nil, errors.Errorf("'data' is missing from response")
 	}
 
-	// Unmarshal account.
+	// Unmarshal transaction.
 	var transaction *types.Transaction
 	err = json.Unmarshal(jsonMap["data"], &transaction)
 	if err != nil {
@@ -303,14 +314,41 @@ func GetTransaction(delegateNode types.Node, hash string) (*types.Transaction, e
 // GetReceipt - Get details about a transaction base on a TX hash
 func GetReceipt(delegateNode types.Node, hash string) (*types.Receipt, error) {
 
-	// Get status.
-	httpResponse, err := http.Get(fmt.Sprintf("http://%s:%d/v1/receipts/%s", delegateNode.HttpEndpoint.Host, delegateNode.HttpEndpoint.Port, hash))
+	// Get transaction.
+	transaction, err := GetTransaction(delegateNode, hash)
+	if err != nil {
+		return nil, err
+	}
+
+	return &transaction.Receipt, nil
+}
+
+// GetTransactions - Get details about sent transactions for a node
+func GetTransactions(delegateNode types.Node, pageOptions ...string) ([]types.Transaction, error) {
+	page := "1"
+	pageSize := "10"
+	pageStart := ""
+
+	if pageOptions[0] != ""{
+		page = pageOptions[0]
+	}
+
+	if pageOptions[1] != ""{
+		pageSize = pageOptions[1]
+	}
+
+	if pageOptions[2] != ""{
+		pageStart = pageOptions[2]
+	}
+
+	// Get sent transaction.
+	httpResponse, err := http.Get(fmt.Sprintf("http://%s:%d/v1/transactions?page=%s&pageSize=%s&pageStart=%s", delegateNode.HttpEndpoint.Host, delegateNode.HttpEndpoint.Port, page,pageSize,pageStart))
 	if err != nil {
 		return nil, err
 	}
 	defer httpResponse.Body.Close()
 
-	// Ready body.
+	// Read body.
 	body, err := ioutil.ReadAll(httpResponse.Body)
 	if err != nil {
 		return nil, err
@@ -340,21 +378,36 @@ func GetReceipt(delegateNode types.Node, hash string) (*types.Receipt, error) {
 		return nil, errors.Errorf("'data' is missing from response")
 	}
 
-	// Unmarshal account.
-	var receipt *types.Receipt
-	err = json.Unmarshal(jsonMap["data"], &receipt)
+	// Unmarshal transactions.
+	var transactions []types.Transaction
+	err = json.Unmarshal(jsonMap["data"], &transactions)
 	if err != nil {
 		return nil, err
 	}
 
-	return receipt, nil
+	return transactions, nil
 }
 
 // GetTransactionsSent - Get details about sent transactions for a node
-func GetTransactionsSent(delegateNode types.Node, address string) ([]types.Transaction, error) {
+func GetTransactionsSent(delegateNode types.Node, address string,pageOptions ...string) ([]types.Transaction, error) {
+	page := "1"
+	pageSize := "10"
+	pageStart := ""
+
+	if pageOptions[0] != ""{
+		page = pageOptions[0]
+	}
+
+	if pageOptions[1] != ""{
+		pageSize = pageOptions[1]
+	}
+
+	if pageOptions[2] != ""{
+		pageStart = pageOptions[2]
+	}
 
 	// Get sent transaction.
-	httpResponse, err := http.Get(fmt.Sprintf("http://%s:%d/v1/transactions?from=%s", delegateNode.HttpEndpoint.Host, delegateNode.HttpEndpoint.Port, address))
+	httpResponse, err := http.Get(fmt.Sprintf("http://%s:%d/v1/transactions?from=%s&page=%s&pageSize=%s&pageStart=%s", delegateNode.HttpEndpoint.Host, delegateNode.HttpEndpoint.Port, address,page,pageSize,pageStart))
 	if err != nil {
 		return nil, err
 	}
@@ -401,10 +454,25 @@ func GetTransactionsSent(delegateNode types.Node, address string) ([]types.Trans
 }
 
 // GetTransactionsReceived - Get details about received transactions for a node
-func GetTransactionsReceived(delegateNode types.Node, address string) ([]types.Transaction, error) {
+func GetTransactionsReceived(delegateNode types.Node, address string, pageOptions ...string) ([]types.Transaction, error) {
+	page := "1"
+	pageSize := "10"
+	pageStart := ""
+
+	if pageOptions[0] != ""{
+		page = pageOptions[0]
+	}
+
+	if pageOptions[1] != ""{
+		pageSize = pageOptions[1]
+	}
+
+	if pageOptions[2] != ""{
+		pageStart = pageOptions[2]
+	}
 
 	// Get received transactions.
-	httpResponse, err := http.Get(fmt.Sprintf("http://%s:%d/v1/transactions?to=%s", delegateNode.HttpEndpoint.Host, delegateNode.HttpEndpoint.Port, address))
+	httpResponse, err := http.Get(fmt.Sprintf("http://%s:%d/v1/transactions?to=%s&page=%s&pageSize=%s&pageStart=%s", delegateNode.HttpEndpoint.Host, delegateNode.HttpEndpoint.Port, address,page,pageSize,pageStart))
 	if err != nil {
 		return nil, err
 	}

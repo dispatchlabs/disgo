@@ -1,3 +1,19 @@
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
+//
+// The go-ethereum library is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The go-ethereum library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+
 package ethereum
 
 import (
@@ -21,7 +37,7 @@ var (
 The State Transitioning Model
 
 A state transition is a change made when a transaction is applied to the current world state
-The state transitioning model does all all the necessary work to work out a valid new state root.
+The state transitioning model does all the necessary work to work out a valid new state root.
 
 1) Nonce handling
 2) Pre pay gas
@@ -63,7 +79,7 @@ type Message interface {
 
 // IntrinsicGas computes the 'intrinsic gas' for a message with the given data.
 func IntrinsicGas(data []byte, contractCreation, homestead bool) (uint64, error) {
-	// PersistAndCache the starting gas for the raw transaction
+	// Set the starting gas for the raw transaction
 	var gas uint64
 	if contractCreation && homestead {
 		gas = params.TxGasContractCreation
@@ -96,7 +112,7 @@ func IntrinsicGas(data []byte, contractCreation, homestead bool) (uint64, error)
 
 // NewStateTransition initialises and returns a new state transition object.
 func NewStateTransition(evm *vm.EVM, msg Message, gp *GasPool) *StateTransition {
-	newStateTransition := &StateTransition{
+	return &StateTransition{
 		gp:       gp,
 		evm:      evm,
 		msg:      msg,
@@ -105,7 +121,6 @@ func NewStateTransition(evm *vm.EVM, msg Message, gp *GasPool) *StateTransition 
 		data:     msg.Data(),
 		state:    evm.StateDB,
 	}
-	return newStateTransition
 }
 
 // ApplyMessage computes the new state by applying the given message
@@ -116,8 +131,7 @@ func NewStateTransition(evm *vm.EVM, msg Message, gp *GasPool) *StateTransition 
 // indicates a core error meaning that the message would always fail for that particular
 // state and would never be accepted within a block.
 func ApplyMessage(evm *vm.EVM, msg Message, gp *GasPool) ([]byte, crypto.AddressBytes, uint64, bool, error) {
-	newStateTransition := NewStateTransition(evm, msg, gp)
-	return newStateTransition.TransitionDb()
+	return NewStateTransition(evm, msg, gp).TransitionDb()
 }
 
 // to returns the recipient of the message.
@@ -166,8 +180,8 @@ func (st *StateTransition) preCheck() error {
 }
 
 // TransitionDb will transition the state by applying the current message and
-// returning the result including the the used gas. It returns an error if it
-// failed. An error indicates a consensus issue.
+// returning the result including the used gas. It returns an error if failed.
+// An error indicates a consensus issue.
 func (st *StateTransition) TransitionDb() (ret []byte, contractAddress crypto.AddressBytes, usedGas uint64, failed bool, err error) {
 	if err = st.preCheck(); err != nil {
 		return
@@ -215,16 +229,21 @@ func (st *StateTransition) TransitionDb() (ret []byte, contractAddress crypto.Ad
 		ret, st.gas, vmerr = evm.Call(sender, st.to(), st.data, st.gas, st.value)
 	}
 	if vmerr != nil {
-		log.Error("VM returned with error", "err", vmerr)
+		log.Debug("VM returned with error", "err", vmerr)
 		// The only possible consensus-error would be if there wasn't
 		// sufficient balance to make the transfer happen. The first
 		// balance transfer may never fail.
-
 		if vmerr == vm.ErrInsufficientBalance {
 			return nil, contractAddress, 0, false, vmerr
 		}
 
 		err = vmerr
+
+		// if vmerr != vm.ErrExecutionReverted {
+		// }
+		// if vmerr == vm.ErrExecutionReverted {
+		// 	vmerr = nil
+		// }
 	}
 	st.refundGas()
 	st.state.AddBalance(st.evm.Coinbase, new(big.Int).Mul(new(big.Int).SetUint64(st.gasUsed()), st.gasPrice))

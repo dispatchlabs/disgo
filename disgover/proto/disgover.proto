@@ -6,9 +6,9 @@ message Empty {
 }
 
 message Authentication {
-    string Hash = 1;
-    int64  Time = 2;
-    string Signature = 3;
+    string Hash = 2;
+    int64  Time = 3;
+    string Signature = 4;
 }
 
 message Endpoint {
@@ -35,8 +35,11 @@ message Update {
 
 message SoftwareUpdate {
     Authentication Authentication = 1;
-    bytes          Software = 2;
-    string         ScheduledReboot = 3;
+    string         Hash = 2;
+    string         FileName = 3;
+    bytes          Software = 4;
+    string         Signature = 5;
+    string         ScheduledReboot = 6;
 }
 
 service DisgoverGrpc {

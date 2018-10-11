@@ -144,7 +144,7 @@ func (c *curvePoint) Add(a, b *curvePoint, pool *bnPool) {
 	t6 := pool.Get().Sub(t4, j)
 	c.x.Sub(t6, t)
 
-	// PersistAndCache y = -(2h)³(s1 + s*(x/4h²-u1))
+	// Set y = -(2h)³(s1 + s*(x/4h²-u1))
 	// This is also
 	// y = - 2·s1·j - (s2-s1)(2x - 2i·u1) = r(v-x) - 2·s1·j
 	t.Sub(v, c.x) // t7
@@ -155,7 +155,7 @@ func (c *curvePoint) Add(a, b *curvePoint, pool *bnPool) {
 	t4.Mod(t4, P)
 	c.y.Sub(t4, t6)
 
-	// PersistAndCache z = 2(u2-u1)·z1·z2 = 2h·z1·z2
+	// Set z = 2(u2-u1)·z1·z2 = 2h·z1·z2
 	t.Add(a.z, b.z) // t11
 	t4.Mul(t, t)    // t12
 	t4.Mod(t4, P)
@@ -245,11 +245,19 @@ func (c *curvePoint) Mul(a *curvePoint, scalar *big.Int, pool *bnPool) *curvePoi
 	return c
 }
 
+// MakeAffine converts c to affine form and returns c. If c is ∞, then it sets
+// c to 0 : 1 : 0.
 func (c *curvePoint) MakeAffine(pool *bnPool) *curvePoint {
 	if words := c.z.Bits(); len(words) == 1 && words[0] == 1 {
 		return c
 	}
-
+	if c.IsInfinity() {
+		c.x.SetInt64(0)
+		c.y.SetInt64(1)
+		c.z.SetInt64(0)
+		c.t.SetInt64(0)
+		return c
+	}
 	zInv := pool.Get().ModInverse(c.z, P)
 	t := pool.Get().Mul(c.y, zInv)
 	t.Mod(t, P)

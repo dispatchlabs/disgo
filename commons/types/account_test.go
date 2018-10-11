@@ -17,14 +17,12 @@
 package types
 
 import (
-	"math/big"
 	"os"
 	"reflect"
 	"testing"
 	"time"
 	"github.com/patrickmn/go-cache"
 	"github.com/dgraph-io/badger"
-	"fmt"
 	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
@@ -33,25 +31,30 @@ var testAccountByte = []byte("{\"address\":\"99022124e110f5a9567a334a2017bdbd41c
 var testAccountAddressHash = "de3a0dba79b563588b15e38909ce206eb83dd27b53150e53c858036978b23412"
 var c *cache.Cache
 var db *badger.DB
+var dbPath = "." + string(os.PathSeparator) + "testdb"
 
 //init
 func init()  {
 	c = cache.New(CacheTTL, CacheTTL*2)
 	utils.Info("opening DB...")
 	opts := badger.DefaultOptions
-	opts.Dir = "." + string(os.PathSeparator) + "testdb"
-	opts.ValueDir = "." + string(os.PathSeparator) + "testdb"
+	opts.Dir = dbPath
+	opts.ValueDir = dbPath
 	db, _ = badger.Open(opts)
 }
 
-//TestGetAccount
-func TestGetAccount(t *testing.T) {
-	// TODO: GetAccount()
-	t.Skip("Should refactor away from using a singleton for testability?")
+func destruct(){
+	if utils.Exists(dbPath) {
+		err := os.RemoveAll(dbPath)
+		if err != nil {
+			utils.Info("Failed to delete testdb")
+		}
+	}
 }
 
 //TestToAccountFromJson
 func TestToAccountFromJson(t *testing.T) {
+	defer destruct()
 	account, err := ToAccountFromJson(testAccountByte)
 	if err != nil {
 		t.Fatalf("ToAccountFromJson returning error: %s", err)
@@ -61,12 +64,11 @@ func TestToAccountFromJson(t *testing.T) {
 
 //TestAccountCache
 func TestAccountCache(t *testing.T) {
+	defer destruct()
 	account := &Account{}
 	account.UnmarshalJSON(testAccountByte)
-	//cache := config.GetTestCache()
 	account.Cache(c, time.Second * 5)
 	testAccount, err := ToAccountFromCache(c, account.Address)
-	fmt.Print(testAccount)
 	if err != nil {
 		t.Error(err)
 	}
@@ -77,30 +79,91 @@ func TestAccountCache(t *testing.T) {
 
 //TestToAccountByAddress
 func TestToAccountByAddress(t *testing.T) {
-	// TODO: ToAccountByAddress()
-	t.Skip("Need a Badger DB mock")
+	defer destruct()
+	txn := db.NewTransaction(true)
+	defer txn.Discard()
+	account := &Account{}
+	account.UnmarshalJSON(testAccountByte)
+	account.Persist(txn)
+
+	testAccount,err := ToAccountByAddress(txn, account.Address)
+	if err != nil{
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testAccount, account) == false{
+		t.Error("account not equal to testAccount")
+	}
 }
 
 //TestToAccountByName
 func TestToAccountByName(t *testing.T) {
-	// TODO: ToAccountByName()
-	t.Skip("Need a Badger DB mock")
+	//TODO: currently not using names
+	t.Skip("names not in use")
+	//defer destruct()
+	//txn := db.NewTransaction(true)
+	//defer txn.Discard()
+	//account := &Account{}
+	//account.UnmarshalJSON(testAccountByte)
+	//account.Persist(txn)
+	//
+	//testAccount,err := ToAccountByName(txn, account.Address)
+	//if err != nil{
+	//	t.Error(err)
+	//}
+	//if reflect.DeepEqual(testAccount, account) == false{
+	//	t.Error("account not equal to testAccount")
+	//}
 }
 
 //TestToAccountsByName
 func TestToAccountsByName(t *testing.T) {
-	// TODO: ToAccountByName()
-	t.Skip("Need a Badger DB mock")
+	//TODO: currently not using names
+	t.Skip("names not in use")
+	//defer destruct()
+	//txn := db.NewTransaction(true)
+	//defer txn.Discard()
+	//account := &Account{}
+	//account.UnmarshalJSON(testAccountByte)
+	//account.Persist(txn)
+	//
+	//testAccount,err := ToAccountsByName(txn, account.Address)
+	//if err != nil{
+	//	t.Error(err)
+	//}
+	//if reflect.DeepEqual(testAccount, account) == false{
+	//	t.Error("account not equal to testAccount")
+	//}
 }
 
 //TestAccountSet
 func TestAccountSet(t *testing.T) {
-	// TODO: account.PersistAndCache()
-	t.Skip("Need a Badger DB mock")
+	defer destruct()
+	txn := db.NewTransaction(true)
+	defer txn.Discard()
+	account := &Account{}
+	account.UnmarshalJSON(testAccountByte)
+	account.Set(txn,c)
+
+	testDbAccount,err := ToAccountByAddress(txn, account.Address)
+	if err != nil{
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testDbAccount, account) == false{
+		t.Error("account not equal to DB testAccount")
+	}
+
+	testCacheAccount, err := ToAccountFromCache(c, account.Address)
+	if err != nil {
+		t.Error(err)
+	}
+	if reflect.DeepEqual(testCacheAccount, account) == false{
+		t.Error("account not equal to cache testAccount")
+	}
 }
 
 //TestAccountUnmarshalJSON
 func TestAccountUnmarshalJSON(t *testing.T) {
+	defer destruct()
 	account := &Account{}
 	account.UnmarshalJSON(testAccountByte)
 	testAccountStruct(t, account)
@@ -108,6 +171,7 @@ func TestAccountUnmarshalJSON(t *testing.T) {
 
 //TestAccountMarshalJSON
 func TestAccountMarshalJSON(t *testing.T) {
+	defer destruct()
 	account := &Account{}
 	account.UnmarshalJSON(testAccountByte)
 	out, err := account.MarshalJSON()
@@ -135,7 +199,7 @@ func TestReadAccountFile(t *testing.T) {
 	if newAccount.PrivateKey == "" {
 		t.Error("newAccount.PrivateKey is empty")
 	}
-	if newAccount.Balance.Int64() != big.NewInt(0).Int64() {
+	if newAccount.Balance.Int64() != 0 {
 		t.Error("newAccount.Balance is not 0")
 	}
 	if newAccount.Created != newAccount.Updated {
@@ -180,7 +244,7 @@ func testAccountStruct(t *testing.T, account *Account) {
 	if account.Name != "test" {
 		t.Errorf("account.UnmarshalJSON returning invalid %s value: %s", "Name", account.Name)
 	}
-	if account.Balance.Int64() != big.NewInt(1000).Int64() {
+	if account.Balance.Int64() != 1000 {
 		t.Errorf("account.UnmarshalJSON returning invalid %s value: %d", "Balance", account.Balance)
 	}
 	d, _ := time.Parse(time.RFC3339, "2018-05-09T15:04:05Z")

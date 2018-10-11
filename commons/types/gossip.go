@@ -35,8 +35,39 @@ func (this Gossip) Key() string {
 	return fmt.Sprintf("table-gossip-%s", this.Transaction.Hash)
 }
 
+func (this Gossip) RumorKey(txHash string) string {
+	return fmt.Sprintf("cache-rumor-%s", txHash)
+}
+
+func (this *Gossip) HaveSent(cache *cache.Cache, txHash, delegateAddress string) bool {
+	value, ok := cache.Get(this.RumorKey(txHash))
+	if !ok{
+		return false
+	}
+	addresses := value.([]string)
+	for _, address := range addresses {
+		if address == delegateAddress {
+			return true
+		}
+	}
+	return false
+}
+
+func (this *Gossip) CacheSentDelegate(cache *cache.Cache, txHash, nodeAddress string) {
+	value, ok := cache.Get(this.RumorKey(txHash))
+	array := make([]string, 0)
+	if !ok {
+		array = append(array, nodeAddress)
+		cache.Set(this.RumorKey(txHash), array, GossipCacheTTL)
+	} else {
+		addresses := value.([]string)
+		array = append(addresses, nodeAddress)
+	}
+	cache.Set(this.RumorKey(txHash), array, GossipCacheTTL)
+}
+
 // Cache
-func (this *Gossip) Cache(cache *cache.Cache){
+func (this *Gossip) Cache(cache *cache.Cache) {
 	cache.Set(this.Key(), this, GossipCacheTTL)
 }
 
@@ -50,7 +81,7 @@ func (this *Gossip) Persist(txn *badger.Txn) error{
 }
 
 // PersistAndCache
-func (this *Gossip) PersistAndCache(txn *badger.Txn,cache *cache.Cache) error {
+func (this *Gossip) Set(txn *badger.Txn,cache *cache.Cache) error {
 	this.Cache(cache)
 	err := this.Persist(txn)
 	if err != nil {
@@ -190,28 +221,6 @@ func ToGossipByTransactionHash(txn *badger.Txn, transactionHash string) (*Gossip
 	return gossip, err
 }
 
-// ToGossips
-func ToGossips(txn *badger.Txn) ([]*Gossip, error) {
-	iterator := txn.NewIterator(badger.DefaultIteratorOptions)
-	defer iterator.Close()
-	prefix := []byte(fmt.Sprintf("table-gossip-"))
-	var gossips = make([]*Gossip, 0)
-	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
-		item := iterator.Item()
-		value, err := item.Value()
-		if err != nil {
-			utils.Error(err)
-			continue
-		}
-		gossip, err := ToGossipFromJson(value)
-		if err != nil {
-			utils.Error(err)
-			continue
-		}
-		gossips = append(gossips, gossip)
-	}
-	return gossips, nil
-}
 
 func GossipPaging(page int,txn *badger.Txn) ([]*Gossip, error){
 	var iteratorCount = 0
@@ -219,9 +228,7 @@ func GossipPaging(page int,txn *badger.Txn) ([]*Gossip, error){
 	pageSize := 10
 	if page <= 0 {
 		return nil, ErrInvalidRequest
-	}else if page == 1{
-		firstItem = 1
-	} else{
+	}else{
 		firstItem = (page * pageSize) - (pageSize - 1)
 	}
 

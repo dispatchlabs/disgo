@@ -26,19 +26,19 @@ import (
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/gorilla/mux"
+	"github.com/dispatchlabs/disgo/commons/helper"
+	"encoding/hex"
 )
 
 // WithHttp -
 func (this *DAPoSService) WithHttp() *DAPoSService {
 	//Accounts
 	services.GetHttpRouter().HandleFunc("/v1/accounts/{address}", this.getAccountHandler).Methods("GET")
-	services.GetHttpRouter().HandleFunc("/v1/accounts", this.getAccountsHandler).Methods("GET")
+	services.GetHttpRouter().HandleFunc("/v1/accounts", this.unsupportedFunctionHandler).Methods("GET")
 	//Transactions
-	services.GetHttpRouter().HandleFunc("/v1/transactions/from/{address}", this.getTransactionsByFromAddressHandler).Methods("GET")
-	services.GetHttpRouter().HandleFunc("/v1/transactions/to/{address}", this.getTransactionsByToAddressHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/transactions", this.newTransactionHandler).Methods("POST")
-	services.GetHttpRouter().HandleFunc("/v1/transactions/{hash}", this.getTransactionHandler).Methods("GET") //TODO: support pagination
-	services.GetHttpRouter().HandleFunc("/v1/transactions", this.getTransactionsHandler).Methods("GET")       //TODO: to be deprecated
+	services.GetHttpRouter().HandleFunc("/v1/transactions/{hash}", this.getTransactionHandler).Methods("GET")
+	services.GetHttpRouter().HandleFunc("/v1/transactions", this.getTransactionsHandler).Methods("GET")
 	//Artifacts
 	services.GetHttpRouter().HandleFunc("/v1/artifacts/{query}", this.unsupportedFunctionHandler).Methods("GET") //TODO: support pagination
 	services.GetHttpRouter().HandleFunc("/v1/artifacts/", this.unsupportedFunctionHandler).Methods("POST")
@@ -56,7 +56,7 @@ func (this *DAPoSService) WithHttp() *DAPoSService {
 	services.GetHttpRouter().HandleFunc("/v1/gossips", this.getGossipsHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/gossips/{hash}", this.getGossipHandler).Methods("GET")
 
-	services.GetHttpRouter().HandleFunc("/v1/receipts/{hash}", this.getReceiptHandler).Methods("GET")
+	services.GetHttpRouter().HandleFunc("/v1/receipts/{hash}", this.unsupportedFunctionHandler).Methods("GET")
 
 	return this
 }
@@ -132,27 +132,42 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 	// New transaction.
 	transaction, err := types.ToTransactionFromJson(body)
 	if err != nil {
-		utils.Error("JSON parse error", err)
-		services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusJsonParseError, err), http.StatusInternalServerError)
-		return
+		if err != nil {
+			utils.Error("Paramater type error", err)
+			services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusJsonParseError, err), http.StatusBadRequest)
+			return
+		}
+	}
+
+	txn := services.NewTxn(true)
+	defer txn.Discard()
+
+	if transaction.Type == types.TypeDeploySmartContract {
+		_, err := helper.GetABI(hex.EncodeToString([]byte(transaction.Abi)))
+		if err != nil {
+			utils.Error("Paramater type error", err)
+			services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusJsonParseError, err), http.StatusBadRequest)
+			return
+		}
+	}
+
+	if transaction.Type == types.TypeExecuteSmartContract {
+		contractTx, err := types.ToTransactionByAddress(txn, transaction.To)
+		if err != nil {
+			utils.Error(err)
+			services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: Could not find contract with address %s"}`, types.StatusNotFound, transaction.To), http.StatusBadRequest)
+			return
+		}
+		transaction.Abi = contractTx.Abi
+		transaction.Params, err = helper.GetConvertedParams(transaction)
+		if err != nil {
+			utils.Error("Paramater type error", err)
+			services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusJsonParseError, err), http.StatusBadRequest)
+			return
+		}
+
 	}
 	response := this.NewTransaction(transaction)
-	setHeaders(response, &responseWriter)
-	responseWriter.Write([]byte(response.String()))
-}
-
-// getTransactionsByFromAddressHandler
-func (this *DAPoSService) getTransactionsByFromAddressHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	vars := mux.Vars(request)
-	response := this.GetTransactionsByFromAddress(vars["address"])
-	setHeaders(response, &responseWriter)
-	responseWriter.Write([]byte(response.String()))
-}
-
-// getTransactionsByToAddressHandler
-func (this *DAPoSService) getTransactionsByToAddressHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	vars := mux.Vars(request)
-	response := this.GetTransactionsByToAddress(vars["address"])
 	setHeaders(response, &responseWriter)
 	responseWriter.Write([]byte(response.String()))
 }
@@ -163,6 +178,11 @@ func (this *DAPoSService) getTransactionsHandler(responseWriter http.ResponseWri
 	if pageNumber == "" {
 		pageNumber = "1"
 	}
+	pageLimit := request.URL.Query().Get("pageSize")
+	if pageLimit == "" {
+		pageLimit = "10"
+	}
+	startingHash := request.URL.Query().Get("pageStart")
 	from := request.URL.Query().Get("from")
 	to := request.URL.Query().Get("to")
 	if from != "" && to != "" {
@@ -171,11 +191,11 @@ func (this *DAPoSService) getTransactionsHandler(responseWriter http.ResponseWri
 		services.Error(responseWriter, response.String(), http.StatusBadRequest)
 		return
 	} else if from != "" {
-		response = this.GetTransactionsByFromAddress(from)
+		response = this.GetTransactionsByFromAddress(from, pageNumber, pageLimit, startingHash)
 	} else if to != "" {
-		response = this.GetTransactionsByToAddress(to)
+		response = this.GetTransactionsByToAddress(to, pageNumber, pageLimit, startingHash)
 	} else {
-		response = this.GetTransactions(pageNumber)
+		response = this.GetTransactions(pageNumber, pageLimit, startingHash)
 	}
 	setHeaders(response, &responseWriter)
 	responseWriter.Write([]byte(response.String()))
@@ -196,15 +216,20 @@ func (this *DAPoSService) unsupportedFunctionHandler(responseWriter http.Respons
 }
 
 // getAccountsHandler
-func (this *DAPoSService) getAccountsHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	pageNumber := request.URL.Query().Get("page")
-	if pageNumber == "" {
-		pageNumber = "1"
-	}
-	response := this.GetAccounts(pageNumber)
-	setHeaders(response, &responseWriter)
-	responseWriter.Write([]byte(response.String()))
-}
+// func (this *DAPoSService) getAccountsHandler(responseWriter http.ResponseWriter, request *http.Request) {
+// 	pageNumber := request.URL.Query().Get("page")
+// 	if pageNumber == "" {
+// 		pageNumber = "1"
+// 	}
+// 	pageLimit := request.URL.Query().Get("pageSize")
+// 	if pageLimit == "" {
+// 		pageLimit = "10"
+// 	}
+// 	startingAddress := request.URL.Query().Get("pageStart")
+// 	response := this.GetAccounts(pageNumber, pageLimit, startingAddress)
+// 	setHeaders(response, &responseWriter)
+// 	responseWriter.Write([]byte(response.String()))
+// }
 
 // getGossipsHandler
 func (this *DAPoSService) getGossipsHandler(responseWriter http.ResponseWriter, request *http.Request) {
@@ -226,9 +251,10 @@ func (this *DAPoSService) getGossipHandler(responseWriter http.ResponseWriter, r
 }
 
 // getReceiptHandler
-func (this *DAPoSService) getReceiptHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	vars := mux.Vars(request)
-	response := this.GetReceipt(vars["hash"])
-	setHeaders(response, &responseWriter)
-	responseWriter.Write([]byte(response.String()))
-}
+// func (this *DAPoSService) getReceiptHandler(responseWriter http.ResponseWriter, request *http.Request) {
+// 	vars := mux.Vars(request)
+// 	response := this.GetReceipt(vars["hash"])
+// 	setHeaders(response, &responseWriter)
+// 	responseWriter.Write([]byte(response.String()))
+// }
+

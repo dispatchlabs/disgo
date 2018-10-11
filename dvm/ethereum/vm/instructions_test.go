@@ -17,32 +17,35 @@
 package vm
 
 import (
+	"encoding/hex"
 	"math/big"
 	"testing"
 
-	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/common"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/crypto"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
 )
 
-type twoOperandTest struct {
+type oneOperandTest struct {
 	x        string
-	y        string
 	expected string
 }
 
-func testTwoOperandOp(t *testing.T, tests []twoOperandTest, opFn func(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error)) {
+func testOneOperandOp(t *testing.T, tests []oneOperandTest, memory *Memory, opFn func(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error)) {
 	var (
-		env   = NewEVM(Context{}, nil, params.TestChainConfig, Config{})
-		stack = newstack()
-		pc    = uint64(0)
+		env            = NewEVM(Context{}, nil, params.TestChainConfig, Config{}, nil)
+		stack          = newstack()
+		pc             = uint64(0)
+		evmInterpreter = NewEVMInterpreter(env, env.vmConfig)
 	)
+
+	env.interpreter = evmInterpreter
+	evmInterpreter.intPool = poolOfIntPools.get()
 	for i, test := range tests {
 		x := new(big.Int).SetBytes(common.Hex2Bytes(test.x))
-		shift := new(big.Int).SetBytes(common.Hex2Bytes(test.y))
 		expected := new(big.Int).SetBytes(common.Hex2Bytes(test.expected))
 		stack.push(x)
-		stack.push(shift)
-		opFn(&pc, env, nil, nil, stack)
+		opFn(&pc, evmInterpreter, nil, memory, stack)
 		actual := stack.pop()
 		if actual.Cmp(expected) != 0 {
 			t.Errorf("Testcase %d, expected  %v, got %v", i, expected, actual)
@@ -50,13 +53,13 @@ func testTwoOperandOp(t *testing.T, tests []twoOperandTest, opFn func(pc *uint64
 		// Check pool usage
 		// 1.pool is not allowed to contain anything on the stack
 		// 2.pool is not allowed to contain the same pointers twice
-		if env.interpreter.intPool.pool.len() > 0 {
+		if evmInterpreter.intPool.pool.len() > 0 {
 
 			poolvals := make(map[*big.Int]struct{})
 			poolvals[actual] = struct{}{}
 
-			for env.interpreter.intPool.pool.len() > 0 {
-				key := env.interpreter.intPool.get()
+			for evmInterpreter.intPool.pool.len() > 0 {
+				key := evmInterpreter.intPool.get()
 				if _, exist := poolvals[key]; exist {
 					t.Errorf("Testcase %d, pool contains double-entry", i)
 				}
@@ -64,118 +67,468 @@ func testTwoOperandOp(t *testing.T, tests []twoOperandTest, opFn func(pc *uint64
 			}
 		}
 	}
+	poolOfIntPools.put(evmInterpreter.intPool)
+}
+
+type twoOperandTest struct {
+	x        string
+	y        string
+	expected string
+}
+
+func testTwoOperandOp(t *testing.T, tests []twoOperandTest, memory *Memory, opFn func(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error)) {
+	var (
+		env            = NewEVM(Context{}, nil, params.TestChainConfig, Config{}, nil)
+		stack          = newstack()
+		pc             = uint64(0)
+		evmInterpreter = NewEVMInterpreter(env, env.vmConfig)
+	)
+
+	env.interpreter = evmInterpreter
+	evmInterpreter.intPool = poolOfIntPools.get()
+	for i, test := range tests {
+		x := new(big.Int).SetBytes(common.Hex2Bytes(test.x))
+		shift := new(big.Int).SetBytes(common.Hex2Bytes(test.y))
+
+		expected := new(big.Int).SetBytes(common.Hex2Bytes(test.expected))
+		stack.push(shift)
+		stack.push(x)
+		opFn(&pc, evmInterpreter, nil, memory, stack)
+		actual := stack.pop()
+
+		if actual.Cmp(expected) != 0 {
+			t.Errorf("Testcase %d, expected  %v, got %v", i, expected, actual)
+		}
+		// Check pool usage
+		// 1.pool is not allowed to contain anything on the stack
+		// 2.pool is not allowed to contain the same pointers twice
+		if evmInterpreter.intPool.pool.len() > 0 {
+
+			poolvals := make(map[*big.Int]struct{})
+			poolvals[actual] = struct{}{}
+
+			for evmInterpreter.intPool.pool.len() > 0 {
+				key := evmInterpreter.intPool.get()
+				if _, exist := poolvals[key]; exist {
+					t.Errorf("Testcase %d, pool contains double-entry", i)
+				}
+				poolvals[key] = struct{}{}
+			}
+		}
+	}
+	poolOfIntPools.put(evmInterpreter.intPool)
+}
+
+type threeOperandTest struct {
+	x        string
+	y        string
+	m        string
+	expected string
+}
+
+func testThreeOperandOp(t *testing.T, tests []threeOperandTest, memory *Memory, opFn func(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error)) {
+	var (
+		env            = NewEVM(Context{}, nil, params.TestChainConfig, Config{}, nil)
+		stack          = newstack()
+		pc             = uint64(0)
+		evmInterpreter = NewEVMInterpreter(env, env.vmConfig)
+	)
+
+	env.interpreter = evmInterpreter
+	evmInterpreter.intPool = poolOfIntPools.get()
+	for i, test := range tests {
+		x := new(big.Int).SetBytes(common.Hex2Bytes(test.x))
+		y := new(big.Int).SetBytes(common.Hex2Bytes(test.y))
+		m := new(big.Int).SetBytes(common.Hex2Bytes(test.m))
+		expected := new(big.Int).SetBytes(common.Hex2Bytes(test.expected))
+		stack.push(m)
+		stack.push(y)
+		stack.push(x)
+		opFn(&pc, evmInterpreter, nil, memory, stack)
+		actual := stack.pop()
+		if actual.Cmp(expected) != 0 {
+			t.Errorf("Testcase %d, expected  %v, got %v", i, expected, actual)
+		}
+		// Check pool usage
+		// 1.pool is not allowed to contain anything on the stack
+		// 2.pool is not allowed to contain the same pointers twice
+		if evmInterpreter.intPool.pool.len() > 0 {
+
+			poolvals := make(map[*big.Int]struct{})
+			poolvals[actual] = struct{}{}
+
+			for evmInterpreter.intPool.pool.len() > 0 {
+				key := evmInterpreter.intPool.get()
+				if _, exist := poolvals[key]; exist {
+					t.Errorf("Testcase %d, pool contains double-entry", i)
+				}
+				poolvals[key] = struct{}{}
+			}
+		}
+	}
+	poolOfIntPools.put(evmInterpreter.intPool)
 }
 
 func TestByteOp(t *testing.T) {
 	var (
-		env   = NewEVM(Context{}, nil, params.TestChainConfig, Config{})
-		stack = newstack()
+		env            = NewEVM(Context{}, nil, params.TestChainConfig, Config{}, nil)
+		stack          = newstack()
+		evmInterpreter = NewEVMInterpreter(env, env.vmConfig)
 	)
+
+	env.interpreter = evmInterpreter
+	evmInterpreter.intPool = poolOfIntPools.get()
 	tests := []struct {
-		v        string
 		th       uint64
+		v        string
 		expected *big.Int
 	}{
-		{"ABCDEF0908070605040302010000000000000000000000000000000000000000", 0, big.NewInt(0xAB)},
-		{"ABCDEF0908070605040302010000000000000000000000000000000000000000", 1, big.NewInt(0xCD)},
-		{"00CDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff", 0, big.NewInt(0x00)},
-		{"00CDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff", 1, big.NewInt(0xCD)},
-		{"0000000000000000000000000000000000000000000000000000000000102030", 31, big.NewInt(0x30)},
-		{"0000000000000000000000000000000000000000000000000000000000102030", 30, big.NewInt(0x20)},
-		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 32, big.NewInt(0x0)},
-		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 0xFFFFFFFFFFFFFFFF, big.NewInt(0x0)},
+		{0, "ABCDEF0908070605040302010000000000000000000000000000000000000000", big.NewInt(0xAB)},
+		{1, "ABCDEF0908070605040302010000000000000000000000000000000000000000", big.NewInt(0xCD)},
+		{0, "00CDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff", big.NewInt(0x00)},
+		{1, "00CDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff", big.NewInt(0xCD)},
+		{31, "0000000000000000000000000000000000000000000000000000000000102030", big.NewInt(0x30)},
+		{30, "0000000000000000000000000000000000000000000000000000000000102030", big.NewInt(0x20)},
+		{32, "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", big.NewInt(0x0)},
+		{0xFFFFFFFFFFFFFFFF, "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", big.NewInt(0x0)},
 	}
 	pc := uint64(0)
 	for _, test := range tests {
-		val := new(big.Int).SetBytes(common.Hex2Bytes(test.v))
 		th := new(big.Int).SetUint64(test.th)
+		val := new(big.Int).SetBytes(common.Hex2Bytes(test.v))
+
 		stack.push(val)
 		stack.push(th)
-		opByte(&pc, env, nil, nil, stack)
+
+		opByte(&pc, evmInterpreter, nil, nil, stack)
 		actual := stack.pop()
 		if actual.Cmp(test.expected) != 0 {
 			t.Fatalf("Expected  [%v] %v:th byte to be %v, was %v.", test.v, test.th, test.expected, actual)
 		}
 	}
+	poolOfIntPools.put(evmInterpreter.intPool)
+}
+
+func TestMod(t *testing.T) {
+	tests := []twoOperandTest{
+		{"00", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"01", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"01", "8000000000000000000000000000000000000000000000000000000000000000", "4000000000000000000000000000000000000000000000000000000000000000"},
+		{"ff", "8000000000000000000000000000000000000000000000000000000000000000", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"0100", "8000000000000000000000000000000000000000000000000000000000000000", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"0101", "8000000000000000000000000000000000000000000000000000000000000000", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"00", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"01", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"ff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"0100", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"01", "0000000000000000000000000000000000000000000000000000000000000000", "0000000000000000000000000000000000000000000000000000000000000000"},
+	}
+	testTwoOperandOp(t, tests, nil, opSHR)
+}
+
+func TestAdd(t *testing.T) {
+	tests := []twoOperandTest{
+		{"0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000002"},
+		{"000000000000000000000000000000000000000000000000000000000000000f", "000000000000000000000000000000000000000000000000000000000000000f", "000000000000000000000000000000000000000000000000000000000000001e"},
+		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0000000000000000000000000000000000000000000000000000000000000003", "0000000000000000000000000000000000000000000000000000000000000001"},
+	}
+	testTwoOperandOp(t, tests, nil, opAdd)
+}
+
+func TestSub(t *testing.T) {
+	tests := []twoOperandTest{
+		{"0000000000000000000000000000000000000000000000000000000000000002", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"000000000000000000000000000000000000000000000000000000000000000f", "000000000000000000000000000000000000000000000000000000000000000f", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0000000000000000000000000000000000000000000000000000000000000001", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd"},
+		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0000000000000000000000000000000000000000000000000000000000000001"},
+	}
+	testTwoOperandOp(t, tests, nil, opSub)
+}
+
+func TestMul(t *testing.T) {
+	tests := []twoOperandTest{
+		{"0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0000000000000000000000000000000000000000000000000000000000000004"},
+		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "0000000000000000000000000000000000000000000000000000000000000009"},
+		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "000000000000000000000000000000000000000000000000000000000000000d", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd9"},
+		{"02", "02", "04"},
+	}
+	testTwoOperandOp(t, tests, nil, opMul)
+}
+
+func TestDiv(t *testing.T) {
+	tests := []twoOperandTest{
+		{"0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"0000000000000000000000000000000000000000000000000000000000000002", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000002"},
+		{"02", "01", "0000000000000000000000000000000000000000000000000000000000000002"},
+	}
+	testTwoOperandOp(t, tests, nil, opDiv)
+}
+
+func TestSdiv(t *testing.T) {
+	tests := []twoOperandTest{
+		{"0000000000000000000000000000000000000000000000000000000000000001", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"000000000000000000000000000000000000000000000000000000000000000f", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb"},
+		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "0000000000000000000000000000000000000000000000000000000000000005"},
+		{"fff1", "fd", "0000000000000000000000000000000000000000000000000000000000000102"},
+	}
+	testTwoOperandOp(t, tests, nil, opSdiv)
+}
+
+func TestSmod(t *testing.T) {
+	tests := []twoOperandTest{
+		{"000000000000000000000000000000000000000000000000000000000000000f", "0000000000000000000000000000000000000000000000000000000000000007", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1", "0000000000000000000000000000000000000000000000000000000000000007", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff9", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"000000000000000000000000000000000000000000000000000000000000000f", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff9", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"f1", "f9", "f1"},
+	}
+	testTwoOperandOp(t, tests, nil, opSmod)
+}
+
+func TestExp(t *testing.T) {
+	tests := []twoOperandTest{
+		{"000000000000000000000000000000000000000000000000000000000000000f", "0000000000000000000000000000000000000000000000000000000000000007", "000000000000000000000000000000000000000000000000000000000a2f1b6f"},
+	}
+	testTwoOperandOp(t, tests, nil, opExp)
+}
+
+func TestNot(t *testing.T) {
+	tests := []oneOperandTest{
+		{"0000000000000000000000000000000000000000000000000000000000000000", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"0000000000000000000000000000000000000000000000000000000000000001", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"},
+		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff8", "0000000000000000000000000000000000000000000000000000000000000007"},
+	}
+	testOneOperandOp(t, tests, nil, opNot)
+}
+
+func TestLt(t *testing.T) {
+	tests := []twoOperandTest{
+		{"0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"0000000000000000000000000000000000000000000000000000000000000001", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"0000000000000000000000000000000000000000000000000000000000000001", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "0000000000000000000000000000000000000000000000000000000000000001"},
+	}
+	testTwoOperandOp(t, tests, nil, opLt)
+}
+
+func TestGt(t *testing.T) {
+	tests := []twoOperandTest{
+		{"0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"0000000000000000000000000000000000000000000000000000000000000001", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"0000000000000000000000000000000000000000000000000000000000000001", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "0000000000000000000000000000000000000000000000000000000000000000"},
+	}
+	testTwoOperandOp(t, tests, nil, opGt)
+}
+
+func TestEq(t *testing.T) {
+	tests := []twoOperandTest{
+		{"0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"0000000000000000000000000000000000000000000000000000000000000001", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"0000000000000000000000000000000000000000000000000000000000000001", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"8000000000000000000000000000000000000000000000000000000000000001", "8000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "8000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"8000000000000000000000000000000000000000000000000000000000000001", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "0000000000000000000000000000000000000000000000000000000000000000"},
+	}
+	testTwoOperandOp(t, tests, nil, opEq)
+}
+
+func TestIszero(t *testing.T) {
+	tests := []oneOperandTest{
+		{"00", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"01", "0000000000000000000000000000000000000000000000000000000000000000"},
+	}
+	testOneOperandOp(t, tests, nil, opIszero)
+}
+
+func TestAnd(t *testing.T) {
+	tests := []twoOperandTest{
+		{"0000000000000000000000000000000000000000000000000000000000000011", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0"},
+		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "8000000000000000000000000000000000000000000000000000000000000000", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"0000000000000000000000000000000000000000000000000000000000000001", "7000000000000000000000000000000000000000000000000000000000000000", "0000000000000000000000000000000000000000000000000000000000000000"},
+	}
+	testTwoOperandOp(t, tests, nil, opAnd)
+}
+
+func TestOr(t *testing.T) {
+	tests := []twoOperandTest{
+		{"0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "8000000000000000000000000000000000000000000000000000000000000000", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"7ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0", "0000000000000000000000000000000000000000000000000000000000000001", "7ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1"},
+		{"0000000000000000000000000000000000000000000000000000000000000001", "7000000000000000000000000000000000000000000000000000000000000000", "7000000000000000000000000000000000000000000000000000000000000001"},
+	}
+	testTwoOperandOp(t, tests, nil, opOr)
+}
+
+func TestXor(t *testing.T) {
+	tests := []twoOperandTest{
+		{"0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0", "000000000000000000000000000000000000000000000000000000000000000f"},
+		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001", "7ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"},
+		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1", "700000000000000000000000000000000000000000000000000000000000000e"},
+	}
+	testTwoOperandOp(t, tests, nil, opXor)
+}
+
+func TestAddmod(t *testing.T) {
+	tests := []threeOperandTest{
+		{"01", "0000000000000000000000000000000000000000000000000000000000000001", "2", "0"},
+		{"00", "0000000000000000000000000000000000000000000000000000000000000000", "22", "0"},
+		{"01", "7000000000000000000000000000000000000000000000000000000000000001", "2", "1"},
+		{"13", "0000000000000000000000000000000000000000000000000000000000000013", "7", "5"},
+	}
+	testThreeOperandOp(t, tests, nil, opAddmod)
+}
+
+func TestMulmod(t *testing.T) {
+	tests := []threeOperandTest{
+		{"01", "0000000000000000000000000000000000000000000000000000000000000001", "2", "0"},
+		{"00", "0000000000000000000000000000000000000000000000000000000000000000", "22", "0"},
+		{"01", "7000000000000000000000000000000000000000000000000000000000000001", "2", "1"},
+		{"13", "0000000000000000000000000000000000000000000000000000000000000013", "7", "1"},
+		{"13", "0000000000000000000000000000000000000000000000000000000000000002", "7", "5"},
+	}
+	testThreeOperandOp(t, tests, nil, opMulmod)
+}
+
+func TestSignExtend(t *testing.T) {
+	tests := []twoOperandTest{
+		{"08", "00000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"7", "FFFFFFFFFFFFFFFF", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+	}
+	testTwoOperandOp(t, tests, nil, opSignExtend)
+}
+
+// Not implemtned in this or the go-ethereum codebase ... the KECCAK256 opcode calls sha3.
+// func TestKeccak256(t *testing.T) {
+// 	memory := NewMemory()
+// 	memory.Set(0, 0x0e, []byte("this is a test"))
+
+// 	tests := []twoOperandTest{
+// 		{"00", "0e"},
+// 	}
+
+// 	testTwoOperandOp(t, tests, memory, opKeccak256)
+// }
+
+func TestSha3(t *testing.T) {
+	memory := NewMemory()
+	memory.Resize(0x0e)
+	memory.Set(0, 0x0e, []byte("this is a test"))
+
+	tests := []twoOperandTest{
+		{"00", "0e", hex.EncodeToString(crypto.Keccak256([]byte("this is a test")))},
+	}
+
+	testTwoOperandOp(t, tests, memory, opSha3)
 }
 
 func TestSHL(t *testing.T) {
 	// Testcases from https://github.com/ethereum/EIPs/blob/master/EIPS/eip-145.md#shl-shift-left
 	tests := []twoOperandTest{
-		{"0000000000000000000000000000000000000000000000000000000000000001", "00", "0000000000000000000000000000000000000000000000000000000000000001"},
-		{"0000000000000000000000000000000000000000000000000000000000000001", "01", "0000000000000000000000000000000000000000000000000000000000000002"},
-		{"0000000000000000000000000000000000000000000000000000000000000001", "ff", "8000000000000000000000000000000000000000000000000000000000000000"},
-		{"0000000000000000000000000000000000000000000000000000000000000001", "0100", "0000000000000000000000000000000000000000000000000000000000000000"},
-		{"0000000000000000000000000000000000000000000000000000000000000001", "0101", "0000000000000000000000000000000000000000000000000000000000000000"},
-		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "00", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
-		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "01", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"},
-		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "ff", "8000000000000000000000000000000000000000000000000000000000000000"},
-		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0100", "0000000000000000000000000000000000000000000000000000000000000000"},
-		{"0000000000000000000000000000000000000000000000000000000000000000", "01", "0000000000000000000000000000000000000000000000000000000000000000"},
-		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "01", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"},
+		{"00", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"01", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000002"},
+		{"ff", "0000000000000000000000000000000000000000000000000000000000000001", "8000000000000000000000000000000000000000000000000000000000000000"},
+		{"0100", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"0101", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"00", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"01", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"},
+		{"ff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "8000000000000000000000000000000000000000000000000000000000000000"},
+		{"0100", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"01", "0000000000000000000000000000000000000000000000000000000000000000", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"01", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"},
 	}
-	testTwoOperandOp(t, tests, opSHL)
+	testTwoOperandOp(t, tests, nil, opSHL)
 }
 
 func TestSHR(t *testing.T) {
 	// Testcases from https://github.com/ethereum/EIPs/blob/master/EIPS/eip-145.md#shr-logical-shift-right
 	tests := []twoOperandTest{
-		{"0000000000000000000000000000000000000000000000000000000000000001", "00", "0000000000000000000000000000000000000000000000000000000000000001"},
-		{"0000000000000000000000000000000000000000000000000000000000000001", "01", "0000000000000000000000000000000000000000000000000000000000000000"},
-		{"8000000000000000000000000000000000000000000000000000000000000000", "01", "4000000000000000000000000000000000000000000000000000000000000000"},
-		{"8000000000000000000000000000000000000000000000000000000000000000", "ff", "0000000000000000000000000000000000000000000000000000000000000001"},
-		{"8000000000000000000000000000000000000000000000000000000000000000", "0100", "0000000000000000000000000000000000000000000000000000000000000000"},
-		{"8000000000000000000000000000000000000000000000000000000000000000", "0101", "0000000000000000000000000000000000000000000000000000000000000000"},
-		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "00", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
-		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "01", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
-		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "ff", "0000000000000000000000000000000000000000000000000000000000000001"},
-		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0100", "0000000000000000000000000000000000000000000000000000000000000000"},
-		{"0000000000000000000000000000000000000000000000000000000000000000", "01", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"00", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"01", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"01", "8000000000000000000000000000000000000000000000000000000000000000", "4000000000000000000000000000000000000000000000000000000000000000"},
+		{"ff", "8000000000000000000000000000000000000000000000000000000000000000", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"0100", "8000000000000000000000000000000000000000000000000000000000000000", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"0101", "8000000000000000000000000000000000000000000000000000000000000000", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"00", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"01", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"ff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"0100", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"01", "0000000000000000000000000000000000000000000000000000000000000000", "0000000000000000000000000000000000000000000000000000000000000000"},
 	}
-	testTwoOperandOp(t, tests, opSHR)
+	testTwoOperandOp(t, tests, nil, opSHR)
 }
 
 func TestSAR(t *testing.T) {
 	// Testcases from https://github.com/ethereum/EIPs/blob/master/EIPS/eip-145.md#sar-arithmetic-shift-right
 	tests := []twoOperandTest{
-		{"0000000000000000000000000000000000000000000000000000000000000001", "00", "0000000000000000000000000000000000000000000000000000000000000001"},
-		{"0000000000000000000000000000000000000000000000000000000000000001", "01", "0000000000000000000000000000000000000000000000000000000000000000"},
-		{"8000000000000000000000000000000000000000000000000000000000000000", "01", "c000000000000000000000000000000000000000000000000000000000000000"},
-		{"8000000000000000000000000000000000000000000000000000000000000000", "ff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
-		{"8000000000000000000000000000000000000000000000000000000000000000", "0100", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
-		{"8000000000000000000000000000000000000000000000000000000000000000", "0101", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
-		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "00", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
-		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "01", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
-		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "ff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
-		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0100", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
-		{"0000000000000000000000000000000000000000000000000000000000000000", "01", "0000000000000000000000000000000000000000000000000000000000000000"},
-		{"4000000000000000000000000000000000000000000000000000000000000000", "fe", "0000000000000000000000000000000000000000000000000000000000000001"},
-		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "f8", "000000000000000000000000000000000000000000000000000000000000007f"},
-		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "fe", "0000000000000000000000000000000000000000000000000000000000000001"},
-		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "ff", "0000000000000000000000000000000000000000000000000000000000000000"},
-		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0100", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"00", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"01", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"01", "8000000000000000000000000000000000000000000000000000000000000000", "c000000000000000000000000000000000000000000000000000000000000000"},
+		{"ff", "8000000000000000000000000000000000000000000000000000000000000000", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"0100", "8000000000000000000000000000000000000000000000000000000000000000", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"0101", "8000000000000000000000000000000000000000000000000000000000000000", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"00", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"01", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"ff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"0100", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"01", "0000000000000000000000000000000000000000000000000000000000000000", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"fe", "4000000000000000000000000000000000000000000000000000000000000000", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"f8", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "000000000000000000000000000000000000000000000000000000000000007f"},
+		{"fe", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"ff", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"0100", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
 	}
 
-	testTwoOperandOp(t, tests, opSAR)
+	testTwoOperandOp(t, tests, nil, opSAR)
 }
 
 func TestSGT(t *testing.T) {
 	tests := []twoOperandTest{
-
 		{"0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000000"},
 		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
 		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
-		{"0000000000000000000000000000000000000000000000000000000000000001", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001"},
-		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000000"},
-		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001"},
-		{"0000000000000000000000000000000000000000000000000000000000000001", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"0000000000000000000000000000000000000000000000000000000000000001", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"0000000000000000000000000000000000000000000000000000000000000001", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000000"},
 		{"8000000000000000000000000000000000000000000000000000000000000001", "8000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000000"},
-		{"8000000000000000000000000000000000000000000000000000000000000001", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001"},
-		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "8000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000000"},
-		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "0000000000000000000000000000000000000000000000000000000000000001"},
-		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "8000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"8000000000000000000000000000000000000000000000000000000000000001", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "0000000000000000000000000000000000000000000000000000000000000000"},
 	}
-	testTwoOperandOp(t, tests, opSgt)
+	testTwoOperandOp(t, tests, nil, opSgt)
 }
 
 func TestSLT(t *testing.T) {
@@ -183,24 +536,28 @@ func TestSLT(t *testing.T) {
 		{"0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000000"},
 		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
 		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
-		{"0000000000000000000000000000000000000000000000000000000000000001", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
-		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001"},
-		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000000"},
-		{"0000000000000000000000000000000000000000000000000000000000000001", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"0000000000000000000000000000000000000000000000000000000000000001", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"0000000000000000000000000000000000000000000000000000000000000001", "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001"},
 		{"8000000000000000000000000000000000000000000000000000000000000001", "8000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000000"},
-		{"8000000000000000000000000000000000000000000000000000000000000001", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000000"},
-		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "8000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000001"},
-		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "0000000000000000000000000000000000000000000000000000000000000000"},
-		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "8000000000000000000000000000000000000000000000000000000000000001", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"8000000000000000000000000000000000000000000000000000000000000001", "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0000000000000000000000000000000000000000000000000000000000000001"},
+		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb", "0000000000000000000000000000000000000000000000000000000000000000"},
+		{"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "0000000000000000000000000000000000000000000000000000000000000001"},
 	}
-	testTwoOperandOp(t, tests, opSlt)
+	testTwoOperandOp(t, tests, nil, opSlt)
 }
 
-func opBenchmark(bench *testing.B, op func(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error), args ...string) {
+func opBenchmark(bench *testing.B, op func(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error), args ...string) {
 	var (
-		env   = NewEVM(Context{}, nil, params.TestChainConfig, Config{})
-		stack = newstack()
+		env            = NewEVM(Context{}, nil, params.TestChainConfig, Config{}, nil)
+		stack          = newstack()
+		evmInterpreter = NewEVMInterpreter(env, env.vmConfig)
 	)
+
+	env.interpreter = evmInterpreter
+	evmInterpreter.intPool = poolOfIntPools.get()
 	// convert args
 	byteArgs := make([][]byte, len(args))
 	for i, arg := range args {
@@ -213,9 +570,10 @@ func opBenchmark(bench *testing.B, op func(pc *uint64, evm *EVM, contract *Contr
 			a := new(big.Int).SetBytes(arg)
 			stack.push(a)
 		}
-		op(&pc, env, nil, nil, stack)
+		op(&pc, evmInterpreter, nil, nil, stack)
 		stack.pop()
 	}
+	poolOfIntPools.put(evmInterpreter.intPool)
 }
 
 func BenchmarkOpAdd64(b *testing.B) {
@@ -424,4 +782,53 @@ func BenchmarkOpSAR(b *testing.B) {
 func BenchmarkOpIsZero(b *testing.B) {
 	x := "FBCDEF090807060504030201ffffffffFBCDEF090807060504030201ffffffff"
 	opBenchmark(b, opIszero, x)
+}
+
+func TestOpMstore(t *testing.T) {
+	var (
+		env            = NewEVM(Context{}, nil, params.TestChainConfig, Config{}, nil)
+		stack          = newstack()
+		mem            = NewMemory()
+		evmInterpreter = NewEVMInterpreter(env, env.vmConfig)
+	)
+
+	env.interpreter = evmInterpreter
+	evmInterpreter.intPool = poolOfIntPools.get()
+	mem.Resize(64)
+	pc := uint64(0)
+	v := "abcdef00000000000000abba000000000deaf000000c0de00100000000133700"
+	stack.pushN(new(big.Int).SetBytes(common.Hex2Bytes(v)), big.NewInt(0))
+	opMstore(&pc, evmInterpreter, nil, mem, stack)
+	if got := common.Bytes2Hex(mem.Get(0, 32)); got != v {
+		t.Fatalf("Mstore fail, got %v, expected %v", got, v)
+	}
+	stack.pushN(big.NewInt(0x1), big.NewInt(0))
+	opMstore(&pc, evmInterpreter, nil, mem, stack)
+	if common.Bytes2Hex(mem.Get(0, 32)) != "0000000000000000000000000000000000000000000000000000000000000001" {
+		t.Fatalf("Mstore failed to overwrite previous value")
+	}
+	poolOfIntPools.put(evmInterpreter.intPool)
+}
+
+func BenchmarkOpMstore(bench *testing.B) {
+	var (
+		env            = NewEVM(Context{}, nil, params.TestChainConfig, Config{}, nil)
+		stack          = newstack()
+		mem            = NewMemory()
+		evmInterpreter = NewEVMInterpreter(env, env.vmConfig)
+	)
+
+	env.interpreter = evmInterpreter
+	evmInterpreter.intPool = poolOfIntPools.get()
+	mem.Resize(64)
+	pc := uint64(0)
+	memStart := big.NewInt(0)
+	value := big.NewInt(0x1337)
+
+	bench.ResetTimer()
+	for i := 0; i < bench.N; i++ {
+		stack.pushN(value, memStart)
+		opMstore(&pc, evmInterpreter, nil, mem, stack)
+	}
+	poolOfIntPools.put(evmInterpreter.intPool)
 }
