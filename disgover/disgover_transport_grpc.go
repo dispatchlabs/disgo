@@ -281,7 +281,7 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 	utils.Info(fmt.Sprintf("software updated from seed node [file=%s, scheduledReboot=%s]", fileName, softwareUpdate.ScheduledReboot))
 
 	// Unzip file.
-	command := exec.Command("unzip", fileName, "-d", directoryName)
+	command := exec.Command("/usr/bin/unzip", fileName, "-d", directoryName)
 	var out bytes.Buffer
 	command.Stdout = &out
 	err = command.Run()
