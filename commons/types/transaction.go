@@ -767,7 +767,7 @@ func (this Transaction) Verify() error {
 	// Derived address from publicKeyBytes match from?
 	address := hex.EncodeToString(crypto.ToAddress(publicKeyBytes))
 	if address != this.From {
-		return errors.New("from address does not match the computed address from hash and signature")
+		return errors.New(fmt.Sprintf("from address: %s does not match the computed address: %s from hash and signature", this.From, address))
 	}
 	if !crypto.VerifySignature(publicKeyBytes, hashBytes, signatureBytes) {
 		return errors.New("invalid signature")

@@ -539,7 +539,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		return
 	}
 
-	rateLimit, err := types.NewRateLimit(transaction.From, transaction.Hash,  "test-0", hertz)
+	rateLimit, err := types.NewRateLimit(transaction.From, transaction.Hash,  "page-1", hertz)
 	if err != nil {
 		utils.Error(err)
 	}

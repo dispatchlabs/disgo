@@ -34,7 +34,6 @@ func TestRateLimitStorage(t *testing.T) {
 	}
 	addRateLimit(rateLimit)
 	//fmt.Printf("%s\n", rateLimit.ToPrettyJson())
-
 }
 
 func addRateLimit(rateLimit *RateLimit) {
@@ -46,7 +45,7 @@ func addRateLimit(rateLimit *RateLimit) {
 	if err != nil {
 		utils.Error(err)
 	}
-		addrsRateLimit, err := GetAccountRateLimit(txn, c, rateLimit.Address)
+	addrsRateLimit, err := GetAccountRateLimit(txn, c, rateLimit.Address)
 	if err != nil {
 		utils.Error(err)
 	}
@@ -79,7 +78,6 @@ func TestGrowth(t *testing.T) {
 	printValue(250.0)
 	printValue(500.0)
 	printValue(UppertTxThreshold)
-
 }
 
 func printValue(value float64) {
