@@ -21,20 +21,21 @@ import (
 
 	"time"
 
+	"bytes"
+	"encoding/hex"
+	"io/ioutil"
+	"os"
+	"os/exec"
+
+	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	proto "github.com/dispatchlabs/disgo/disgover/proto"
+	"github.com/jasonlvhit/gocron"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"os"
-	"github.com/dispatchlabs/disgo/commons/crypto"
-	"encoding/hex"
-	"io/ioutil"
-	"os/exec"
-	"bytes"
-	"github.com/jasonlvhit/gocron"
 )
 
 //TODO: we are going to drop delegates if we fail to communicate with them.  The exepctation will be that the seed will tell us when they come back on line
@@ -254,7 +255,7 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 	}
 
 	// Remove Update directory.
-	directoryName := fmt.Sprintf(".%supdate", string(os.PathSeparator))
+	directoryName := fmt.Sprintf("%sgo-binaries%supdate", string(os.PathSeparator), string(os.PathSeparator))
 	if utils.Exists(directoryName) {
 		err = os.RemoveAll(directoryName)
 		if err != nil {
@@ -298,7 +299,7 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 			services.GetDbService().Close()
 
 			// Chmod.
-			fileName = fmt.Sprintf("%s%supdate.sh", directoryName, string(os.PathSeparator))
+			fileName = fmt.Sprintf("%s%supdate.sh &", directoryName, string(os.PathSeparator))
 			os.Chmod(fileName, 0777)
 
 			// Execute update script.
