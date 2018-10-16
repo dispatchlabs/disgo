@@ -299,11 +299,11 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 			services.GetDbService().Close()
 
 			// Chmod.
-			fileName = fmt.Sprintf("%s%supdate.sh &", directoryName, string(os.PathSeparator))
+			fileName = fmt.Sprintf("%s%supdate.sh", directoryName, string(os.PathSeparator))
 			os.Chmod(fileName, 0777)
 
 			// Execute update script.
-			command = exec.Command("sh", fileName)
+			command = exec.Command("nohup", "sh", fileName)
 			command.Stdout = &out
 			err = command.Start()
 			if err != nil {

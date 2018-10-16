@@ -30,6 +30,7 @@ import (
 	"time"
 	"os"
 	"io/ioutil"
+	"strings"
 )
 
 var disGoverServiceInstance *DisGoverService
@@ -117,6 +118,9 @@ func (this DisGoverService) updateWorker() {
 		timer := time.NewTimer(30 * time.Second)
 		select {
 		case <-timer.C:
+			if hasLockFile() {
+				continue
+			}
 
 			// Any files to update?
 			updateDirectory := "." + string(os.PathSeparator) + "update"
@@ -126,6 +130,7 @@ func (this DisGoverService) updateWorker() {
 			}
 
 			for _, file := range files {
+
 				// Read file?
 				fileName := updateDirectory + string(os.PathSeparator) + file.Name()
 				bytes, err := ioutil.ReadFile(fileName)
@@ -147,4 +152,23 @@ func (this DisGoverService) updateWorker() {
 			}
 		}
 	}
+}
+
+/**
+
+ */
+func hasLockFile() bool {
+	updateDirectory := "." + string(os.PathSeparator) + "update"
+	files, err := ioutil.ReadDir(updateDirectory)
+	if err != nil {
+		return false
+	}
+	for _, file := range files {
+		if strings.HasSuffix(file.Name(), ".LCK") {
+			utils.Info(fmt.Sprintf("found %s file...waiting for update file to upload", file.Name()))
+			return true
+		}
+	}
+
+	return false;
 }
