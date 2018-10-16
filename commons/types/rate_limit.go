@@ -19,7 +19,6 @@ type RateLimit struct {
 	Address 	string
 	TxRateLimit *TxRateLimit
 	Existing	*AccountRateLimits
-	Db      	*badger.DB
 	Page        string
 }
 
@@ -45,7 +44,7 @@ func NewRateLimit(address, txHash, page string, amount uint64) (*RateLimit, erro
 	}, nil
 }
 
-func (this *RateLimit) Set(txn *badger.Txn, cache *cache.Cache) error {
+func (this *RateLimit) Set(db *badger.DB, txn *badger.Txn, cache *cache.Cache) error {
 	existing, err := GetAccountRateLimit(txn, cache, this.Address)
 	if err != nil {
 		if err != badger.ErrKeyNotFound {
@@ -60,7 +59,7 @@ func (this *RateLimit) Set(txn *badger.Txn, cache *cache.Cache) error {
 		this.Existing.TxHashes = append(this.Existing.TxHashes, this.TxRateLimit.TxHash)
 	}
 
-	this.cache(cache)
+	this.cache(db, cache)
 	err = this.persist(txn)
 	if err != nil {
 		return err
@@ -69,9 +68,9 @@ func (this *RateLimit) Set(txn *badger.Txn, cache *cache.Cache) error {
 }
 
 
-func (this *RateLimit) cache(cache *cache.Cache) {
+func (this *RateLimit) cache(db *badger.DB, cache *cache.Cache) {
 	cache.Set(getAccountRateLimitKey(this.Address), this.Existing, TransactionCacheTTL)
-	cache.Set(getTxRateLimitKey(this.TxRateLimit.TxHash), this.TxRateLimit, this.getCurrentTTL())
+	cache.Set(getTxRateLimitKey(this.TxRateLimit.TxHash), this.TxRateLimit, this.getCurrentTTL(db))
 }
 
 func (this *RateLimit) persist(txn *badger.Txn) error {
@@ -96,8 +95,8 @@ func (this RateLimit) ToPrettyJson() string {
 	return string(bytes)
 }
 
-func (this RateLimit) getCurrentTTL() time.Duration {
-	value, err := this.Merge()
+func (this RateLimit) getCurrentTTL(db *badger.DB) time.Duration {
+	value, err := this.Merge(db)
 	if err != nil {
 		utils.Error(err)
 	}
@@ -107,9 +106,9 @@ func (this RateLimit) getCurrentTTL() time.Duration {
 	return ttl
 }
 
-func (this *RateLimit) Merge() (uint64, error) {
+func (this *RateLimit) Merge(db *badger.DB) (uint64, error) {
 	key := []byte(this.Page)
-	m := this.Db.GetMergeOperator(key, add, 200*time.Millisecond)
+	m := db.GetMergeOperator(key, add, 200*time.Millisecond)
 	defer m.Stop()
 
 	m.Add(uint64ToBytes(1))

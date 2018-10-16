@@ -5,41 +5,50 @@ import (
 	"math"
 	"fmt"
 	"github.com/dispatchlabs/disgo/commons/utils"
-	"time"
 )
 
 
 func TestRateLimit(t *testing.T) {
-	rateLimit := RateLimit{Db: db}
-	rateLimit.Merge()
+	hash1 := "44197cc2241ad63b66039e15a85168857272fe1625ed39999972edcdfcbc1bbd"
+	page := "page-1"
+	address := "test"
+	rateLimit, err := NewRateLimit(address, hash1, page, 5)
+	if err != nil {
+		t.Error(err)
+	}
+	txn := db.NewTransaction(true)
+	defer txn.Discard()
+	rateLimit.Set(db, txn, c)
 }
 
 
 func TestRateLimitStorage(t *testing.T) {
 	hash1 := "44197cc2241ad63b66039e15a85168857272fe1625ed39999972edcdfcbc1bbd"
 	hash2 := "44197cc2241ad63b66039e15a85168857272fe1625ed39999972edcdfcbc1bbe"
-	page := "page-1"
+	page := "page-3"
 	address := "test"
 	rateLimit, err := NewRateLimit(address, hash1, page, 5)
-	rateLimit.Db = db
 	if err != nil {
 		t.Error(err)
 	}
-	addRateLimit(rateLimit)
-	time.Sleep(3 *time.Second)
+	//addRateLimit(rateLimit)
+
+	//time.Sleep(3 *time.Second)
 	rateLimit, err = NewRateLimit(address, hash2, page,10)
-	rateLimit.Db = db
 	if err != nil {
 		t.Error(err)
 	}
 	addRateLimit(rateLimit)
-	//fmt.Printf("%s\n", rateLimit.ToPrettyJson())
+	//txn := db.NewTransaction(true)
+	//defer txn.Discard()
+	//rateLimit.Set(db, txn, c)
+	fmt.Printf("%s\n", rateLimit.ToPrettyJson())
 }
 
 func addRateLimit(rateLimit *RateLimit) {
 	txn := db.NewTransaction(true)
 	defer txn.Discard()
-	rateLimit.Set(txn, c)
+	rateLimit.Set(db, txn, c)
 
 	txRateLimit, err := GetTxRateLimit(txn, c, rateLimit.TxRateLimit.TxHash)
 	if err != nil {

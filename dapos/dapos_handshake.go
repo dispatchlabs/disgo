@@ -543,8 +543,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	if err != nil {
 		utils.Error(err)
 	}
-	rateLimit.Db = services.GetDb()
-	rateLimit.Set(txn, services.GetCache())
+	rateLimit.Set(services.GetDb(), txn, services.GetCache())
 
 	// Persist transaction
 	err = transaction.Persist(txn)
