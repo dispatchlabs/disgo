@@ -140,7 +140,6 @@ func (this DisGoverService) updateWorker() {
 					utils.Error(fmt.Sprintf("unable to read file %s", file.Name()), err)
 					continue
 				}
-
 				utils.Info(fmt.Sprintf("found software to update [file=%s]", fileName))
 
 				// Update software.
