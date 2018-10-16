@@ -301,6 +301,7 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 			// Chmod.
 			fileName = fmt.Sprintf("%s%supdate.sh", directoryName, string(os.PathSeparator))
 			os.Chmod(fileName, 0777)
+			utils.Info(fmt.Sprintf("chmod 0777 on script %s...", fileName))
 
 			// Execute update script.
 			command = exec.Command("sudo systemd-run", fileName)
@@ -309,6 +310,7 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 			if err != nil {
 				utils.Error(fmt.Sprintf("executed %s - %s", fileName, out.String()))
 			}
+			utils.Info(fmt.Sprintf("executing script %s...", fileName))
 			//utils.Info("executing update.sh and exiting...")
 			//os.Exit(0)
 		})
