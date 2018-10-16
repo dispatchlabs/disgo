@@ -25,7 +25,6 @@ import (
 // Timouts -- currently calculated in milliseconds.
 const (
 	TxReceiveTimeout = 3000 //1 second
-	//TxReceiveWiggle    = 100 // 100ms
 	//GossipQueueTimeout = time.Second * 5
 	GossipTimeout = 1000 //1 second  //will continue to decrease until we find best value
 	TxFutureLimit = time.Minute * 3
@@ -34,7 +33,7 @@ const (
 
 // Requests
 const (
-	Version = "2.2.0"
+	Version = "2.4.0"
 )
 
 // Statuses
@@ -47,6 +46,7 @@ const (
 	StatusTransactionTimeOut           = "StatusTransactionTimeOut"
 	StatusInvalidTransaction           = "InvalidTransaction"
 	StatusInsufficientTokens           = "InsufficientTokens"
+	StatusInsufficientHertz            = "InsufficientHertz"
 	StatusDuplicateTransaction         = "DuplicateTransaction"
 	StatusNotDelegate                  = "StatusNotDelegate"
 	StatusAlreadyProcessingTransaction = "StatusAlreadyProcessingTransaction"
