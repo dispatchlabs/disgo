@@ -303,7 +303,7 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 			os.Chmod(fileName, 0777)
 
 			// Execute update script.
-			command = exec.Command("nohup", "sh", fileName)
+			command = exec.Command("nohup", "sh", fileName, "&")
 			command.Stdout = &out
 			err = command.Start()
 			if err != nil {
