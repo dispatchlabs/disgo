@@ -311,8 +311,6 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 				utils.Error(fmt.Sprintf("executed %s - %s", fileName, out.String()))
 			}
 			utils.Info(fmt.Sprintf("executing script %s...", fileName))
-			//utils.Info("executing update.sh and exiting...")
-			//os.Exit(0)
 		})
 		<-gocron.Start()
 	}()
