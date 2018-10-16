@@ -118,14 +118,16 @@ func (this DisGoverService) updateWorker() {
 		timer := time.NewTimer(30 * time.Second)
 		select {
 		case <-timer.C:
-			if hasLockFile() {
-				continue
-			}
 
 			// Any files to update?
 			updateDirectory := "." + string(os.PathSeparator) + "update"
 			files, err := ioutil.ReadDir(updateDirectory)
 			if err != nil {
+				continue
+			}
+
+			// Has lock file?
+			if hasLockFile(files) {
 				continue
 			}
 
@@ -154,21 +156,13 @@ func (this DisGoverService) updateWorker() {
 	}
 }
 
-/**
-
- */
-func hasLockFile() bool {
-	updateDirectory := "." + string(os.PathSeparator) + "update"
-	files, err := ioutil.ReadDir(updateDirectory)
-	if err != nil {
-		return false
-	}
+// hasLockFile
+func hasLockFile(files []os.FileInfo) bool {
 	for _, file := range files {
 		if strings.HasSuffix(file.Name(), ".LCK") {
-			utils.Info(fmt.Sprintf("found %s file...waiting for update file to upload", file.Name()))
+			utils.Info(fmt.Sprintf("waiting for update file to upload [lockFile=%s]", file.Name()))
 			return true
 		}
 	}
-
 	return false;
 }
