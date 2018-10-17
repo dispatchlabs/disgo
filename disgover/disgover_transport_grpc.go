@@ -290,7 +290,7 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 		utils.Error(fmt.Sprintf("executed %s - %s", fileName, out.String()))
 		return &proto.Empty{}, err
 	}
-	utils.Info(fmt.Sprintf("unzipped software update %s", fileName))
+	utils.Info(fmt.Sprintf("unzipped software update %s [output] '%s'", fileName, out.String()))
 
 	// Schedule the reboot.
 	go func() {
@@ -304,13 +304,14 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 			utils.Info(fmt.Sprintf("chmod 0777 on script %s...", fileName))
 
 			// Execute update script.
-			command = exec.Command("sudo systemd-run", fileName)
+			command = exec.Command("sudo", "systemd-run", fileName)
 			command.Stdout = &out
-			err = command.Start()
+
+			err = command.Run()
 			if err != nil {
 				utils.Error(fmt.Sprintf("executed %s - %s", fileName, out.String()))
 			}
-			utils.Info(fmt.Sprintf("executing script %s...", fileName))
+			utils.Info(fmt.Sprintf("executing script %s...[output] '%s'", fileName, out.String()))
 		})
 		<-gocron.Start()
 	}()
