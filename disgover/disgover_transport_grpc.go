@@ -297,15 +297,21 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 	utils.Info(fmt.Sprintf("chmod 0777 on script %s...", fileName))
 
 	// Execute update script.
-	cmd := exec.Command("sudo", "systemd-run", fileName)
+	//	cmd := exec.Command("sudo", "systemd-run", fileName)
+	ex := fmt.Sprintf("sudo systemd-run %s", fileName)
+	cmd := exec.Command("/bin/sh", "-c", ex)
+
 	var outb bytes.Buffer
+	var errb bytes.Buffer
+
 	cmd.Stdout = &outb
+	cmd.Stderr = &errb
 
 	err = cmd.Run()
 	if err != nil {
-		utils.Error(fmt.Sprintf("executed %s - %s", fileName, outb.String()))
+		utils.Error(fmt.Sprintf("ERROR executed %s - %s", fileName, outb.String()))
 	}
-	utils.Info(fmt.Sprintf("executing script %s...[output] '%s'", fileName, outb.String()))
+	utils.Info(fmt.Sprintf("executing script %s...\n\t[output] '%s'\n\t[stderr] %s", fileName, outb.String(), errb.String()))
 
 	// Schedule the reboot.
 	//go func() {
