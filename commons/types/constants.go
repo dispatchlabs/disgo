@@ -27,8 +27,8 @@ const (
 	TxReceiveTimeout = 3000 //1 second
 	//TxReceiveWiggle    = 100 // 100ms
 	//GossipQueueTimeout = time.Second * 5
-	GossipTimeout = 1000 //1 second  //will continue to decrease until we find best value
-	TxFutureLimit = time.Minute * 3
+	GossipTimeout          = 1000 //1 second  //will continue to decrease until we find best value
+	TxFutureLimit          = time.Minute * 3
 	UnavailableNodeTimeout = float64(time.Second * 5)
 )
 
@@ -89,10 +89,10 @@ const (
 
 // Errors
 var (
-	ErrNotFound               = errors.New("not found")
-	ErrInvalidRequest         = errors.New("invalid request")
-	ErrInvalidRequestPage     = errors.New("invalid request Page")
-	ErrInvalidRequestPageSize = errors.New("invalid request Page Size")
+	ErrNotFound                   = errors.New("not found")
+	ErrInvalidRequest             = errors.New("invalid request")
+	ErrInvalidRequestPage         = errors.New("invalid request Page")
+	ErrInvalidRequestPageSize     = errors.New("invalid request Page Size")
 	ErrInvalidRequestStartingHash = errors.New("invalid request Starting Hash")
-	ErrInvalidRequestHash     = errors.New("invalid request Hash")
+	ErrInvalidRequestHash         = errors.New("invalid request Hash")
 )

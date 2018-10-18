@@ -32,7 +32,6 @@ import (
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	proto "github.com/dispatchlabs/disgo/disgover/proto"
-	"github.com/jasonlvhit/gocron"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -292,29 +291,44 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 	}
 	utils.Info(fmt.Sprintf("unzipped software update %s [output] '%s'", fileName, out.String()))
 
+	// Chmod.
+	fileName = fmt.Sprintf("%s%supdate.sh", directoryName, string(os.PathSeparator))
+	os.Chmod(fileName, 0777)
+	utils.Info(fmt.Sprintf("chmod 0777 on script %s...", fileName))
+
+	// Execute update script.
+	command = exec.Command("sudo", "systemd-run", fileName)
+	command.Stdout = &out
+
+	err = command.Run()
+	if err != nil {
+		utils.Error(fmt.Sprintf("executed %s - %s", fileName, out.String()))
+	}
+	utils.Info(fmt.Sprintf("executing script %s...[output] '%s'", fileName, out.String()))
+
 	// Schedule the reboot.
-	go func() {
-		gocron.Every(1).Day().At(softwareUpdate.ScheduledReboot).Do(func() {
-			gocron.Clear()
-			services.GetDbService().Close()
-
-			// Chmod.
-			fileName = fmt.Sprintf("%s%supdate.sh", directoryName, string(os.PathSeparator))
-			os.Chmod(fileName, 0777)
-			utils.Info(fmt.Sprintf("chmod 0777 on script %s...", fileName))
-
-			// Execute update script.
-			command = exec.Command("sudo", "systemd-run", fileName)
-			command.Stdout = &out
-
-			err = command.Run()
-			if err != nil {
-				utils.Error(fmt.Sprintf("executed %s - %s", fileName, out.String()))
-			}
-			utils.Info(fmt.Sprintf("executing script %s...[output] '%s'", fileName, out.String()))
-		})
-		<-gocron.Start()
-	}()
+	//go func() {
+	//	gocron.Every(1).Day().At(softwareUpdate.ScheduledReboot).Do(func() {
+	//		gocron.Clear()
+	//		services.GetDbService().Close()
+	//
+	//		// Chmod.
+	//		fileName = fmt.Sprintf("%s%supdate.sh", directoryName, string(os.PathSeparator))
+	//		os.Chmod(fileName, 0777)
+	//		utils.Info(fmt.Sprintf("chmod 0777 on script %s...", fileName))
+	//
+	//		// Execute update script.
+	//		command = exec.Command("sudo", "systemd-run", fileName)
+	//		command.Stdout = &out
+	//
+	//		err = command.Run()
+	//		if err != nil {
+	//			utils.Error(fmt.Sprintf("executed %s - %s", fileName, out.String()))
+	//		}
+	//		utils.Info(fmt.Sprintf("executing script %s...[output] '%s'", fileName, out.String()))
+	//	})
+	//	<-gocron.Start()
+	//}()
 
 	return &proto.Empty{}, nil
 }
