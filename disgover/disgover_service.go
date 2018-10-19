@@ -30,6 +30,7 @@ import (
 	"time"
 	"os"
 	"io/ioutil"
+	"strings"
 )
 
 var disGoverServiceInstance *DisGoverService
@@ -125,7 +126,13 @@ func (this DisGoverService) updateWorker() {
 				continue
 			}
 
+			// Has lock file?
+			if hasLockFile(files) {
+				continue
+			}
+
 			for _, file := range files {
+
 				// Read file?
 				fileName := updateDirectory + string(os.PathSeparator) + file.Name()
 				bytes, err := ioutil.ReadFile(fileName)
@@ -133,7 +140,6 @@ func (this DisGoverService) updateWorker() {
 					utils.Error(fmt.Sprintf("unable to read file %s", file.Name()), err)
 					continue
 				}
-
 				utils.Info(fmt.Sprintf("found software to update [file=%s]", fileName))
 
 				// Update software.
@@ -147,4 +153,15 @@ func (this DisGoverService) updateWorker() {
 			}
 		}
 	}
+}
+
+// hasLockFile
+func hasLockFile(files []os.FileInfo) bool {
+	for _, file := range files {
+		if strings.HasSuffix(file.Name(), ".LCK") {
+			utils.Info(fmt.Sprintf("waiting for update file to upload [lockFile=%s]", file.Name()))
+			return true
+		}
+	}
+	return false;
 }
