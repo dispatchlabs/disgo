@@ -160,14 +160,9 @@ func (item *Item) yieldItemValue() ([]byte, func(), error) {
 		var vp valuePointer
 		vp.Decode(item.vptr)
 		result, cb, err := item.db.vlog.Read(vp, item.slice)
-		if err != ErrRetry {
+		if err != ErrRetry || bytes.HasPrefix(key, badgerMove) {
+			// The error is not retry, or we have already searched the move keyspace.
 			return result, cb, err
-		}
-		if bytes.HasPrefix(key, badgerMove) {
-			// err == ErrRetry
-			// Error is retry even after checking the move keyspace. So, let's
-			// just assume that value is not present.
-			return nil, cb, nil
 		}
 
 		// The value pointer is pointing to a deleted value log. Look for the
