@@ -47,7 +47,7 @@ type Transaction struct {
 	Params    []interface{}
 	Time      int64 // Milliseconds
 	Signature string
-	Hertz     int64   //our version of Gas
+	Hertz     uint64   //our version of Gas
 	Receipt   Receipt // Transient
 	Gossip    []Rumor // Transient
 	FromName  string  // Transient
@@ -885,11 +885,11 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		}
 	}
 	if jsonMap["hertz"] != nil {
-		hertz, ok := jsonMap["type"].(float64)
+		hertz, ok := jsonMap["hertz"].(float64)
 		if !ok {
 			return errors.Errorf("value for field 'hertz' must be a number")
 		}
-		this.Hertz = int64(hertz)
+		this.Hertz = uint64(hertz)
 	}
 	if jsonMap["receipt"] != nil {
 		var receipt Receipt
@@ -917,7 +917,7 @@ func (this Transaction) MarshalJSON() ([]byte, error) {
 		Params    []interface{} `json:"params,omitempty"`
 		Time      int64         `json:"time"`
 		Signature string        `json:"signature"`
-		Hertz     int64         `json:"hertz"`
+		Hertz     uint64        `json:"hertz"`
 		Receipt   Receipt       `json:"receipt,omitempty"`
 		Gossip    []Rumor       `json:"gossip,omitempty"`
 		FromName  string        `json:"fromName,omitempty"`

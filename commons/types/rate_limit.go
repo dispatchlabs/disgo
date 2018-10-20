@@ -3,7 +3,6 @@ package types
 import (
 	"github.com/dgraph-io/badger"
 	"github.com/patrickmn/go-cache"
-	"encoding/binary"
 	"time"
 	"fmt"
 	"github.com/dispatchlabs/disgo/commons/utils"
@@ -19,8 +18,6 @@ type RateLimit struct {
 	Address 	string
 	TxRateLimit *TxRateLimit
 	Existing	*AccountRateLimits
-	Db      	*badger.DB
-	Page        string
 }
 
 type TxRateLimit struct {
@@ -36,16 +33,15 @@ type AccountRateLimits struct {
 //  RateLimit
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-func NewRateLimit(address, txHash, page string, amount uint64) (*RateLimit, error) {
+func NewRateLimit(address, txHash string, amount uint64) (*RateLimit, error) {
 	return &RateLimit {
 		Address:	address,
 		TxRateLimit: &TxRateLimit{amount, txHash},
 		Existing: &AccountRateLimits{make([]string, 0)},
-		Page: page,
 	}, nil
 }
 
-func (this *RateLimit) Set(txn *badger.Txn, cache *cache.Cache) error {
+func (this *RateLimit) Set(window Window, txn *badger.Txn, cache *cache.Cache) error {
 	existing, err := GetAccountRateLimit(txn, cache, this.Address)
 	if err != nil {
 		if err != badger.ErrKeyNotFound {
@@ -56,11 +52,11 @@ func (this *RateLimit) Set(txn *badger.Txn, cache *cache.Cache) error {
 		existing.TxHashes = append(existing.TxHashes, this.TxRateLimit.TxHash)
 		this.Existing = existing
 	} else {
-		utils.Info("Adding new key for account: ", this.Address)
+		utils.Debug("Adding new key for account: ", this.Address)
 		this.Existing.TxHashes = append(this.Existing.TxHashes, this.TxRateLimit.TxHash)
 	}
 
-	this.cache(cache)
+	this.cache(window, cache)
 	err = this.persist(txn)
 	if err != nil {
 		return err
@@ -69,9 +65,9 @@ func (this *RateLimit) Set(txn *badger.Txn, cache *cache.Cache) error {
 }
 
 
-func (this *RateLimit) cache(cache *cache.Cache) {
+func (this *RateLimit) cache(window Window, cache *cache.Cache) {
 	cache.Set(getAccountRateLimitKey(this.Address), this.Existing, TransactionCacheTTL)
-	cache.Set(getTxRateLimitKey(this.TxRateLimit.TxHash), this.TxRateLimit, this.getCurrentTTL())
+	cache.Set(getTxRateLimitKey(this.TxRateLimit.TxHash), this.TxRateLimit, this.getCurrentTTL(window))
 }
 
 func (this *RateLimit) persist(txn *badger.Txn) error {
@@ -96,33 +92,16 @@ func (this RateLimit) ToPrettyJson() string {
 	return string(bytes)
 }
 
-func (this RateLimit) getCurrentTTL() time.Duration {
-	value, err := this.Merge()
-	if err != nil {
-		utils.Error(err)
-	}
-	nbrSeconds := math.Pow(float64(value), EXP_GROWTH)
+func (this RateLimit) getCurrentTTL(window Window) time.Duration {
+	//Right now to normalize, I'm dividing the rolling average by intrinsic Gas.
+	nbr := math.Max(float64(window.RollingAverage)/9000, 1)
+
+	nbrSeconds := math.Pow(nbr, EXP_GROWTH)
 	ttl := time.Duration(nbrSeconds) * time.Second
 	utils.Info("Current TTL = ", ttl.String())
 	return ttl
 }
 
-func (this *RateLimit) Merge() (uint64, error) {
-	key := []byte(this.Page)
-	m := this.Db.GetMergeOperator(key, add, 200*time.Millisecond)
-	defer m.Stop()
-
-	m.Add(uint64ToBytes(1))
-
-	res, err := m.Get()
-	if err != nil {
-		utils.Error("For Key: ", this.Page, err)
-		return 0, err
-	}
-	result := bytesToUint64(res)
-	utils.Info("Current Count = ", result)
-	return result, nil
-}
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //  Account
@@ -138,7 +117,7 @@ func CheckMinimumAvailable(txn *badger.Txn, cache *cache.Cache, address string, 
 	if err != nil {
 		return uint64(0), err
 	}
-	utils.Debug("\nTotal Hertz Deduction from account = ", totalDeduction)
+	utils.Debug("Total Hertz Deduction from account = ", totalDeduction)
 	available := balance - totalDeduction
 	return available, nil
 }
@@ -188,20 +167,12 @@ func getTxRateLimitKey(hash string) string {
 	return fmt.Sprintf("table-ratelimit-transaction-%s", hash)
 }
 
-func GetTxRateLimit(txn *badger.Txn, cache *cache.Cache, hash string) (*TxRateLimit, error) {
+func GetTxRateLimit(cache *cache.Cache, hash string) (*TxRateLimit, error) {
 	key := getTxRateLimitKey(hash)
 	value, ok := cache.Get(key)
 	if !ok {
-		item, err := txn.Get([]byte(key))
-		if err != nil {
-			return nil, err
-		}
-		value, err := item.Value()
-		if err != nil {
-			return nil, err
-		}
-		rateLimit, err := toTxRateLimitFromJson(value)
-		return rateLimit, nil
+		//No need to get from DB since we are relying on TTL in cache to give us the correct list
+		return nil, nil
 	}
 	rateLimit := value.(*TxRateLimit)
 	return rateLimit, nil
@@ -229,39 +200,27 @@ func (this TxRateLimit) string() string {
 //  Helpers
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-func uint64ToBytes(i uint64) []byte {
-	var buf [8]byte
-	binary.BigEndian.PutUint64(buf[:], i)
-	return buf[:]
-}
-
-func bytesToUint64(b []byte) uint64 {
-	return binary.BigEndian.Uint64(b)
-}
-
-// Merge function to add two uint64 numbers
-func add(existing, new []byte) []byte {
-	return uint64ToBytes(bytesToUint64(existing) + bytesToUint64(new))
-}
 
 func CalculateLockedAmount(txn *badger.Txn, c *cache.Cache, address string) (uint64, error) {
 	acctRateLimit, err := GetAccountRateLimit(txn, c, address)
 	if err != nil {
 		utils.Error(err)
 	}
-
 	var totalDeduction uint64
 	if acctRateLimit != nil {
 		heldTxs := make([]string, 0)
 		for _, hash := range acctRateLimit.TxHashes {
-			txrl, err := GetTxRateLimit(txn, c, hash)
+			txrl, err := GetTxRateLimit(c, hash)
 			if err != nil {
-				return totalDeduction, err
+				if err != badger.ErrKeyNotFound {
+					utils.Error(err)
+					return totalDeduction, err
+				}
 			}
 			if txrl != nil {
 				heldTxs = append(heldTxs, txrl.TxHash)
 				totalDeduction += txrl.Amount
-				//utils.Info(txrl.string())
+				utils.Debug(txrl.string())
 			}
 		}
 		acctRateLimit.TxHashes = heldTxs

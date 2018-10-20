@@ -85,6 +85,7 @@ const (
 	ReceiptCacheTTL        = time.Hour * 48
 	GossipCacheTTL         = time.Minute * 5
 	AuthenticationCacheTTL = time.Minute
+	RateLimitAverageTTL    = time.Minute * 240
 )
 
 // Errors
