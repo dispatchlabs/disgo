@@ -11,3 +11,6 @@ config
 *.iml
 commons/types/testdb/
 *.log
+commons/helper/testdb/000000.vlog
+commons/helper/testdb/LOCK
+commons/helper/testdb/MANIFEST

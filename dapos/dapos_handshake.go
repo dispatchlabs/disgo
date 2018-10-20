@@ -432,7 +432,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	if availableHertz <= minHertzUsed {
 		msg := fmt.Sprintf("Account %s has a hertz balance of %d\n", fromAccount.Address, availableHertz)
 		utils.Error(msg)
-		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInsufficientTokens)
+		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInsufficientHertz)
 		return
 	}
 	var hertz uint64
@@ -539,12 +539,13 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		return
 	}
 
-	rateLimit, err := types.NewRateLimit(transaction.From, transaction.Hash,  "page-1", hertz)
+	rateLimit, err := types.NewRateLimit(transaction.From, transaction.Hash,  hertz)
 	if err != nil {
 		utils.Error(err)
 	}
-	rateLimit.Set(services.GetDb(), txn, services.GetCache())
-
+	window := helper.AddHertz(txn, services.GetCache(), hertz);
+	rateLimit.Set(*window, txn, services.GetCache())
+	transaction.Hertz = hertz
 	// Persist transaction
 	err = transaction.Persist(txn)
 	if err != nil {
