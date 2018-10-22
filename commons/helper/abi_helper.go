@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"math/big"
@@ -9,12 +10,13 @@ import (
 
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/types"
+	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
 	"github.com/pkg/errors"
 )
 
 func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
-
+	utils.Info("GetConvertedParams --> ", tx.Params)
 	theABI, err := GetABI(tx.Abi)
 	if err != nil {
 		return nil, err
@@ -28,7 +30,7 @@ func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 				return tx.Params, nil
 			}
 			if len(v.Inputs) != len(tx.Params) {
-				return nil, errors.New(fmt.Sprintf("This method %s, requires %d parameters and %d are provided", tx.Method, len(v.Inputs), len(tx.Params)))
+				return nil, errors.New(fmt.Sprintf("The method %s, requires %d parameters and %d are provided", tx.Method, len(v.Inputs), len(tx.Params)))
 			}
 			for i := 0; i < len(v.Inputs); i++ {
 				arg := v.Inputs[i]
@@ -47,6 +49,13 @@ func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 						return nil, errors.New(msg)
 					}
 					result = append(result, addressAsByteArray)
+				} else if arg.Type.T == abi.BytesTy{
+					params, valErr := base64.StdEncoding.DecodeString(tx.Params[i].(string))
+					if err != nil{
+						msg := fmt.Sprintf("Invalid value provided for method %s: %v", tx.Method, valErr.Error())
+						return nil, errors.New(msg)
+					}
+					result = append(result, params)
 				} else {
 					value, valErr := getValue(arg, tx.Params[i])
 					if valErr != nil {
@@ -59,7 +68,7 @@ func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 		}
 	}
 	if !found {
-		return nil, errors.New(fmt.Sprintf("This method %s is not valid for this contract", tx.Method))
+		return nil, errors.New(fmt.Sprintf("This method '%s' is not valid for this contract", tx.Method))
 	}
 	return result, nil
 }
@@ -224,11 +233,17 @@ func getValue(arg abi.Argument, value interface{}) (interface{}, error) {
 }
 
 func GetABI(data string) (*abi.ABI, error) {
+	runes := []rune(data)
+	// ... Convert back into a string from rune slice.
+	safeSubstring := string(runes[0:10])
+	utils.Info("GetAbi %s\n%s\n", safeSubstring, utils.GetCallStackWithFileAndLineNumber())
 	bytes, err := hex.DecodeString(data)
 	var abi abi.ABI
 	err = abi.UnmarshalJSON(bytes)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("The ABI provided is not a valid ABI structure \n%v\n", string(bytes)))
+		utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
+		return nil, errors.New(fmt.Sprintf("The ABI provided is not a valid ABI structure: %s", string(bytes)))
 	}
 	return &abi, nil
 }
+

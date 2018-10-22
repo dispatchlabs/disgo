@@ -61,7 +61,7 @@ func (this *DAPoSService) SynchronizeGrpc(constext context.Context, request *pro
 			if !strings.HasPrefix(keyString, "table-") && !strings.HasPrefix(keyString, "key-") && !strings.HasPrefix(keyString, "AccountState-") {
 				continue
 			}
-
+			//fmt.Printf("Key: %s\n", keyString)
 			if i < request.Index {
 				i++
 				continue
@@ -151,14 +151,16 @@ func (this *DAPoSService) GossipGrpc(context context.Context, request *proto.Req
 	}
 
 	// Synchronize gossip.
-	synchronizedGossip, err := this.synchronizeGossip(gossip)
+	synchronizedGossip, err, addToChan := this.synchronizeGossip(gossip)
 	if err != nil {
 		utils.Error(err)
 		return nil, err
 	}
 
 	// Gossip what we got from our peer delegate.
-	this.gossipChan <- gossip
+	if(addToChan) {
+		this.gossipChan <- gossip
+	}
 
 	return &proto.Response{Payload: synchronizedGossip.String()}, nil
 }
@@ -167,15 +169,11 @@ func (this *DAPoSService) GossipGrpc(context context.Context, request *proto.Req
 func (this *DAPoSService) peerGossipGrpc(node types.Node, gossip *types.Gossip) (*types.Gossip, error) {
 	utils.Debug(fmt.Sprintf("attempting to gossip with delegate [address=%s]", node.Address))
 
-	//conn, err := grpc.Dial(fmt.Sprintf("%s:%d", node.GrpcEndpoint.Host, node.GrpcEndpoint.Port), grpc.WithInsecure())
-	//if err != nil {
-	//	utils.Error(fmt.Sprintf("cannot dial seed [host=%s, port=%d]",  node.GrpcEndpoint.Host,  node.GrpcEndpoint.Port), err)
-	//	return nil, err
-	//}
-	//defer conn.Close()
-
 	conn, err := services.GetGrpcConnection(node.Address, node.GrpcEndpoint.Host, node.GrpcEndpoint.Port)
-
+	if err != nil {
+		utils.Error(fmt.Sprintf("cannot dial seed [host=%s, port=%d]",  node.GrpcEndpoint.Host,  node.GrpcEndpoint.Port), err)
+		return nil, err
+	}
 	client := proto.NewDAPoSGrpcClient(conn)
 
 	contextWithTimeout, cancel := context.WithTimeout(context.Background(), 20000*time.Millisecond)
@@ -199,8 +197,11 @@ func (this *DAPoSService) peerGossipGrpc(node types.Node, gossip *types.Gossip) 
 	}
 	remoteGossip, err := types.ToGossipFromJson([]byte(response.Payload))
 	if err != nil {
+		utils.Error(err)
 		return nil, err
 	}
+	utils.Debug(fmt.Sprintf("sent gossip [hash=%s] to delegate [Port %d] [address=%s]", gossip.Transaction.Hash, node.HttpEndpoint.Port, node.Address))
+	remoteGossip.CacheSentDelegate(services.GetCache(), gossip.Transaction.Hash, node.Address)
 
 	return remoteGossip, err
 }

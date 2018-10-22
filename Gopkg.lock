@@ -430,22 +430,6 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:505dbee0833715a72a529bb57c354826ad42a4496fad787fa143699b4de1a6d0"
-  name = "golang.org/x/net"
-  packages = [
-    "context",
-    "http/httpguts",
-    "http2",
-    "http2/hpack",
-    "idna",
-    "internal/timeseries",
-    "trace",
-  ]
-  pruneopts = "UT"
-  revision = "26e67e76b6c3f6ce91f7c52def5af501b4e0f3a2"
-
-[[projects]]
-  branch = "master"
   digest = "1:709223c660898df28ca16ea060bcf2f5dd3a6f3546d108aa3c2721f576f0e800"
   name = "golang.org/x/sys"
   packages = [
@@ -498,43 +482,6 @@
   packages = ["googleapis/rpc/status"]
   pruneopts = "UT"
   revision = "0e822944c569bf5c9afd034adaa56208bd2906ac"
-
-[[projects]]
-  digest = "1:dc0c170b110c22d9a4eccf08ab58490608053eac450bf456f3aaf9b30a668781"
-  name = "google.golang.org/grpc"
-  packages = [
-    ".",
-    "balancer",
-    "balancer/base",
-    "balancer/roundrobin",
-    "codes",
-    "connectivity",
-    "credentials",
-    "encoding",
-    "encoding/proto",
-    "grpclog",
-    "internal",
-    "internal/backoff",
-    "internal/channelz",
-    "internal/envconfig",
-    "internal/grpcrand",
-    "internal/transport",
-    "keepalive",
-    "metadata",
-    "naming",
-    "peer",
-    "reflection",
-    "reflection/grpc_reflection_v1alpha",
-    "resolver",
-    "resolver/dns",
-    "resolver/passthrough",
-    "stats",
-    "status",
-    "tap",
-  ]
-  pruneopts = "UT"
-  revision = "8dea3dc473e90c8179e519d91302d0597c0ca1d1"
-  version = "v1.15.0"
 
 [solve-meta]
   analyzer-name = "dep"

@@ -35,8 +35,39 @@ func (this Gossip) Key() string {
 	return fmt.Sprintf("table-gossip-%s", this.Transaction.Hash)
 }
 
+func (this Gossip) RumorKey(txHash string) string {
+	return fmt.Sprintf("cache-rumor-%s", txHash)
+}
+
+func (this *Gossip) HaveSent(cache *cache.Cache, txHash, delegateAddress string) bool {
+	value, ok := cache.Get(this.RumorKey(txHash))
+	if !ok{
+		return false
+	}
+	addresses := value.([]string)
+	for _, address := range addresses {
+		if address == delegateAddress {
+			return true
+		}
+	}
+	return false
+}
+
+func (this *Gossip) CacheSentDelegate(cache *cache.Cache, txHash, nodeAddress string) {
+	value, ok := cache.Get(this.RumorKey(txHash))
+	array := make([]string, 0)
+	if !ok {
+		array = append(array, nodeAddress)
+		cache.Set(this.RumorKey(txHash), array, GossipCacheTTL)
+	} else {
+		addresses := value.([]string)
+		array = append(addresses, nodeAddress)
+	}
+	cache.Set(this.RumorKey(txHash), array, GossipCacheTTL)
+}
+
 // Cache
-func (this *Gossip) Cache(cache *cache.Cache){
+func (this *Gossip) Cache(cache *cache.Cache) {
 	cache.Set(this.Key(), this, GossipCacheTTL)
 }
 
