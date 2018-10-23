@@ -31,6 +31,7 @@ func AddHertz(txn *badger.Txn, cache *cache.Cache, hertz uint64) *types.Window {
 		window = val.(*types.Window)
 		window.AddHertz(cache, hertz)
 	}
+	window.Persist(txn)
 	return window
 }
 
@@ -53,7 +54,7 @@ func CalcRollingAverageHertzForWindow(cache *cache.Cache, window *types.Window) 
 		}
 		found++
 		sum += win.Sum
-		utils.Debug("Calc for minute: ", i )
+		utils.Info("Calc for minute: ", i )
 	}
 	if(found > 0) {
 		window.RollingAverage = uint64(sum / uint64(types.AvgWindowSize))
@@ -63,15 +64,16 @@ func CalcRollingAverageHertzForWindow(cache *cache.Cache, window *types.Window) 
 }
 
 func populateCache(txn *badger.Txn, cache *cache.Cache) {
+	utils.Info("populateCache for rate limiting")
 	currentWindow := types.NewWindow()
 	for i := currentWindow.Id; i > (currentWindow.Id - types.AvgWindowSize); i-- {
 		window, err := types.ToWindowFromKey(txn, i)
 		if err != nil {
-			utils.Debug("ID: ", i, err)
+			utils.Info("ID: ", i, err)
 			continue
 		}
 		if window.Sum > 0 {
-			utils.Debug("Add to cache --> ", window.String())
+			utils.Info("Add to cache --> ", window.String())
 			window.Cache(cache)
 		}
 	}

@@ -44,6 +44,7 @@ type Account struct {
 	PrivateKey      string
 	Name            string
 	Balance         *big.Int
+	AvailableHertz  uint64
 	TransactionHash string // Smart contract
 	Updated         time.Time
 	Created         time.Time
@@ -152,6 +153,7 @@ func (this Account) MarshalJSON() ([]byte, error) {
 		PrivateKey      string    `json:"privateKey,omitempty"`
 		Name            string    `json:"name"`
 		Balance         int64     `json:"balance"`
+		AvailableHertz  uint64    `json:"availableHertz"`
 		TransactionHash string    `json:"transactionHash,omitempty"`
 		Updated         time.Time `json:"updated"`
 		Created         time.Time `json:"created"`
@@ -163,6 +165,7 @@ func (this Account) MarshalJSON() ([]byte, error) {
 		PrivateKey:      this.PrivateKey,
 		Name:            this.Name,
 		Balance:         this.Balance.Int64(),
+		AvailableHertz:	 this.AvailableHertz,
 		TransactionHash: this.TransactionHash,
 		Updated:         this.Updated,
 		Created:         this.Created,

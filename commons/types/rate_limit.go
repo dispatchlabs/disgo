@@ -98,7 +98,8 @@ func (this RateLimit) getCurrentTTL(window Window) time.Duration {
 
 	nbrSeconds := math.Pow(nbr, EXP_GROWTH)
 	ttl := time.Duration(nbrSeconds) * time.Second
-	utils.Info("Current TTL = ", ttl.String())
+	msg := fmt.Sprintf("Current TTL = %v  &&  RollingAverage = %d", ttl.String(), window.RollingAverage)
+	utils.Info(msg)
 	return ttl
 }
 
