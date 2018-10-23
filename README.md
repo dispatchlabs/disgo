@@ -9,7 +9,13 @@
 ### Overview
 
 Disgo is the main client / node for the Dispatch platform. It initializes all of the services. The services are from the other packages in this repository.  The approach is to have several smaller "building block" modules that are usable components of common blockchain architectures. Our intention is to facilitate a buildable blockchain so that can be used individually so that other projects don't have to start from scratch.
-
+### Prerequisite
+```
+go version
+go version go1.10.4 darwin/amd64
+```
+If version lower, download go1.10.4 from 
+https://golang.org/dl/
 ### Download
 
 With Go installed, enter either of the following commands into your terminal:
