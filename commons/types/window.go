@@ -20,6 +20,7 @@ type Window struct {
 	Sum				uint64
 	Entries         int64
 	RollingAverage	uint64
+	TTL             string
 }
 
 

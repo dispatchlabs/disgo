@@ -121,6 +121,7 @@ func (this *DAPoSService) GetRateLimitWindow() *types.Response {
 		window = types.NewWindow()
 		helper.CalcRollingAverageHertzForWindow(services.GetCache(), window)
 	}
+	window.TTL = types.GetCurrentTTL(*window).String()
 	response.Data = window
 	response.Status = types.StatusOk
 	return response
