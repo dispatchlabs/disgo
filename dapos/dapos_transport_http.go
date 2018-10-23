@@ -35,6 +35,7 @@ func (this *DAPoSService) WithHttp() *DAPoSService {
 	//Accounts
 	services.GetHttpRouter().HandleFunc("/v1/accounts/{address}", this.getAccountHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/accounts", this.unsupportedFunctionHandler).Methods("GET")
+	services.GetHttpRouter().HandleFunc("/v1/address", this.getSeedAddressHandler).Methods("GET")
 	//Transactions
 	services.GetHttpRouter().HandleFunc("/v1/transactions", this.newTransactionHandler).Methods("POST")
 	services.GetHttpRouter().HandleFunc("/v1/transactions/{hash}", this.getTransactionHandler).Methods("GET")
@@ -102,6 +103,22 @@ func setHeaders(response *types.Response, responseWriter *http.ResponseWriter) {
 func (this *DAPoSService) getDelegatesHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	setHeaders(nil, &responseWriter)
 	responseWriter.Write([]byte(this.GetDelegateNodes().String()))
+}
+
+// getSeedAddressHandler
+func (this *DAPoSService) getSeedAddressHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	response := types.NewResponse()
+	address := types.GetAccount().Address
+	configAddress := types.GetConfig().Seeds[0].Address
+	if address == configAddress {
+		response.Status = types.StatusOk
+		response.Data = types.GetAccount().Address
+	} else {
+		response.Status = types.StatusUnavailableFeature
+		response.HumanReadableStatus = "This node is not a Seed"
+	}
+	setHeaders(response, &responseWriter)
+	responseWriter.Write([]byte(response.String()))
 }
 
 // getAccountHandler
