@@ -132,7 +132,6 @@ func (this DisGoverService) updateWorker() {
 			}
 
 			for _, file := range files {
-
 				// Read file?
 				fileName := updateDirectory + string(os.PathSeparator) + file.Name()
 				bytes, err := ioutil.ReadFile(fileName)

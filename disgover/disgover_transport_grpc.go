@@ -297,7 +297,7 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 	fileName := fmt.Sprintf("%s%s%s", directoryName, string(os.PathSeparator), softwareUpdate.FileName)
 	err = ioutil.WriteFile(fileName, softwareUpdate.Software, 0755)
 	if err != nil {
-		utils.Error(fmt.Sprintf("unable to save file %s", fileName), err)
+		utils.Error("unable to verify software update", err)
 		return &proto.Empty{}, err
 	}
 	utils.Info(fmt.Sprintf("software updated from seed node [file=%s, scheduledReboot=%s]", fileName, softwareUpdate.ScheduledReboot))
