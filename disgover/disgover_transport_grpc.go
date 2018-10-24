@@ -21,6 +21,13 @@ import (
 
 	"time"
 
+	"bytes"
+	"encoding/hex"
+	"io/ioutil"
+	"os"
+	"os/exec"
+
+	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
@@ -28,11 +35,6 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"os"
-	"github.com/dispatchlabs/disgo/commons/crypto"
-	"encoding/hex"
-	"io/ioutil"
-	"github.com/jasonlvhit/gocron"
 )
 
 //TODO: we are going to drop delegates if we fail to communicate with them.  The exepctation will be that the seed will tell us when they come back on line
@@ -273,35 +275,89 @@ func (this *DisGoverService) UpdateSoftwareGrpc(ctx context.Context, softwareUpd
 		return &proto.Empty{}, err
 	}
 
-	// Disgo software update?
-	if softwareUpdate.FileName == "disgo" {
-		fileName := "." + string(os.PathSeparator) + "disgo"
-		err = ioutil.WriteFile(fileName, softwareUpdate.Software, 0777)
+	// Remove Update directory.
+	directoryName := fmt.Sprintf("%sgo-binaries%supdate", string(os.PathSeparator), string(os.PathSeparator))
+	if utils.Exists(directoryName) {
+		err = os.RemoveAll(directoryName)
 		if err != nil {
-			utils.Error(fmt.Sprintf("unable to save file %s", fileName), err)
+			utils.Error(fmt.Sprintf("unable to directory %s", directoryName), err)
 			return &proto.Empty{}, err
 		}
-		utils.Info(fmt.Sprintf("software updated from seed node [file=%s, scheduledReboot=%s]", fileName, softwareUpdate.ScheduledReboot))
-
-		// Schedule the reboot.
-		go func() {
-			gocron.Every(1).Day().At(softwareUpdate.ScheduledReboot).Do(func() {
-				gocron.Clear()
-				services.GetDbService().Close()
-				utils.Info("rebooting with new version of disgo...")
-				os.Exit(0)
-			})
-			<-gocron.Start()
-		}()
-	} else {
-		fileName := "." + string(os.PathSeparator) + "disgo-update"
-		err = ioutil.WriteFile(fileName, softwareUpdate.Software, 0777)
-		if err != nil {
-			utils.Error(fmt.Sprintf("unable to save file %s", fileName), err)
-			return &proto.Empty{}, err
-		}
-		utils.Info(fmt.Sprintf("software updated from seed node [file=%s]", fileName))
 	}
+
+	// Create update directory exists?
+	err = os.MkdirAll(directoryName, 0755)
+	if err != nil {
+		utils.Error(fmt.Sprintf("unable to create directory %s", directoryName), err)
+		return &proto.Empty{}, err
+	}
+	os.MkdirAll(directoryName, 0755)
+
+	// Write file to update directory.
+	fileName := fmt.Sprintf("%s%s%s", directoryName, string(os.PathSeparator), softwareUpdate.FileName)
+	err = ioutil.WriteFile(fileName, softwareUpdate.Software, 0755)
+	if err != nil {
+		utils.Error("unable to verify software update", err)
+		return &proto.Empty{}, err
+	}
+	utils.Info(fmt.Sprintf("software updated from seed node [file=%s, scheduledReboot=%s]", fileName, softwareUpdate.ScheduledReboot))
+
+	// Unzip file.
+	command := exec.Command("/usr/bin/unzip", fileName, "-d", directoryName)
+	var out bytes.Buffer
+	command.Stdout = &out
+	err = command.Run()
+	if err != nil {
+		utils.Error(fmt.Sprintf("executed %s - %s", fileName, out.String()))
+		return &proto.Empty{}, err
+	}
+	utils.Info(fmt.Sprintf("unzipped software update %s [output] '%s'", fileName, out.String()))
+
+	// Chmod.
+	fileName = fmt.Sprintf("%s%supdate.sh", directoryName, string(os.PathSeparator))
+	os.Chmod(fileName, 0777)
+	utils.Info(fmt.Sprintf("chmod 0777 on script %s...", fileName))
+
+	// Execute update script.
+	//	cmd := exec.Command("sudo", "systemd-run", fileName)
+	ex := fmt.Sprintf("sudo systemd-run %s", fileName)
+	cmd := exec.Command("/bin/sh", "-c", ex)
+
+	var outb bytes.Buffer
+	var errb bytes.Buffer
+
+	cmd.Stdout = &outb
+	cmd.Stderr = &errb
+
+	err = cmd.Run()
+	if err != nil {
+		utils.Error(fmt.Sprintf("ERROR executed %s - %s", fileName, outb.String()))
+	}
+	utils.Info(fmt.Sprintf("executing script %s...\n\t[output] '%s'\n\t[stderr] %s", fileName, outb.String(), errb.String()))
+
+	// Schedule the reboot.
+	//go func() {
+	//	gocron.Every(1).Day().At(softwareUpdate.ScheduledReboot).Do(func() {
+	//		gocron.Clear()
+	//		services.GetDbService().Close()
+	//
+	//		// Chmod.
+	//		fileName = fmt.Sprintf("%s%supdate.sh", directoryName, string(os.PathSeparator))
+	//		os.Chmod(fileName, 0777)
+	//		utils.Info(fmt.Sprintf("chmod 0777 on script %s...", fileName))
+	//
+	//		// Execute update script.
+	//		command = exec.Command("sudo", "systemd-run", fileName)
+	//		command.Stdout = &out
+	//
+	//		err = command.Run()
+	//		if err != nil {
+	//			utils.Error(fmt.Sprintf("executed %s - %s", fileName, out.String()))
+	//		}
+	//		utils.Info(fmt.Sprintf("executing script %s...[output] '%s'", fileName, out.String()))
+	//	})
+	//	<-gocron.Start()
+	//}()
 
 	return &proto.Empty{}, nil
 }
