@@ -165,12 +165,32 @@ func GetGenesisAccount() (*Account, error) {
 		}
 		json.Unmarshal(file, genesisAccount)
 		utils.Info(fmt.Sprintf("loaded genesis account file %s", fileName))
+	} else {
+		genesisAccount = getDefaultGenesisAccount()
 	}
 	genesisAccount.Name = "Dispatch Labs"
 	genesisAccount.Updated = time.Now()
 	genesisAccount.Created = time.Now()
 
 	return genesisAccount, nil
+}
+
+func getDefaultGenesisAccount() *Account {
+	var genesisFileName = utils.GetConfigDir() + string(os.PathSeparator) + "genesis_account.json"
+
+	file, err := os.Create(genesisFileName)
+	defer file.Close()
+	if err != nil {
+		utils.Error(fmt.Sprintf("unable to create genesis account file %s", genesisFileName), err)
+		panic(err)
+	}
+	var genesisString = "{\"address\": \"3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c\",\"balance\": 10000000}"
+	genesisAccount := &Account{}
+	json.Unmarshal([]byte(genesisString), genesisAccount)
+	fmt.Fprintf(file, genesisString)
+	utils.Info(fmt.Sprintf("generated default config file %s", genesisString))
+
+	return genesisAccount
 }
 
 // GetSeedAddress - Get the address for seed.dispatchlabs.io
