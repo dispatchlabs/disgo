@@ -11,3 +11,4 @@ config
 *.iml
 commons/types/testdb/
 *.log
+commons/helper/testdb/
