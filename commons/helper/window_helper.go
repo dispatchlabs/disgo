@@ -54,7 +54,7 @@ func CalcRollingAverageHertzForWindow(cache *cache.Cache, window *types.Window) 
 		}
 		found++
 		sum += win.Sum
-		utils.Info("Calc for minute: ", i )
+		utils.Debug("Calc for minute: ", i )
 	}
 	if(found > 0) {
 		window.RollingAverage = uint64(sum / uint64(types.AvgWindowSize))
@@ -69,7 +69,7 @@ func populateCache(txn *badger.Txn, cache *cache.Cache) {
 	for i := currentWindow.Id; i > (currentWindow.Id - types.AvgWindowSize); i-- {
 		window, err := types.ToWindowFromKey(txn, i)
 		if err != nil {
-			utils.Info("ID: ", i, err)
+			utils.Debug("ID: ", i, err)
 			continue
 		}
 		if window.Sum > 0 {

@@ -21,13 +21,10 @@ import (
 
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/services"
-	"time"
-
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/disgover"
 	"github.com/dispatchlabs/disgo/commons/queue"
-	"math/big"
 )
 
 var daposServiceInstance *DAPoSService
@@ -79,11 +76,11 @@ func (this *DAPoSService) disGoverServiceInitFinished() {
 		this.peerSynchronize()
 	}
 
-	// Create genesis transaction.
-	err := this.createGenesisTransactionAndAccount()
+	// Create genesis account.
+	err := this.createGenesisAccount()
 	if err != nil {
 		services.GetDbService().Close()
-		utils.Fatal("unable to create genesis block", err)
+		utils.Fatal("unable to create genesis account", err)
 	}
 
 	go this.gossipWorker()
@@ -94,22 +91,18 @@ func (this *DAPoSService) disGoverServiceInitFinished() {
 }
 
 // createGenesisTransactionAndAccount
-func (this *DAPoSService) createGenesisTransactionAndAccount() error {
+func (this *DAPoSService) createGenesisAccount() error {
 	txn := services.GetDb().NewTransaction(true)
 	defer txn.Discard()
-	transaction, err := types.ToTransactionFromJson([]byte(types.GetConfig().GenesisTransaction))
+
+	genesisAccount, err := types.GetGenesisAccount()
 	if err != nil {
-		return err
+		utils.Error(err)
 	}
-	_, err = types.ToTransactionByKey(txn, []byte(transaction.Key()))
+	_, err = types.ToAccountByAddress(txn, genesisAccount.Key())
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
-			err = transaction.Set(txn,services.GetCache())
-			if err != nil {
-				return err
-			}
-			account := &types.Account{Address: transaction.To, Name: "Dispatch Labs", Balance: big.NewInt(transaction.Value), Updated: time.Now(), Created: time.Now()}
-			err = account.Set(txn,services.GetCache())
+			err = genesisAccount.Set(txn, services.GetCache())
 			if err != nil {
 				return err
 			}

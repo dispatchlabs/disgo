@@ -57,7 +57,11 @@ type Account struct {
 
 // Key
 func (this Account) Key() string {
-	return fmt.Sprintf("table-account-%s", this.Address)
+	return getKey(this.Address)
+}
+
+func getKey(address string) string {
+	return fmt.Sprintf("table-account-%s", address)
 }
 
 // NameKey
@@ -214,7 +218,7 @@ func ToAccountFromJson(payload []byte) (*Account, error) {
 
 // ToAccountFromCache -
 func ToAccountFromCache(cache *cache.Cache, address string) (*Account, error) {
-	value, ok := cache.Get(fmt.Sprintf("table-account-%s", address))
+	value, ok := cache.Get(getKey(address))
 	if !ok {
 		return nil, ErrNotFound
 	}
@@ -224,7 +228,7 @@ func ToAccountFromCache(cache *cache.Cache, address string) (*Account, error) {
 
 // ToAccountByAddress
 func ToAccountByAddress(txn *badger.Txn, address string) (*Account, error) {
-	item, err := txn.Get([]byte(fmt.Sprintf("table-account-%s", address)))
+	item, err := txn.Get([]byte(getKey(address)))
 	if err != nil {
 		return nil, err
 	}
