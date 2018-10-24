@@ -99,7 +99,7 @@ func (this *DAPoSService) createGenesisAccount() error {
 	if err != nil {
 		utils.Error(err)
 	}
-	_, err = types.ToAccountByAddress(txn, genesisAccount.Key())
+	_, err = types.ToAccountByAddress(txn, genesisAccount.Address)
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
 			err = genesisAccount.Set(txn, services.GetCache())
