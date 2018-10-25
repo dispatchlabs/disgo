@@ -1,0 +1,7 @@
+version: "3"
+services:
+  disgo:
+    image: arsen3d/disgo:latest
+    ports:
+      - "1975:1975"
+    

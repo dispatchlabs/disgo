@@ -25,10 +25,12 @@ import (
 	"io/ioutil"
 	"os"
 	"sync"
+
 	"github.com/pkg/errors"
 
-	"github.com/dispatchlabs/disgo/commons/utils"
 	"net/http"
+
+	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
 var configInstance *Config
@@ -117,6 +119,8 @@ func GetConfig() *Config {
 // GetDefaultConfig - Returns default config, does not save to disk
 func GetDefaultConfig() *Config {
 	address, err := GetSeedAddress()
+	//log.Info(fmt.Sprintf("Seed Address: %s", address))
+	utils.Info("TESTING             DB...")
 	if err != nil {
 		utils.Error(err)
 	}

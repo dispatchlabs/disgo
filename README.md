@@ -9,6 +9,15 @@
 ### Overview
 
 Disgo is the main client / node for the Dispatch platform. It initializes all of the services. The services are from the other packages in this repository.  The approach is to have several smaller "building block" modules that are usable components of common blockchain architectures. Our intention is to facilitate a buildable blockchain so that can be used individually so that other projects don't have to start from scratch.
+### Docker Option
+Install Docker https://www.docker.com/get-started
+Open Termianl
+```
+git clone https://github.com/arsen3d/disgo.git
+cd disgo
+docker-compose up
+```
+
 ### Prerequisite
 ```
 go version
