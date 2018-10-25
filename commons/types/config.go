@@ -29,6 +29,7 @@ import (
 
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"net/http"
+	"time"
 )
 
 var configInstance *Config
@@ -44,7 +45,7 @@ type Config struct {
 	DelegateAddresses  []string  `json:"delegateAddresses"`
 	UseQuantumEntropy  bool      `json:"useQuantumEntropy"`
 	IsBookkeeper       bool      `json:"isBookkeeper"`
-	GenesisTransaction string    `json:"genesisTransaction"`
+	//GenesisTransaction string    `json:"genesisTransaction"`
 }
 
 // String - Implement the `fmt.Stringer` interface
@@ -79,7 +80,6 @@ func ToConfigFromJson(payload []byte) (*Config, error) {
 // GetConfig - Reads from disk or Returns default config. Saves to disk
 func GetConfig() *Config {
 	configOnce.Do(func() {
-		configInstance = GetDefaultConfig()
 		var configFileName = utils.GetConfigDir() + string(os.PathSeparator) + "config.json"
 		if utils.Exists(configFileName) {
 			file, err := ioutil.ReadFile(configFileName)
@@ -87,9 +87,12 @@ func GetConfig() *Config {
 				utils.Error(fmt.Sprintf("unable to load config file %s", configFileName), err)
 				os.Exit(1)
 			}
-			json.Unmarshal(file, configInstance)
+			tempConfig := &Config{}
+			json.Unmarshal(file, tempConfig)
+			configInstance = tempConfig
 			utils.Info(fmt.Sprintf("loaded config file %s", configFileName))
 		} else {
+			configInstance = GetDefaultConfig()
 			file, err := os.Create(configFileName)
 			defer file.Close()
 			if err != nil {
@@ -146,8 +149,48 @@ func GetDefaultConfig() *Config {
 			},
 		},
 		IsBookkeeper:       true,
-		GenesisTransaction: `{"hash":"a48ff2bd1fb99d9170e2bae2f4ed94ed79dbc8c1002986f8054a369655e29276","type":0,"from":"e6098cc0d5c20c6c31c4d69f0201a02975264e94","to":"3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c","value":10000000,"data":"","time":0,"signature":"03c1fdb91cd10aa441e0025dd21def5ebe045762c1eeea0f6a3f7e63b27deb9c40e08b656a744f6c69c55f7cb41751eebd49c1eedfbd10b861834f0352c510b200","hertz":0,"fromName":"","toName":""}`,
+		//GenesisTransaction: `{"hash":"a48ff2bd1fb99d9170e2bae2f4ed94ed79dbc8c1002986f8054a369655e29276","type":0,"from":"e6098cc0d5c20c6c31c4d69f0201a02975264e94","to":"3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c","value":10000000,"data":"","time":0,"signature":"03c1fdb91cd10aa441e0025dd21def5ebe045762c1eeea0f6a3f7e63b27deb9c40e08b656a744f6c69c55f7cb41751eebd49c1eedfbd10b861834f0352c510b200","hertz":0,"fromName":"","toName":""}`,
 	}
+}
+
+// GetDefaultConfig - Returns default config, does not save to disk
+func GetGenesisAccount() (*Account, error) {
+	var fileName = utils.GetConfigDir() + string(os.PathSeparator) + "genesis_account.json"
+	genesisAccount := &Account{}
+	if utils.Exists(fileName) {
+		file, err := ioutil.ReadFile(fileName)
+		if err != nil {
+			utils.Error(fmt.Sprintf("unable to load address file %s", fileName), err)
+			os.Exit(1)
+		}
+		json.Unmarshal(file, genesisAccount)
+		utils.Info(fmt.Sprintf("loaded genesis account file %s", fileName))
+	} else {
+		genesisAccount = getDefaultGenesisAccount()
+	}
+	genesisAccount.Name = "Dispatch Labs"
+	genesisAccount.Updated = time.Now()
+	genesisAccount.Created = time.Now()
+
+	return genesisAccount, nil
+}
+
+func getDefaultGenesisAccount() *Account {
+	var genesisFileName = utils.GetConfigDir() + string(os.PathSeparator) + "genesis_account.json"
+
+	file, err := os.Create(genesisFileName)
+	defer file.Close()
+	if err != nil {
+		utils.Error(fmt.Sprintf("unable to create genesis account file %s", genesisFileName), err)
+		panic(err)
+	}
+	var genesisString = "{\"address\": \"3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c\",\"balance\": 10000000}"
+	genesisAccount := &Account{}
+	json.Unmarshal([]byte(genesisString), genesisAccount)
+	fmt.Fprintf(file, genesisString)
+	utils.Info(fmt.Sprintf("generated default config file %s", genesisString))
+
+	return genesisAccount
 }
 
 // GetSeedAddress - Get the address for seed.dispatchlabs.io

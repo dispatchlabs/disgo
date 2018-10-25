@@ -27,6 +27,8 @@ import (
 	"time"
 	"strconv"
 
+	"math/big"
+
 	"github.com/patrickmn/go-cache"
 
 	"github.com/dgraph-io/badger"
@@ -43,7 +45,8 @@ type Account struct {
 	Address         string
 	PrivateKey      string
 	Name            string
-	Balance         int64
+	Balance         *big.Int
+	HertzAvailable  uint64
 	TransactionHash string // Smart contract
 	Updated         time.Time
 	Created         time.Time
@@ -56,7 +59,11 @@ type Account struct {
 
 // Key
 func (this Account) Key() string {
-	return fmt.Sprintf("table-account-%s", this.Address)
+	return getKey(this.Address)
+}
+
+func getKey(address string) string {
+	return fmt.Sprintf("table-account-%s", address)
 }
 
 // NameKey
@@ -113,20 +120,17 @@ func (this *Account) UnmarshalJSON(bytes []byte) error {
 		this.Name = jsonMap["name"].(string)
 	}
 	if jsonMap["balance"] != nil {
+		var b int64
 		balance, ok := jsonMap["balance"].(string)
 		if !ok {
 			return errors.Errorf("value for field 'balance' must be a string")
-			b, ok := jsonMap["balance"].(int64)
-			if !ok {
-				return errors.Errorf("value for field 'balance' must be a string")
-			}
 		} else {
-			b, err := strconv.ParseInt(balance, 10, 64)
+			b, err = strconv.ParseInt(balance, 10, 64)
 			if err != nil {
 			  return errors.Errorf("value for field 'balance' must be convertable to an integer")
 			}
 		}
-		this.Balance = b
+		this.Balance = big.NewInt(b)
 	}
 	if jsonMap["transactionHash"] != nil {
 		this.TransactionHash = jsonMap["transactionHash"].(string)
@@ -165,6 +169,7 @@ func (this Account) MarshalJSON() ([]byte, error) {
 		PrivateKey      string    `json:"privateKey,omitempty"`
 		Name            string    `json:"name"`
 		Balance         int64     `json:"balance,string"`
+		HertzAvailable  uint64    `json:"hertzAvailable"`
 		TransactionHash string    `json:"transactionHash,omitempty"`
 		Updated         time.Time `json:"updated"`
 		Created         time.Time `json:"created"`
@@ -175,7 +180,8 @@ func (this Account) MarshalJSON() ([]byte, error) {
 		Address:         this.Address,
 		PrivateKey:      this.PrivateKey,
 		Name:            this.Name,
-		Balance:         this.Balance,
+		Balance:         this.Balance.Int64(),
+		HertzAvailable:	 this.HertzAvailable,
 		TransactionHash: this.TransactionHash,
 		Updated:         this.Updated,
 		Created:         this.Created,
@@ -224,7 +230,7 @@ func ToAccountFromJson(payload []byte) (*Account, error) {
 
 // ToAccountFromCache -
 func ToAccountFromCache(cache *cache.Cache, address string) (*Account, error) {
-	value, ok := cache.Get(fmt.Sprintf("table-account-%s", address))
+	value, ok := cache.Get(getKey(address))
 	if !ok {
 		return nil, ErrNotFound
 	}
@@ -234,7 +240,7 @@ func ToAccountFromCache(cache *cache.Cache, address string) (*Account, error) {
 
 // ToAccountByAddress
 func ToAccountByAddress(txn *badger.Txn, address string) (*Account, error) {
-	item, err := txn.Get([]byte(fmt.Sprintf("table-account-%s", address)))
+	item, err := txn.Get([]byte(getKey(address)))
 	if err != nil {
 		return nil, err
 	}
@@ -358,7 +364,7 @@ func readAccountFile(name_optional ...string) *Account {
 		account := &Account{}
 		account.Address = hex.EncodeToString(address)
 		account.PrivateKey = hex.EncodeToString(privateKey)
-		account.Balance = 0
+		account.Balance = big.NewInt(0)
 		account.Name = ""
 		now := time.Now()
 		account.Created = now

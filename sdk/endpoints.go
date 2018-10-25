@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
-	"math/big"
 	"net/http"
 
 	"github.com/dispatchlabs/disgo/commons/types"
@@ -13,6 +12,8 @@ import (
 	"bytes"
 	"fmt"
 	"time"
+
+	"math/big"
 
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/commons/crypto"
@@ -154,7 +155,7 @@ func PackageTx(to string, tokens int64, time int64 ) (*types.Transaction, error)
 }
 
 // TransferTokens - Send tokens FROM TO
-func TransferTokens(delegateNode types.Node, privateKey string, from string, to string, tokens int64) (string, error) {
+func TransferTokens(delegateNode types.Node, privateKey, from, to string, tokens int64) (string, error) {
 	// Create transfer tokens transaction.
 	transaction, err := types.NewTransferTokensTransaction(privateKey, from, to, tokens, 0, utils.ToMilliSeconds(time.Now()))
 	if err != nil {
@@ -190,7 +191,7 @@ func TransferTokens(delegateNode types.Node, privateKey string, from string, to 
 }
 
 // DeploySmartContract - Deploy a smart contract, get the TX hash as result
-func DeploySmartContract(delegateNode types.Node, privateKey string, from string, code string, abi string) (string, error) {
+func DeploySmartContract(delegateNode types.Node, privateKey, from, code, abi string) (string, error) {
 	// Create deploy smart contract transaction.
 	transaction, err := types.NewDeployContractTransaction(privateKey, from, code, abi, utils.ToMilliSeconds(time.Now()))
 	if err != nil {
@@ -226,7 +227,7 @@ func DeploySmartContract(delegateNode types.Node, privateKey string, from string
 }
 
 // ExecuteSmartContractTransaction - Execute a smart contract, get the TX hash as result
-func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey string, from string, to string, method string, params []interface{}) (string, error) {
+func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey, from, to, method string, params []interface{}) (string, error) {
 	// Create execute smart contract transaction.
 	transaction, err := types.NewExecuteContractTransaction(privateKey, from, to, method, params, utils.ToMilliSeconds(time.Now()))
 	if err != nil {

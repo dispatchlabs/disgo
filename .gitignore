@@ -13,3 +13,7 @@ config
 *.iml
 commons/types/testdb/
 *.log
+commons/helper/testdb/
+GPATH
+GRTAGS
+GTAGS

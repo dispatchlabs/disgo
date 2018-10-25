@@ -26,8 +26,8 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
-// var testAccountByte = []byte("{\"address\":\"99022124e110f5a9567a334a2017bdbd41c475e3\",\"privateKey\":\"abc\",\"name\":\"test\",\"balance\":1000,\"updated\":\"2018-05-09T15:04:05Z\",\"created\":\"2018-05-09T15:04:05Z\",\"nonce\":0,\"root\":\"0x0000000000000000000000000000000000000000000000000000000000000000\",\"codehash\":\"0x0000000000000000000000000000000000000000000000000000000000000000\"}")
-var testAccountByte = []byte("{\"address\":\"99022124e110f5a9567a334a2017bdbd41c475e3\",\"privateKey\":\"abc\",\"name\":\"test\",\"balance\":1000,\"updated\":\"2018-05-09T15:04:05Z\",\"created\":\"2018-05-09T15:04:05Z\",\"nonce\":0}")
+// var testAccountByte = []byte("{\"address\":\"99022124e110f5a9567a334a2017bdbd41c475e3\",\"privateKey\":\"abc\",\"name\":\"test\",\"balance\":1000,\"hertzAvailable\":0,\"updated\":\"2018-05-09T15:04:05Z\",\"created\":\"2018-05-09T15:04:05Z\",\"nonce\":0,\"root\":\"0x0000000000000000000000000000000000000000000000000000000000000000\",\"codehash\":\"0x0000000000000000000000000000000000000000000000000000000000000000\"}")
+var testAccountByte = []byte("{\"address\":\"99022124e110f5a9567a334a2017bdbd41c475e3\",\"privateKey\":\"abc\",\"name\":\"test\",\"balance\":\"1000\",\"hertzAvailable\":0,\"updated\":\"2018-05-09T15:04:05Z\",\"created\":\"2018-05-09T15:04:05Z\",\"nonce\":0}")
 var testAccountAddressHash = "de3a0dba79b563588b15e38909ce206eb83dd27b53150e53c858036978b23412"
 var c *cache.Cache
 var db *badger.DB
@@ -199,7 +199,7 @@ func TestReadAccountFile(t *testing.T) {
 	if newAccount.PrivateKey == "" {
 		t.Error("newAccount.PrivateKey is empty")
 	}
-	if newAccount.Balance != 0 {
+	if newAccount.Balance.Int64() != 0 {
 		t.Error("newAccount.Balance is not 0")
 	}
 	if newAccount.Created != newAccount.Updated {
@@ -244,7 +244,7 @@ func testAccountStruct(t *testing.T, account *Account) {
 	if account.Name != "test" {
 		t.Errorf("account.UnmarshalJSON returning invalid %s value: %s", "Name", account.Name)
 	}
-	if account.Balance != 1000 {
+	if account.Balance.Int64() != 1000 {
 		t.Errorf("account.UnmarshalJSON returning invalid %s value: %d", "Balance", account.Balance)
 	}
 	d, _ := time.Parse(time.RFC3339, "2018-05-09T15:04:05Z")

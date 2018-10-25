@@ -36,6 +36,10 @@ func (this *DAPoSService) WithHttp() *DAPoSService {
 	services.GetHttpRouter().HandleFunc("/v1/accounts/{address}", this.getAccountHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/accounts", this.unsupportedFunctionHandler).Methods("GET")
 
+	//Rate limits
+	services.GetHttpRouter().HandleFunc("/v1/rateLimitWindow", this.getRateLimitWindowHandler).Methods("GET")
+
+	//Get Seed address for default config generation for full nodes.
 	services.GetHttpRouter().HandleFunc("/v1/address", this.getSeedAddressHandler).Methods("GET")
 	//Transactions
 	services.GetHttpRouter().HandleFunc("/v1/transactions", this.newTransactionHandler).Methods("POST")
@@ -126,6 +130,13 @@ func (this *DAPoSService) getSeedAddressHandler(responseWriter http.ResponseWrit
 func (this *DAPoSService) getAccountHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
 	response := this.GetAccount(vars["address"])
+	setHeaders(response, &responseWriter)
+	responseWriter.Write([]byte(response.String()))
+}
+
+// getAccountHandler
+func (this *DAPoSService) getRateLimitWindowHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	response := this.GetRateLimitWindow()
 	setHeaders(response, &responseWriter)
 	responseWriter.Write([]byte(response.String()))
 }
