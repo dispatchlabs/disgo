@@ -1,6 +1,7 @@
 package dvm
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/types"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/vm"
 	"github.com/dispatchlabs/disgo/dvm/vmstatehelperimplemtations"
 )
 
@@ -82,6 +84,9 @@ func (this DVMResult) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	buf := new(bytes.Buffer)
+	vm.WriteLogs(buf, this.Logs)
+
 	return json.Marshal(struct {
 		From                     string `json:"from"`
 		To                       string `json:"to"`
@@ -90,6 +95,7 @@ func (this DVMResult) MarshalJSON() ([]byte, error) {
 		ContractMethodExecResult string `json:"contractMethodExecResult"`
 		Divvy                    int64  `json:"divvy"`
 		HertzCost                uint64 `json:"hertzCost"`
+		Logs                     string `json:"logs"`
 	}{
 		From:                     crypto.Encode(this.From[:]),
 		To:                       crypto.Encode(this.To[:]),
@@ -98,5 +104,6 @@ func (this DVMResult) MarshalJSON() ([]byte, error) {
 		ContractMethodExecResult: methodResult,
 		Divvy:                    this.Divvy,
 		HertzCost:                this.HertzCost,
+		Logs:                     buf.String(),
 	})
 }
