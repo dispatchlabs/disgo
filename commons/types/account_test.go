@@ -199,7 +199,7 @@ func TestReadAccountFile(t *testing.T) {
 	if newAccount.PrivateKey == "" {
 		t.Error("newAccount.PrivateKey is empty")
 	}
-	if newAccount.Balance.Int64() != 0 {
+	if newAccount.Balance != 0 {
 		t.Error("newAccount.Balance is not 0")
 	}
 	if newAccount.Created != newAccount.Updated {
@@ -244,7 +244,7 @@ func testAccountStruct(t *testing.T, account *Account) {
 	if account.Name != "test" {
 		t.Errorf("account.UnmarshalJSON returning invalid %s value: %s", "Name", account.Name)
 	}
-	if account.Balance.Int64() != 1000 {
+	if account.Balance != 1000 {
 		t.Errorf("account.UnmarshalJSON returning invalid %s value: %d", "Balance", account.Balance)
 	}
 	d, _ := time.Parse(time.RFC3339, "2018-05-09T15:04:05Z")

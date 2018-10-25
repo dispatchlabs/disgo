@@ -25,14 +25,14 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"strconv"
 
 	"github.com/patrickmn/go-cache"
-
-	"math/big"
 
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/pkg/errors"
 )
 
 var accountInstance *Account
@@ -43,7 +43,7 @@ type Account struct {
 	Address         string
 	PrivateKey      string
 	Name            string
-	Balance         *big.Int
+	Balance         int64
 	TransactionHash string // Smart contract
 	Updated         time.Time
 	Created         time.Time
@@ -113,7 +113,20 @@ func (this *Account) UnmarshalJSON(bytes []byte) error {
 		this.Name = jsonMap["name"].(string)
 	}
 	if jsonMap["balance"] != nil {
-		this.Balance = big.NewInt(int64(jsonMap["balance"].(float64)))
+		balance, ok := jsonMap["balance"].(string)
+		if !ok {
+			return errors.Errorf("value for field 'balance' must be a string")
+			b, ok := jsonMap["balance"].(int64)
+			if !ok {
+				return errors.Errorf("value for field 'balance' must be a string")
+			}
+		} else {
+			b, err := strconv.ParseInt(balance, 10, 64)
+			if err != nil {
+			  return errors.Errorf("value for field 'balance' must be convertable to an integer")
+			}
+		}
+		this.Balance = b
 	}
 	if jsonMap["transactionHash"] != nil {
 		this.TransactionHash = jsonMap["transactionHash"].(string)
@@ -151,7 +164,7 @@ func (this Account) MarshalJSON() ([]byte, error) {
 		Address         string    `json:"address"`
 		PrivateKey      string    `json:"privateKey,omitempty"`
 		Name            string    `json:"name"`
-		Balance         int64     `json:"balance"`
+		Balance         int64     `json:"balance,string"`
 		TransactionHash string    `json:"transactionHash,omitempty"`
 		Updated         time.Time `json:"updated"`
 		Created         time.Time `json:"created"`
@@ -162,7 +175,7 @@ func (this Account) MarshalJSON() ([]byte, error) {
 		Address:         this.Address,
 		PrivateKey:      this.PrivateKey,
 		Name:            this.Name,
-		Balance:         this.Balance.Int64(),
+		Balance:         this.Balance,
 		TransactionHash: this.TransactionHash,
 		Updated:         this.Updated,
 		Created:         this.Created,
@@ -345,7 +358,7 @@ func readAccountFile(name_optional ...string) *Account {
 		account := &Account{}
 		account.Address = hex.EncodeToString(address)
 		account.PrivateKey = hex.EncodeToString(privateKey)
-		account.Balance = big.NewInt(0)
+		account.Balance = 0
 		account.Name = ""
 		now := time.Now()
 		account.Created = now
