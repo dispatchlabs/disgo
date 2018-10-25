@@ -145,6 +145,9 @@ func (self *DVMService) call(tx *commonTypes.Transaction, callMsg ethTypes.Messa
 		// Difficulty  *big.Int            // Provides information for DIFFICULTY
 	}
 
+	stateHelper.EthStateDB.Prepare(crypto.GetHashBytes(tx.Hash), crypto.GetHashBytes(tx.Hash),
+		stateHelper.TxIndex)
+
 	// The EVM should never be reused and is not thread safe.
 	// Call is done on a copy of the state...we dont want any changes to be persisted
 	// Call is a readonly operation
