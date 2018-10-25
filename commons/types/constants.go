@@ -34,7 +34,7 @@ const (
 
 // Requests
 const (
-	Version = "2.2.0"
+	Version = "2.4.1d"
 )
 
 // Statuses
