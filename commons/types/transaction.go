@@ -24,6 +24,7 @@ import (
 	"time"
 	"strings"
 	"sort"
+	"strconv"
 
 	"fmt"
 
@@ -830,12 +831,15 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		}
 	}
 	if jsonMap["value"] != nil {
-		value, ok := jsonMap["value"].(float64)
+		value, ok := jsonMap["value"].(string)
 		if !ok {
-			return errors.Errorf("value for field 'value' must be a number")
+			return errors.Errorf("value for field 'value' must be a string")
 		}
-		this.Value = int64(value)
-
+		i, err := strconv.ParseInt(value, 10, 64)
+		if err != nil {
+		  return errors.Errorf("value for field 'value' must be convertable to an integer")
+		}
+		this.Value = i
 	}
 	if jsonMap["code"] != nil {
 		this.Code, ok = jsonMap["code"].(string)
@@ -885,11 +889,15 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		}
 	}
 	if jsonMap["hertz"] != nil {
-		hertz, ok := jsonMap["type"].(float64)
+		hertz, ok := jsonMap["type"].(string)
 		if !ok {
 			return errors.Errorf("value for field 'hertz' must be a number")
 		}
-		this.Hertz = int64(hertz)
+		h, err := strconv.ParseInt(hertz, 10, 64)
+		if err != nil {
+		  return errors.Errorf("value for field 'value' must be convertable to an integer")
+		}
+		this.Hertz = h
 	}
 	if jsonMap["receipt"] != nil {
 		var receipt Receipt
@@ -910,14 +918,14 @@ func (this Transaction) MarshalJSON() ([]byte, error) {
 		Type      byte          `json:"type"`
 		From      string        `json:"from"`
 		To        string        `json:"to,omitempty"`
-		Value     int64         `json:"value,omitempty"`
+		Value     int64         `json:"value,omitempty,string"`
 		Code      string        `json:"code,omitempty"`
 		Abi       string        `json:"abi,omitempty"`
 		Method    string        `json:"method,omitempty"`
 		Params    []interface{} `json:"params,omitempty"`
 		Time      int64         `json:"time"`
 		Signature string        `json:"signature"`
-		Hertz     int64         `json:"hertz"`
+		Hertz     int64         `json:"hertz,omitempty,string"`
 		Receipt   Receipt       `json:"receipt,omitempty"`
 		Gossip    []Rumor       `json:"gossip,omitempty"`
 		FromName  string        `json:"fromName,omitempty"`
