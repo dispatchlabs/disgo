@@ -121,9 +121,13 @@ func (this *Account) UnmarshalJSON(bytes []byte) error {
 	}
 	if jsonMap["balance"] != nil {
 		var b int64
-		balance, ok := jsonMap["balance"].(string)
-		if !ok {
-			return errors.Errorf("value for field 'balance' must be a string")
+		balance, ok1 := jsonMap["balance"].(string)
+		if !ok1 {
+			var ok2 bool
+			b, ok2 = jsonMap["balance"].(int64)
+			if !ok2 {
+				return errors.Errorf("value for field 'balance' must be a string")
+			}
 		} else {
 			b, err = strconv.ParseInt(balance, 10, 64)
 			if err != nil {
@@ -168,7 +172,7 @@ func (this Account) MarshalJSON() ([]byte, error) {
 		Address         string    `json:"address"`
 		PrivateKey      string    `json:"privateKey,omitempty"`
 		Name            string    `json:"name"`
-		Balance         int64     `json:"balance,string"`
+		Balance         string    `json:"balance"`
 		HertzAvailable  uint64    `json:"hertzAvailable"`
 		TransactionHash string    `json:"transactionHash,omitempty"`
 		Updated         time.Time `json:"updated"`
@@ -180,7 +184,7 @@ func (this Account) MarshalJSON() ([]byte, error) {
 		Address:         this.Address,
 		PrivateKey:      this.PrivateKey,
 		Name:            this.Name,
-		Balance:         this.Balance.Int64(),
+		Balance:         this.Balance.String(),
 		HertzAvailable:	 this.HertzAvailable,
 		TransactionHash: this.TransactionHash,
 		Updated:         this.Updated,
