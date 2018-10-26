@@ -152,7 +152,7 @@ func (this Transaction) CalculateHash() []byte {
 		this.Type,
 		from,
 		to,
-		this.Value,
+		strconv.FormatInt(this.Value, 10),
 		this.Time,
 		signature,
 	}
@@ -657,7 +657,7 @@ func (this Transaction) NewHash() (string, error) {
 		this.Type,
 		fromBytes,
 		toBytes,
-		this.Value,
+		[]byte(strconv.FormatInt(this.Value, 10)),
 		codeBytes,
 		// []byte(this.Abi),
 		[]byte(this.Method),
