@@ -20,6 +20,7 @@ type Window struct {
 	Sum				uint64
 	Entries         int64
 	Slope           float64
+	TTL 			string
 }
 
 
