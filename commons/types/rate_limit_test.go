@@ -4,6 +4,7 @@ import (
 	"testing"
 	"math"
 	"fmt"
+	"time"
 )
 
 
@@ -78,6 +79,46 @@ func TestGrowth(t *testing.T) {
 	printValue(250.0)
 	printValue(500.0)
 	printValue(UppertTxThreshold)
+}
+
+func TestGetCurrentTTL(t *testing.T) {
+	window := NewWindow()
+
+	// test upper bounds
+	window.Slope = 86401.0
+	if ttl := GetCurrentTTL(*window); ttl != time.Hour * 24 {
+		t.Errorf("TTL should have been %d hours, it was %d", time.Hour * 24, ttl)
+	}
+
+	window.Slope = 82800.0
+	if ttl := GetCurrentTTL(*window); ttl != time.Hour * 23 {
+		t.Errorf("TTL should have been %d, it was %d", time.Hour * 23, ttl)
+	}
+
+	window.Slope = 999999.0
+	if ttl := GetCurrentTTL(*window); ttl != time.Hour * 24 {
+		t.Errorf("TTL should have been %d hours, it was %d", time.Hour * 24, ttl)
+	}
+
+	window.Slope = -24
+	if ttl :=GetCurrentTTL(*window); ttl != time.Second {
+		t.Errorf("TTL should have been one second, it was %d", ttl)
+	}
+
+	window.Slope = 0
+	if ttl :=GetCurrentTTL(*window); ttl != time.Second {
+		t.Errorf("TTL should have been one second, it was %d", ttl)
+	}
+
+	window.Slope = 1
+	if ttl :=GetCurrentTTL(*window); ttl != time.Second {
+		t.Errorf("TTL should have been one second, it was %d", ttl)
+	}
+
+	window.Slope = 5
+	if ttl :=GetCurrentTTL(*window); ttl != time.Second * 5 {
+		t.Errorf("TTL should have been five seconds, it was %d", ttl)
+	}
 }
 
 func printValue(value float64) {

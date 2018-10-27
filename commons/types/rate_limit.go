@@ -67,7 +67,7 @@ func (this *RateLimit) Set(window Window, txn *badger.Txn, cache *cache.Cache) e
 
 func (this *RateLimit) cache(window Window, cache *cache.Cache) {
 	cache.Set(getAccountRateLimitKey(this.Address), this.Existing, TransactionCacheTTL)
-	cache.Set(getTxRateLimitKey(this.TxRateLimit.TxHash), this.TxRateLimit, this.getCurrentTTL(window))
+	cache.Set(getTxRateLimitKey(this.TxRateLimit.TxHash), this.TxRateLimit, GetCurrentTTL(window))
 }
 
 func (this *RateLimit) persist(txn *badger.Txn) error {
@@ -92,9 +92,11 @@ func (this RateLimit) ToPrettyJson() string {
 	return string(bytes)
 }
 
-func (this RateLimit) getCurrentTTL(window Window) time.Duration {
-	//Right now to normalize, I'm dividing the rolling average by intrinsic Gas.
-	nbrSeconds:= math.Max(window.Slope, 1);
+// Formula: Get the current slope from a curve of Hertz over the last 4 hours
+// Multiply the slope against Seconds
+// Bound the algorithm by lower of 1 second and a max of 24 hours.
+func GetCurrentTTL(window Window) time.Duration {
+	nbrSeconds := math.Max(window.Slope, 1);
 	if math.IsNaN(nbrSeconds) {
 		nbrSeconds = float64(time.Second)
 	} else {

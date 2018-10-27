@@ -27,15 +27,4 @@ func LinearRegression(points *[]Point) (a float64, b float64) {
 	return a, b
 }
 
-// EXAMPLE USAGE
-// points := make([]Point, 0)
 
-// points = append(points, Point{x:0.0, y:1.0,})
-// points = append(points, Point{x:0.1, y:1.5,})
-// points = append(points, Point{x:0.2, y:2.0,})
-// points = append(points, Point{x:0.3, y:2.5,})
-// points = append(points, Point{x:0.4, y:3.0,})
-// points = append(points, Point{x:0.5, y:3.5,})
-// points = append(points, Point{x:0.6, y:4.0,})
-
-// a, b := LinearRegression(&points)

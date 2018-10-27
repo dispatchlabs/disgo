@@ -33,6 +33,7 @@ func AddHertz(txn *badger.Txn, cache *cache.Cache, hertz uint64) *types.Window {
 		window = val.(*types.Window)
 		window.AddHertz(cache, hertz)
 	}
+	window.Persist(txn)
 	return window
 }
 
@@ -43,7 +44,6 @@ func persistPreviousWindow(txn *badger.Txn, cache *cache.Cache, id int64) {
 	}
 	window.Persist(txn)
 }
-
 
 func CalcSlopeForWindow(cache *cache.Cache, window *types.Window) {
 	points := make([]utils.Point, 0)
@@ -56,13 +56,6 @@ func CalcSlopeForWindow(cache *cache.Cache, window *types.Window) {
 		}
 		found++
 		points = append(points, utils.Point{X: float64(found), Y: float64(win.Sum),})
-
-		utils.Info("XXXX Found", found)
-		utils.Info("XXXX sum", win.Sum)
-
-		//sum += win.Sum
-
-		utils.Debug("Calc for minute: ", i )
 	}
 	if(found > 0) {
 		window.Slope, _ = utils.LinearRegression(&points)
@@ -72,15 +65,16 @@ func CalcSlopeForWindow(cache *cache.Cache, window *types.Window) {
 }
 
 func populateCache(txn *badger.Txn, cache *cache.Cache) {
+	utils.Info("populateCache for rate limiting")
 	currentWindow := types.NewWindow()
 	for i := currentWindow.Id; i > (currentWindow.Id - types.AvgWindowSize); i-- {
 		window, err := types.ToWindowFromKey(txn, i)
 		if err != nil {
-			utils.Debug("ID: ", i, err)
+			utils.Info("ID: ", i, err)
 			continue
 		}
 		if window.Sum > 0 {
-			utils.Debug("Add to cache --> ", window.String())
+			utils.Info("Add to cache --> ", window.String())
 			window.Cache(cache)
 		}
 	}

@@ -529,7 +529,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		}
 		receipt.ContractAddress = transaction.To
 
-		hertz = dvmResult.CumulativeHertzUsed
+		hertz = minHertzUsed + dvmResult.CumulativeHertzUsed
 
 		utils.Info(fmt.Sprintf("executed contract [hash=%s, contractAddress=%s]", transaction.Hash, transaction.To))
 		break
@@ -545,6 +545,24 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	}
 	window := helper.AddHertz(txn, services.GetCache(), hertz);
 	rateLimit.Set(*window, txn, services.GetCache())
+
+	//If we wanted to also lock up for the receiver then we need this code
+	//rateLimitTo, err := types.NewRateLimit(transaction.To, transaction.Hash,  hertz)
+	//if err != nil {
+	//	utils.Error(err)
+	//}
+	//window = helper.AddHertz(txn, services.GetCache(), hertz);
+	//rateLimitTo.Set(*window, txn, services.GetCache())
+
+	//if availableHertz <= minHertzUsed {
+	//	msg := fmt.Sprintf("Account %s has a hertz balance of %d\n", fromAccount.Address, availableHertz)
+	//	utils.Error(msg)
+	//	receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInsufficientHertz)
+	//	return
+	//}
+	//
+
+	//Change this to set hertz to the
 	transaction.Hertz = hertz
 	// Persist transaction
 	err = transaction.Persist(txn)

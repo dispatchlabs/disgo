@@ -25,6 +25,8 @@ import (
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/disgover"
+	"time"
+	"github.com/dispatchlabs/disgo/commons/helper"
 )
 
 // GetDelegateNodes
@@ -103,6 +105,28 @@ func (this *DAPoSService) GetReceipt(transactionHash string) *types.Response {
 }
 
 // GetAccount
+func (this *DAPoSService) GetRateLimitWindow() *types.Response {
+	txn := services.NewTxn(true)
+	defer txn.Discard()
+	response := types.NewResponse()
+	epoch := time.Unix(0, types.DispatchEpoch)
+	minutesSinceEpoch := int64(time.Now().Sub(epoch).Minutes())
+
+	window, err := types.ToWindowFromKey(txn, minutesSinceEpoch)
+	if err != nil {
+		utils.Error(err)
+	}
+	if window == nil {
+		window = types.NewWindow()
+		helper.CalcRollingAverageHertzForWindow(services.GetCache(), window)
+	}
+	window.TTL = types.GetCurrentTTL(*window).String()
+	response.Data = window
+	response.Status = types.StatusOk
+	return response
+}
+
+// GetAccount
 func (this *DAPoSService) GetAccount(address string) *types.Response {
 	txn := services.NewTxn(true)
 	defer txn.Discard()
@@ -118,6 +142,10 @@ func (this *DAPoSService) GetAccount(address string) *types.Response {
 				response.Status = types.StatusInternalError
 			}
 		} else {
+			account.AvailableHertz, err = types.CheckMinimumAvailable(txn, services.GetCache(), account.Address, account.Balance.Uint64())
+			if err != nil {
+				utils.Error(err)
+			}
 			response.Data = account
 			response.Status = types.StatusOk
 		}
