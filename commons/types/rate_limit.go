@@ -1,13 +1,13 @@
 package types
 
 import (
-	"github.com/dgraph-io/badger"
-	"github.com/patrickmn/go-cache"
-	"time"
-	"fmt"
-	"github.com/dispatchlabs/disgo/commons/utils"
 	"encoding/json"
+	"fmt"
+	"github.com/dgraph-io/badger"
+	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/patrickmn/go-cache"
 	"math"
+	"time"
 )
 
 const (
@@ -94,11 +94,30 @@ func (this RateLimit) ToPrettyJson() string {
 
 func (this RateLimit) getCurrentTTL(window Window) time.Duration {
 	//Right now to normalize, I'm dividing the rolling average by intrinsic Gas.
-	nbr := math.Max(float64(window.RollingAverage)/9000, 1)
+	nbrSeconds:= math.Max(window.Slope, 1);
+	if math.IsNaN(nbrSeconds) {
+		nbrSeconds = float64(time.Second)
+	} else {
+		// normalize
+		nbrSeconds = nbrSeconds * float64(time.Second)
+	}
 
-	nbrSeconds := math.Pow(nbr, EXP_GROWTH)
-	ttl := time.Duration(nbrSeconds) * time.Second
+	ttl := time.Duration(nbrSeconds)
+
+	// adjust into seconds
+	// ttl = ttl * time.Second
+
+	// bounds
+	if ttl > time.Hour * 24 {
+		ttl = time.Hour * 24
+	}
+	if ttl < time.Second {
+		ttl = time.Second
+	}
+
 	utils.Info("Current TTL = ", ttl.String())
+	utils.Info("Slope = ", window.Slope)
+
 	return ttl
 }
 

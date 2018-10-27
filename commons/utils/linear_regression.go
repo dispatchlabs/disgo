@@ -1,10 +1,8 @@
-package main
-
-import "fmt"
+package utils
 
 type Point struct {
-	x float64
-	y float64
+	X float64
+	Y float64
 }
 
 func LinearRegression(points *[]Point) (a float64, b float64) {
@@ -16,10 +14,10 @@ func LinearRegression(points *[]Point) (a float64, b float64) {
 	sumXX := 0.0
 
 	for _, p := range *points {
-		sumX += p.x
-		sumY += p.y
-		sumXY += p.x * p.y
-		sumXX += p.x * p.x
+		sumX += p.X
+		sumY += p.Y
+		sumXY += p.X * p.Y
+		sumXX += p.X * p.X
 	}
 
 	base := (n*sumXX - sumX*sumX)
@@ -40,4 +38,4 @@ func LinearRegression(points *[]Point) (a float64, b float64) {
 // points = append(points, Point{x:0.5, y:3.5,})
 // points = append(points, Point{x:0.6, y:4.0,})
 
-// a, b := LeastSquaresMethod(&points)
+// a, b := LinearRegression(&points)
