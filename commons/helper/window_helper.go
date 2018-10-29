@@ -5,11 +5,17 @@ import (
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/patrickmn/go-cache"
+	"math"
 
 	"time"
 )
 
 var cacheLoaded bool
+
+// baseline transaction transaction calculations
+const txMinuite = 600
+const hertzPerTransactrion = 16344658408
+const hertzMinute = txMinuite * hertzPerTransactrion
 
 func AddHertz(txn *badger.Txn, cache *cache.Cache, hertz uint64) *types.Window {
 	epoch := time.Unix(0, types.DispatchEpoch)
@@ -27,8 +33,7 @@ func AddHertz(txn *badger.Txn, cache *cache.Cache, hertz uint64) *types.Window {
 
 		window.AddHertz(cache, hertz)
 		CalcSlopeForWindow(cache, window)
-		//CalcRollingAverageHertzForWindow(cache, window)
-
+		types.GetCurrentTTL(cache, window)
 	} else {
 		window = val.(*types.Window)
 		window.AddHertz(cache, hertz)
@@ -55,7 +60,10 @@ func CalcSlopeForWindow(cache *cache.Cache, window *types.Window) {
 			continue
 		}
 		found++
-		points = append(points, utils.Point{X: float64(found), Y: float64(win.Sum),})
+
+		// normalie for the base
+		baseAdjustedHertz := win.Sum - hertzMinute
+		points = append(points, utils.Point{X: float64(found), Y: float64(math.Max(0, float64(baseAdjustedHertz)))})
 	}
 	if(found > 0) {
 		window.Slope, _ = utils.LinearRegression(&points)

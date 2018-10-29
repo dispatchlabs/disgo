@@ -119,8 +119,8 @@ func (this *DAPoSService) GetRateLimitWindow() *types.Response {
 	if window == nil {
 		window = types.NewWindow()
 		helper.CalcSlopeForWindow(services.GetCache(), window)
+		types.GetCurrentTTL(window)
 	}
-	window.TTL = types.GetCurrentTTL(*window).String()
 	response.Data = window
 	response.Status = types.StatusOk
 	return response

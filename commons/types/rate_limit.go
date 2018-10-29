@@ -67,7 +67,7 @@ func (this *RateLimit) Set(window Window, txn *badger.Txn, cache *cache.Cache) e
 
 func (this *RateLimit) cache(window Window, cache *cache.Cache) {
 	cache.Set(getAccountRateLimitKey(this.Address), this.Existing, TransactionCacheTTL)
-	cache.Set(getTxRateLimitKey(this.TxRateLimit.TxHash), this.TxRateLimit, GetCurrentTTL(window))
+	cache.Set(getTxRateLimitKey(this.TxRateLimit.TxHash), this.TxRateLimit, window.TTL)
 }
 
 func (this *RateLimit) persist(txn *badger.Txn) error {
@@ -95,32 +95,39 @@ func (this RateLimit) ToPrettyJson() string {
 // Formula: Get the current slope from a curve of Hertz over the last 4 hours
 // Multiply the slope against Seconds
 // Bound the algorithm by lower of 1 second and a max of 24 hours.
-func GetCurrentTTL(window Window) time.Duration {
-	nbrSeconds := math.Max(window.Slope, 1);
-	if math.IsNaN(nbrSeconds) {
-		nbrSeconds = float64(time.Second)
+func GetCurrentTTL(cache *cache.Cache, window *Window) {
+	previousWindow, ok := ToWindowFromCache(cache, window.Id - 1)
+	var previousTTL = time.Duration(0)
+	if !ok {
+		previousTTL = 0
 	} else {
-		// normalize
-		nbrSeconds = nbrSeconds * float64(time.Second)
+		previousTTL = time.Duration(math.Max(0, float64(previousWindow.TTL)))
+	}
+	slopeSeconds := time.Duration(window.Slope * float64(time.Second))
+
+	if window.Slope > 0 {
+		utils.Info("slope is over zero")
+		window.TTL = previousTTL + slopeSeconds
+	} else if window.Slope == 0 {
+		utils.Info("slope is zero")
+		window.TTL = previousTTL
+	} else if window.Slope < 0 {
+		utils.Info("slope is less than zero")
+		window.TTL = previousTTL - slopeSeconds
 	}
 
-	ttl := time.Duration(nbrSeconds)
-
-	// adjust into seconds
-	// ttl = ttl * time.Second
+	window.TTL = time.Duration(window.TTL)
 
 	// bounds
-	if ttl > time.Hour * 24 {
-		ttl = time.Hour * 24
+	if window.TTL > time.Hour * 24 {
+		window.TTL = time.Hour * 24
 	}
-	if ttl < time.Second {
-		ttl = time.Second
+	if window.TTL < time.Second {
+		window.TTL = time.Second
 	}
 
-	utils.Info("Current TTL = ", ttl.String())
+	utils.Info("Current TTL = ", window.TTL.String())
 	utils.Info("Slope = ", window.Slope)
-
-	return ttl
 }
 
 
