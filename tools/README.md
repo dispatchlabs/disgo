@@ -1,8 +1,7 @@
 # tools
 
-## Generate a key and address to use for the Genesis Account (optional)
-
-Before you create your cluster, you may want to generate a new Genesis Account to work with. There is a default provided if you don't care, but we have something for those that do care.
+## Generate a key and address to use for the Genesis Account
+Before you create your cluster, you may want to generate a new Genesis Account to work with.
 
 #### Generate a new account to use for the Genesis Account.
 This generation does not store the key information anywhere, so it is important that you copy the values and put them in the place of your choosing.  The private key will be needed to submit transactions using the SDKs.
@@ -16,9 +15,9 @@ You will get something that looks like:
 ```
 Genesis key & address:
 ***********************************************************************************************************************************************************
-Public Key:		0497def3d49ed1996189ac4504695627011466265052e6afda61d06dbf59b52781f3f8bfbb64e12dd59f9134a034cade46bb8d54cdfc0e91ae4433e568bd40dfd4
-Private Key:	651ac5dc86c10dbf99b508dcf4bffc74ef45c565cb00619de94edc53722fc498
-Address:		eb0ecc73844b3a3bf8f35d23bb279cbd6b021ddc
+Public Key:	0497def3d49ed1996189ac4504695627011466265052e6afda61d06dbf59b52781f3f8bfbb64e12dd59f9134a034cade46bb8d54cdfc0e91ae4433e568bd40dfd4
+Private Key:    651ac5dc86c10dbf99b508dcf4bffc74ef45c565cb00619de94edc53722fc498
+Address:	eb0ecc73844b3a3bf8f35d23bb279cbd6b021ddc
 ***********************************************************************************************************************************************************
 ```
 
@@ -38,9 +37,9 @@ from the tools directory:
 > `./tools newLocalCluster 5 eb0ecc73844b3a3bf8f35d23bb279cbd6b021ddc 100000000`
 
  - parameter 1 is the directive for creating a new local cluster
- - parameter 2 (optional if you are not specifying param 3 & 4) is for the number of delegates you want to have in your cluster (I typically use 4 or 5 for local)
+ - parameter 2 is for the number of delegates you want to have in your cluster (I typically use 4 or 5 for local)
  	- if you do not specify anything, a cluster with 4 delegates and  
- - parameter 3 (optional) is the address for your Genesis Account.  This will be used when generating the genesis account file that you can find in the disgo/config/genesis_account.json file
+ - parameter 3 is the address for your Genesis Account.  This will be used when generating the genesis account file that you can find in the disgo/config/genesis_account.json file
  - paramater 4 is the balance that you are initializing your cluster with.  This value is immutable, so make sure you put enough in there to play around with.
 
  
