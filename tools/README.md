@@ -38,7 +38,6 @@ from the tools directory:
 
  - parameter 1 is the directive for creating a new local cluster
  - parameter 2 is for the number of delegates you want to have in your cluster (I typically use 4 or 5 for local)
- 	- if you do not specify anything, a cluster with 4 delegates and  
  - parameter 3 is the address for your Genesis Account.  This will be used when generating the genesis account file that you can find in the disgo/config/genesis_account.json file
  - paramater 4 is the balance that you are initializing your cluster with.  This value is immutable, so make sure you put enough in there to play around with.
 
