@@ -1,12 +1,29 @@
 package types
 
 import (
+	"github.com/dgraph-io/badger"
+	"github.com/dispatchlabs/disgo/commons/utils"
+	"os"
 	"testing"
 	"math"
 	"fmt"
 	"time"
+
+	"github.com/patrickmn/go-cache"
 )
 
+var theCache *cache.Cache
+var theDb *badger.DB
+var theDbPath = "." + string(os.PathSeparator) + "testdb"
+
+//init
+func init() {
+	utils.Info("opening DB...")
+	opts := badger.DefaultOptions
+	opts.Dir = theDbPath
+	opts.ValueDir = theDbPath
+	theCache = cache.New(CacheTTL, CacheTTL*2)
+}
 
 func TestRateLimit(t *testing.T) {
 	//hash1 := "44197cc2241ad63b66039e15a85168857272fe1625ed39999972edcdfcbc1bbd"
@@ -18,7 +35,7 @@ func TestRateLimit(t *testing.T) {
 	//}
 	//txn := db.NewTransaction(true)
 	//defer txn.Discard()
-	//window := helper.AddHertz(txn, services.GetCache(), hertz);
+	//window := helper.AddHertz(txn, cache, hertz);
 	//rateLimit.Set(*window, txn, c)
 }
 
@@ -86,38 +103,38 @@ func TestGetCurrentTTL(t *testing.T) {
 
 	// test upper bounds
 	window.Slope = 86401.0
-	if ttl := GetCurrentTTL(*window); ttl != time.Hour * 24 {
-		t.Errorf("TTL should have been %d hours, it was %d", time.Hour * 24, ttl)
+	if  GetCurrentTTL(theCache, window); window.TTL != time.Hour * 24 {
+		t.Errorf("TTL should have been %d hours, it was %d", time.Hour * 24, window.TTL)
 	}
 
 	window.Slope = 82800.0
-	if ttl := GetCurrentTTL(*window); ttl != time.Hour * 23 {
-		t.Errorf("TTL should have been %d, it was %d", time.Hour * 23, ttl)
+	if  GetCurrentTTL(c, window); window.TTL != time.Hour * 23 {
+		t.Errorf("TTL should have been %d, it was %d", time.Hour * 23, window.TTL)
 	}
 
 	window.Slope = 999999.0
-	if ttl := GetCurrentTTL(*window); ttl != time.Hour * 24 {
-		t.Errorf("TTL should have been %d hours, it was %d", time.Hour * 24, ttl)
+	if  GetCurrentTTL(c, window); window.TTL != time.Hour * 24 {
+		t.Errorf("TTL should have been %d hours, it was %d", time.Hour * 24, window.TTL)
 	}
 
 	window.Slope = -24
-	if ttl :=GetCurrentTTL(*window); ttl != time.Second {
-		t.Errorf("TTL should have been one second, it was %d", ttl)
+	if GetCurrentTTL(c, window); window.TTL != time.Second {
+		t.Errorf("TTL should have been one second, it was %d", window.TTL)
 	}
 
 	window.Slope = 0
-	if ttl :=GetCurrentTTL(*window); ttl != time.Second {
-		t.Errorf("TTL should have been one second, it was %d", ttl)
+	if GetCurrentTTL(c, window); window.TTL != time.Second {
+		t.Errorf("TTL should have been one second, it was %d", window.TTL)
 	}
 
 	window.Slope = 1
-	if ttl :=GetCurrentTTL(*window); ttl != time.Second {
-		t.Errorf("TTL should have been one second, it was %d", ttl)
+	if GetCurrentTTL(c, window); window.TTL != time.Second {
+		t.Errorf("TTL should have been one second, it was %d", window.TTL)
 	}
 
 	window.Slope = 5
-	if ttl :=GetCurrentTTL(*window); ttl != time.Second * 5 {
-		t.Errorf("TTL should have been five seconds, it was %d", ttl)
+	if GetCurrentTTL(c, window); window.TTL != time.Second * 5 {
+		t.Errorf("TTL should have been five seconds, it was %d", window.TTL)
 	}
 }
 

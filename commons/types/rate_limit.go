@@ -96,9 +96,9 @@ func (this RateLimit) ToPrettyJson() string {
 // Multiply the slope against Seconds
 // Bound the algorithm by lower of 1 second and a max of 24 hours.
 func GetCurrentTTL(cache *cache.Cache, window *Window) {
-	previousWindow, ok := ToWindowFromCache(cache, window.Id - 1)
 	var previousTTL = time.Duration(0)
-	if !ok {
+
+	if previousWindow, ok := ToWindowFromCache(cache, window.Id - 1); !ok {
 		previousTTL = 0
 	} else {
 		previousTTL = time.Duration(math.Max(0, float64(previousWindow.TTL)))
