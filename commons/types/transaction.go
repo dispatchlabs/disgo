@@ -47,7 +47,7 @@ type Transaction struct {
 	Params    []interface{}
 	Time      int64 // Milliseconds
 	Signature string
-	Hertz     int64   //our version of Gas
+	Hertz     uint64   //our version of Gas
 	Receipt   Receipt // Transient
 	Gossip    []Rumor // Transient
 	FromName  string  // Transient
@@ -767,7 +767,7 @@ func (this Transaction) Verify() error {
 	// Derived address from publicKeyBytes match from?
 	address := hex.EncodeToString(crypto.ToAddress(publicKeyBytes))
 	if address != this.From {
-		return errors.New("from address does not match the computed address from hash and signature")
+		return errors.New(fmt.Sprintf("from address: %s does not match the computed address: %s from hash and signature", this.From, address))
 	}
 	if !crypto.VerifySignature(publicKeyBytes, hashBytes, signatureBytes) {
 		return errors.New("invalid signature")
@@ -885,11 +885,11 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		}
 	}
 	if jsonMap["hertz"] != nil {
-		hertz, ok := jsonMap["type"].(float64)
+		hertz, ok := jsonMap["hertz"].(float64)
 		if !ok {
 			return errors.Errorf("value for field 'hertz' must be a number")
 		}
-		this.Hertz = int64(hertz)
+		this.Hertz = uint64(hertz)
 	}
 	if jsonMap["receipt"] != nil {
 		var receipt Receipt
@@ -917,7 +917,7 @@ func (this Transaction) MarshalJSON() ([]byte, error) {
 		Params    []interface{} `json:"params,omitempty"`
 		Time      int64         `json:"time"`
 		Signature string        `json:"signature"`
-		Hertz     int64         `json:"hertz"`
+		Hertz     uint64        `json:"hertz"`
 		Receipt   Receipt       `json:"receipt,omitempty"`
 		Gossip    []Rumor       `json:"gossip,omitempty"`
 		FromName  string        `json:"fromName,omitempty"`

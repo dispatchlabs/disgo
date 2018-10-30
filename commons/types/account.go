@@ -44,6 +44,7 @@ type Account struct {
 	PrivateKey      string
 	Name            string
 	Balance         *big.Int
+	HertzAvailable  uint64
 	TransactionHash string // Smart contract
 	Updated         time.Time
 	Created         time.Time
@@ -56,7 +57,11 @@ type Account struct {
 
 // Key
 func (this Account) Key() string {
-	return fmt.Sprintf("table-account-%s", this.Address)
+	return getKey(this.Address)
+}
+
+func getKey(address string) string {
+	return fmt.Sprintf("table-account-%s", address)
 }
 
 // NameKey
@@ -152,6 +157,7 @@ func (this Account) MarshalJSON() ([]byte, error) {
 		PrivateKey      string    `json:"privateKey,omitempty"`
 		Name            string    `json:"name"`
 		Balance         int64     `json:"balance"`
+		HertzAvailable  uint64    `json:"hertzAvailable"`
 		TransactionHash string    `json:"transactionHash,omitempty"`
 		Updated         time.Time `json:"updated"`
 		Created         time.Time `json:"created"`
@@ -163,6 +169,7 @@ func (this Account) MarshalJSON() ([]byte, error) {
 		PrivateKey:      this.PrivateKey,
 		Name:            this.Name,
 		Balance:         this.Balance.Int64(),
+		HertzAvailable:	 this.HertzAvailable,
 		TransactionHash: this.TransactionHash,
 		Updated:         this.Updated,
 		Created:         this.Created,
@@ -211,7 +218,7 @@ func ToAccountFromJson(payload []byte) (*Account, error) {
 
 // ToAccountFromCache -
 func ToAccountFromCache(cache *cache.Cache, address string) (*Account, error) {
-	value, ok := cache.Get(fmt.Sprintf("table-account-%s", address))
+	value, ok := cache.Get(getKey(address))
 	if !ok {
 		return nil, ErrNotFound
 	}
@@ -221,7 +228,7 @@ func ToAccountFromCache(cache *cache.Cache, address string) (*Account, error) {
 
 // ToAccountByAddress
 func ToAccountByAddress(txn *badger.Txn, address string) (*Account, error) {
-	item, err := txn.Get([]byte(fmt.Sprintf("table-account-%s", address)))
+	item, err := txn.Get([]byte(getKey(address)))
 	if err != nil {
 		return nil, err
 	}
