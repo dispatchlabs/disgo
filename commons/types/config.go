@@ -22,10 +22,10 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"io/ioutil"
 	"os"
 	"sync"
-	"github.com/pkg/errors"
 
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"net/http"
@@ -37,14 +37,15 @@ var configOnce sync.Once
 
 // Config - Is the structure definition for the system properties
 type Config struct {
-	HttpEndpoint       *Endpoint `json:"httpEndpoint"`
-	GrpcEndpoint       *Endpoint `json:"grpcEndpoint"`
-	GrpcTimeout        int       `json:"grpcTimeout"`
-	LocalHttpApiPort   int       `json:"localHttpApiPort"`
-	Seeds              []*Node   `json:"seeds"`
-	DelegateAddresses  []string  `json:"delegateAddresses"`
-	UseQuantumEntropy  bool      `json:"useQuantumEntropy"`
-	IsBookkeeper       bool      `json:"isBookkeeper"`
+	HttpEndpoint      *Endpoint   `json:"httpEndpoint"`
+	GrpcEndpoint      *Endpoint   `json:"grpcEndpoint"`
+	GrpcTimeout       int         `json:"grpcTimeout"`
+	LocalHttpApiPort  int         `json:"localHttpApiPort"`
+	Seeds             []*Node     `json:"seeds"`
+	DelegateAddresses []string    `json:"delegateAddresses"`
+	UseQuantumEntropy bool        `json:"useQuantumEntropy"`
+	IsBookkeeper      bool        `json:"isBookkeeper"`
+	RateLimits        *RateLimits `json:"rateLimits"`
 	//GenesisTransaction string    `json:"genesisTransaction"`
 }
 
@@ -148,7 +149,13 @@ func GetDefaultConfig() *Config {
 				Type: TypeSeed,
 			},
 		},
-		IsBookkeeper:       true,
+		IsBookkeeper: true,
+		RateLimits: &RateLimits{
+			EpochTime:   1538352000000000000,
+			NumWindows:  240,
+			TxPerMinute: 600,
+			AvgHzPerTxn: 13162215217,
+		},
 		//GenesisTransaction: `{"hash":"a48ff2bd1fb99d9170e2bae2f4ed94ed79dbc8c1002986f8054a369655e29276","type":0,"from":"e6098cc0d5c20c6c31c4d69f0201a02975264e94","to":"3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c","value":10000000,"data":"","time":0,"signature":"03c1fdb91cd10aa441e0025dd21def5ebe045762c1eeea0f6a3f7e63b27deb9c40e08b656a744f6c69c55f7cb41751eebd49c1eedfbd10b861834f0352c510b200","hertz":0,"fromName":"","toName":""}`,
 	}
 }
