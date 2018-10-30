@@ -21,16 +21,16 @@ func (this *RateLimits) UnmarshalJSON(bytes []byte) error {
 		return err
 	}
 	if jsonMap["epochTime"] != nil {
-		this.EpochTime = jsonMap["eochTime"].(uint64)
+		this.EpochTime = uint64(jsonMap["epochTime"].(float64))
 	}
 	if jsonMap["numWindows"] != nil {
-		this.NumWindows = jsonMap["numWindows"].(uint64)
+		this.NumWindows = uint64(jsonMap["numWindows"].(float64))
 	}
 	if jsonMap["txPerMinute"] != nil {
-		this.TxPerMinute = jsonMap["txPerMinute"].(uint64)
+		this.TxPerMinute = uint64(jsonMap["txPerMinute"].(float64))
 	}
 	if jsonMap["avgHzPerTxn"] != nil {
-		this.AvgHzPerTxn = jsonMap["avgHzPerTxn"].(uint64)
+		this.AvgHzPerTxn = uint64(jsonMap["avgHzPerTxn"].(float64))
 	}
 
 	return nil
