@@ -37,7 +37,7 @@ func TestWindow(t *testing.T) {
 }
 
 func TestCalcSlopeForWindow(t *testing.T) {
-	for i := 241 - types.AvgWindowSize - 1; i < 241; i++ {
+	for i := 241 - types.GetConfig().RateLimits.NumWindows - 1; i < 241; i++ {
 		window := types.NewWindow()
 		window.Id = int64(i)
 		window.AddHertz(c, 1000)
@@ -51,7 +51,7 @@ func TestCalcSlopeForWindow(t *testing.T) {
 		t.Errorf("Window slope is not zero when it should be, instead it is %f", window.Slope)
 	}
 
-	for i := 441 - types.AvgWindowSize - 1; i < 441; i++ {
+	for i := 441 - types.GetConfig().RateLimits.NumWindows - 1; i < 441; i++ {
 		window := types.NewWindow()
 		window.Id =	int64(i)
 		window.AddHertz(c, uint64(i))
@@ -65,7 +65,7 @@ func TestCalcSlopeForWindow(t *testing.T) {
 		t.Errorf("Window slope is not one when it should be, instead it is %f", window.Slope)
 	}
 
-	for i := 641 - types.AvgWindowSize - 1; i < 641; i++ {
+	for i := 641 - types.GetConfig().RateLimits.NumWindows - 1; i < 641; i++ {
 		window := types.NewWindow()
 		window.Id =	int64(i)
 		window.AddHertz(c, uint64(641 - i))
@@ -79,7 +79,7 @@ func TestCalcSlopeForWindow(t *testing.T) {
 		t.Errorf("Window slope is not one when it should be, instead it is %f", window.Slope)
 	}
 
-	for i := 841 - types.AvgWindowSize - 1; i < 841; i++ {
+	for i := 841 - types.GetConfig().RateLimits.NumWindows - 1; i < 841; i++ {
 		window := types.NewWindow()
 		window.Id =	int64(i)
 		window.AddHertz(c, uint64(i * 86400))
