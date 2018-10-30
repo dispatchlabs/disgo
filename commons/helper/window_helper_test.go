@@ -93,5 +93,3 @@ func TestCalcSlopeForWindow(t *testing.T) {
 		t.Errorf("Window slope is not 86400 when it should be, instead it is %f", window.Slope)
 	}
 }
-
-
