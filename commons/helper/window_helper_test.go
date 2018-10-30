@@ -40,7 +40,7 @@ func TestCalcSlopeForWindow(t *testing.T) {
 	for i := 241 - types.AvgWindowSize - 1; i < 241; i++ {
 		window := types.NewWindow()
 		window.Id = int64(i)
-		window.AddHertz(c, 1000 + hertzMinute)
+		window.AddHertz(c, 1000)
 	}
 
 	// test for a slope of zero
@@ -54,7 +54,7 @@ func TestCalcSlopeForWindow(t *testing.T) {
 	for i := 441 - types.AvgWindowSize - 1; i < 441; i++ {
 		window := types.NewWindow()
 		window.Id =	int64(i)
-		window.AddHertz(c, uint64(i) + hertzMinute)
+		window.AddHertz(c, uint64(i))
 	}
 
 	// test for a slope of one
@@ -68,7 +68,7 @@ func TestCalcSlopeForWindow(t *testing.T) {
 	for i := 641 - types.AvgWindowSize - 1; i < 641; i++ {
 		window := types.NewWindow()
 		window.Id =	int64(i)
-		window.AddHertz(c, uint64(641 - i) + hertzMinute)
+		window.AddHertz(c, uint64(641 - i))
 	}
 
 	// test for a slope of negative one
@@ -82,7 +82,7 @@ func TestCalcSlopeForWindow(t *testing.T) {
 	for i := 841 - types.AvgWindowSize - 1; i < 841; i++ {
 		window := types.NewWindow()
 		window.Id =	int64(i)
-		window.AddHertz(c, uint64(i * 86400) + hertzMinute)
+		window.AddHertz(c, uint64(i * 86400))
 	}
 
 	// Test for a 24 hour slope

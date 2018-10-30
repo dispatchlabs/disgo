@@ -12,6 +12,9 @@ import (
 
 const (
 	EXP_GROWTH = 1.645504582
+	TX_PER_MINUTE = 600
+	HERTZ_PER_TRANSACTION = 3400
+	HERTZ_PER_MINUTE = TX_PER_MINUTE * HERTZ_PER_TRANSACTION
 )
 
 type RateLimit struct {
@@ -96,6 +99,12 @@ func (this RateLimit) ToPrettyJson() string {
 // Multiply the slope against Seconds
 // Bound the algorithm by lower of 1 second and a max of 24 hours.
 func GetCurrentTTL(cache *cache.Cache, window *Window) {
+	// guard - if we're below the base hertz threshold keep TTL at zero
+	if window.Sum <= HERTZ_PER_MINUTE {
+		window.TTL = time.Second
+		return
+	}
+
 	var previousTTL = time.Duration(0)
 
 	if previousWindow, ok := ToWindowFromCache(cache, window.Id - 1); !ok {
@@ -113,10 +122,9 @@ func GetCurrentTTL(cache *cache.Cache, window *Window) {
 		window.TTL = previousTTL
 	} else if window.Slope < 0 {
 		utils.Info("slope is less than zero")
-		window.TTL = previousTTL - slopeSeconds
+		// NOTE: subtracting a negative turns positive so you have to add it
+		window.TTL = previousTTL + slopeSeconds
 	}
-
-	window.TTL = time.Duration(window.TTL)
 
 	// bounds
 	if window.TTL > time.Hour * 24 {
