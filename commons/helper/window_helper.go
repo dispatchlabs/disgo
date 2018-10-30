@@ -1,10 +1,11 @@
 package helper
 
 import (
-	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dgraph-io/badger"
-	"github.com/patrickmn/go-cache"
+	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/patrickmn/go-cache"
+
 	"time"
 )
 
@@ -25,8 +26,8 @@ func AddHertz(txn *badger.Txn, cache *cache.Cache, hertz uint64) *types.Window {
 		persistPreviousWindow(txn, cache, minutesSinceEpoch-1)
 
 		window.AddHertz(cache, hertz)
-		CalcRollingAverageHertzForWindow(cache, window)
-
+		CalcSlopeForWindow(cache, window)
+		types.GetCurrentTTL(cache, window)
 	} else {
 		window = val.(*types.Window)
 		window.AddHertz(cache, hertz)
@@ -43,23 +44,22 @@ func persistPreviousWindow(txn *badger.Txn, cache *cache.Cache, id int64) {
 	window.Persist(txn)
 }
 
-func CalcRollingAverageHertzForWindow(cache *cache.Cache, window *types.Window) {
+func CalcSlopeForWindow(cache *cache.Cache, window *types.Window) {
+	points := make([]utils.Point, 0)
 
-	sum := window.Sum
 	found :=0
-	for i := window.Id-1; i > (window.Id - types.AvgWindowSize); i-- {
+	for i := window.Id - types.AvgWindowSize - 1; i < window.Id; i++ {
 		win, ok := types.ToWindowFromCache(cache, i)
 		if !ok {
 			continue
 		}
 		found++
-		sum += win.Sum
-		utils.Info("Calc for minute: ", i )
+		points = append(points, utils.Point{X: float64(found), Y: float64(win.Sum),})
 	}
 	if(found > 0) {
-		window.RollingAverage = uint64(sum / uint64(types.AvgWindowSize))
+		window.Slope, _ = utils.LinearRegression(&points)
 	} else {
-		window.RollingAverage = uint64(0)
+		window.Slope = 0
 	}
 }
 
