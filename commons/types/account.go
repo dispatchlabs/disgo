@@ -368,7 +368,7 @@ func readAccountFile(name_optional ...string) *Account {
 		account := &Account{}
 		account.Address = hex.EncodeToString(address)
 		account.PrivateKey = hex.EncodeToString(privateKey)
-		account.Balance = big.NewInt(0)
+		account.Balance = "0"
 		account.Name = ""
 		now := time.Now()
 		account.Created = now
