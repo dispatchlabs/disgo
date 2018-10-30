@@ -1,0 +1,62 @@
+package types
+
+import (
+	"encoding/json"
+	"github.com/dispatchlabs/disgo/commons/utils"
+)
+
+// RateLimits - config for our rate limiting system
+type RateLimits struct {
+	EpochTime   uint64
+	NumWindows  uint64
+	TxPerMinute uint64
+	AvgHzPerTxn uint64
+}
+
+// UnmarshalJSON
+func (this *RateLimits) UnmarshalJSON(bytes []byte) error {
+	var jsonMap map[string]interface{}
+	err := json.Unmarshal(bytes, &jsonMap)
+	if err != nil {
+		return err
+	}
+	if jsonMap["epochTime"] != nil {
+		this.EpochTime = jsonMap["eochTime"].(uint64)
+	}
+	if jsonMap["numWindows"] != nil {
+		this.NumWindows = jsonMap["numWindows"].(uint64)
+	}
+	if jsonMap["txPerMinute"] != nil {
+		this.TxPerMinute = jsonMap["txPerMinute"].(uint64)
+	}
+	if jsonMap["avgHzPerTxn"] != nil {
+		this.AvgHzPerTxn = jsonMap["avgHzPerTxn"].(uint64)
+	}
+
+	return nil
+}
+
+// MarshalJSON
+func (this RateLimits) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		EpochTime   uint64 `json:"epochTime"`
+		NumWindows  uint64 `json:"numWindows"`
+		TxPerMinute uint64 `json:"txPerMinute"`
+		AvgHzPerTxn uint64 `json:"avgHzPerTxn"`
+	}{
+		EpochTime: this.EpochTime,
+		NumWindows: this.NumWindows,
+		TxPerMinute: this.TxPerMinute,
+		AvgHzPerTxn: this.AvgHzPerTxn,
+	})
+}
+
+// String
+func (this RateLimits) String() string {
+	bytes, err := json.Marshal(this)
+	if err != nil {
+		utils.Error("unable to marshal endpoint", err)
+		return ""
+	}
+	return string(bytes)
+}
