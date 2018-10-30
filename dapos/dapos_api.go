@@ -142,7 +142,7 @@ func (this *DAPoSService) GetAccount(address string) *types.Response {
 				response.Status = types.StatusInternalError
 			}
 		} else {
-			account.AvailableHertz, err = types.CheckMinimumAvailable(txn, services.GetCache(), account.Address, account.Balance.Uint64())
+			account.HertzAvailable, err = types.CheckMinimumAvailable(txn, services.GetCache(), account.Address, account.Balance.Uint64())
 			if err != nil {
 				utils.Error(err)
 			}

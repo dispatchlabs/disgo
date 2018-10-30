@@ -5,7 +5,6 @@ import (
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/patrickmn/go-cache"
-
 	"time"
 )
 
@@ -69,7 +68,7 @@ func populateCache(txn *badger.Txn, cache *cache.Cache) {
 	for i := currentWindow.Id; i > (currentWindow.Id - types.AvgWindowSize); i-- {
 		window, err := types.ToWindowFromKey(txn, i)
 		if err != nil {
-			utils.Info("ID: ", i, err)
+			utils.Debug("ID: ", i, err)
 			continue
 		}
 		if window.Sum > 0 {
