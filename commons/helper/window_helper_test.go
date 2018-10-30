@@ -1,15 +1,15 @@
 package helper
 
 import (
-	"testing"
 	"github.com/dgraph-io/badger"
 	"github.com/patrickmn/go-cache"
+	"testing"
 
-	"os"
-	"github.com/dispatchlabs/disgo/commons/utils"
-	"time"
-	"github.com/dispatchlabs/disgo/commons/types"
 	"fmt"
+	"github.com/dispatchlabs/disgo/commons/types"
+	"github.com/dispatchlabs/disgo/commons/utils"
+	"os"
+	"time"
 )
 
 var c *cache.Cache
@@ -17,7 +17,7 @@ var db *badger.DB
 var dbPath = "." + string(os.PathSeparator) + "testdb"
 
 //init
-func init()  {
+func init() {
 	c = cache.New(types.CacheTTL, types.CacheTTL*2)
 	utils.Info("opening DB...")
 	opts := badger.DefaultOptions
@@ -25,7 +25,6 @@ func init()  {
 	opts.ValueDir = dbPath
 	db, _ = badger.Open(opts)
 }
-
 
 func TestWindow(t *testing.T) {
 	txn := db.NewTransaction(true)
@@ -53,7 +52,7 @@ func TestCalcSlopeForWindow(t *testing.T) {
 
 	for i := 441 - types.GetConfig().RateLimits.NumWindows - 1; i < 441; i++ {
 		window := types.NewWindow()
-		window.Id =	int64(i)
+		window.Id = int64(i)
 		window.AddHertz(c, uint64(i))
 	}
 
@@ -67,8 +66,8 @@ func TestCalcSlopeForWindow(t *testing.T) {
 
 	for i := 641 - types.GetConfig().RateLimits.NumWindows - 1; i < 641; i++ {
 		window := types.NewWindow()
-		window.Id =	int64(i)
-		window.AddHertz(c, uint64(641 - i))
+		window.Id = int64(i)
+		window.AddHertz(c, uint64(641-i))
 	}
 
 	// test for a slope of negative one
@@ -81,8 +80,8 @@ func TestCalcSlopeForWindow(t *testing.T) {
 
 	for i := 841 - types.GetConfig().RateLimits.NumWindows - 1; i < 841; i++ {
 		window := types.NewWindow()
-		window.Id =	int64(i)
-		window.AddHertz(c, uint64(i * 86400))
+		window.Id = int64(i)
+		window.AddHertz(c, uint64(i*86400))
 	}
 
 	// Test for a 24 hour slope

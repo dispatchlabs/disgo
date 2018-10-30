@@ -46,16 +46,16 @@ func persistPreviousWindow(txn *badger.Txn, cache *cache.Cache, id int64) {
 func CalcSlopeForWindow(cache *cache.Cache, window *types.Window) {
 	points := make([]utils.Point, 0)
 
-	found :=0
+	found := 0
 	for i := window.Id - int64(types.GetConfig().RateLimits.NumWindows) - 1; i < window.Id; i++ {
 		win, ok := types.ToWindowFromCache(cache, i)
 		if !ok {
 			continue
 		}
 		found++
-		points = append(points, utils.Point{X: float64(found), Y: float64(win.Sum),})
+		points = append(points, utils.Point{X: float64(found), Y: float64(win.Sum)})
 	}
-	if(found > 0) {
+	if found > 0 {
 		window.Slope, _ = utils.LinearRegression(&points)
 	} else {
 		window.Slope = 0
