@@ -1,17 +1,20 @@
 package types
 
 import (
-	"github.com/dgraph-io/badger"
-	"github.com/patrickmn/go-cache"
-	"time"
-	"fmt"
-	"github.com/dispatchlabs/disgo/commons/utils"
 	"encoding/json"
+	"fmt"
+	"github.com/dgraph-io/badger"
+	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/patrickmn/go-cache"
 	"math"
+	"time"
 )
 
 const (
 	EXP_GROWTH = 1.645504582
+	TX_PER_MINUTE = 600
+	HERTZ_PER_TRANSACTION = 3400
+	HERTZ_PER_MINUTE = TX_PER_MINUTE * HERTZ_PER_TRANSACTION
 )
 
 type RateLimit struct {
@@ -67,7 +70,7 @@ func (this *RateLimit) Set(window Window, txn *badger.Txn, cache *cache.Cache) e
 
 func (this *RateLimit) cache(window Window, cache *cache.Cache) {
 	cache.Set(getAccountRateLimitKey(this.Address), this.Existing, TransactionCacheTTL)
-	cache.Set(getTxRateLimitKey(this.TxRateLimit.TxHash), this.TxRateLimit, GetCurrentTTL(window))
+	cache.Set(getTxRateLimitKey(this.TxRateLimit.TxHash), this.TxRateLimit, window.TTL)
 }
 
 func (this *RateLimit) persist(txn *badger.Txn) error {
@@ -92,15 +95,47 @@ func (this RateLimit) ToPrettyJson() string {
 	return string(bytes)
 }
 
-func GetCurrentTTL(window Window) time.Duration {
-	//Right now to normalize, I'm dividing the rolling average by intrinsic Gas.
-	nbr := math.Max(float64(window.RollingAverage)/9000, 1)
+// Formula: Get the current slope from a curve of Hertz over the last 4 hours
+// Multiply the slope against Seconds
+// Bound the algorithm by lower of 1 second and a max of 24 hours.
+func GetCurrentTTL(cache *cache.Cache, window *Window) {
+	// guard - if we're below the base hertz threshold keep TTL at zero
+	if window.Sum <= HERTZ_PER_MINUTE {
+		window.TTL = time.Second
+		return
+	}
 
-	nbrSeconds := math.Pow(nbr, EXP_GROWTH)
-	ttl := time.Duration(nbrSeconds) * time.Second
-	msg := fmt.Sprintf("Current TTL = %v  &&  RollingAverage = %d", ttl.String(), window.RollingAverage)
-	utils.Info(msg)
-	return ttl
+	var previousTTL = time.Duration(0)
+
+	if previousWindow, ok := ToWindowFromCache(cache, window.Id - 1); !ok {
+		previousTTL = 0
+	} else {
+		previousTTL = time.Duration(math.Max(0, float64(previousWindow.TTL)))
+	}
+	slopeSeconds := time.Duration(window.Slope * float64(time.Second))
+
+	if window.Slope > 0 {
+		utils.Info("slope is over zero")
+		window.TTL = previousTTL + slopeSeconds
+	} else if window.Slope == 0 {
+		utils.Info("slope is zero")
+		window.TTL = previousTTL
+	} else if window.Slope < 0 {
+		utils.Info("slope is less than zero")
+		// NOTE: subtracting a negative turns positive so you have to add it
+		window.TTL = previousTTL + slopeSeconds
+	}
+
+	// bounds
+	if window.TTL > time.Hour * 24 {
+		window.TTL = time.Hour * 24
+	}
+	if window.TTL < time.Second {
+		window.TTL = time.Second
+	}
+
+	utils.Info("Current TTL = ", window.TTL.String())
+	utils.Info("Slope = ", window.Slope)
 }
 
 
