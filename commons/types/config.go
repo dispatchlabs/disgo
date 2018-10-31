@@ -91,6 +91,16 @@ func GetConfig() *Config {
 			tempConfig := &Config{}
 			json.Unmarshal(file, tempConfig)
 			configInstance = tempConfig
+
+			// set defaults for RateLimits
+			if configInstance.RateLimits == nil {
+				configInstance.RateLimits = &RateLimits{
+					EpochTime:   1538352000000000000,
+					NumWindows:  240,
+					TxPerMinute: 600,
+					AvgHzPerTxn: 13162215217,
+				}
+			}
 			utils.Info(fmt.Sprintf("loaded config file %s", configFileName))
 		} else {
 			configInstance = GetDefaultConfig()

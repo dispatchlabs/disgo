@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"fmt"
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
@@ -11,6 +12,9 @@ import (
 var cacheLoaded bool
 
 func AddHertz(txn *badger.Txn, cache *cache.Cache, hertz uint64) *types.Window {
+	foo := types.GetConfig().RateLimits
+	fmt.Println(foo)
+
 	epoch := time.Unix(0, int64(types.GetConfig().RateLimits.EpochTime))
 	minutesSinceEpoch := int64(time.Now().Sub(epoch).Minutes())
 
