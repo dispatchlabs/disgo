@@ -708,6 +708,9 @@ func (this Transaction) Verify() error {
 	if this.From == this.To {
 		return errors.New("from address cannot equal to address")
 	}
+	if this.Time <= 0 {
+		return errors.New("invalid time")
+	}
 
 	// Type?
 	switch this.Type {
