@@ -52,7 +52,7 @@ func Info(args ...interface{}) {
 	InitializeLogger()
 	log.WithFields(log.Fields{
 		"method": GetFuncName(2),
-	}).Info(args)
+	}).Info(args...)
 }
 
 // Debug
@@ -60,7 +60,7 @@ func Debug(args ...interface{}) {
 	InitializeLogger()
 	log.WithFields(log.Fields{
 		"method": GetFuncName(2),
-	}).Debug(args)
+	}).Debug(args...)
 }
 
 // Warn
@@ -68,7 +68,7 @@ func Warn(args ...interface{}) {
 	InitializeLogger()
 	log.WithFields(log.Fields{
 		"method": GetFuncName(2),
-	}).Warn(args)
+	}).Warn(args...)
 }
 
 // Error
@@ -76,7 +76,7 @@ func Error(args ...interface{}) {
 	InitializeLogger()
 	log.WithFields(log.Fields{
 		"method": GetFuncName(2),
-	}).Error(args)
+	}).Error(args...)
 }
 
 // Fatal
@@ -84,5 +84,5 @@ func Fatal(args ...interface{}) {
 	InitializeLogger()
 	log.WithFields(log.Fields{
 		"method": GetFuncName(2),
-	}).Fatal(args)
+	}).Fatal(args...)
 }

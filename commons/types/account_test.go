@@ -26,8 +26,8 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 )
 
-// var testAccountByte = []byte("{\"address\":\"99022124e110f5a9567a334a2017bdbd41c475e3\",\"privateKey\":\"abc\",\"name\":\"test\",\"balance\":1000,\"updated\":\"2018-05-09T15:04:05Z\",\"created\":\"2018-05-09T15:04:05Z\",\"nonce\":0,\"root\":\"0x0000000000000000000000000000000000000000000000000000000000000000\",\"codehash\":\"0x0000000000000000000000000000000000000000000000000000000000000000\"}")
-var testAccountByte = []byte("{\"address\":\"99022124e110f5a9567a334a2017bdbd41c475e3\",\"privateKey\":\"abc\",\"name\":\"test\",\"balance\":1000,\"updated\":\"2018-05-09T15:04:05Z\",\"created\":\"2018-05-09T15:04:05Z\",\"nonce\":0}")
+// var testAccountByte = []byte("{\"address\":\"99022124e110f5a9567a334a2017bdbd41c475e3\",\"privateKey\":\"abc\",\"name\":\"test\",\"balance\":1000,\"hertzAvailable\":0,\"updated\":\"2018-05-09T15:04:05Z\",\"created\":\"2018-05-09T15:04:05Z\",\"nonce\":0,\"root\":\"0x0000000000000000000000000000000000000000000000000000000000000000\",\"codehash\":\"0x0000000000000000000000000000000000000000000000000000000000000000\"}")
+var testAccountByte = []byte("{\"address\":\"99022124e110f5a9567a334a2017bdbd41c475e3\",\"privateKey\":\"abc\",\"name\":\"test\",\"balance\":1000,\"hertzAvailable\":0,\"updated\":\"2018-05-09T15:04:05Z\",\"created\":\"2018-05-09T15:04:05Z\",\"nonce\":0}")
 var testAccountAddressHash = "de3a0dba79b563588b15e38909ce206eb83dd27b53150e53c858036978b23412"
 var c *cache.Cache
 var db *badger.DB
