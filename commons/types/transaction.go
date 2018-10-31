@@ -895,21 +895,11 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		}
 	}
 	if jsonMap["hertz"] != nil {
-		var h int64
-		hertz, ok := jsonMap["type"].(string)
-		if !ok {
-			return errors.Errorf("value for field 'hertz' must be a string")
-			h, ok = jsonMap["type"].(int64)
-			if !ok {
-				return errors.Errorf("value for field 'hertz' must be a string")
-			}
-		} else {
-			h, error = strconv.ParseInt(hertz, 10, 64)
-			if error != nil {
-			  return errors.Errorf("value for field 'value' must be convertable to an integer")
-			}
+		hertz, err := strconv.ParseInt(jsonMap["hertz"].(string), 10, 64)
+		if err != nil {
+		  return errors.Errorf("value for field 'hertz' must be a string convertable to an integer")
 		}
-		this.Hertz = uint64(h)
+		this.Hertz = uint64(hertz)
 	}
 	if jsonMap["receipt"] != nil {
 		var receipt Receipt
@@ -937,7 +927,7 @@ func (this Transaction) MarshalJSON() ([]byte, error) {
 		Params    []interface{} `json:"params,omitempty"`
 		Time      int64         `json:"time"`
 		Signature string        `json:"signature"`
-		Hertz     uint64        `json:"hertz,omitempty,string"`
+		Hertz     string        `json:"hertz,omitempty,string"`
 		Receipt   Receipt       `json:"receipt,omitempty"`
 		Gossip    []Rumor       `json:"gossip,omitempty"`
 		FromName  string        `json:"fromName,omitempty"`
@@ -954,7 +944,7 @@ func (this Transaction) MarshalJSON() ([]byte, error) {
 		Params:    this.Params,
 		Time:      this.Time,
 		Signature: this.Signature,
-		Hertz:     this.Hertz,
+		Hertz:     strconv.FormatUint(this.Hertz, 10),
 		Receipt:   this.Receipt,
 		Gossip:    this.Gossip,
 		FromName:  this.FromName,
