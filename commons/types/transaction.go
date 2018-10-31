@@ -927,7 +927,7 @@ func (this Transaction) MarshalJSON() ([]byte, error) {
 		Params    []interface{} `json:"params,omitempty"`
 		Time      int64         `json:"time"`
 		Signature string        `json:"signature"`
-		Hertz     string        `json:"hertz,omitempty,string"`
+		Hertz     string        `json:"hertz,omitempty"`
 		Receipt   Receipt       `json:"receipt,omitempty"`
 		Gossip    []Rumor       `json:"gossip,omitempty"`
 		FromName  string        `json:"fromName,omitempty"`
