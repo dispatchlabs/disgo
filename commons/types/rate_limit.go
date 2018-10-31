@@ -10,13 +10,6 @@ import (
 	"time"
 )
 
-const (
-	EXP_GROWTH = 1.645504582
-	TX_PER_MINUTE = 600
-	HERTZ_PER_TRANSACTION = 3400
-	HERTZ_PER_MINUTE = TX_PER_MINUTE * HERTZ_PER_TRANSACTION
-)
-
 type RateLimit struct {
 	Address 	string
 	TxRateLimit *TxRateLimit
@@ -100,7 +93,8 @@ func (this RateLimit) ToPrettyJson() string {
 // Bound the algorithm by lower of 1 second and a max of 24 hours.
 func GetCurrentTTL(cache *cache.Cache, window *Window) {
 	// guard - if we're below the base hertz threshold keep TTL at zero
-	if window.Sum <= HERTZ_PER_MINUTE {
+	// base Hz is calculated by TxPerMin * AvgHzPerTxn
+	if window.Sum <= uint64(GetConfig().RateLimits.TxPerMinute * GetConfig().RateLimits.AvgHzPerTxn) {
 		window.TTL = time.Second
 		return
 	}
