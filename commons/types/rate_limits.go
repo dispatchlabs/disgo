@@ -26,40 +26,40 @@ func init() {
 
 // UnmarshalJSON
 func (this *RateLimits) UnmarshalJSON(bytes []byte) error {
-var jsonMap map[string]interface{}
-err := json.Unmarshal(bytes, &jsonMap)
-if err != nil {
-return err
-}
-if jsonMap["epochTime"] != nil {
-this.EpochTime = uint64(jsonMap["epochTime"].(float64))
-}
-if jsonMap["numWindows"] != nil {
-this.NumWindows = uint64(jsonMap["numWindows"].(float64))
-}
-if jsonMap["txPerMinute"] != nil {
-this.TxPerMinute = uint64(jsonMap["txPerMinute"].(float64))
-}
-if jsonMap["avgHzPerTxn"] != nil {
-this.AvgHzPerTxn = uint64(jsonMap["avgHzPerTxn"].(float64))
-}
+	var jsonMap map[string]interface{}
+	err := json.Unmarshal(bytes, &jsonMap)
+	if err != nil {
+		return err
+	}
+	if jsonMap["epochTime"] != nil {
+		this.EpochTime = uint64(jsonMap["epochTime"].(float64))
+	}
+	if jsonMap["numWindows"] != nil {
+		this.NumWindows = uint64(jsonMap["numWindows"].(float64))
+	}
+	if jsonMap["txPerMinute"] != nil {
+		this.TxPerMinute = uint64(jsonMap["txPerMinute"].(float64))
+	}
+	if jsonMap["avgHzPerTxn"] != nil {
+		this.AvgHzPerTxn = uint64(jsonMap["avgHzPerTxn"].(float64))
+	}
 
-return nil
+	return nil
 }
 
 // MarshalJSON
 func (this RateLimits) MarshalJSON() ([]byte, error) {
-return json.Marshal(struct {
-EpochTime   uint64 `json:"epochTime"`
-NumWindows  uint64 `json:"numWindows"`
-TxPerMinute uint64 `json:"txPerMinute"`
-AvgHzPerTxn uint64 `json:"avgHzPerTxn"`
-}{
-EpochTime: this.EpochTime,
-NumWindows: this.NumWindows,
-TxPerMinute: this.TxPerMinute,
-AvgHzPerTxn: this.AvgHzPerTxn,
-})
+	return json.Marshal(struct {
+		EpochTime   uint64 `json:"epochTime"`
+		NumWindows  uint64 `json:"numWindows"`
+		TxPerMinute uint64 `json:"txPerMinute"`
+		AvgHzPerTxn uint64 `json:"avgHzPerTxn"`
+	}{
+		EpochTime:   this.EpochTime,
+		NumWindows:  this.NumWindows,
+		TxPerMinute: this.TxPerMinute,
+		AvgHzPerTxn: this.AvgHzPerTxn,
+	})
 }
 
 // String
