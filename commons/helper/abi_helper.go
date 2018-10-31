@@ -233,10 +233,10 @@ func getValue(arg abi.Argument, value interface{}) (interface{}, error) {
 }
 
 func GetABI(data string) (*abi.ABI, error) {
-	runes := []rune(data)
+	//runes := []rune(data)
 	// ... Convert back into a string from rune slice.
-	safeSubstring := string(runes[0:10])
-	utils.Info("GetAbi %s\n%s\n", safeSubstring, utils.GetCallStackWithFileAndLineNumber())
+	//safeSubstring := string(runes[0:10])
+	//utils.Info("GetAbi %s\n%s\n", safeSubstring, utils.GetCallStackWithFileAndLineNumber())
 	bytes, err := hex.DecodeString(data)
 	var abi abi.ABI
 	err = abi.UnmarshalJSON(bytes)

@@ -156,7 +156,7 @@ func (this *LocalAPIService) deployHandler(responseWriter http.ResponseWriter, r
 		types.GetAccount().PrivateKey,
 		disgover.GetDisGoverService().ThisNode.Address,
 		deploy.ByteCode,
-		hex.EncodeToString([]byte(deploy.Abi)),
+		deploy.Abi,
 	)
 
 	// Send Reply
