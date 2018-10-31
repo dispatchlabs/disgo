@@ -30,9 +30,6 @@ simply run the following commands in your terminal
 cd $GOPATH/src/github.com/dispatchlabs/disgo
 go run main.go
 ```
-
-For instructions on running Disgo in Docker, please visit the [Wiki Page](https://github.com/dispatchlabs/disgo/wiki#docker)
-
 <a name="using"></a>
 ### Dancing with Disgo
 To dance with disgo either use our [Java SDK](https://github.com/dispatchlabs/java-sdk), [mobile wallet](https://github.com/dispatchlabs/mobile-wallet), or [ScanDis](https://github.com/dispatchlabs/scandis)
