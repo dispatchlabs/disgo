@@ -144,7 +144,12 @@ func GetAccount(delegateNode types.Node, address string) (*types.Account, error)
 }
 
 // PackageTx - Package a Transaction
-func PackageTx(to string, tokens int64, time int64 ) (*types.Transaction, error) {
+func PackageTx(to string, tokens int64, time int64) (*types.Transaction, error) {
+
+	// Valid time?
+	if time <= 0 {
+		return nil, errors.New("invalid time")
+	}
 
 	transaction, err := types.NewTransferTokensTransaction(types.GetAccount().PrivateKey, types.GetAccount().Address, to, tokens, 0, time)
 	if err != nil {

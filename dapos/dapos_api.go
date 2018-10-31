@@ -109,7 +109,7 @@ func (this *DAPoSService) GetRateLimitWindow() *types.Response {
 	txn := services.NewTxn(true)
 	defer txn.Discard()
 	response := types.NewResponse()
-	epoch := time.Unix(0, types.DispatchEpoch)
+	epoch := time.Unix(0, int64(types.GetConfig().RateLimits.EpochTime))
 	minutesSinceEpoch := int64(time.Now().Sub(epoch).Minutes())
 
 	window, err := types.ToWindowFromKey(txn, minutesSinceEpoch)

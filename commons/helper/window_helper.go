@@ -11,7 +11,7 @@ import (
 var cacheLoaded bool
 
 func AddHertz(txn *badger.Txn, cache *cache.Cache, hertz uint64) *types.Window {
-	epoch := time.Unix(0, types.DispatchEpoch)
+	epoch := time.Unix(0, int64(types.GetConfig().RateLimits.EpochTime))
 	minutesSinceEpoch := int64(time.Now().Sub(epoch).Minutes())
 
 	if !cacheLoaded {
@@ -46,16 +46,16 @@ func persistPreviousWindow(txn *badger.Txn, cache *cache.Cache, id int64) {
 func CalcSlopeForWindow(cache *cache.Cache, window *types.Window) {
 	points := make([]utils.Point, 0)
 
-	found :=0
-	for i := window.Id - types.AvgWindowSize - 1; i < window.Id; i++ {
+	found := 0
+	for i := window.Id - int64(types.GetConfig().RateLimits.NumWindows) - 1; i < window.Id; i++ {
 		win, ok := types.ToWindowFromCache(cache, i)
 		if !ok {
 			continue
 		}
 		found++
-		points = append(points, utils.Point{X: float64(found), Y: float64(win.Sum),})
+		points = append(points, utils.Point{X: float64(found), Y: float64(win.Sum)})
 	}
-	if(found > 0) {
+	if found > 0 {
 		window.Slope, _ = utils.LinearRegression(&points)
 	} else {
 		window.Slope = 0
@@ -65,7 +65,7 @@ func CalcSlopeForWindow(cache *cache.Cache, window *types.Window) {
 func populateCache(txn *badger.Txn, cache *cache.Cache) {
 	utils.Info("populateCache for rate limiting")
 	currentWindow := types.NewWindow()
-	for i := currentWindow.Id; i > (currentWindow.Id - types.AvgWindowSize); i-- {
+	for i := currentWindow.Id; i > (currentWindow.Id - int64(types.GetConfig().RateLimits.NumWindows)); i-- {
 		window, err := types.ToWindowFromKey(txn, i)
 		if err != nil {
 			utils.Debug("ID: ", i, err)

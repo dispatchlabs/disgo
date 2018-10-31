@@ -9,12 +9,6 @@ import (
 	"github.com/dgraph-io/badger"
 )
 
-const (
-	DispatchEpoch = 1538352000000000000
-	AvgWindowSize = 240
-)
-
-
 type Window struct {
 	Id              int64
 	Sum				uint64
@@ -25,7 +19,7 @@ type Window struct {
 
 
 func NewWindow() *Window {
-	epoch := time.Unix(0, DispatchEpoch)
+	epoch := time.Unix(0, int64(GetConfig().RateLimits.EpochTime))
 	minutesSinceEpoch := int64(time.Now().Sub(epoch).Minutes())
 	utils.Debug("Minutes since epoch: ", minutesSinceEpoch)
 
