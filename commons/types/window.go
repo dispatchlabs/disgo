@@ -19,8 +19,8 @@ type Window struct {
 	Id              int64
 	Sum				uint64
 	Entries         int64
-	RollingAverage	uint64
-	TTL             string
+	Slope           float64
+	TTL 			time.Duration
 }
 
 
@@ -33,7 +33,7 @@ func NewWindow() *Window {
 		Id: minutesSinceEpoch,
 		Sum: 0,
 		Entries: 0,
-		RollingAverage: 0,
+		Slope: 0,
 	}
 }
 
@@ -52,7 +52,6 @@ func (this *Window) AddHertz(cache *cache.Cache, hertz uint64) {
 	}
 	this.Sum = this.Sum + hertz
 	this.Entries++
-	//this.RollingAverage = this.Sum / this.Entries
 	this.Cache(cache)
 }
 
