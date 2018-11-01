@@ -62,6 +62,17 @@ func TestToAccountFromJson(t *testing.T) {
 	testAccountStruct(t, account)
 }
 
+//TestToAccountFromJson
+func TestToAccountFromJsonBalanceAsNumber(t *testing.T) {
+	defer destruct()
+	var testAccountByteBalanceAsNumber = []byte("{\"address\":\"99022124e110f5a9567a334a2017bdbd41c475e3\",\"privateKey\":\"abc\",\"name\":\"test\",\"balance\":1000,\"hertzAvailable\":\"0\",\"updated\":\"2018-05-09T15:04:05Z\",\"created\":\"2018-05-09T15:04:05Z\"}")
+	account, err := ToAccountFromJson(testAccountByteBalanceAsNumber)
+	if err != nil {
+		t.Fatalf("ToAccountFromJson returning error: %s", err)
+	}
+	testAccountStruct(t, account)
+}
+
 //TestAccountCache
 func TestAccountCache(t *testing.T) {
 	defer destruct()
