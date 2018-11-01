@@ -191,7 +191,7 @@ func getDefaultGenesisAccount() *Account {
 		utils.Error(fmt.Sprintf("unable to create genesis account file %s", genesisFileName), err)
 		panic(err)
 	}
-	var genesisString = "{\"address\": \"3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c\",\"balance\": 10000000}"
+	var genesisString = "{\"address\": \"3ed25f42484d517cdfc72cafb7ebc9e8baa52c2c\",\"balance\": \"10000000\"}"
 	genesisAccount := &Account{}
 	json.Unmarshal([]byte(genesisString), genesisAccount)
 	fmt.Fprintf(file, genesisString)
