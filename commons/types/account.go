@@ -25,14 +25,16 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/patrickmn/go-cache"
+	"strconv"
 
 	"math/big"
+
+	"github.com/patrickmn/go-cache"
 
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/pkg/errors"
 )
 
 var accountInstance *Account
@@ -118,7 +120,11 @@ func (this *Account) UnmarshalJSON(bytes []byte) error {
 		this.Name = jsonMap["name"].(string)
 	}
 	if jsonMap["balance"] != nil {
-		this.Balance = big.NewInt(int64(jsonMap["balance"].(float64)))
+		balance, err := strconv.ParseInt(jsonMap["balance"].(string), 10, 64)
+		if err != nil {
+			return errors.Errorf("value for field 'balance' must be a string convertable to an integer")
+		}
+		this.Balance = big.NewInt(balance)
 	}
 	if jsonMap["transactionHash"] != nil {
 		this.TransactionHash = jsonMap["transactionHash"].(string)
@@ -156,8 +162,8 @@ func (this Account) MarshalJSON() ([]byte, error) {
 		Address         string    `json:"address"`
 		PrivateKey      string    `json:"privateKey,omitempty"`
 		Name            string    `json:"name"`
-		Balance         int64     `json:"balance"`
-		HertzAvailable  uint64    `json:"hertzAvailable"`
+		Balance         string    `json:"balance"`
+		HertzAvailable  string    `json:"hertzAvailable"`
 		TransactionHash string    `json:"transactionHash,omitempty"`
 		Updated         time.Time `json:"updated"`
 		Created         time.Time `json:"created"`
@@ -168,8 +174,8 @@ func (this Account) MarshalJSON() ([]byte, error) {
 		Address:         this.Address,
 		PrivateKey:      this.PrivateKey,
 		Name:            this.Name,
-		Balance:         this.Balance.Int64(),
-		HertzAvailable:	 this.HertzAvailable,
+		Balance:         this.Balance.String(),
+		HertzAvailable:	 strconv.FormatUint(this.HertzAvailable, 10),
 		TransactionHash: this.TransactionHash,
 		Updated:         this.Updated,
 		Created:         this.Created,

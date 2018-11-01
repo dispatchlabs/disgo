@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
-	"math/big"
 	"net/http"
 
 	"github.com/dispatchlabs/disgo/commons/types"
@@ -13,6 +12,8 @@ import (
 	"bytes"
 	"fmt"
 	"time"
+
+	"math/big"
 
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/commons/crypto"
