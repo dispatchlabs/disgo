@@ -188,7 +188,7 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 			return
 		}
 		transaction.Abi = contractTx.Abi
-		transaction.Params, err = helper.GetConvertedParams(transaction)
+		_, err = helper.GetConvertedParams(transaction)
 		if err != nil {
 			utils.Error("Paramater type error", err)
 			services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusJsonParseError, err), http.StatusBadRequest)

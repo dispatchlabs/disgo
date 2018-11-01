@@ -1,4 +1,10 @@
-# tools
+# Tools
+
+## Prerequisites
+If you have not done so already, follow setup instructions to acquire the disgo code and build the project
+
+([disgo setup](https://github.com/dispatchlabs/disgo/blob/master/README.md#Download))
+
 
 ## Generate a key and address to use for the Genesis Account
 Before you create your cluster, you may want to generate a new Genesis Account to work with.
@@ -37,6 +43,7 @@ from the tools directory:
 > `./tools newLocalCluster 5 eb0ecc73844b3a3bf8f35d23bb279cbd6b021ddc 100000000`
 
  - parameter 1 is the directive for creating a new local cluster
+
  - parameter 2 is for the number of delegates you want to have in your cluster (I typically use 4 or 5 for local)
  - parameter 3 is the address for your Genesis Account.  This will be used when generating the genesis account file that you can find in the disgo/config/genesis_account.json file
  - paramater 4 is the balance that you are initializing your cluster with.  This value is immutable, so make sure you put enough in there to play around with.
