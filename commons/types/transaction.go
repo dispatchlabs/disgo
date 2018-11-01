@@ -45,7 +45,7 @@ type Transaction struct {
 	Code      string
 	Abi       string
 	Method    string
-	Params    []interface{}
+	Params    string
 	Time      int64 // Milliseconds
 	Signature string
 	Hertz     uint64   //our version of Gas
@@ -610,7 +610,7 @@ func NewDeployContractTransaction(privateKey string, from string, code string, a
 }
 
 // NewExecuteContractTransaction -
-func NewExecuteContractTransaction(privateKey string, from string, to string, method string, params []interface{}, timeInMiliseconds int64) (*Transaction, error) {
+func NewExecuteContractTransaction(privateKey string, from string, to string, method string, params string, timeInMiliseconds int64) (*Transaction, error) {
 	if method == "" {
 		return nil, errors.Errorf("cannot have empty method")
 	}
@@ -659,9 +659,8 @@ func (this Transaction) NewHash() (string, error) {
 		toBytes,
 		[]byte(strconv.FormatInt(this.Value, 10)),
 		codeBytes,
-		// []byte(this.Abi),
 		[]byte(this.Method),
-		// TODO: this.Params,
+		[]byte(this.Params),
 		this.Time,
 	}
 	buffer := new(bytes.Buffer)
@@ -693,6 +692,11 @@ func (this Transaction) NewSignature(privateKey string) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(signatureBytes), nil
+}
+
+// ToParams
+func (this Transaction) ToParams() []interface{} {
+	return nil
 }
 
 // Verify
@@ -874,11 +878,10 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		}
 	}
 	if jsonMap["params"] != nil {
-		params, ok := jsonMap["params"].([]interface{})
+		this.Params, ok = jsonMap["params"].(string)
 		if !ok {
-			return errors.Errorf("value for field 'params' must be an array")
+			return errors.Errorf("value for field 'params' must be a string")
 		}
-		this.Params = params
 	}
 	if jsonMap["time"] != nil {
 		t, ok := jsonMap["time"].(float64)
@@ -919,25 +922,25 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 // MarshalJSON
 func (this Transaction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Hash      string        `json:"hash"`
-		Type      byte          `json:"type"`
-		From      string        `json:"from"`
-		To        string        `json:"to,omitempty"`
-		Value     int64         `json:"value,omitempty,string"`
-		Code      string        `json:"code,omitempty"`
-		Abi       string        `json:"abi,omitempty"`
-		Method    string        `json:"method,omitempty"`
-		Params    []interface{} `json:"params,omitempty"`
-		Time      int64         `json:"time"`
-		Signature string        `json:"signature"`
-		Hertz     string        `json:"hertz,omitempty"`
-		Receipt   Receipt       `json:"receipt,omitempty"`
-		Gossip    []Rumor       `json:"gossip,omitempty"`
-		FromName  string        `json:"fromName,omitempty"`
-		ToName    string        `json:"toName,omitempty"`
+		Hash      string  `json:"hash"`
+		Type      byte    `json:"type"`
+		From      string  `json:"from"`
+		To        string  `json:"to,omitempty"`
+		Value     int64   `json:"value,omitempty,string"`
+		Code      string  `json:"code,omitempty"`
+		Abi       string  `json:"abi,omitempty"`
+		Method    string  `json:"method,omitempty"`
+		Params    string  `json:"params,omitempty"`
+		Time      int64   `json:"time"`
+		Signature string  `json:"signature"`
+		Hertz     string  `json:"hertz,omitempty"`
+		Receipt   Receipt `json:"receipt,omitempty"`
+		Gossip    []Rumor `json:"gossip,omitempty"`
+		FromName  string  `json:"fromName,omitempty"`
+		ToName    string  `json:"toName,omitempty"`
 	}{
-		Hash:      this.Hash,
-		Type:      this.Type,
+		Hash: this.Hash,
+		Type: this.Type,
 		From:      this.From,
 		To:        this.To,
 		Value:     this.Value,
