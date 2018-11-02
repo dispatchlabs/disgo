@@ -504,7 +504,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		}
 
 		transaction.Abi = contractTx.Abi
-		transaction.Params, err = helper.GetConvertedParams(transaction)
+		_, err = helper.GetConvertedParams(transaction)
 		if err != nil {
 			utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
 			receipt.Status = types.StatusInternalError

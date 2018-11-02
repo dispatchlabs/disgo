@@ -696,7 +696,12 @@ func (this Transaction) NewSignature(privateKey string) (string, error) {
 
 // ToParams
 func (this Transaction) ToParams() []interface{} {
-	return nil
+	params := make([]interface{},0)
+	err := json.Unmarshal([]byte(this.Params), &params)
+	if err != nil {
+		return nil
+	}
+	return params
 }
 
 // Verify
