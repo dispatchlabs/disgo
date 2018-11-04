@@ -20,11 +20,21 @@ package main
 import (
 	"github.com/dispatchlabs/disgo/bootstrap"
 	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/dispatchlabs/disgo/commons/types"
 )
+
+var version string
+var date string
 
 func main() {
 	utils.InitMainPackagePath()
 	utils.InitializeLogger()
+	if version == "" {
+		utils.Error("You have not specified a version when built, please see documentation.")
+	} else {
+		types.SetVersion(version, date)
+	}
+
 	server := bootstrap.NewServer()
 	server.Go()
 }

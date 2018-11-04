@@ -34,6 +34,7 @@ type Node struct {
 	Type         string    `json:"type,omitempty"`
 	Status       string    `json:"status,omitempty"`
 	StatusTime   time.Time `json:"statusTime,omitempty"`
+	Version      *Version  `json:"version,omitempty"`
 }
 
 func (this Node) IsAvailable() bool {
