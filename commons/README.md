@@ -40,7 +40,7 @@ Commons contains the configuration struct that a client using the system needs f
 
 Any custom node bootstrap implementation should load the appropriate properties into this structure for the components that are used.  For a concrete example, see how it is done in our [disgo node.]()
 
-The details of the configuration setup can be viewed [here in the wiki.](https://github.com/dispatchlabs/disgo/commons/wiki#configuration)
+The details of the configuration setup can be viewed [here in the wiki.](https://github.com/dispatchlabs/disgo/wiki/Config)
 
 <a name="protobuf"></a>
 ##### protobuf ([see common install instructions](https://github.com/dispatchlabs/disgo/wiki#protoc))
