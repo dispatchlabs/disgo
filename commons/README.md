@@ -25,7 +25,7 @@ If you have yet to install Go, visit the [tutorial](https://github.com/dispatchl
 ### Wiki Documentation
 Technical details of Commons and its inner workings are available on the [Wiki](https://github.com/dispatchlabs/disgo_commons/wiki) page. Here is a shortcut list of helpful topics:
 
- - [How to use the common config structure](https://github.com/dispatchlabs/disgo/commons/wiki#configuration)
+ - [How to use the common config structure](https://github.com/dispatchlabs/disgo/wiki/Config)
  - [What is the IService interface](https://github.com/dispatchlabs/disgo/commons/wiki#iservice-interface)
  - [Details of the crypo package](https://github.com/dispatchlabs/disgo/commons/wiki#crypto)
 
