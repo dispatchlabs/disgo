@@ -48,8 +48,8 @@ func (this *RateLimits) UnmarshalJSON(bytes []byte) error {
 	if jsonMap["avgHzPerTxn"] != nil {
 		this.AvgHzPerTxn = uint64(jsonMap["avgHzPerTxn"].(float64))
 	}
-	if jsonMap["minHzTimne"] != nil {
-		this.MinTTL = time.Duration(jsonMap["minHzTimne"].(float64))
+	if jsonMap["minTTL"] != nil {
+		this.MinTTL = time.Duration(jsonMap["minTTL"].(float64))
 	}
 	if jsonMap["maxTTL"] != nil {
 		this.MaxTTL = time.Duration(jsonMap["maxTTL"].(float64))
