@@ -61,10 +61,10 @@ func (this *RateLimits) UnmarshalJSON(bytes []byte) error {
 // MarshalJSON
 func (this RateLimits) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		EpochTime   uint64 `json:"epochTime"`
-		NumWindows  uint64 `json:"numWindows"`
-		TxPerMinute uint64 `json:"txPerMinute"`
-		AvgHzPerTxn uint64 `json:"avgHzPerTxn"`
+		EpochTime   uint64        `json:"epochTime"`
+		NumWindows  uint64        `json:"numWindows"`
+		TxPerMinute uint64        `json:"txPerMinute"`
+		AvgHzPerTxn uint64        `json:"avgHzPerTxn"`
 		MinTTL      time.Duration `json:"minTTL"`
 		MaxTTL      time.Duration `json:"maxTTL"`
 	}{
