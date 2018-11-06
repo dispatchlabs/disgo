@@ -71,6 +71,7 @@ func TestGetCurrentTTL(t *testing.T) {
 
 	window := NewWindow()
 	window.Sum = uint64(hzPerMinute * 2)
+	window.HzCeiling = 0
 
 	// test upper bounds
 	window.Slope = 86401.0
@@ -90,6 +91,7 @@ func TestGetCurrentTTL(t *testing.T) {
 
 	// test negatives
 	window.Slope = -24
+	window.HzCeiling = 0
 	if GetCurrentTTL(c, window); window.TTL != time.Second {
 		t.Errorf("TTL should have been one second, it was %d", window.TTL/time.Second)
 	}
@@ -173,10 +175,15 @@ func TestGetCurrentTTL(t *testing.T) {
 	previousWindow.Cache(c)
 	window.Slope = 50000
 	nextWindow.Slope = 50000
-	nextWindow.Sum = hzPerMinute * 2
+	nextWindow.Sum = hzPerMinute * 4
+	nextWindow.HzCeiling = hzPerMinute * 2
 
 	if GetCurrentTTL(c, window); window.TTL != time.Second*86400 {
 		t.Errorf("TTL should have been 86400 seconds, it was %d", window.TTL/time.Second)
+	}
+
+	if window.HzCeiling != hzPerMinute*2 {
+		t.Errorf("HzCeiling should have been %d seconds, it was %d", hzPerMinute*2, window.HzCeiling)
 	}
 	window.Cache(c)
 
@@ -184,13 +191,19 @@ func TestGetCurrentTTL(t *testing.T) {
 		t.Errorf("TTL should have been 86400 seconds, it was %d", nextWindow.TTL/time.Second)
 	}
 
+	if nextWindow.HzCeiling != hzPerMinute*2 {
+		t.Errorf("HzCeiling should have been %d seconds, it was %d", hzPerMinute*2, nextWindow.HzCeiling)
+	}
+
 	// ratchet down from above 24 hours
+	window.HzCeiling = hzPerMinute * 3
 	window.Sum = hzPerMinute * 2
 	previousWindow.TTL = time.Second * 86400 // 12 hours
 	previousWindow.Cache(c)
 	window.Slope = -21600
 	nextWindow.Slope = -21600
 	nextWindow.Sum = hzPerMinute * 2
+	nextWindow.HzCeiling = 0
 
 	if GetCurrentTTL(c, window); window.TTL != time.Second*64800 {
 		t.Errorf("TTL should have been 6480 seconds, it was %d", window.TTL/time.Second)
@@ -217,8 +230,34 @@ func TestGetCurrentTTL(t *testing.T) {
 	if GetCurrentTTL(c, nextWindow); nextWindow.TTL != time.Second {
 		t.Errorf("TTL should have been one second, it was %d", nextWindow.TTL/time.Second)
 	}
-}
 
+	// ratchet down from above 24 hours with a very high spike so that nextWihdow goes below the Ceiling
+	window.Sum = hzPerMinute * 4
+	window.HzCeiling = hzPerMinute * 2
+	previousWindow.TTL = time.Second * 86400 // 12 hours
+	previousWindow.Cache(c)
+	window.Slope = -21600
+	nextWindow.Slope = -21600
+	nextWindow.Sum = hzPerMinute + 10
+
+	if GetCurrentTTL(c, window); window.TTL != time.Second*86400 {
+		t.Errorf("TTL should have been 86400 seconds, it was %d", window.TTL/time.Second)
+	}
+
+	if window.HzCeiling != hzPerMinute*2 {
+		t.Errorf("HzCeiling should have been %d seconds, it was %d", hzPerMinute*2, window.HzCeiling)
+	}
+
+	window.Cache(c)
+
+	if GetCurrentTTL(c, nextWindow); nextWindow.TTL != time.Second*64800 {
+		t.Errorf("TTL should have been 64800 seconds, it was %d", nextWindow.TTL/time.Second)
+	}
+
+	if nextWindow.HzCeiling != 0 {
+		t.Errorf("HzCeiling should have been %d seconds, it was %d", 0, nextWindow.HzCeiling)
+	}
+}
 
 func TestConfigSettings(t *testing.T) {
 	utils.Info("EpochTime: ", GetConfig().RateLimits.EpochTime)
