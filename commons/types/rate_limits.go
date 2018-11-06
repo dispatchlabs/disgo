@@ -31,6 +31,14 @@ func init() {
 
 // UnmarshalJSON
 func (this *RateLimits) UnmarshalJSON(bytes []byte) error {
+	// set defaults as the default
+	this.EpochTime = RateLimitsDefaults.EpochTime
+	this.NumWindows = RateLimitsDefaults.NumWindows
+	this.TxPerMinute = RateLimitsDefaults.TxPerMinute
+	this.AvgHzPerTxn = RateLimitsDefaults.AvgHzPerTxn
+	this.MinTTL = RateLimitsDefaults.MinTTL
+	this.MaxTTL = RateLimitsDefaults.MaxTTL
+
 	var jsonMap map[string]interface{}
 	err := json.Unmarshal(bytes, &jsonMap)
 	if err != nil {
