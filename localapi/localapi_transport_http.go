@@ -103,7 +103,7 @@ func (this *LocalAPIService) transferHandler(responseWriter http.ResponseWriter,
 
 	response, err := sdk.TransferTokens(
 		*delegates[0],
-		types.GetAccount().PrivateKey,
+		types.GetKey(),
 		types.GetAccount().Address,
 		transfer.To,
 		transfer.Amount,
@@ -153,7 +153,7 @@ func (this *LocalAPIService) deployHandler(responseWriter http.ResponseWriter, r
 
 	response, err := sdk.DeploySmartContract(
 		*delegates[0],
-		types.GetAccount().PrivateKey,
+		types.GetKey(),
 		disgover.GetDisGoverService().ThisNode.Address,
 		deploy.ByteCode,
 		deploy.Abi,
@@ -203,7 +203,7 @@ func (this *LocalAPIService) executeHandler(responseWriter http.ResponseWriter, 
 
 	response, err := sdk.ExecuteSmartContractTransaction(
 		*delegates[0],
-		types.GetAccount().PrivateKey,
+		types.GetKey(),
 		disgover.GetDisGoverService().ThisNode.Address,
 		execute.ContractAddress,
 		execute.Method,
