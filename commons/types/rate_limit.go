@@ -95,7 +95,7 @@ func GetCurrentTTL(cache *cache.Cache, window *Window) {
 	// guard - if we're below the base hertz threshold keep TTL at zero
 	// base Hz is calculated by TxPerMin * AvgHzPerTxn
 	if window.Sum <= uint64(GetConfig().RateLimits.TxPerMinute * GetConfig().RateLimits.AvgHzPerTxn) {
-		window.TTL = time.Second
+		window.TTL = GetConfig().RateLimits.MinTTL
 		return
 	}
 
