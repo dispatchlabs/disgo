@@ -122,10 +122,10 @@ func GetCurrentTTL(cache *cache.Cache, window *Window) {
 
 	// bounds
 	if window.TTL > time.Hour * 24 {
-		window.TTL = time.Hour * 24
+		window.TTL = GetConfig().RateLimits.MaxTTL
 	}
 	if window.TTL < time.Second {
-		window.TTL = time.Second
+		window.TTL = GetConfig().RateLimits.MinTTL
 	}
 
 	utils.Info("Current TTL = ", window.TTL.String())
