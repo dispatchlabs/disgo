@@ -121,10 +121,10 @@ func GetCurrentTTL(cache *cache.Cache, window *Window) {
 	}
 
 	// bounds
-	if window.TTL > time.Hour * 24 {
+	if window.TTL > GetConfig().RateLimits.MaxTTL {
 		window.TTL = GetConfig().RateLimits.MaxTTL
 	}
-	if window.TTL < time.Second {
+	if window.TTL < GetConfig().RateLimits.MinTTL {
 		window.TTL = GetConfig().RateLimits.MinTTL
 	}
 
