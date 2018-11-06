@@ -264,4 +264,6 @@ func TestConfigSettings(t *testing.T) {
 	utils.Info("NumWindows: ", GetConfig().RateLimits.NumWindows)
 	utils.Info("TxPerMinute: ", GetConfig().RateLimits.TxPerMinute)
 	utils.Info("AvgHzPerTxn: ", GetConfig().RateLimits.AvgHzPerTxn)
+	utils.Info("MinTTL: ", GetConfig().RateLimits.MinTTL)
+	utils.Info("MaxTTL: ", GetConfig().RateLimits.MaxTTL)
 }
