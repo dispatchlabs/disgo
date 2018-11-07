@@ -1,22 +1,22 @@
 package types
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/dgraph-io/badger"
+	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/patrickmn/go-cache"
 	"time"
-	"encoding/json"
-	"github.com/dispatchlabs/disgo/commons/utils"
-	"github.com/dgraph-io/badger"
 )
 
 type Window struct {
-	Id              int64
-	Sum				uint64
-	Entries         int64
-	Slope           float64
-	TTL 			time.Duration
+	Id        int64
+	Sum       uint64
+	Entries   int64
+	Slope     float64
+	TTL       time.Duration
+	HzCeiling uint64
 }
-
 
 func NewWindow() *Window {
 	epoch := time.Unix(0, int64(GetConfig().RateLimits.EpochTime))
@@ -24,10 +24,11 @@ func NewWindow() *Window {
 	utils.Debug("Minutes since epoch: ", minutesSinceEpoch)
 
 	return &Window{
-		Id: minutesSinceEpoch,
-		Sum: 0,
-		Entries: 0,
-		Slope: 0,
+		Id:        minutesSinceEpoch,
+		Sum:       0,
+		Entries:   0,
+		Slope:     0,
+		HzCeiling: 0,
 	}
 }
 
