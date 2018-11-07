@@ -898,7 +898,13 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		}
 	}
 	if jsonMap["hertz"] != nil {
-		hertz, err := strconv.ParseInt(jsonMap["hertz"].(string), 10, 64)
+		value := jsonMap["hertz"]
+		hertzValue, isString := value.(string)
+		if !isString {
+			return errors.Errorf("value for field 'hertz' must be a string")
+		}
+
+		hertz, err := strconv.ParseInt(hertzValue, 10, 64)
 		if err != nil {
 		  return errors.Errorf("value for field 'hertz' must be a string convertable to an integer")
 		}
