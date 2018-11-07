@@ -110,6 +110,11 @@ func GetCurrentTTL(cache *cache.Cache, window *Window) {
 	if window.Slope > 0 {
 		utils.Info("slope is over zero")
 		window.TTL = previousTTL + slopeSeconds
+
+		// set the HzCeiling if we're going over it
+		if window.HzCeiling == 0 && uint64(window.TTL) >= uint64(GetConfig().RateLimits.MaxTTL) {
+			window.HzCeiling = window.Sum
+		}
 	} else if window.Slope == 0 {
 		utils.Info("slope is zero")
 		window.TTL = previousTTL
@@ -117,6 +122,15 @@ func GetCurrentTTL(cache *cache.Cache, window *Window) {
 		utils.Info("slope is less than zero")
 		// NOTE: subtracting a negative turns positive so you have to add it
 		window.TTL = previousTTL + slopeSeconds
+
+		// if we were over the ceiling but going down
+		// but we still aren't back below the ceiling keep the TTL at the max
+		if window.HzCeiling != 0 && window.Sum >= window.HzCeiling {
+			window.TTL = GetConfig().RateLimits.MaxTTL
+		} else {
+			// we've gone below the ceiling, set the Ceiling to zero
+			window.HzCeiling = 0
+		}
 	}
 
 	// bounds
