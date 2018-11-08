@@ -26,6 +26,7 @@ func AddHertz(txn *badger.Txn, cache *cache.Cache, hertz uint64) *types.Window {
 
 		window.AddHertz(cache, hertz)
 		CalcSlopeForWindow(cache, window)
+		SetPreviousCeiling(cache, window)
 		types.GetCurrentTTL(cache, window)
 	} else {
 		window = val.(*types.Window)
@@ -59,6 +60,14 @@ func CalcSlopeForWindow(cache *cache.Cache, window *types.Window) {
 		window.Slope, _ = utils.LinearRegression(&points)
 	} else {
 		window.Slope = 0
+	}
+}
+
+func SetPreviousCeiling(cache *cache.Cache, window *types.Window) {
+	if previousWindow, ok := types.ToWindowFromCache(cache, window.Id-1); !ok {
+		window.HzCeiling = 0
+	} else {
+		window.HzCeiling = previousWindow.HzCeiling
 	}
 }
 

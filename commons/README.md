@@ -25,7 +25,7 @@ If you have yet to install Go, visit the [tutorial](https://github.com/dispatchl
 ### Wiki Documentation
 Technical details of Commons and its inner workings are available on the [Wiki](https://github.com/dispatchlabs/disgo_commons/wiki) page. Here is a shortcut list of helpful topics:
 
- - [How to use the common config structure](https://github.com/dispatchlabs/disgo/commons/wiki#configuration)
+ - [How to use the common config structure](https://github.com/dispatchlabs/disgo/wiki/Config)
  - [What is the IService interface](https://github.com/dispatchlabs/disgo/commons/wiki#iservice-interface)
  - [Details of the crypo package](https://github.com/dispatchlabs/disgo/commons/wiki#crypto)
 
@@ -40,7 +40,7 @@ Commons contains the configuration struct that a client using the system needs f
 
 Any custom node bootstrap implementation should load the appropriate properties into this structure for the components that are used.  For a concrete example, see how it is done in our [disgo node.]()
 
-The details of the configuration setup can be viewed [here in the wiki.](https://github.com/dispatchlabs/disgo/commons/wiki#configuration)
+The details of the configuration setup can be viewed [here in the wiki.](https://github.com/dispatchlabs/disgo/wiki/Config)
 
 <a name="protobuf"></a>
 ##### protobuf ([see common install instructions](https://github.com/dispatchlabs/disgo/wiki#protoc))
