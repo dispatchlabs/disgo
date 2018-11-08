@@ -11,6 +11,10 @@ import (
 	"io/ioutil"
 )
 
+const (
+	defaultVersion = "2.4.0"
+)
+
 type Version struct {
 	Version		string
 	BuildTime	string
@@ -63,7 +67,7 @@ func getDefaultVersion() *Version {
 		t.Year(), t.Month(), t.Day(),
 		t.Hour(), t.Minute(), t.Second())
 	return &Version{
-		Version: "2.4.0",
+		Version: defaultVersion,
 		BuildTime: tm,
 	}
 }

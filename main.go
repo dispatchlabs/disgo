@@ -29,11 +29,9 @@ var date string
 func main() {
 	utils.InitMainPackagePath()
 	utils.InitializeLogger()
-	if version == "" {
-		utils.Error("You have not specified a version when built, please see documentation.")
-	} else {
+	if version != "" {
 		types.SetVersion(version, date)
-	}
+	} 
 
 	server := bootstrap.NewServer()
 	server.Go()
