@@ -432,7 +432,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	if err != nil {
 		utils.Error(err)
 	}
-	if availableHertz <= minHertzUsed {
+	if availableHertz < minHertzUsed {
 		msg := fmt.Sprintf("Account %s has a hertz balance of %d\n", fromAccount.Address, availableHertz)
 		utils.Error(msg)
 		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInsufficientHertz)
