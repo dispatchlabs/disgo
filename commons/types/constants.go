@@ -21,6 +21,7 @@ import (
 	"time"
 )
 
+
 //TODO: I think we need to convert these timouts and their calculations in code to nano seconds
 // Timouts -- currently calculated in milliseconds.
 const (
@@ -31,10 +32,6 @@ const (
 	UnavailableNodeTimeout = float64(time.Second * 5)
 )
 
-// Requests
-const (
-	Version = "2.4.0"
-)
 
 // Statuses
 const (
