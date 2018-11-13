@@ -44,6 +44,7 @@ import (
 	"os/exec"
 )
 
+
 // Server -
 type Server struct {
 	services []types.IService
@@ -61,7 +62,7 @@ func NewServer() *Server {
 
 // Go
 func (server *Server) Go() {
-	utils.Info(fmt.Sprintf("booting Disgo v%s...", types.Version))
+	utils.Info(fmt.Sprintf("booting Disgo ..."))
 
 	// Run update?
 	fileName := "." + string(os.PathSeparator) + "disgo-update"
