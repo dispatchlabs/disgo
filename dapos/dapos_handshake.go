@@ -34,6 +34,8 @@ import (
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
 	"math"
+	"encoding/base64"
+	"bytes"
 )
 
 var delegateMap = map[string]*types.Node{}
@@ -430,7 +432,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	if err != nil {
 		utils.Error(err)
 	}
-	if availableHertz <= minHertzUsed {
+	if availableHertz < minHertzUsed {
 		msg := fmt.Sprintf("Account %s has a hertz balance of %d\n", fromAccount.Address, availableHertz)
 		utils.Error(msg)
 		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInsufficientHertz)
@@ -667,6 +669,19 @@ func processDVMResult(transaction *types.Transaction, dvmResult *dvm.DVMResult, 
 					} else {
 						errorToReturn = err
 						utils.Error(err)
+					}
+					for i, arg := range method.Outputs {
+						if arg.Type.T == abi.BytesTy {
+							valBytes := receipt.ContractResult[i].([]byte)
+							base64Bytes := make([]byte, base64.StdEncoding.DecodedLen(len(valBytes)))
+							_, valErr := base64.StdEncoding.Decode(base64Bytes, valBytes)
+							utils.Info(fmt.Sprintf("byteString = %v and base64Text = %v", string(valBytes), string(base64Bytes)))
+							if valErr != nil {
+								utils.Error(valErr)
+							}
+							base64Bytes = bytes.Trim(base64Bytes, "\x00")
+							receipt.ContractResult[i] = string(base64Bytes)
+						}
 					}
 				}
 			}

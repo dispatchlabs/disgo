@@ -45,6 +45,7 @@ func GetDisGoverService() *DisGoverService {
 				GrpcEndpoint: types.GetConfig().GrpcEndpoint,
 				HttpEndpoint: types.GetConfig().HttpEndpoint,
 				Type:         types.TypeNode,
+				Version:      types.GetVersion(),
 			},
 			// lruCache: lCache,
 			kdht: kbucket.NewRoutingTable(
@@ -56,6 +57,7 @@ func GetDisGoverService() *DisGoverService {
 			running: false,
 		}
 	})
+	utils.Info(fmt.Sprintf("This node: Address: %s, Version: %s", disGoverServiceInstance.ThisNode.Address, disGoverServiceInstance.ThisNode.Version))
 	return disGoverServiceInstance
 }
 

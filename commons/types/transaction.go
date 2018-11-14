@@ -843,21 +843,21 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		}
 	}
 	if jsonMap["value"] != nil {
-		var i int64
-		value, ok := jsonMap["value"].(string)
-		if !ok {
-			return errors.Errorf("value for field 'value' must be a string")
-			i, ok = jsonMap["value"].(int64)
-			if !ok {
+		var vFloat float64
+		value, ok1 := jsonMap["value"].(string)
+		if !ok1 {
+			var ok2 bool
+			vFloat, ok2 = jsonMap["value"].(float64)
+			if !ok2 {
 				return errors.Errorf("value for field 'value' must be a string")
 			}
 		} else {
-			i, error = strconv.ParseInt(value, 10, 64)
+			vFloat, error = strconv.ParseFloat(value, 64)
 			if error != nil {
 			  return errors.Errorf("value for field 'value' must be convertable to an integer")
 			}
 		}
-		this.Value = i
+		this.Value = int64(vFloat)
 	}
 	if jsonMap["code"] != nil {
 		this.Code, ok = jsonMap["code"].(string)
@@ -906,7 +906,13 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		}
 	}
 	if jsonMap["hertz"] != nil {
-		hertz, err := strconv.ParseInt(jsonMap["hertz"].(string), 10, 64)
+		value := jsonMap["hertz"]
+		hertzValue, isString := value.(string)
+		if !isString {
+			return errors.Errorf("value for field 'hertz' must be a string")
+		}
+
+		hertz, err := strconv.ParseInt(hertzValue, 10, 64)
 		if err != nil {
 		  return errors.Errorf("value for field 'hertz' must be a string convertable to an integer")
 		}
