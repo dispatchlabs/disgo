@@ -44,8 +44,13 @@ func GetVersion() *Version {
 				utils.Error(fmt.Sprintf("unable to load version file %s", versionFileName), err)
 				os.Exit(1)
 			}
-			json.Unmarshal(file, versionInstance)
-			utils.Info(fmt.Sprintf("loaded version file %s", versionFileName))
+			utils.Info("Version file contents: ", string(file))
+			versionInstance = &Version{}
+			err = json.Unmarshal(file, versionInstance)
+			if err != nil {
+				utils.Error(err)
+			}
+			utils.Info(fmt.Sprintf("loaded version file %s\n%v", versionFileName, versionInstance))
 		} else {
 			versionInstance = getDefaultVersion()
 			file, err := os.Create(versionFileName)
