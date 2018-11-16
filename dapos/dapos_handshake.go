@@ -552,7 +552,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	window := helper.AddHertz(txn, services.GetCache(), hertz);
 	rateLimit.Set(*window, txn, services.GetCache())
 
-	if availableHertz <= minHertzUsed {
+	if availableHertz < hertz {
 		msg := fmt.Sprintf("Account %s has a hertz balance of %d\n", fromAccount.Address, availableHertz)
 		utils.Error(msg)
 		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInsufficientHertz)
