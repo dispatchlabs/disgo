@@ -1,7 +1,6 @@
 package types
 
 import (
-
 	"github.com/dispatchlabs/disgo/commons/crypto"
 
 	"github.com/dispatchlabs/disgo/commons/utils"
@@ -13,6 +12,7 @@ import (
 	"strings"
 	"golang.org/x/crypto/ssh/terminal"
 	"syscall"
+	"time"
 )
 
 
@@ -65,7 +65,7 @@ func createFromKey(key, password string, name string) error{
 
 	veryLightScryptN := 2
 	veryLightScryptP := 1
-	keystore, err := crypto.EncryptKey(pkey,password,veryLightScryptN, veryLightScryptP)
+	keystore, err := crypto.EncryptKey(pkey, password, veryLightScryptN, veryLightScryptP)
 	if err != nil{
 		return err
 	}
@@ -80,8 +80,8 @@ func readKeyFile() string {
 	fileName := GetConfig().KeyLocation
 	if !utils.Exists(fileName) {
 		for {
-			pass := getPass("enter a password to secure your key\n")
-			conf := getPass("confirm password\n")
+			pass := getPass("enter a password to secure your key")
+			conf := getPass("confirm password")
 			if pass == conf && pass != ""{
 				createPKey(pass,fileName)
 				break
@@ -94,7 +94,7 @@ func readKeyFile() string {
 		utils.Fatal("unable to read %s",fileName, err)
 	}
 
-	key, err := DecryptKey(bytes, getPass("enter your private key Password\n"))
+	key, err := DecryptKey(bytes, getPass("enter your private key password"))
 	if err != nil {
 		utils.Fatal("unable to read %s", fileName, err)
 	}
@@ -123,11 +123,14 @@ func askForConfirmation(s string) bool {
 }
 
 func getPass(s string)string{
-	fmt.Print(s)
+	//adding the sleep because the threading for logging often makes it show up several lines up and it's confusing.
+	time.Sleep(3000)
+	fmt.Printf("%s: \n", s)
 	bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
 	if err != nil {
 		return ""
 	}
+	//bytePassword := []byte("test")
 	password := string(bytePassword)
 	return password
 }

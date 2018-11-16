@@ -364,9 +364,16 @@ func readAccountFile(name_optional ...string) *Account {
 
 	fileName := utils.GetConfigDir() + string(os.PathSeparator) + name
 	if !utils.Exists(fileName) {
-		
+
+		fileLocation := utils.GetConfigDir() + string(os.PathSeparator) + "myDisgoKey.json"
+		if GetConfig().KeyLocation != "" {
+			fileLocation = GetConfig().KeyLocation
+		}
+
 		publicKey, privateKey := crypto.GenerateKeyPair()
-		createFromKey(hex.EncodeToString(privateKey),getPass("Make a password to secure your Private Key (DO NOT FORGET!!!)\n"),GetConfig().KeyLocation)
+		password := getPass("Make a password to secure your Private Key (DO NOT FORGET!!!)\n")
+		createFromKey(hex.EncodeToString(privateKey), password, fileLocation)
+
 		address := crypto.ToAddress(publicKey)
 		account := &Account{}
 		account.Address = hex.EncodeToString(address)

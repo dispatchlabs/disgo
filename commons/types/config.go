@@ -45,7 +45,7 @@ type Config struct {
 	DelegateAddresses []string    `json:"delegateAddresses"`
 	UseQuantumEntropy bool        `json:"useQuantumEntropy"`
 	IsBookkeeper      bool        `json:"isBookkeeper"`
-	KeyLocation 	   string	 `json:"keyLocation"`
+	KeyLocation 	  string	  `json:"keyLocation"`
 	RateLimits        *RateLimits `json:"rateLimits"`
 }
 
