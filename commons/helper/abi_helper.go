@@ -16,6 +16,7 @@ import (
 
 func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 	utils.Info("GetConvertedParams --> ", tx.Params)
+	params := tx.ToParams()
 	theABI, err := GetABI(tx.Abi)
 	if err != nil {
 		return nil, err
@@ -25,8 +26,8 @@ func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 	for k, v := range theABI.Methods {
 		if k == tx.Method {
 			found = true
-			if tx.Params == nil || len(tx.Params) == 0 {
-				return tx.Params, nil
+			if params == nil || len(tx.Params) == 0 {
+				return params, nil
 			}
 			if len(v.Inputs) != len(tx.Params) {
 				return nil, errors.New(fmt.Sprintf("The method %s, requires %d parameters and %d are provided", tx.Method, len(v.Inputs), len(tx.Params)))
@@ -34,7 +35,7 @@ func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 			for i := 0; i < len(v.Inputs); i++ {
 				arg := v.Inputs[i]
 				if arg.Type.T == abi.SliceTy || arg.Type.T == abi.ArrayTy {
-					value, valErr := getValues(arg, tx.Params[i].([]interface{}))
+					value, valErr := getValues(arg, params[i].([]interface{}))
 					if valErr != nil {
 						msg := fmt.Sprintf("Invalid value provided for method %s: %v", tx.Method, valErr.Error())
 						return nil, errors.New(msg)
@@ -48,9 +49,9 @@ func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 						return nil, errors.New(msg)
 					}
 					result = append(result, addressAsByteArray)
-				} else if arg.Type.T == abi.BytesTy {
-					//params, valErr := base64.StdEncoding.DecodeString(tx.Params[i].(string))
-					str := tx.Params[i].(string)
+				} else if arg.Type.T == abi.BytesTy{
+					//params, valErr := base64.StdEncoding.DecodeString(params[i].(string))
+					str := params[i].(string)
 					value := []byte(str)
 
 					if err != nil{

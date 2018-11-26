@@ -194,7 +194,6 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 			services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusJsonParseError, err), http.StatusBadRequest)
 			return
 		}
-
 	}
 	response := this.NewTransaction(transaction)
 	setHeaders(response, &responseWriter)
