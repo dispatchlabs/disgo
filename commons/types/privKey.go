@@ -36,7 +36,7 @@ func DecryptKey(bytes []byte,password string) (*crypto.Key, error){
 	return key, nil
 }
 
-func createPKey(password string, name string) error{
+func createPKey(password string, name string) error {
 
 	pKey,err := crypto.NewKey()
 	if err != nil {
@@ -49,16 +49,16 @@ func createPKey(password string, name string) error{
 		return err
 	}
 
-	writeFile(keystore, name)
+	WriteFile(keystore, name)
 
 	return nil
 }
 
-func createFromKey(key, password string, name string) error{
+func CreateFromKey(key, password string) ([]byte, error) {
 
 	ECDSAKey,err := crypto.HexToECDSA(key)
 	if err !=nil{
-		return err
+		return nil, err
 	}
 
 	pkey, err := crypto.NewKeyFromECDSAKey(ECDSAKey)
@@ -67,12 +67,10 @@ func createFromKey(key, password string, name string) error{
 	veryLightScryptP := 1
 	keystore, err := crypto.EncryptKey(pkey, password, veryLightScryptN, veryLightScryptP)
 	if err != nil{
-		return err
+		return nil, err
 	}
 
-	writeFile(keystore, name)
-
-	return nil
+	return keystore, nil
 }
 
 func readKeyFile() string {
@@ -136,7 +134,7 @@ func getPass(s string)string{
 }
 
 // writeFile -
-func writeFile(bytes []byte, path string) {
+func WriteFile(bytes []byte, path string) {
 
 	file, err := os.Create(path)
 	defer file.Close()

@@ -25,7 +25,9 @@ func destructKey(){
 func TestDecrypt(t *testing.T) {
 	defer destructKey()
 
-	err := createFromKey(testing_key,testing_pass,keyfilepath)
+	keystore, err := CreateFromKey(testing_key,testing_pass)
+	WriteFile(keystore, keyfilepath)
+
 	if err != nil{
 		t.Error(err)
 	}
