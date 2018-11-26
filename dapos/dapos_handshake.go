@@ -33,9 +33,9 @@ import (
 	"github.com/dispatchlabs/disgo/dvm"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
-	"math"
 	"encoding/base64"
 	"bytes"
+	"math"
 )
 
 var delegateMap = map[string]*types.Node{}
@@ -415,15 +415,18 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	}
 
 	// Find/create toAccount?
-	toAccount, err := types.ToAccountByAddress(txn, transaction.To)
-	if err != nil {
-		if err == badger.ErrKeyNotFound {
-			toAccount = &types.Account{Address: transaction.To, Balance: big.NewInt(0), Created: now}
-			minHertzUsed += params.CallNewAccountGas
-		} else {
-			utils.Error(err)
-			receipt.SetInternalErrorWithNewTransaction(services.GetDb(), err)
-			return
+	var toAccount *types.Account
+	if transaction.To != "" {
+		toAccount, err = types.ToAccountByAddress(txn, transaction.To)
+		if err != nil {
+			if err == badger.ErrKeyNotFound {
+				toAccount = &types.Account{Address: transaction.To, Balance: big.NewInt(0), Created: now}
+				minHertzUsed += params.CallNewAccountGas
+			} else {
+				utils.Error(err)
+				receipt.SetInternalErrorWithNewTransaction(services.GetDb(), err)
+				return
+			}
 		}
 	}
 
@@ -549,7 +552,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	window := helper.AddHertz(txn, services.GetCache(), hertz);
 	rateLimit.Set(*window, txn, services.GetCache())
 
-	if availableHertz <= minHertzUsed {
+	if availableHertz < hertz {
 		msg := fmt.Sprintf("Account %s has a hertz balance of %d\n", fromAccount.Address, availableHertz)
 		utils.Error(msg)
 		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInsufficientHertz)
@@ -580,29 +583,30 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		return
 	}
 
-	// Save toAccount.
-	toAccount.Updated = now
-	err = toAccount.Persist(txn)
-	if err != nil {
-		utils.Error(err)
-		receipt.Status = types.StatusInternalError
-		receipt.HumanReadableStatus = err.Error()
-		receipt.Cache(services.GetCache())
-		return
+	if toAccount != nil {
+		// Save toAccount.
+		toAccount.Updated = now
+		err = toAccount.Persist(txn)
+		if err != nil {
+			utils.Error(err)
+			receipt.Status = types.StatusInternalError
+			receipt.HumanReadableStatus = err.Error()
+			receipt.Cache(services.GetCache())
+			return
+		}
+
+		//Also lock up for the receiver
+		//This code is way down here so that the rate limiting works "after" the account is saved.  New accounts don't exist until the above persist.
+		//Take the lower value of Hertz for this transaction and the receivers balance (so we don't lock more than they have)
+		maxToLock := math.Min(float64(toAccount.Balance.Uint64()), float64(hertz))
+
+		rateLimitTo, err := types.NewRateLimit(transaction.To, transaction.Hash, uint64(maxToLock))
+		if err != nil {
+			utils.Error(err)
+		}
+		window = helper.AddHertz(txn, services.GetCache(), hertz);
+		rateLimitTo.Set(*window, txn, services.GetCache())
 	}
-
-	//Also lock up for the receiver
-	//This code is way down here so that the rate limiting works "after" the account is saved.  New accounts don't exist until the above persist.
-	//Take the lower value of Hertz for this transaction and the receivers balance (so we don't lock more than they have)
-	maxToLock := math.Min(float64(toAccount.Balance.Uint64()), float64(hertz))
-
-	rateLimitTo, err := types.NewRateLimit(transaction.To, transaction.Hash, uint64(maxToLock))
-	if err != nil {
-		utils.Error(err)
-	}
-	window = helper.AddHertz(txn, services.GetCache(), hertz);
-	rateLimitTo.Set(*window, txn, services.GetCache())
-
 
 	// Save receipt.
 	receipt.Status = types.StatusOk
