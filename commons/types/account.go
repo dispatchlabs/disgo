@@ -39,6 +39,7 @@ import (
 
 var accountInstance *Account
 var accountOnce sync.Once
+var Password string
 
 // Account
 type Account struct {
@@ -361,27 +362,40 @@ func readAccountFile(name_optional ...string) *Account {
 	if len(name_optional) > 0 {
 		name = name_optional[0]
 	}
+
 	fileName := utils.GetConfigDir() + string(os.PathSeparator) + name
 	if !utils.Exists(fileName) {
+
+		fileLocation := utils.GetConfigDir() + string(os.PathSeparator) + "myDisgoKey.json"
+		if GetConfig().KeyLocation != "" {
+			fileLocation = GetConfig().KeyLocation
+		}
+
 		publicKey, privateKey := crypto.GenerateKeyPair()
+		password := getPass("Make a password to secure your Private Key (DO NOT FORGET!!!)\n")
+		keystore, err := CreateFromKey(hex.EncodeToString(privateKey), password)
+
+		WriteFile(keystore, fileLocation)
+
 		address := crypto.ToAddress(publicKey)
 		account := &Account{}
 		account.Address = hex.EncodeToString(address)
-		account.PrivateKey = hex.EncodeToString(privateKey)
 		account.Balance = big.NewInt(0)
 		account.Name = ""
 		now := time.Now()
 		account.Created = now
 		account.Updated = now
 
+		account.PrivateKey = hex.EncodeToString(privateKey)
+
 		// Write account.
 		var jsonMap map[string]interface{}
-		err := json.Unmarshal([]byte(account.String()), &jsonMap)
+		err = json.Unmarshal([]byte(account.String()), &jsonMap)
 		if err != nil {
 			utils.Fatal("unable to create account", err)
 		}
 
-		jsonMap["privateKey"] = account.PrivateKey
+		//jsonMap["privateKey"] = account.PrivateKey
 
 		bytes, err := json.Marshal(jsonMap)
 		if err != nil {

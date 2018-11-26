@@ -36,7 +36,7 @@ var dbPath = "." + string(os.PathSeparator) + "testdb"
 //init
 func init()  {
 	c = cache.New(CacheTTL, CacheTTL*2)
-	utils.Info("opening DB...")
+	utils.Info("opening DB..." + dbPath)
 	opts := badger.DefaultOptions
 	opts.Dir = dbPath
 	opts.ValueDir = dbPath

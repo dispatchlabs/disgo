@@ -219,7 +219,7 @@ func NewAuthentication() (*Authentication, error) {
 	}
 
 	// Set signature.
-	authenticate.Signature, err = authenticate.NewSignature(GetAccount().PrivateKey)
+	authenticate.Signature, err = authenticate.NewSignature(GetKey())
 	if err != nil {
 		return nil, err
 	}

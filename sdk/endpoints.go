@@ -151,7 +151,7 @@ func PackageTx(to string, tokens int64, time int64) (*types.Transaction, error) 
 		return nil, errors.New("invalid time")
 	}
 
-	transaction, err := types.NewTransferTokensTransaction(types.GetAccount().PrivateKey, types.GetAccount().Address, to, tokens, 0, time)
+	transaction, err := types.NewTransferTokensTransaction(types.GetKey(), types.GetAccount().Address, to, tokens, 0, time)
 	if err != nil {
 		return nil, err
 	}

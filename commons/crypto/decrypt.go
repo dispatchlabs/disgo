@@ -61,7 +61,7 @@ func DecryptKey(keyjson []byte, auth string) (*Key, error) {
 		keyBytes, keyId []byte
 		err             error
 	)
-	k := new(encryptedKeyJSONV3)
+	k := new(EncryptedKeyJSONV3)
 	if err := json.Unmarshal(keyjson, k); err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func toECDSA(d []byte, strict bool) (*ecdsa.PrivateKey, error) {
 	return priv, nil
 }
 
-func decryptKeyV3(keyProtected *encryptedKeyJSONV3, auth string) (keyBytes []byte, keyId []byte, err error) {
+func decryptKeyV3(keyProtected *EncryptedKeyJSONV3, auth string) (keyBytes []byte, keyId []byte, err error) {
 	if keyProtected.Version != version {
 		return nil, nil, fmt.Errorf("Version not supported: %v", keyProtected.Version)
 	}
