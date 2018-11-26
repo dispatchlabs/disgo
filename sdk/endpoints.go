@@ -232,7 +232,7 @@ func DeploySmartContract(delegateNode types.Node, privateKey, from, code, abi st
 }
 
 // ExecuteSmartContractTransaction - Execute a smart contract, get the TX hash as result
-func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey, from, to, method string, params []interface{}) (string, error) {
+func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey, from, to, method string, params string) (string, error) {
 	// Create execute smart contract transaction.
 	transaction, err := types.NewExecuteContractTransaction(privateKey, from, to, method, params, utils.ToMilliSeconds(time.Now()))
 	if err != nil {

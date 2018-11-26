@@ -14,14 +14,14 @@ type Deploy struct {
 
 // Execute -
 type Execute struct {
-	ContractAddress string        `json:"contractAddress"`
-	Abi             string        `json:"abi"`
-	Method          string        `json:"method"`
-	Params          []interface{} `json:"params"`
+	ContractAddress string `json:"contractAddress"`
+	Abi             string `json:"abi"`
+	Method          string `json:"method"`
+	Params          string `json:"params"`
 }
 
 type Package struct {
-	To string `json:"to"`
-	Amount int64 `json:"amount"`
-	Time int64
+	To     string `json:"to"`
+	Amount int64  `json:"amount"`
+	Time   int64
 }

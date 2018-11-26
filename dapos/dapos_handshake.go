@@ -509,7 +509,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		}
 
 		transaction.Abi = contractTx.Abi
-		transaction.Params, err = helper.GetConvertedParams(transaction)
+		_, err = helper.GetConvertedParams(transaction)
 		if err != nil {
 			utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
 			receipt.Status = types.StatusInternalError
@@ -517,7 +517,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			receipt.Cache(services.GetCache())
 			return
 		}
-		// }
+
 
 		dvmService := dvm.GetDVMService()
 		dvmResult, err1 := dvmService.ExecuteSmartContract(transaction)
@@ -552,7 +552,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	window := helper.AddHertz(txn, services.GetCache(), hertz);
 	rateLimit.Set(*window, txn, services.GetCache())
 
-	if availableHertz <= minHertzUsed {
+	if availableHertz < hertz {
 		msg := fmt.Sprintf("Account %s has a hertz balance of %d\n", fromAccount.Address, availableHertz)
 		utils.Error(msg)
 		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInsufficientHertz)
