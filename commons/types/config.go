@@ -41,6 +41,8 @@ type Config struct {
 	GrpcEndpoint      *Endpoint   `json:"grpcEndpoint"`
 	GrpcTimeout       int         `json:"grpcTimeout"`
 	LocalHttpApiPort  int         `json:"localHttpApiPort"`
+	LocalHttpApiUsername  string         `json:"localHttpApiUsername"`
+	LocalHttpApiPassword  string         `json:"localHttpApiPassword"`
 	Seeds             []*Node     `json:"seeds"`
 	DelegateAddresses []string    `json:"delegateAddresses"`
 	UseQuantumEntropy bool        `json:"useQuantumEntropy"`
@@ -140,6 +142,8 @@ func GetDefaultConfig() *Config {
 		},
 		GrpcTimeout:      5,
 		LocalHttpApiPort: 1971,
+		LocalHttpApiUsername: "Disgo",
+		LocalHttpApiPassword: utils.RandomString(10),
 		Seeds: []*Node{
 			{
 				Address: address,
