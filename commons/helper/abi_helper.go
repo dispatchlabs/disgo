@@ -26,11 +26,11 @@ func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 	for k, v := range theABI.Methods {
 		if k == tx.Method {
 			found = true
-			if params == nil || len(tx.Params) == 0 {
+			if params == nil || len(params) == 0 {
 				return params, nil
 			}
-			if len(v.Inputs) != len(tx.Params) {
-				return nil, errors.New(fmt.Sprintf("The method %s, requires %d parameters and %d are provided", tx.Method, len(v.Inputs), len(tx.Params)))
+			if len(v.Inputs) != len(params) {
+				return nil, errors.New(fmt.Sprintf("The method %s, requires %d parameters and %d are provided", tx.Method, len(v.Inputs), len(params)))
 			}
 			for i := 0; i < len(v.Inputs); i++ {
 				arg := v.Inputs[i]
@@ -42,7 +42,7 @@ func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 					}
 					result = append(result, value)
 				} else if arg.Type.T == abi.AddressTy {
-					addressAsString, valErr := getValue(arg, tx.Params[i])
+					addressAsString, valErr := getValue(arg, params[i])
 					addressAsByteArray := crypto.GetAddressBytes(addressAsString.(string))
 					if len(addressAsByteArray) < 0 {
 						msg := fmt.Sprintf("Invalid value provided for method %s: %v", tx.Method, valErr.Error())
@@ -61,7 +61,7 @@ func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 					}
 					result = append(result, value)
 				} else {
-					value, valErr := getValue(arg, tx.Params[i])
+					value, valErr := getValue(arg, params[i])
 					if valErr != nil {
 						msg := fmt.Sprintf("Invalid value provided for method %s: %v", tx.Method, valErr.Error())
 						return nil, errors.New(msg)
