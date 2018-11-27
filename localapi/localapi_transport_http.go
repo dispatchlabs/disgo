@@ -66,7 +66,7 @@ func checkAuth(w http.ResponseWriter, r *http.Request) bool {
 	pair := strings.SplitN(string(b), ":", 2)
 	if len(pair) != 2 { return false }
 
-	return pair[0] == "Disgo" && pair[1] == "Dance"
+	return pair[0] == types.GetConfig().LocalHttpApiUsername && pair[1] == types.GetConfig().LocalHttpApiPassword
 }
 
 
