@@ -154,6 +154,10 @@ func getAccountRateLimitKey(address string) string {
 }
 
 func CheckMinimumAvailable(txn *badger.Txn, cache *cache.Cache, address string, balance uint64) (uint64, error) {
+	//This covers the case for the first time a transfer is made to an address
+	if balance == 0 {
+		return uint64(0), nil
+	}
 
 	totalDeduction, err := CalculateLockedAmount(txn, cache, address)
 	if err != nil {
@@ -248,6 +252,7 @@ func CalculateLockedAmount(txn *badger.Txn, c *cache.Cache, address string) (uin
 		utils.Error(err)
 	}
 	var totalDeduction uint64
+	totalDeduction = 0
 	if acctRateLimit != nil {
 		heldTxs := make([]string, 0)
 		for _, hash := range acctRateLimit.TxHashes {
