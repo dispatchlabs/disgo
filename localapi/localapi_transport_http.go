@@ -167,7 +167,7 @@ func (this *LocalAPIService) deployHandler(responseWriter http.ResponseWriter, r
 	}
 
 	setHeaders(&responseWriter)
-	responseWriter.Write([]byte(response))
+	responseWriter.Write([]byte(fmt.Sprintf(`{"hash":"%s"}`, response)))
 }
 
 func (this *LocalAPIService) executeHandler(responseWriter http.ResponseWriter, request *http.Request) {
@@ -218,7 +218,7 @@ func (this *LocalAPIService) executeHandler(responseWriter http.ResponseWriter, 
 	}
 
 	setHeaders(&responseWriter)
-	responseWriter.Write([]byte(response))
+	responseWriter.Write([]byte(fmt.Sprintf(`{"hash":"%s"}`, response)))
 }
 
 // getDelegatesHandler
@@ -248,6 +248,7 @@ func (this *LocalAPIService) getPackageTxHandler(responseWriter http.ResponseWri
 
 	tx, err := sdk.PackageTx(pack.To, pack.Amount, pack.Time)
 	if err != nil {
+		utils.Error("Error packaging transaction", err)
 		response.Status = types.StatusInternalError
 	} else {
 		response.Data = tx
