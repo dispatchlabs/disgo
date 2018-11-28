@@ -57,7 +57,7 @@ func GetDisGoverService() *DisGoverService {
 			running: false,
 		}
 	})
-	utils.Info(fmt.Sprintf("This node: Address: %s, Version: %s", disGoverServiceInstance.ThisNode.Address, disGoverServiceInstance.ThisNode.Version))
+	utils.Debug(fmt.Sprintf("This node: Address: %s, Version: %s", disGoverServiceInstance.ThisNode.Address, disGoverServiceInstance.ThisNode.Version))
 	return disGoverServiceInstance
 }
 
