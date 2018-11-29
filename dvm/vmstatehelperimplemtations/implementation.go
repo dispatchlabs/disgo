@@ -44,9 +44,9 @@ var (
 	IsDemo             = false
 
 	DefaultValue    = big.NewInt(0)
-	DefaultGas      = big.NewInt(1000000000000)
+	DefaultGas      = big.NewInt(5000000)
 	DefaultGasPrice = big.NewInt(0)
-	DefaultGasLimit = 1000000000000
+	DefaultGasLimit = 5000000
 	DefaultDivvy    = int64(0)
 )
 
