@@ -16,7 +16,10 @@ import (
 
 func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 	utils.Info("GetConvertedParams --> ", tx.Params)
-	params := tx.ToParams()
+	params, err := tx.ToParams()
+	if err != nil {
+		return nil, err
+	}
 	theABI, err := GetABI(tx.Abi)
 	if err != nil {
 		return nil, err

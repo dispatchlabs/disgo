@@ -695,13 +695,13 @@ func (this Transaction) NewSignature(privateKey string) (string, error) {
 }
 
 // ToParams
-func (this Transaction) ToParams() []interface{} {
+func (this Transaction) ToParams() ([]interface{}, error) {
 	params := make([]interface{},0)
 	err := json.Unmarshal([]byte(this.Params), &params)
 	if err != nil {
-		return nil
+		return nil, errors.New("Params are not in a valid format (should be a json string of array of params)")
 	}
-	return params
+	return params, nil
 }
 
 // Verify
