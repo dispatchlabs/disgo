@@ -304,8 +304,8 @@ func TransactionPaging(txn *badger.Txn, startingHash string, page, pageSize int)
 				}
 				if tx != nil {
 					transactions = append(transactions, tx)
-				} else {
-					transactions = append(transactions, nil)
+				//} else {
+				//	transactions = append(transactions, nil)
 				}
 				idx++
 			} else {
