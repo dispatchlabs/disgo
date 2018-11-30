@@ -154,16 +154,14 @@ func getAccountRateLimitKey(address string) string {
 }
 
 func CheckMinimumAvailable(txn *badger.Txn, cache *cache.Cache, address string, balance uint64) (uint64, error) {
-	//This covers the case for the first time a transfer is made to an address
-	if balance == 0 {
-		return uint64(0), nil
-	}
-
 	totalDeduction, err := CalculateLockedAmount(txn, cache, address)
 	if err != nil {
 		return uint64(0), err
 	}
 	utils.Debug("Total Hertz Deduction from account = ", totalDeduction)
+	if totalDeduction > balance {
+		return uint64(0), nil
+	}
 	available := balance - totalDeduction
 	return available, nil
 }
