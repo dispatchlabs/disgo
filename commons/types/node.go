@@ -31,9 +31,11 @@ type Node struct {
 	Address      string    `json:"address"`
 	GrpcEndpoint *Endpoint `json:"grpcEndpoint"`
 	HttpEndpoint *Endpoint `json:"httpEndpoint"`
+	LocalHttpApiPort int64 `json:"localHttpApiPort"`
 	Type         string    `json:"type,omitempty"`
 	Status       string    `json:"status,omitempty"`
 	StatusTime   time.Time `json:"statusTime,omitempty"`
+	Version      *Version  `json:"version,omitempty"`
 }
 
 func (this Node) IsAvailable() bool {

@@ -40,7 +40,7 @@ import (
 
 // WithHttp -
 func (this *LocalAPIService) WithHttp() *LocalAPIService {
-	services.GetHttpRouter().HandleFunc("/v1/local/transfer", this.tranferHandler).Methods("POST")
+	services.GetHttpRouter().HandleFunc("/v1/local/transfer", this.transferHandler).Methods("POST")
 	services.GetHttpRouter().HandleFunc("/v1/local/deploy", this.deployHandler).Methods("POST")
 	services.GetHttpRouter().HandleFunc("/v1/local/execute", this.executeHandler).Methods("POST")
 	services.GetHttpRouter().HandleFunc("/v1/local/packageTx", this.getPackageTxHandler).Methods("POST")
@@ -66,11 +66,11 @@ func checkAuth(w http.ResponseWriter, r *http.Request) bool {
 	pair := strings.SplitN(string(b), ":", 2)
 	if len(pair) != 2 { return false }
 
-	return pair[0] == "Disgo" && pair[1] == "Dance"
+	return pair[0] == types.GetConfig().LocalHttpApiUsername && pair[1] == types.GetConfig().LocalHttpApiPassword
 }
 
 
-func (this *LocalAPIService) tranferHandler(responseWriter http.ResponseWriter, request *http.Request) {
+func (this *LocalAPIService) transferHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	if !checkAuth(responseWriter, request) {
 		responseWriter.Header().Set("WWW-Authenticate", `realm="Dispatch Local"`)
 		responseWriter.WriteHeader(401)
@@ -103,7 +103,7 @@ func (this *LocalAPIService) tranferHandler(responseWriter http.ResponseWriter, 
 
 	response, err := sdk.TransferTokens(
 		*delegates[0],
-		types.GetAccount().PrivateKey,
+		types.GetKey(),
 		types.GetAccount().Address,
 		transfer.To,
 		transfer.Amount,
@@ -153,10 +153,10 @@ func (this *LocalAPIService) deployHandler(responseWriter http.ResponseWriter, r
 
 	response, err := sdk.DeploySmartContract(
 		*delegates[0],
-		types.GetAccount().PrivateKey,
+		types.GetKey(),
 		disgover.GetDisGoverService().ThisNode.Address,
 		deploy.ByteCode,
-		hex.EncodeToString([]byte(deploy.Abi)),
+		deploy.Abi,
 	)
 
 	// Send Reply
@@ -167,7 +167,7 @@ func (this *LocalAPIService) deployHandler(responseWriter http.ResponseWriter, r
 	}
 
 	setHeaders(&responseWriter)
-	responseWriter.Write([]byte(response))
+	responseWriter.Write([]byte(fmt.Sprintf(`{"hash":"%s"}`, response)))
 }
 
 func (this *LocalAPIService) executeHandler(responseWriter http.ResponseWriter, request *http.Request) {
@@ -203,7 +203,7 @@ func (this *LocalAPIService) executeHandler(responseWriter http.ResponseWriter, 
 
 	response, err := sdk.ExecuteSmartContractTransaction(
 		*delegates[0],
-		types.GetAccount().PrivateKey,
+		types.GetKey(),
 		disgover.GetDisGoverService().ThisNode.Address,
 		execute.ContractAddress,
 		execute.Method,
@@ -218,7 +218,7 @@ func (this *LocalAPIService) executeHandler(responseWriter http.ResponseWriter, 
 	}
 
 	setHeaders(&responseWriter)
-	responseWriter.Write([]byte(response))
+	responseWriter.Write([]byte(fmt.Sprintf(`{"hash":"%s"}`, response)))
 }
 
 // getDelegatesHandler
@@ -248,6 +248,7 @@ func (this *LocalAPIService) getPackageTxHandler(responseWriter http.ResponseWri
 
 	tx, err := sdk.PackageTx(pack.To, pack.Amount, pack.Time)
 	if err != nil {
+		utils.Error("Error packaging transaction", err)
 		response.Status = types.StatusInternalError
 	} else {
 		response.Data = tx

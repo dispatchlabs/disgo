@@ -1,7 +1,6 @@
 package helper
 
 import (
-	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"math/big"
@@ -17,6 +16,10 @@ import (
 
 func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 	utils.Info("GetConvertedParams --> ", tx.Params)
+	params, err := tx.ToParams()
+	if err != nil {
+		return nil, err
+	}
 	theABI, err := GetABI(tx.Abi)
 	if err != nil {
 		return nil, err
@@ -26,23 +29,23 @@ func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 	for k, v := range theABI.Methods {
 		if k == tx.Method {
 			found = true
-			if tx.Params == nil || len(tx.Params) == 0 {
-				return tx.Params, nil
+			if params == nil || len(params) == 0 {
+				return params, nil
 			}
-			if len(v.Inputs) != len(tx.Params) {
-				return nil, errors.New(fmt.Sprintf("The method %s, requires %d parameters and %d are provided", tx.Method, len(v.Inputs), len(tx.Params)))
+			if len(v.Inputs) != len(params) {
+				return nil, errors.New(fmt.Sprintf("The method %s, requires %d parameters and %d are provided", tx.Method, len(v.Inputs), len(params)))
 			}
 			for i := 0; i < len(v.Inputs); i++ {
 				arg := v.Inputs[i]
 				if arg.Type.T == abi.SliceTy || arg.Type.T == abi.ArrayTy {
-					value, valErr := getValues(arg, tx.Params[i].([]interface{}))
+					value, valErr := getValues(arg, params[i].([]interface{}))
 					if valErr != nil {
 						msg := fmt.Sprintf("Invalid value provided for method %s: %v", tx.Method, valErr.Error())
 						return nil, errors.New(msg)
 					}
 					result = append(result, value)
 				} else if arg.Type.T == abi.AddressTy {
-					addressAsString, valErr := getValue(arg, tx.Params[i])
+					addressAsString, valErr := getValue(arg, params[i])
 					addressAsByteArray := crypto.GetAddressBytes(addressAsString.(string))
 					if len(addressAsByteArray) < 0 {
 						msg := fmt.Sprintf("Invalid value provided for method %s: %v", tx.Method, valErr.Error())
@@ -50,14 +53,18 @@ func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 					}
 					result = append(result, addressAsByteArray)
 				} else if arg.Type.T == abi.BytesTy{
-					params, valErr := base64.StdEncoding.DecodeString(tx.Params[i].(string))
+					//params, valErr := base64.StdEncoding.DecodeString(params[i].(string))
+					str := params[i].(string)
+					value := []byte(str)
+
 					if err != nil{
-						msg := fmt.Sprintf("Invalid value provided for method %s: %v", tx.Method, valErr.Error())
-						return nil, errors.New(msg)
+						//msg := fmt.Sprintf("Invalid value provided for method %s: %v", tx.Method, valErr.Error())
+						//return nil, errors.New(msg)
+						return nil, err
 					}
-					result = append(result, params)
+					result = append(result, value)
 				} else {
-					value, valErr := getValue(arg, tx.Params[i])
+					value, valErr := getValue(arg, params[i])
 					if valErr != nil {
 						msg := fmt.Sprintf("Invalid value provided for method %s: %v", tx.Method, valErr.Error())
 						return nil, errors.New(msg)
@@ -233,10 +240,10 @@ func getValue(arg abi.Argument, value interface{}) (interface{}, error) {
 }
 
 func GetABI(data string) (*abi.ABI, error) {
-	runes := []rune(data)
+	//runes := []rune(data)
 	// ... Convert back into a string from rune slice.
-	safeSubstring := string(runes[0:10])
-	utils.Info("GetAbi %s\n%s\n", safeSubstring, utils.GetCallStackWithFileAndLineNumber())
+	//safeSubstring := string(runes[0:10])
+	//utils.Info("GetAbi %s\n%s\n", safeSubstring, utils.GetCallStackWithFileAndLineNumber())
 	bytes, err := hex.DecodeString(data)
 	var abi abi.ABI
 	err = abi.UnmarshalJSON(bytes)

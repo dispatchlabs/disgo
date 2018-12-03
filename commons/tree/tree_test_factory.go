@@ -1,7 +1,6 @@
 package tree
 
 import (
-	"crypto/rand"
 	"encoding/hex"
 	"time"
 
@@ -63,7 +62,7 @@ func (of *TestFactory) Produce() merkleTree.KeyValuePair {
 }
 
 func mockTransaction() *types.Transaction {
-	key, _ := crypto.NewKey(rand.Reader)
+	key, _ := crypto.NewKey()
 
 	tx, err := types.NewTransferTokensTransaction(
 		key.GetPrivateKeyString(),

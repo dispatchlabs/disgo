@@ -306,8 +306,7 @@ func TestPrintNewExecuteTx(t *testing.T) {
 
 	var theTime = utils.ToMilliSeconds(time.Now())
 	var method = "setMultiple"
-	var params = make([]interface{}, 1)
-	params[0] = "5555"
+	var params = "[5555]"
 
 	var tx, _ = NewExecuteContractTransaction(
 		privateKey,

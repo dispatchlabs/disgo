@@ -73,7 +73,7 @@ type cipherparamsJSON struct {
 	IV string `json:"iv"`
 }
 
-type encryptedKeyJSONV3 struct {
+type EncryptedKeyJSONV3 struct {
 	Address string     `json:"address"`
 	Crypto  cryptoJSON `json:"crypto"`
 	Id      string     `json:"id"`
@@ -121,7 +121,7 @@ func EncryptKey(key *Key, auth string, scryptN, scryptP int) ([]byte, error) {
 		MAC:          hex.EncodeToString(mac.Bytes()),
 	}
 
-	encryptedKeyJSONV3 := encryptedKeyJSONV3{
+	encryptedKeyJSONV3 := EncryptedKeyJSONV3{
 		key.Address,
 		cryptoStruct,
 		key.Id.String(),

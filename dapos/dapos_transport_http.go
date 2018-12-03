@@ -35,6 +35,11 @@ func (this *DAPoSService) WithHttp() *DAPoSService {
 	//Accounts
 	services.GetHttpRouter().HandleFunc("/v1/accounts/{address}", this.getAccountHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/accounts", this.unsupportedFunctionHandler).Methods("GET")
+
+	//Rate limits
+	services.GetHttpRouter().HandleFunc("/v1/rateLimitWindow", this.getRateLimitWindowHandler).Methods("GET")
+
+	//Get Seed address for default config generation for full nodes.
 	services.GetHttpRouter().HandleFunc("/v1/address", this.getSeedAddressHandler).Methods("GET")
 	//Transactions
 	services.GetHttpRouter().HandleFunc("/v1/transactions", this.newTransactionHandler).Methods("POST")
@@ -129,6 +134,13 @@ func (this *DAPoSService) getAccountHandler(responseWriter http.ResponseWriter, 
 	responseWriter.Write([]byte(response.String()))
 }
 
+// getAccountHandler
+func (this *DAPoSService) getRateLimitWindowHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	response := this.GetRateLimitWindow()
+	setHeaders(response, &responseWriter)
+	responseWriter.Write([]byte(response.String()))
+}
+
 // getTransactionHandler
 func (this *DAPoSService) getTransactionHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
@@ -176,13 +188,12 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 			return
 		}
 		transaction.Abi = contractTx.Abi
-		transaction.Params, err = helper.GetConvertedParams(transaction)
+		_, err = helper.GetConvertedParams(transaction)
 		if err != nil {
 			utils.Error("Paramater type error", err)
 			services.Error(responseWriter, fmt.Sprintf(`{"status":"%s: %v"}`, types.StatusJsonParseError, err), http.StatusBadRequest)
 			return
 		}
-
 	}
 	response := this.NewTransaction(transaction)
 	setHeaders(response, &responseWriter)

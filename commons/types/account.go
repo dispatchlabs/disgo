@@ -25,18 +25,21 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/patrickmn/go-cache"
+	"strconv"
 
 	"math/big"
+
+	"github.com/patrickmn/go-cache"
 
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/utils"
+	"github.com/pkg/errors"
 )
 
 var accountInstance *Account
 var accountOnce sync.Once
+var Password string
 
 // Account
 type Account struct {
@@ -44,19 +47,24 @@ type Account struct {
 	PrivateKey      string
 	Name            string
 	Balance         *big.Int
+	HertzAvailable  uint64
 	TransactionHash string // Smart contract
 	Updated         time.Time
 	Created         time.Time
 
 	// From Ethereum Account
-	Nonce    uint64
+	Nonce    uint64 // Note: This field must exist for DVM purposes, but is not actually used.
 	Root     crypto.HashBytes // merkle root of the storage trie
 	CodeHash []byte
 }
 
 // Key
 func (this Account) Key() string {
-	return fmt.Sprintf("table-account-%s", this.Address)
+	return getKey(this.Address)
+}
+
+func getKey(address string) string {
+	return fmt.Sprintf("table-account-%s", address)
 }
 
 // NameKey
@@ -113,7 +121,21 @@ func (this *Account) UnmarshalJSON(bytes []byte) error {
 		this.Name = jsonMap["name"].(string)
 	}
 	if jsonMap["balance"] != nil {
-		this.Balance = big.NewInt(int64(jsonMap["balance"].(float64)))
+		var bFloat float64
+		balance, ok1 := jsonMap["balance"].(string)
+		if !ok1 {
+			var ok2 bool
+			bFloat, ok2 = jsonMap["balance"].(float64)
+			if !ok2 {
+				return errors.Errorf("value for field 'balance' must be a string")
+			}
+		} else {
+			bFloat, err = strconv.ParseFloat(balance, 64)
+			if err != nil {
+			  return errors.Errorf("value for field 'balance' must be convertable to an integer")
+			}
+		}
+		this.Balance = big.NewInt(int64(bFloat))
 	}
 	if jsonMap["transactionHash"] != nil {
 		this.TransactionHash = jsonMap["transactionHash"].(string)
@@ -132,9 +154,9 @@ func (this *Account) UnmarshalJSON(bytes []byte) error {
 		}
 		this.Created = created
 	}
-	if jsonMap["nonce"] != nil {
-		this.Nonce = uint64(jsonMap["nonce"].(float64))
-	}
+	// if jsonMap["nonce"] != nil {
+	// 	this.Nonce = uint64(jsonMap["nonce"].(float64))
+	// }
 	// if jsonMap["root"] != nil {
 	// 	this.Root = crypto.GetHashBytes(jsonMap["root"].(string))
 	// }
@@ -151,22 +173,24 @@ func (this Account) MarshalJSON() ([]byte, error) {
 		Address         string    `json:"address"`
 		PrivateKey      string    `json:"privateKey,omitempty"`
 		Name            string    `json:"name"`
-		Balance         int64     `json:"balance"`
+		Balance         string    `json:"balance"`
+		HertzAvailable  string    `json:"hertzAvailable"`
 		TransactionHash string    `json:"transactionHash,omitempty"`
 		Updated         time.Time `json:"updated"`
 		Created         time.Time `json:"created"`
-		Nonce           uint64    `json:"nonce"`
+		// Nonce           uint64    `json:"nonce"`
 		// Root       string    `json:"root"`
 		// CodeHash   string    `json:"codehash"`
 	}{
 		Address:         this.Address,
 		PrivateKey:      this.PrivateKey,
 		Name:            this.Name,
-		Balance:         this.Balance.Int64(),
+		Balance:         this.Balance.String(),
+		HertzAvailable:	 strconv.FormatUint(this.HertzAvailable, 10),
 		TransactionHash: this.TransactionHash,
 		Updated:         this.Updated,
 		Created:         this.Created,
-		Nonce:           this.Nonce,
+		// Nonce:           this.Nonce,
 		// Root:       crypto.Encode(this.Root.Bytes()),
 		// CodeHash:   crypto.Encode(this.CodeHash),
 	})
@@ -211,7 +235,7 @@ func ToAccountFromJson(payload []byte) (*Account, error) {
 
 // ToAccountFromCache -
 func ToAccountFromCache(cache *cache.Cache, address string) (*Account, error) {
-	value, ok := cache.Get(fmt.Sprintf("table-account-%s", address))
+	value, ok := cache.Get(getKey(address))
 	if !ok {
 		return nil, ErrNotFound
 	}
@@ -221,7 +245,7 @@ func ToAccountFromCache(cache *cache.Cache, address string) (*Account, error) {
 
 // ToAccountByAddress
 func ToAccountByAddress(txn *badger.Txn, address string) (*Account, error) {
-	item, err := txn.Get([]byte(fmt.Sprintf("table-account-%s", address)))
+	item, err := txn.Get([]byte(getKey(address)))
 	if err != nil {
 		return nil, err
 	}
@@ -338,27 +362,40 @@ func readAccountFile(name_optional ...string) *Account {
 	if len(name_optional) > 0 {
 		name = name_optional[0]
 	}
+
 	fileName := utils.GetConfigDir() + string(os.PathSeparator) + name
 	if !utils.Exists(fileName) {
+
+		fileLocation := utils.GetConfigDir() + string(os.PathSeparator) + "myDisgoKey.json"
+		if GetConfig().KeyLocation != "" {
+			fileLocation = GetConfig().KeyLocation
+		}
+
 		publicKey, privateKey := crypto.GenerateKeyPair()
+		password := getPass("Make a password to secure your Private Key (DO NOT FORGET!!!)\n")
+		keystore, err := CreateFromKey(hex.EncodeToString(privateKey), password)
+
+		WriteFile(keystore, fileLocation)
+
 		address := crypto.ToAddress(publicKey)
 		account := &Account{}
 		account.Address = hex.EncodeToString(address)
-		account.PrivateKey = hex.EncodeToString(privateKey)
 		account.Balance = big.NewInt(0)
 		account.Name = ""
 		now := time.Now()
 		account.Created = now
 		account.Updated = now
 
+		account.PrivateKey = hex.EncodeToString(privateKey)
+
 		// Write account.
 		var jsonMap map[string]interface{}
-		err := json.Unmarshal([]byte(account.String()), &jsonMap)
+		err = json.Unmarshal([]byte(account.String()), &jsonMap)
 		if err != nil {
 			utils.Fatal("unable to create account", err)
 		}
 
-		jsonMap["privateKey"] = account.PrivateKey
+		//jsonMap["privateKey"] = account.PrivateKey
 
 		bytes, err := json.Marshal(jsonMap)
 		if err != nil {

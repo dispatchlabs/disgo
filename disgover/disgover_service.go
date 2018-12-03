@@ -30,6 +30,7 @@ import (
 	"time"
 	"os"
 	"io/ioutil"
+	"strings"
 )
 
 var disGoverServiceInstance *DisGoverService
@@ -44,6 +45,7 @@ func GetDisGoverService() *DisGoverService {
 				GrpcEndpoint: types.GetConfig().GrpcEndpoint,
 				HttpEndpoint: types.GetConfig().HttpEndpoint,
 				Type:         types.TypeNode,
+				Version:      types.GetVersion(),
 			},
 			// lruCache: lCache,
 			kdht: kbucket.NewRoutingTable(
@@ -55,6 +57,7 @@ func GetDisGoverService() *DisGoverService {
 			running: false,
 		}
 	})
+	utils.Debug(fmt.Sprintf("This node: Address: %s, Version: %s", disGoverServiceInstance.ThisNode.Address, disGoverServiceInstance.ThisNode.Version))
 	return disGoverServiceInstance
 }
 
@@ -125,6 +128,11 @@ func (this DisGoverService) updateWorker() {
 				continue
 			}
 
+			// Has lock file?
+			if hasLockFile(files) {
+				continue
+			}
+
 			for _, file := range files {
 				// Read file?
 				fileName := updateDirectory + string(os.PathSeparator) + file.Name()
@@ -133,7 +141,6 @@ func (this DisGoverService) updateWorker() {
 					utils.Error(fmt.Sprintf("unable to read file %s", file.Name()), err)
 					continue
 				}
-
 				utils.Info(fmt.Sprintf("found software to update [file=%s]", fileName))
 
 				// Update software.
@@ -147,4 +154,15 @@ func (this DisGoverService) updateWorker() {
 			}
 		}
 	}
+}
+
+// hasLockFile
+func hasLockFile(files []os.FileInfo) bool {
+	for _, file := range files {
+		if strings.HasSuffix(file.Name(), ".LCK") {
+			utils.Info(fmt.Sprintf("waiting for update file to upload [lockFile=%s]", file.Name()))
+			return true
+		}
+	}
+	return false;
 }

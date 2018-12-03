@@ -24,6 +24,7 @@ import (
 	"time"
 	"strings"
 	"sort"
+	"strconv"
 
 	"fmt"
 
@@ -44,10 +45,10 @@ type Transaction struct {
 	Code      string
 	Abi       string
 	Method    string
-	Params    []interface{}
+	Params    string
 	Time      int64 // Milliseconds
 	Signature string
-	Hertz     int64   //our version of Gas
+	Hertz     uint64   //our version of Gas
 	Receipt   Receipt // Transient
 	Gossip    []Rumor // Transient
 	FromName  string  // Transient
@@ -151,7 +152,7 @@ func (this Transaction) CalculateHash() []byte {
 		this.Type,
 		from,
 		to,
-		this.Value,
+		strconv.FormatInt(this.Value, 10),
 		this.Time,
 		signature,
 	}
@@ -303,8 +304,8 @@ func TransactionPaging(txn *badger.Txn, startingHash string, page, pageSize int)
 				}
 				if tx != nil {
 					transactions = append(transactions, tx)
-				} else {
-					transactions = append(transactions, nil)
+				//} else {
+				//	transactions = append(transactions, nil)
 				}
 				idx++
 			} else {
@@ -609,7 +610,7 @@ func NewDeployContractTransaction(privateKey string, from string, code string, a
 }
 
 // NewExecuteContractTransaction -
-func NewExecuteContractTransaction(privateKey string, from string, to string, method string, params []interface{}, timeInMiliseconds int64) (*Transaction, error) {
+func NewExecuteContractTransaction(privateKey string, from string, to string, method string, params string, timeInMiliseconds int64) (*Transaction, error) {
 	if method == "" {
 		return nil, errors.Errorf("cannot have empty method")
 	}
@@ -656,11 +657,10 @@ func (this Transaction) NewHash() (string, error) {
 		this.Type,
 		fromBytes,
 		toBytes,
-		this.Value,
+		[]byte(strconv.FormatInt(this.Value, 10)),
 		codeBytes,
-		// []byte(this.Abi),
 		[]byte(this.Method),
-		// TODO: this.Params,
+		[]byte(this.Params),
 		this.Time,
 	}
 	buffer := new(bytes.Buffer)
@@ -694,6 +694,16 @@ func (this Transaction) NewSignature(privateKey string) (string, error) {
 	return hex.EncodeToString(signatureBytes), nil
 }
 
+// ToParams
+func (this Transaction) ToParams() ([]interface{}, error) {
+	params := make([]interface{},0)
+	err := json.Unmarshal([]byte(this.Params), &params)
+	if err != nil {
+		return nil, errors.New("Params are not in a valid format (should be a json string of array of params)")
+	}
+	return params, nil
+}
+
 // Verify
 func (this Transaction) Verify() error {
 	if len(this.Hash) != crypto.HashLength*2 {
@@ -707,6 +717,9 @@ func (this Transaction) Verify() error {
 	}
 	if this.From == this.To {
 		return errors.New("from address cannot equal to address")
+	}
+	if this.Time <= 0 {
+		return errors.New("invalid time")
 	}
 
 	// Type?
@@ -767,7 +780,7 @@ func (this Transaction) Verify() error {
 	// Derived address from publicKeyBytes match from?
 	address := hex.EncodeToString(crypto.ToAddress(publicKeyBytes))
 	if address != this.From {
-		return errors.New("from address does not match the computed address from hash and signature")
+		return errors.New(fmt.Sprintf("from address: %s does not match the computed address: %s from hash and signature", this.From, address))
 	}
 	if !crypto.VerifySignature(publicKeyBytes, hashBytes, signatureBytes) {
 		return errors.New("invalid signature")
@@ -830,12 +843,21 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		}
 	}
 	if jsonMap["value"] != nil {
-		value, ok := jsonMap["value"].(float64)
-		if !ok {
-			return errors.Errorf("value for field 'value' must be a number")
+		var vFloat float64
+		value, ok1 := jsonMap["value"].(string)
+		if !ok1 {
+			var ok2 bool
+			vFloat, ok2 = jsonMap["value"].(float64)
+			if !ok2 {
+				return errors.Errorf("value for field 'value' must be a string")
+			}
+		} else {
+			vFloat, error = strconv.ParseFloat(value, 64)
+			if error != nil {
+			  return errors.Errorf("value for field 'value' must be convertable to an integer")
+			}
 		}
-		this.Value = int64(value)
-
+		this.Value = int64(vFloat)
 	}
 	if jsonMap["code"] != nil {
 		this.Code, ok = jsonMap["code"].(string)
@@ -861,11 +883,10 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		}
 	}
 	if jsonMap["params"] != nil {
-		params, ok := jsonMap["params"].([]interface{})
+		this.Params, ok = jsonMap["params"].(string)
 		if !ok {
-			return errors.Errorf("value for field 'params' must be an array")
+			return errors.Errorf("value for field 'params' must be a string")
 		}
-		this.Params = params
 	}
 	if jsonMap["time"] != nil {
 		t, ok := jsonMap["time"].(float64)
@@ -885,11 +906,17 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 		}
 	}
 	if jsonMap["hertz"] != nil {
-		hertz, ok := jsonMap["type"].(float64)
-		if !ok {
-			return errors.Errorf("value for field 'hertz' must be a number")
+		value := jsonMap["hertz"]
+		hertzValue, isString := value.(string)
+		if !isString {
+			return errors.Errorf("value for field 'hertz' must be a string")
 		}
-		this.Hertz = int64(hertz)
+
+		hertz, err := strconv.ParseInt(hertzValue, 10, 64)
+		if err != nil {
+		  return errors.Errorf("value for field 'hertz' must be a string convertable to an integer")
+		}
+		this.Hertz = uint64(hertz)
 	}
 	if jsonMap["receipt"] != nil {
 		var receipt Receipt
@@ -906,25 +933,25 @@ func (this *Transaction) UnmarshalJSON(bytes []byte) error {
 // MarshalJSON
 func (this Transaction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Hash      string        `json:"hash"`
-		Type      byte          `json:"type"`
-		From      string        `json:"from"`
-		To        string        `json:"to,omitempty"`
-		Value     int64         `json:"value,omitempty"`
-		Code      string        `json:"code,omitempty"`
-		Abi       string        `json:"abi,omitempty"`
-		Method    string        `json:"method,omitempty"`
-		Params    []interface{} `json:"params,omitempty"`
-		Time      int64         `json:"time"`
-		Signature string        `json:"signature"`
-		Hertz     int64         `json:"hertz"`
-		Receipt   Receipt       `json:"receipt,omitempty"`
-		Gossip    []Rumor       `json:"gossip,omitempty"`
-		FromName  string        `json:"fromName,omitempty"`
-		ToName    string        `json:"toName,omitempty"`
+		Hash      string  `json:"hash"`
+		Type      byte    `json:"type"`
+		From      string  `json:"from"`
+		To        string  `json:"to,omitempty"`
+		Value     int64   `json:"value,omitempty,string"`
+		Code      string  `json:"code,omitempty"`
+		Abi       string  `json:"abi,omitempty"`
+		Method    string  `json:"method,omitempty"`
+		Params    string  `json:"params,omitempty"`
+		Time      int64   `json:"time"`
+		Signature string  `json:"signature"`
+		Hertz     string  `json:"hertz,omitempty"`
+		Receipt   Receipt `json:"receipt,omitempty"`
+		Gossip    []Rumor `json:"gossip,omitempty"`
+		FromName  string  `json:"fromName,omitempty"`
+		ToName    string  `json:"toName,omitempty"`
 	}{
-		Hash:      this.Hash,
-		Type:      this.Type,
+		Hash: this.Hash,
+		Type: this.Type,
 		From:      this.From,
 		To:        this.To,
 		Value:     this.Value,
@@ -934,7 +961,7 @@ func (this Transaction) MarshalJSON() ([]byte, error) {
 		Params:    this.Params,
 		Time:      this.Time,
 		Signature: this.Signature,
-		Hertz:     this.Hertz,
+		Hertz:     strconv.FormatUint(this.Hertz, 10),
 		Receipt:   this.Receipt,
 		Gossip:    this.Gossip,
 		FromName:  this.FromName,

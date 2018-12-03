@@ -21,21 +21,17 @@ import (
 	"time"
 )
 
+
 //TODO: I think we need to convert these timouts and their calculations in code to nano seconds
 // Timouts -- currently calculated in milliseconds.
 const (
 	TxReceiveTimeout = 3000 //1 second
-	//TxReceiveWiggle    = 100 // 100ms
 	//GossipQueueTimeout = time.Second * 5
 	GossipTimeout = 1000 //1 second  //will continue to decrease until we find best value
 	TxFutureLimit = time.Minute * 3
 	UnavailableNodeTimeout = float64(time.Second * 5)
 )
 
-// Requests
-const (
-	Version = "2.2.0"
-)
 
 // Statuses
 const (
@@ -47,6 +43,7 @@ const (
 	StatusTransactionTimeOut           = "StatusTransactionTimeOut"
 	StatusInvalidTransaction           = "InvalidTransaction"
 	StatusInsufficientTokens           = "InsufficientTokens"
+	StatusInsufficientHertz            = "InsufficientHertz"
 	StatusDuplicateTransaction         = "DuplicateTransaction"
 	StatusNotDelegate                  = "StatusNotDelegate"
 	StatusAlreadyProcessingTransaction = "StatusAlreadyProcessingTransaction"
@@ -85,6 +82,7 @@ const (
 	ReceiptCacheTTL        = time.Hour * 48
 	GossipCacheTTL         = time.Minute * 5
 	AuthenticationCacheTTL = time.Minute
+	RateLimitAverageTTL    = time.Minute * 240
 )
 
 // Errors

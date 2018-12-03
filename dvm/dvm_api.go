@@ -28,6 +28,7 @@ import (
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
 	ethTypes "github.com/dispatchlabs/disgo/dvm/ethereum/types"
 	"github.com/dispatchlabs/disgo/dvm/vmstatehelperimplemtations"
+	"github.com/dispatchlabs/disgo/commons/helper"
 )
 
 // DeploySmartContract -
@@ -211,8 +212,9 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 		}, err
 	}
 
-	// TODO: I may have broken this!!!!
-	callData, err := jsonABI.Pack(tx.Method, tx.Params...)
+	// Convert params to DVM types.
+	params, err := helper.GetConvertedParams(tx)
+	callData, err := jsonABI.Pack(tx.Method, params...)
 	if err != nil {
 		utils.Error(err)
 		// return nil, err
