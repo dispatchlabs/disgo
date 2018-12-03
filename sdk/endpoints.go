@@ -133,13 +133,15 @@ func GetAccount(delegateNode types.Node, address string) (*types.Account, error)
 		return nil, errors.Errorf("'data' is missing from response")
 	}
 
+	value, _ :=	jsonMap["data"]
+	fmt.Printf(value)
+
 	// Unmarshal account.
 	var account *types.Account
 	err = json.Unmarshal(jsonMap["data"], &account)
 	if err != nil {
 		return nil, err
 	}
-
 	return account, nil
 }
 
