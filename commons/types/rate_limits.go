@@ -20,7 +20,7 @@ var RateLimitsDefaults *RateLimits
 
 func init() {
 	RateLimitsDefaults = &RateLimits{
-		EpochTime:   1538352000000000000,
+		EpochTime:   1543881600000000000,
 		NumWindows:  240,
 		TxPerMinute: 600,
 		AvgHzPerTxn: 13162215217,
