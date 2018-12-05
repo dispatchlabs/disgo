@@ -7,6 +7,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/patrickmn/go-cache"
 	"time"
+	"github.com/pkg/errors"
 )
 
 type Window struct {
@@ -124,4 +125,73 @@ func (this Window) ToPrettyJson() string {
 		return ""
 	}
 	return string(bytes)
+}
+
+func (this *Window) UnmarshalJSON(bytes []byte) error {
+	var jsonMap map[string]interface{}
+	error := json.Unmarshal(bytes, &jsonMap)
+	if error != nil {
+		return error
+	}
+	if jsonMap["id"] != nil {
+		val, ok := jsonMap["id"].(float64)
+		if !ok {
+			return errors.Errorf("value for field 'id' must be a int")
+		}
+		this.Id = int64(val)
+	}
+	if jsonMap["sum"] != nil {
+		val, ok := jsonMap["sum"].(float64)
+		if !ok {
+			return errors.Errorf("value for field 'sum' must be a uint")
+		}
+		this.Sum = uint64(val)
+	}
+	if jsonMap["entries"] != nil {
+		val, ok := jsonMap["entries"].(float64)
+		if !ok {
+			return errors.Errorf("value for field 'entries' must be a int")
+		}
+		this.Entries = int64(val)
+	}
+	if jsonMap["slope"] != nil {
+		val, ok := jsonMap["slope"].(float64)
+		if !ok {
+			return errors.Errorf("value for field 'slope' must be a float")
+		}
+		this.Slope = val
+	}
+	if jsonMap["ttl"] != nil {
+		val, ok := jsonMap["entries"].(time.Duration)
+		if !ok {
+			return errors.Errorf("value for field 'ttl' must be a int")
+		}
+		this.TTL = val
+	}
+	if jsonMap["hzCeiling"] != nil {
+		val, ok := jsonMap["hzCeiling"].(float64)
+		if !ok {
+			return errors.Errorf("value for field 'entries' must be a int")
+		}
+		this.HzCeiling = uint64(val)
+	}
+	return nil
+}
+
+func (this Window) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Id        int64				`json:"hash"`
+		Sum       uint64			`json:"hash"`
+		Entries   int64				`json:"hash"`
+		Slope     float64			`json:"hash,omitempty"`
+		TTL       time.Duration		`json:"hash,omitempty"`
+		HzCeiling uint64			`json:"hash,omitempty"`
+	}{
+		Id: 		this.Id,
+		Sum:     	this.Sum,
+		Entries:  	this.Entries,
+		Slope:    	this.Slope,
+		TTL:  		this.TTL,
+		HzCeiling:  this.HzCeiling,
+	})
 }
