@@ -62,6 +62,13 @@ func (this *RateLimit) Set(window Window, txn *badger.Txn, cache *cache.Cache) e
 
 func (this *RateLimit) cache(window Window, cache *cache.Cache) {
 	cache.Set(getAccountRateLimitKey(this.Address), this.Existing, TransactionCacheTTL)
+	utils.Debug("Current Window TTL = ", window.TTL)
+
+	//if this transaction is already in the cache, don't add it again
+	value, _ := cache.Get(getTxRateLimitKey(this.TxRateLimit.TxHash))
+	if value != nil {
+		return
+	}
 	cache.Set(getTxRateLimitKey(this.TxRateLimit.TxHash), this.TxRateLimit, window.TTL)
 }
 

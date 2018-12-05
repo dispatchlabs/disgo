@@ -29,6 +29,7 @@ import (
 	ethTypes "github.com/dispatchlabs/disgo/dvm/ethereum/types"
 	"github.com/dispatchlabs/disgo/dvm/vmstatehelperimplemtations"
 	"github.com/dispatchlabs/disgo/commons/helper"
+	"github.com/dispatchlabs/disgo/dvm/ethereum/vm"
 )
 
 // DeploySmartContract -
@@ -255,7 +256,10 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 	if execError != nil {
 		utils.Error(execError)
 		// return nil, execError
-
+		hertzUsed := uint64(0)
+		if execError == vm.ErrOutOfGas {
+			hertzUsed = callMsg.Gas()
+		}
 		return &DVMResult{
 			From:                     crypto.GetAddressBytes(tx.From),
 			To:                       crypto.GetAddressBytes(tx.To),
@@ -269,7 +273,7 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 			Divvy:  vmstatehelperimplemtations.DefaultDivvy,
 			Status: ethTypes.ReceiptStatusFailed,
 			// HertzCost:           receipt.GasUsed,
-			// CumulativeHertzUsed: receipt.CumulativeGasUsed,
+			CumulativeHertzUsed: 	hertzUsed,
 			// Bloom:               receipt.Bloom,
 			// Logs:                receipt.Logs,
 		}, execError

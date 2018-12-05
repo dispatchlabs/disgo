@@ -35,7 +35,6 @@ import (
 	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
 	"encoding/base64"
 	"bytes"
-	"math"
 )
 
 var delegateMap = map[string]*types.Node{}
@@ -518,24 +517,32 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			return
 		}
 
-
 		dvmService := dvm.GetDVMService()
 		dvmResult, err1 := dvmService.ExecuteSmartContract(transaction)
 		if err1 != nil {
 			utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
 		}
 
+		hertz = minHertzUsed + dvmResult.CumulativeHertzUsed
+
 		err = processDVMResult(transaction, dvmResult, receipt)
 		if err != nil {
 			utils.Error(err)
+
 			receipt.Status = types.StatusInternalError
 			receipt.HumanReadableStatus = err.Error()
 			receipt.Cache(services.GetCache())
+
+			rateLimit, err := types.NewRateLimit(transaction.From, transaction.Hash,  hertz)
+			if err != nil {
+				utils.Error(err)
+			}
+			window := helper.AddHertz(txn, services.GetCache(), hertz);
+			rateLimit.Set(*window, txn, services.GetCache())
+
 			return
 		}
 		receipt.ContractAddress = transaction.To
-
-		hertz = minHertzUsed + dvmResult.CumulativeHertzUsed
 
 		utils.Info(fmt.Sprintf("executed contract [hash=%s, contractAddress=%s]", transaction.Hash, transaction.To))
 		break
@@ -558,7 +565,6 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInsufficientHertz)
 		return
 	}
-
 
 	//Change this to set hertz to the
 	transaction.Hertz = hertz
@@ -594,13 +600,13 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			receipt.Cache(services.GetCache())
 			return
 		}
-
 		//Also lock up for the receiver
 		//This code is way down here so that the rate limiting works "after" the account is saved.  New accounts don't exist until the above persist.
 		//Take the lower value of Hertz for this transaction and the receivers balance (so we don't lock more than they have)
-		maxToLock := math.Min(float64(toAccount.Balance.Uint64()), float64(hertz))
+		//No longer doing this and handling it on the request balance side
+		//maxToLock := math.Min(float64(toAccount.Balance.Uint64()), float64(hertz))
 
-		rateLimitTo, err := types.NewRateLimit(transaction.To, transaction.Hash, uint64(maxToLock))
+		rateLimitTo, err := types.NewRateLimit(transaction.To, transaction.Hash, hertz)
 		if err != nil {
 			utils.Error(err)
 		}
