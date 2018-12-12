@@ -546,6 +546,9 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 
 		utils.Info(fmt.Sprintf("executed contract [hash=%s, contractAddress=%s]", transaction.Hash, transaction.To))
 		break
+	case types.TypeUpdateCode:
+		hertz := 0
+		break
 	default:
 		utils.Error(fmt.Sprintf("invalid transaction type [hash=%s]", transaction.Hash))
 		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInvalidTransaction)
