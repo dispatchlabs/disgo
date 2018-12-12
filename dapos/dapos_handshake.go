@@ -547,8 +547,21 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		utils.Info(fmt.Sprintf("executed contract [hash=%s, contractAddress=%s]", transaction.Hash, transaction.To))
 		break
 	case types.TypeUpdateCode:
-		hertz := 0
-		break
+		hertz = 0
+		version := types.GetVersion()
+		pw := types.Password
+		if pw == "" {
+			//pw = types.GetPass("Make a password to secure your Private Key (DO NOT FORGET!!!)\n")
+			pw = "Disgo"
+		}
+		if version.Version > transaction.Params {
+			utils.Error(fmt.Sprintf("New Version number %s is lower than current version %s", transaction.Params, version.Version))
+		}
+		err := helper.Update(utils.GetCurrentWorkingDir(), transaction.Params, pw)
+		if err != nil {
+			utils.Error(err)
+		}
+		return
 	default:
 		utils.Error(fmt.Sprintf("invalid transaction type [hash=%s]", transaction.Hash))
 		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInvalidTransaction)

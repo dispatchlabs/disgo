@@ -12,12 +12,12 @@ var disgoDir string
 
 func Update(dir, versionNbr, password string) error {
 
-	//err := refreshCode()
-	//if err != nil {
-	//	utils.Error(err)
-	//	return err
-	//}
-	err := buildDisgoExecutable(versionNbr, password)
+	err := refreshCode()
+	if err != nil {
+		utils.Error(err)
+		return err
+	}
+	err = buildDisgoExecutable(versionNbr, password)
 	if err != nil {
 		utils.Error(err)
 		return err
