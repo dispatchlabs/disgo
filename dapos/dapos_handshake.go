@@ -36,6 +36,7 @@ import (
 	"encoding/base64"
 	"bytes"
 	"github.com/dispatchlabs/tools/common-util/util"
+	"os"
 )
 
 var delegateMap = map[string]*types.Node{}
@@ -565,12 +566,19 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		if util.GetCurrentWorkingDir() == "/go-binaries" {
 			cmd := "sudo /bin/systemctl daemon-reload"
 			helper.Exec(cmd)
-		}
-		if err != nil {
-			utils.Error(err)
+			if err != nil {
+				utils.Error(err)
+			}
+			cmd = "sudo /bin/systemctl restart disgo"
+			helper.Exec(cmd)
+			if err != nil {
+				utils.Error(err)
+			}
+			return
+		} else {
+			os.Exit(0)
 		}
 
-		return
 	default:
 		utils.Error(fmt.Sprintf("invalid transaction type [hash=%s]", transaction.Hash))
 		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInvalidTransaction)
