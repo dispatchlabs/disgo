@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	defaultVersion = "2.4.0"
+	defaultVersion = "1.0.0"
 )
 
 type Version struct {

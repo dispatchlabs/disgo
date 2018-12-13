@@ -12,7 +12,8 @@ var disgoDir string
 
 func Update(dir, versionNbr, password string) error {
 
-	err := refreshCode()
+	var err error
+	err = refreshCode()
 	if err != nil {
 		utils.Error(err)
 		return err
@@ -32,6 +33,7 @@ func Update(dir, versionNbr, password string) error {
 
 func refreshCode() error {
 	cmd := "go get -u github.com/dispatchlabs/disgo"
+	fmt.Printf("CMD: %s\n", cmd)
 	output, err := ExecWithOut(cmd)
 	if err != nil {
 		utils.Error(err)
