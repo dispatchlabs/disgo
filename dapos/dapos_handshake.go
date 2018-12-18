@@ -434,7 +434,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	if err != nil {
 		utils.Error(err)
 	}
-	if availableHertz < minHertzUsed {
+	if availableHertz < (minHertzUsed * types.HertzMultiplier) {
 		msg := fmt.Sprintf("Account %s has a hertz balance of %d\n", fromAccount.Address, availableHertz)
 		utils.Error(msg)
 		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInsufficientHertz)
@@ -528,6 +528,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		err = processDVMResult(transaction, dvmResult, receipt)
 		if err != nil {
 			utils.Error(err)
+			hertz = hertz * types.HertzMultiplier
 
 			receipt.Status = types.StatusInternalError
 			receipt.HumanReadableStatus = err.Error()
@@ -551,7 +552,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInvalidTransaction)
 		return
 	}
-
+	hertz = hertz * types.HertzMultiplier
 	rateLimit, err := types.NewRateLimit(transaction.From, transaction.Hash,  hertz)
 	if err != nil {
 		utils.Error(err)
