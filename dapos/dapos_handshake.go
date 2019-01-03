@@ -537,6 +537,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 
 		hertz = minHertzUsed + dvmResult.CumulativeHertzUsed
 
+		transaction.Abi = "" //clear out the ABI before saving to badger.  We only need it once from Deploy transaction tx.
 		utils.Info(fmt.Sprintf("executed contract [hash=%s, contractAddress=%s]", transaction.Hash, transaction.To))
 		break
 	default:
@@ -544,7 +545,6 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInvalidTransaction)
 		return
 	}
-	transaction.Abi = "" //clear out the ABI before saving to badger.  We only need it once from Deploy transaction tx.
 
 	rateLimit, err := types.NewRateLimit(transaction.From, transaction.Hash,  hertz)
 	if err != nil {
