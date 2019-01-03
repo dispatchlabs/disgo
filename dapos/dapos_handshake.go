@@ -544,6 +544,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInvalidTransaction)
 		return
 	}
+	transaction.Abi = "" //clear out the ABI before saving to badger.  We only need it once from Deploy transaction tx.
 
 	rateLimit, err := types.NewRateLimit(transaction.From, transaction.Hash,  hertz)
 	if err != nil {
