@@ -23,7 +23,6 @@ import (
 	"strings"
 	"time"
 	"encoding/hex"
-
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/helper"
 	"github.com/dispatchlabs/disgo/commons/services"
