@@ -636,6 +636,29 @@ func NewExecuteContractTransaction(privateKey string, from string, to string, me
 	return transaction, nil
 }
 
+func NewUpdateTransaction(privateKey, from, version string, timeInMiliseconds int64) (*Transaction, error) {
+	var err error
+	transaction := &Transaction{}
+	transaction.Type = TypeUpdateCode
+	transaction.From = from
+	transaction.Value = 0
+	transaction.Time, err = checkTime(timeInMiliseconds)
+	transaction.Params = version
+
+	if err != nil {
+		return nil, err
+	}
+	transaction.Hash, err = transaction.NewHash()
+	if err != nil {
+		return nil, err
+	}
+	transaction.Signature, err = transaction.NewSignature(privateKey)
+	if err != nil {
+		return nil, err
+	}
+	return transaction, nil
+}
+
 // NewHash
 func (this Transaction) NewHash() (string, error) {
 	fromBytes, err := hex.DecodeString(this.From)

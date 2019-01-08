@@ -35,6 +35,8 @@ import (
 	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
 	"encoding/base64"
 	"bytes"
+	"github.com/dispatchlabs/tools/common-util/util"
+	"os"
 )
 
 var delegateMap = map[string]*types.Node{}
@@ -547,6 +549,37 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 
 		utils.Info(fmt.Sprintf("executed contract [hash=%s, contractAddress=%s]", transaction.Hash, transaction.To))
 		break
+	case types.TypeUpdateCode:
+		hertz = 0
+		version := types.GetVersion()
+		pw := types.Password
+		if pw == "" {
+			//pw = types.GetPass("Make a password to secure your Private Key (DO NOT FORGET!!!)\n")
+			pw = "Disgo"
+		}
+		if version.Version > transaction.Params {
+			utils.Error(fmt.Sprintf("New Version number %s is lower than current version %s", transaction.Params, version.Version))
+		}
+		err := helper.Update(utils.GetCurrentWorkingDir(), transaction.Params, pw)
+		if err != nil {
+			utils.Error(err)
+		}
+		if util.GetCurrentWorkingDir() == "/go-binaries" {
+			cmd := "sudo /bin/systemctl daemon-reload"
+			helper.Exec(cmd)
+			if err != nil {
+				utils.Error(err)
+			}
+			cmd = "sudo /bin/systemctl restart disgo"
+			helper.Exec(cmd)
+			if err != nil {
+				utils.Error(err)
+			}
+			return
+		} else {
+			os.Exit(0)
+		}
+
 	default:
 		utils.Error(fmt.Sprintf("invalid transaction type [hash=%s]", transaction.Hash))
 		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInvalidTransaction)

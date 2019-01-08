@@ -70,6 +70,7 @@ const (
 	TypeTransferTokens       = 0
 	TypeDeploySmartContract  = 1
 	TypeExecuteSmartContract = 2
+	TypeUpdateCode			 = 3
 )
 
 // Persistence TTLs

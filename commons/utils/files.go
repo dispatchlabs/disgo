@@ -40,6 +40,14 @@ func GetConfigDir() string {
 	return directoryName
 }
 
+
+func GetCurrentWorkingDir() string {
+	dir, err := os.Getwd()
+	if err != nil {
+		Error(err)
+	}
+	return dir
+}
 /*
 // user, error := user.Current()
 currentDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
