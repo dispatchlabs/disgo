@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os/user"
 
+	"os"
 )
 
 var disgoDir string
@@ -88,4 +89,12 @@ func GetDisgoDirectory() string {
 		disgoDir = usr.HomeDir + "/go/src/github.com/dispatchlabs/disgo"
 	}
 	return disgoDir
+}
+
+func GetCurrentWorkingDir() string {
+	dir, err := os.Getwd()
+	if err != nil {
+		utils.Error(err)
+	}
+	return dir
 }

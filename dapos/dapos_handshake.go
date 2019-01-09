@@ -35,7 +35,6 @@ import (
 	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
 	"encoding/base64"
 	"bytes"
-	"github.com/dispatchlabs/tools/common-util/util"
 	"os"
 )
 
@@ -564,7 +563,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		if err != nil {
 			utils.Error(err)
 		}
-		if util.GetCurrentWorkingDir() == "/go-binaries" {
+		if helper.GetCurrentWorkingDir() == "/go-binaries" {
 			cmd := "sudo /bin/systemctl daemon-reload"
 			helper.Exec(cmd)
 			if err != nil {
