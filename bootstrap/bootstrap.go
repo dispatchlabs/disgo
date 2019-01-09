@@ -53,9 +53,9 @@ type Server struct {
 // NewServer -
 func NewServer() *Server {
 	// Load Keys
-	if _, _, err := loadKeys(); err != nil {
-		utils.Error("unable to keys: " + err.Error())
-	}
+	//if _, _, err := loadKeys(); err != nil {
+	//	utils.Error("unable to keys: " + err.Error())
+	//}
 
 	return &Server{}
 }
