@@ -28,6 +28,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/dispatchlabs/disgo/commons/helper"
 	"encoding/hex"
+	"os"
 )
 
 // WithHttp -
@@ -299,15 +300,14 @@ func (this *DAPoSService) notFoundHandler(responseWriter http.ResponseWriter, re
 	//	utils.Error(fmt.Sprintln("unable to find 404.html"), err)
 	//	os.Exit(1)
 	//}
-	HTML404 := "<p><a href=\"https://dispatchlabs.io\"><img style=\"display: block; margin-left: auto; margin-right: auto;\" " +
-		"src=\"https://camo.githubusercontent.com/628467752290c2d77f8462329e413ba4acbf12b6/" +
-		"68747470733a2f2f7777772e64697370617463686c6162732e696f2f77702d636f6e74656e742f7" +
-		"5706c6f6164732f323031382f31322f44697370617463685f4c6f676f2e706e67\" alt=\"Dispatch " +
-		"Logo\" width=\"200\" height=\"89\" /></p></a><h2 style=\"text-align: center;\">you got a 404" +
-		"</h2><p><img style=\"display: block; margin-left: auto; margin-right: auto;\" " +
-		"src=\"https://media.giphy.com/media/3oKHWqBRAndWxStj9K/giphy.gif\" alt=\"disco gif\" " +
-		"width=\"480\" height=\"270\" /></p><p style=\"text-align: center;\">Have you checked out " +
-		"the Dispatch <a href=\"http://api.dispatchlabs.io\">API docs</a>?</p>"
+	HTML404 := `<p><img style=\"display: block; margin-left: auto; margin-right: 
+auto;\" src=\"https://camo.githubusercontent.com/628467752290c2d77f8462329e413ba4acbf12b6
+/68747470733a2f2f7777772e64697370617463686c6162732e696f2f77702d636f6e74656e742f75706c6f616
+4732f323031382f31322f44697370617463685f4c6f676f2e706e67\" alt=\"Dispatch Logo\" width=\"200\" 
+height=\"89\" /></p><h2 style=\"text-align: center;\">you got a 404</h2><p><img style=\"display: 
+block; margin-left: auto; margin-right: auto;\" src=\"https://media.giphy.com/media/3oKHWqBRAndWxStj9K/
+giphy.gif\" alt=\"disco gif\" width=\"480\" height=\"270\" /></p><p style=\"text-align: center;\">Have 
+you checked out the Dispatch <a href=\"http://api.dispatchlabs.io\">API docs</a>?</p>`
 
 	responseWriter.WriteHeader(http.StatusNotFound)
 	responseWriter.Write([]byte(HTML404))
