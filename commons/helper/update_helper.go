@@ -2,10 +2,10 @@ package helper
 
 import (
 	"github.com/dispatchlabs/disgo/commons/utils"
-	"github.com/dispatchlabs/tools/common-util/util"
 	"fmt"
 	"os/user"
 
+	"os"
 )
 
 var disgoDir string
@@ -44,7 +44,7 @@ func refreshCode() error {
 }
 
 func buildDisgoExecutable(versionNbr, password string) error {
-	util.DeleteFile(fmt.Sprintf("%s/disgo", GetDisgoDirectory()))
+	DeleteFile(fmt.Sprintf("%s/disgo", GetDisgoDirectory()))
 	CheckCommand("go")
 
 	buildCmd := "go build -ldflags"
@@ -88,4 +88,24 @@ func GetDisgoDirectory() string {
 		disgoDir = usr.HomeDir + "/go/src/github.com/dispatchlabs/disgo"
 	}
 	return disgoDir
+}
+
+func GetCurrentWorkingDir() string {
+	dir, err := os.Getwd()
+	if err != nil {
+		utils.Error(err)
+	}
+	return dir
+}
+
+func DeleteFile(file string) error {
+	if _, err := os.Stat(file); os.IsNotExist(err) {
+		return nil
+	}
+	err := os.Remove(file)
+	if err != nil {
+		utils.Error(err)
+		return err
+	}
+	return nil
 }
