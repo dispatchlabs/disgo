@@ -32,6 +32,9 @@ import (
 
 // WithHttp -
 func (this *DAPoSService) WithHttp() *DAPoSService {
+	//404 Not found handler
+	services.GetHttpRouter().NotFoundHandler = http.HandlerFunc(this.notFoundHandler)
+
 	//Accounts
 	services.GetHttpRouter().HandleFunc("/v1/accounts/{address}", this.getAccountHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/accounts", this.unsupportedFunctionHandler).Methods("GET")
@@ -134,7 +137,7 @@ func (this *DAPoSService) getAccountHandler(responseWriter http.ResponseWriter, 
 	responseWriter.Write([]byte(response.String()))
 }
 
-// getAccountHandler
+// getRateLimitWindowHandler
 func (this *DAPoSService) getRateLimitWindowHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	response := this.GetRateLimitWindow()
 	setHeaders(response, &responseWriter)
@@ -286,3 +289,26 @@ func (this *DAPoSService) getGossipHandler(responseWriter http.ResponseWriter, r
 // 	responseWriter.Write([]byte(response.String()))
 // }
 
+// notFoundHandler
+func (this *DAPoSService) notFoundHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	//response := this.GetRateLimitWindow()
+	//setHeaders(response, &responseWriter)
+	//var HTML404 = utils.GetCurrentWorkingDir() + string(os.PathSeparator) + "dapos" + string(os.PathSeparator) + "404.html"
+	//file, err := ioutil.ReadFile(HTML404)
+	//if err != nil {
+	//	utils.Error(fmt.Sprintln("unable to find 404.html"), err)
+	//	os.Exit(1)
+	//}
+	HTML404 := "<p><a href=\"https://dispatchlabs.io\"><img style=\"display: block; margin-left: auto; margin-right: auto;\" " +
+		"src=\"https://camo.githubusercontent.com/628467752290c2d77f8462329e413ba4acbf12b6/" +
+		"68747470733a2f2f7777772e64697370617463686c6162732e696f2f77702d636f6e74656e742f7" +
+		"5706c6f6164732f323031382f31322f44697370617463685f4c6f676f2e706e67\" alt=\"Dispatch " +
+		"Logo\" width=\"200\" height=\"89\" /></p></a><h2 style=\"text-align: center;\">you got a 404" +
+		"</h2><p><img style=\"display: block; margin-left: auto; margin-right: auto;\" " +
+		"src=\"https://media.giphy.com/media/3oKHWqBRAndWxStj9K/giphy.gif\" alt=\"disco gif\" " +
+		"width=\"480\" height=\"270\" /></p><p style=\"text-align: center;\">Have you checked out " +
+		"the Dispatch <a href=\"http://api.dispatchlabs.io\">API docs</a>?</p>"
+
+	responseWriter.WriteHeader(http.StatusNotFound)
+	responseWriter.Write([]byte(HTML404))
+}

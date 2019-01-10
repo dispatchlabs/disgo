@@ -104,7 +104,7 @@ func (this *DAPoSService) GetReceipt(transactionHash string) *types.Response {
 	return response
 }
 
-// GetAccount
+// GetRateLimitWindow
 func (this *DAPoSService) GetRateLimitWindow() *types.Response {
 	txn := services.NewTxn(true)
 	defer txn.Discard()
