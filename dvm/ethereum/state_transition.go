@@ -134,6 +134,11 @@ func ApplyMessage(evm *vm.EVM, msg Message, gp *GasPool) ([]byte, crypto.Address
 	return NewStateTransition(evm, msg, gp).TransitionDb()
 }
 
+
+func ApplyMessageReadOnly(evm *vm.EVM, msg Message, gp *GasPool) ([]byte, crypto.AddressBytes, uint64, bool, error) {
+	return NewStateTransition(evm, msg, gp).TransitionDbReadOnly()
+}
+
 // to returns the recipient of the message.
 func (st *StateTransition) to() crypto.AddressBytes {
 	if st.msg == nil || st.msg.To() == nil /* contract creation */ {
@@ -248,6 +253,52 @@ func (st *StateTransition) TransitionDb() (ret []byte, contractAddress crypto.Ad
 	st.refundGas()
 	st.state.AddBalance(st.evm.Coinbase, new(big.Int).Mul(new(big.Int).SetUint64(st.gasUsed()), st.gasPrice))
 
+	return ret, contractAddress, st.gasUsed(), vmerr != nil, err
+}
+
+// TransitionDb will transition the state by applying the current message and
+// returning the result including the used gas. It returns an error if failed.
+// An error indicates a consensus issue.
+func (st *StateTransition) TransitionDbReadOnly() (ret []byte, contractAddress crypto.AddressBytes, usedGas uint64, failed bool, err error) {
+	if err = st.preCheck(); err != nil {
+		return
+	}
+	msg := st.msg
+	sender := vm.AccountRef(msg.From())
+	homestead := st.evm.ChainConfig().IsHomestead(st.evm.BlockNumber)
+
+	// Pay intrinsic gas
+	gas, err := IntrinsicGas(st.data, false, homestead)
+	if err != nil {
+		return nil, crypto.AddressBytes{}, 0, false, err
+	}
+	if err = st.useGas(gas); err != nil {
+		return nil, crypto.AddressBytes{}, 0, false, err
+	}
+
+	var (
+		evm = st.evm
+		// vm errors do not effect consensus and are therefor
+		// not assigned to err, except for insufficient balance
+		// error.
+		vmerr error
+	)
+	// Increment the nonce for the next transaction
+	st.state.SetNonce(msg.From(), st.state.GetNonce(sender.Address())+1)
+	ret, st.gas, vmerr = evm.StaticCall(sender, st.to(), st.data, st.gas)
+
+	if vmerr != nil {
+		log.Debug("VM returned with error", "err", vmerr)
+		// The only possible consensus-error would be if there wasn't
+		// sufficient balance to make the transfer happen. The first
+		// balance transfer may never fail.
+		if vmerr == vm.ErrInsufficientBalance {
+			return nil, contractAddress, 0, false, vmerr
+		}
+
+		err = vmerr
+	}
+	st.refundGas()
 	return ret, contractAddress, st.gasUsed(), vmerr != nil, err
 }
 
