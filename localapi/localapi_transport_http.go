@@ -208,6 +208,7 @@ func (this *LocalAPIService) executeHandler(responseWriter http.ResponseWriter, 
 		execute.ContractAddress,
 		execute.Method,
 		execute.Params,
+		false,
 	)
 
 	// Send Reply

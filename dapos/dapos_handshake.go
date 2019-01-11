@@ -496,7 +496,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		hertz = minHertzUsed + dvmResult.CumulativeHertzUsed
 		utils.Info(fmt.Sprintf("deployed contract [hash=%s, contractAddress=%s]", transaction.Hash, smartContractAddress))
 		break
-	case types.TypeExecuteSmartContract:
+	case types.TypeExecuteSmartContract, types.TypeExecuteSmartContractReadOnly:
 
 		// READ PARAMS
 		contractTx, err := types.ToTransactionByAddress(txn, transaction.To)
@@ -601,6 +601,18 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 
 	//Change this to set hertz to the
 	transaction.Hertz = hertz
+
+	if transaction.Type == types.TypeExecuteSmartContractReadOnly {
+		transaction.Receipt.Status = "Success-cacheonly"
+		transaction.Receipt.Cache(services.GetCache())
+		transaction.Cache(services.GetCache())
+
+		//tx, _ := types.ToTransactionFromCache(services.GetCache(), transaction.Hash)
+		//fmt.Printf(tx.ToPrettyJson())
+
+		return
+	}
+
 	// Persist transaction
 	err = transaction.Persist(txn)
 	if err != nil {

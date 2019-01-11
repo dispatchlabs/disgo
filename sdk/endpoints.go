@@ -231,9 +231,15 @@ func DeploySmartContract(delegateNode types.Node, privateKey, from, code, abi st
 }
 
 // ExecuteSmartContractTransaction - Execute a smart contract, get the TX hash as result
-func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey, from, to, method string, params string) (string, error) {
+func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey, from, to, method string, params string, readOnly bool) (string, error) {
 	// Create execute smart contract transaction.
-	transaction, err := types.NewExecuteContractTransaction(privateKey, from, to, method, params, utils.ToMilliSeconds(time.Now()))
+	var transaction *types.Transaction
+	var err error
+	if readOnly {
+		transaction, err = types.NewExecuteContractTransaction(privateKey, from, to, method, params, utils.ToMilliSeconds(time.Now()), true)
+	} else {
+		transaction, err = types.NewExecuteContractTransaction(privateKey, from, to, method, params, utils.ToMilliSeconds(time.Now()), false)
+	}
 	if err != nil {
 		return "", err
 	}
@@ -265,6 +271,7 @@ func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey, from, 
 
 	return transaction.Hash, nil
 }
+
 
 // GetTransaction
 func GetTransaction(delegateNode types.Node, hash string) (*types.Transaction, error) {

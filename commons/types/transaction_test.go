@@ -315,6 +315,7 @@ func TestPrintNewExecuteTx(t *testing.T) {
 		method,
 		params,
 		theTime,
+		false,
 	)
 	fmt.Printf("DEPLOY: %s", tx.String())
 

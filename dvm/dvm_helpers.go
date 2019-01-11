@@ -84,7 +84,17 @@ func (self *DVMService) applyTransaction(tx *commonTypes.Transaction, stateHelpe
 
 	// Apply the transaction to the current state (included in the env)
 	// GRAB-THIS: gas will be the GAS/Hertz used to execute the TX - for contract creation or execution
-	_, contractAddress, gas, failed, err := ethereum.ApplyMessage(vmenv, msg, stateHelper.GP)
+	var contractAddress crypto.AddressBytes
+	var gas uint64
+	var failed bool
+	var err error
+
+	if(tx.Type == commonTypes.TypeExecuteSmartContractReadOnly) {
+		_, contractAddress, gas, failed, err = ethereum.ApplyMessageReadOnly(vmenv, msg, stateHelper.GP)
+	} else {
+		_, contractAddress, gas, failed, err = ethereum.ApplyMessage(vmenv, msg, stateHelper.GP)
+	}
+
 	if err != nil {
 		utils.Error(fmt.Sprintf("%s Applying transaction to WAS", err))
 		return err

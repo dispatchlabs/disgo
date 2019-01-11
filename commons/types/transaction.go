@@ -85,6 +85,11 @@ func (this *Transaction) Cache(cache *cache.Cache) {
 	cache.Set(this.Key(), this, TransactionCacheTTL)
 }
 
+//Cache
+func (this *Transaction) ShortCache(cache *cache.Cache) {
+	cache.Set(this.Key(), this, ShortTransactionCacheTTL)
+}
+
 // Persist
 func (this *Transaction) Persist(txn *badger.Txn) error {
 	err := txn.Set([]byte(this.Key()), []byte(this.String()))
@@ -610,13 +615,17 @@ func NewDeployContractTransaction(privateKey string, from string, code string, a
 }
 
 // NewExecuteContractTransaction -
-func NewExecuteContractTransaction(privateKey string, from string, to string, method string, params string, timeInMiliseconds int64) (*Transaction, error) {
+func NewExecuteContractTransaction(privateKey string, from string, to string, method string, params string, timeInMiliseconds int64, readOnly bool) (*Transaction, error) {
 	if method == "" {
 		return nil, errors.Errorf("cannot have empty method")
 	}
 	var err error
 	transaction := &Transaction{}
-	transaction.Type = TypeExecuteSmartContract
+	if readOnly {
+		transaction.Type = TypeExecuteSmartContractReadOnly
+	} else {
+		transaction.Type = TypeExecuteSmartContract
+	}
 	transaction.From = from
 	transaction.To = to
 	transaction.Method = method

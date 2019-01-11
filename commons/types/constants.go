@@ -71,6 +71,7 @@ const (
 	TypeDeploySmartContract  = 1
 	TypeExecuteSmartContract = 2
 	TypeUpdateCode			 = 3
+	TypeExecuteSmartContractReadOnly = 9
 )
 
 // Persistence TTLs
@@ -83,6 +84,7 @@ const (
 const (
 	CacheTTL               = time.Hour
 	TransactionCacheTTL    = time.Hour * 48
+	ShortTransactionCacheTTL    = time.Minute * 5
 	ReceiptCacheTTL        = time.Hour * 48
 	GossipCacheTTL         = time.Minute * 5
 	AuthenticationCacheTTL = time.Minute
