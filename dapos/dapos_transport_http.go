@@ -28,7 +28,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/dispatchlabs/disgo/commons/helper"
 	"encoding/hex"
-	"os"
 )
 
 // WithHttp -
