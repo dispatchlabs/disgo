@@ -36,6 +36,8 @@ import (
 	"encoding/base64"
 	"bytes"
 	"os"
+	"errors"
+	"github.com/dispatchlabs/disgo/commons/crypto"
 )
 
 var delegateMap = map[string]*types.Node{}
@@ -550,33 +552,9 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		break
 	case types.TypeUpdateCode:
 		hertz = 0
-		version := types.GetVersion()
-		pw := types.Password
-		if pw == "" {
-			//pw = types.GetPass("Make a password to secure your Private Key (DO NOT FORGET!!!)\n")
-			pw = "Disgo"
-		}
-		if version.Version > transaction.Params {
-			utils.Error(fmt.Sprintf("New Version number %s is lower than current version %s", transaction.Params, version.Version))
-		}
-		err := helper.Update(utils.GetCurrentWorkingDir(), transaction.Params, pw)
+		err := DoUpgrade(transaction)
 		if err != nil {
-			utils.Error(err)
-		}
-		if helper.GetCurrentWorkingDir() == "/go-binaries" {
-			cmd := "sudo /bin/systemctl daemon-reload"
-			helper.Exec(cmd)
-			if err != nil {
-				utils.Error(err)
-			}
-			cmd = "sudo /bin/systemctl restart disgo"
-			helper.Exec(cmd)
-			if err != nil {
-				utils.Error(err)
-			}
-			return
-		} else {
-			os.Exit(0)
+			utils.Error("Upgrade failed: ", err)
 		}
 
 	default:
@@ -692,6 +670,64 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		receipt.Cache(services.GetCache())
 		return
 	}
+}
+
+
+func DoUpgrade(transaction *types.Transaction) error {
+	genesisAccount, err := types.GetGenesisAccount()
+	if err != nil {
+		utils.Error(err)
+	}
+	hashBytes, err := hex.DecodeString(transaction.Hash)
+	if err != nil {
+		utils.Error("unable to decode hash", err)
+		return errors.New("unable to decode hash")
+	}
+	signatureBytes, err := hex.DecodeString(transaction.Signature)
+	if err != nil {
+		utils.Error("unable to decode signature", err)
+		return errors.New("unable to decode signature")
+	}
+
+	from, err := crypto.ToAddressStringFromSignature(hashBytes, signatureBytes)
+	if err != nil {
+		return err
+	}
+	if from != genesisAccount.Address {
+		err = errors.New("Upgrade Transactions must be from the Genesis Account")
+		utils.Error(err)
+		return err
+	}
+	version := types.GetVersion()
+	pw := types.Password
+	if pw == "" {
+		//pw = types.GetPass("Make a password to secure your Private Key (DO NOT FORGET!!!)\n")
+		pw = "Disgo"
+	}
+	if version.Version > transaction.Params {
+		utils.Error(fmt.Sprintf("New Version number %s is lower than current version %s", transaction.Params, version.Version))
+	}
+	err = helper.Update(utils.GetCurrentWorkingDir(), transaction.Params, pw)
+	if err != nil {
+		utils.Error(err)
+		return err
+	}
+	if helper.GetCurrentWorkingDir() == "/go-binaries" {
+		cmd := "sudo /bin/systemctl daemon-reload"
+		helper.Exec(cmd)
+		if err != nil {
+			utils.Error(err)
+		}
+		cmd = "sudo /bin/systemctl restart disgo"
+		helper.Exec(cmd)
+		if err != nil {
+			utils.Error(err)
+		}
+		return nil
+	} else {
+		os.Exit(0)
+	}
+	return nil
 }
 
 //TODO: implement if useful

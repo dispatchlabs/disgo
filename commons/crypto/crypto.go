@@ -27,6 +27,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/math"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/ebfe/keccak"
+	"encoding/hex"
 )
 
 const (
@@ -80,6 +81,15 @@ func ToAddress(publicKey []byte) []byte {
 	hash := NewHash(publicKey[1:])
 	address := hash[12:]
 	return address
+}
+
+func ToAddressStringFromSignature(hash []byte, signature []byte) (string, error) {
+	pubKey, err := ToPublicKey(hash, signature)
+	if err != nil  {
+		return "", err
+	}
+	address := hex.EncodeToString(ToAddress(pubKey))
+	return string(address), nil
 }
 
 // NewSignature

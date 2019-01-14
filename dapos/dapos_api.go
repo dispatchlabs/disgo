@@ -166,6 +166,14 @@ func (this *DAPoSService) NewTransaction(transaction *types.Transaction) *types.
 	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
 		response = this.startGossiping(transaction)
 	} else {
+		if transaction.Type == types.TypeUpdateCode {
+			err := transaction.Verify()
+			if err != nil {
+				utils.Info(fmt.Sprintf("invalid transaction [hash=%s]", transaction.Hash))
+				return types.NewResponseWithStatus(types.StatusInvalidTransaction, err.Error())
+			}
+		}
+		DoUpgrade(transaction)
 		response.Status = types.StatusNotDelegate
 		response.HumanReadableStatus = types.StatusNotDelegateAsHumanReadable
 	}
