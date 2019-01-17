@@ -583,7 +583,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	if transaction.Type == types.TypeExecuteSmartContractReadOnly {
 		transaction.Receipt.Status = "Success-cacheonly"
 		transaction.Receipt.Cache(services.GetCache())
-		transaction.Cache(services.GetCache())
+		transaction.ShortCache(services.GetCache())
 
 		//tx, _ := types.ToTransactionFromCache(services.GetCache(), transaction.Hash)
 		//fmt.Printf(tx.ToPrettyJson())
@@ -678,18 +678,8 @@ func DoUpgrade(transaction *types.Transaction) error {
 	if err != nil {
 		utils.Error(err)
 	}
-	hashBytes, err := hex.DecodeString(transaction.Hash)
-	if err != nil {
-		utils.Error("unable to decode hash", err)
-		return errors.New("unable to decode hash")
-	}
-	signatureBytes, err := hex.DecodeString(transaction.Signature)
-	if err != nil {
-		utils.Error("unable to decode signature", err)
-		return errors.New("unable to decode signature")
-	}
 
-	from, err := crypto.ToAddressStringFromSignature(hashBytes, signatureBytes)
+	from, err := crypto.ToAddressStringFromSignature(transaction.Hash, transaction.Signature)
 	if err != nil {
 		return err
 	}

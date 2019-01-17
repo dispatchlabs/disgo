@@ -28,6 +28,7 @@ import (
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/ebfe/keccak"
 	"encoding/hex"
+	"errors"
 )
 
 const (
@@ -83,8 +84,19 @@ func ToAddress(publicKey []byte) []byte {
 	return address
 }
 
-func ToAddressStringFromSignature(hash []byte, signature []byte) (string, error) {
-	pubKey, err := ToPublicKey(hash, signature)
+func ToAddressStringFromSignature(hash string, signature string) (string, error) {
+	hashBytes, err := hex.DecodeString(hash)
+	if err != nil {
+		utils.Error("unable to decode hash", err)
+		return "", errors.New("unable to decode hash")
+	}
+	signatureBytes, err := hex.DecodeString(signature)
+	if err != nil {
+		utils.Error("unable to decode signature", err)
+		return "", errors.New("unable to decode signature")
+	}
+
+	pubKey, err := ToPublicKey(hashBytes, signatureBytes)
 	if err != nil  {
 		return "", err
 	}
