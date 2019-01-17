@@ -125,10 +125,24 @@ func (this *DAPoSService) peerSynchronize() {
 			if len(response.Items) == 0 {
 				break
 			}
+			/*
+			 * Adding code to avoid issues we are having with corrupt data coming from sync
+			 * Concerned about the case where current delegate might have an old version of a key value
+			 * At the moment this is so much less of a concern than getting an invalid JSON
+			 * that I'm willing to let this be the case until we get the Merkle tree implemented. (B.S.)
+			 */
 			for _, item := range response.Items {
-				err = txn.Set([]byte(item.Key), item.Value)
-				if err != nil {
-					utils.Error(err)
+				keyBytes := []byte(item.Key)
+				exists, _ := txn.Get(keyBytes)
+				if exists == nil {
+					if utils.IsJSON(item.Value) {
+						err = txn.Set([]byte(item.Key), item.Value)
+						if err != nil {
+							utils.Error(err)
+						}
+					} else {
+						utils.Error("Received value is not a valid JSON", string(keyBytes), string(item.Value))
+					}
 				}
 			}
 			index += int64(len(response.Items))
