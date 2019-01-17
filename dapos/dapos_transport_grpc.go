@@ -29,6 +29,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"strings"
+	"encoding/json"
 )
 
 // TODO: Should we GZIP the response from remote call?
@@ -135,13 +136,23 @@ func (this *DAPoSService) peerSynchronize() {
 				keyBytes := []byte(item.Key)
 				exists, _ := txn.Get(keyBytes)
 				if exists == nil {
-					if utils.IsJSON(item.Value) {
+					utils.Info(string(keyBytes))
+					if strings.HasPrefix(string(keyBytes), "table-gossip") {
+						utils.Info(string(keyBytes))
+						var gsp types.Gossip
+						err = json.Unmarshal(item.Value, gsp)
+						utils.Info("ok with gossip: ", gsp.String())
+						//utils.Error(fmt.Sprintf("Received value: %s is not a valid JSON: %s\n", string(keyBytes), string(item.Value)))
+						if err != nil {
+							utils.Error(err)
+						}
+					} else if utils.IsJSON(item.Value) {
 						err = txn.Set([]byte(item.Key), item.Value)
 						if err != nil {
 							utils.Error(err)
 						}
 					} else {
-						utils.Error("Received value is not a valid JSON", string(keyBytes), string(item.Value))
+						//utils.Error(fmt.Sprintf("Received value: %s is not a valid JSON: %s\n", string(keyBytes), string(item.Value)))
 					}
 				}
 			}
