@@ -196,18 +196,18 @@ func (this *DisGoverService) peerPingSeedGrpc() ([]*types.Node, error) {
 
 // UpdateGrpc
 func (this *DisGoverService) UpdateGrpc(ctx context.Context, update *proto.Update) (*proto.Empty, error) {
-
-	// Verify seed node is authentic?
-	err := this.verifySeedNode(update.Authentication)
-	if err != nil {
-		return &proto.Empty{}, err
-	}
-
-	// Cache delegates.
-	for _, delegate := range update.Delegates {
-		convertToDomainNode(delegate).Cache(services.GetCache())
-		utils.Info(fmt.Sprintf("delegates updated [count=%d] %s : %s:%d", len(update.Delegates), delegate.Address, delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port))
-	}
+//
+//	// Verify seed node is authentic?
+//	err := this.verifySeedNode(update.Authentication)
+//	if err != nil {
+//		return &proto.Empty{}, err
+//	}
+//
+//	// Cache delegates.
+//	for _, delegate := range update.Delegates {
+//		convertToDomainNode(delegate).Cache(services.GetCache())
+//		utils.Info(fmt.Sprintf("delegates updated [count=%d] %s : %s:%d", len(update.Delegates), delegate.Address, delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port))
+//	}
 	return &proto.Empty{}, nil
 }
 

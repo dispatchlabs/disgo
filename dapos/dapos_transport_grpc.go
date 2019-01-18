@@ -29,7 +29,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"strings"
-	"encoding/json"
+	"github.com/dispatchlabs/disgo/commons/helper"
 )
 
 // TODO: Should we GZIP the response from remote call?
@@ -67,18 +67,26 @@ func (this *DAPoSService) SynchronizeGrpc(constext context.Context, request *pro
 				i++
 				continue
 			}
+			if helper.ValidateSync(key, value) {
+				if err != nil {
+					utils.Error(err)
+				}
+			}
 			items = append(items, &proto.Item{Key: keyString, Value: value})
 			i++
 			if len(items) == 50 {
 				break
 			}
 		}
+		if len(items) == 0 {
+			utils.Info("DB synchronized")
+			fmt.Printf("\nCountMap: %v\n", helper.GetCounts().ToPrettyJson())
+		}
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	utils.Info("DB synchronized")
 	return &proto.SynchronizeResponse{Items: items}, nil
 }
 
@@ -133,27 +141,16 @@ func (this *DAPoSService) peerSynchronize() {
 			 * that I'm willing to let this be the case until we get the Merkle tree implemented. (B.S.)
 			 */
 			for _, item := range response.Items {
-				keyBytes := []byte(item.Key)
-				exists, _ := txn.Get(keyBytes)
+				exists, _ := txn.Get([]byte(item.Key))
 				if exists == nil {
-					utils.Info(string(keyBytes))
-					if strings.HasPrefix(string(keyBytes), "table-gossip") {
-						utils.Info(string(keyBytes))
-						var gsp types.Gossip
-						err = json.Unmarshal(item.Value, gsp)
-						utils.Info("ok with gossip: ", gsp.String())
-						//utils.Error(fmt.Sprintf("Received value: %s is not a valid JSON: %s\n", string(keyBytes), string(item.Value)))
-						if err != nil {
-							utils.Error(err)
-						}
-					} else if utils.IsJSON(item.Value) {
+					if helper.ValidateSync([]byte(item.Key), item.Value) {
 						err = txn.Set([]byte(item.Key), item.Value)
 						if err != nil {
 							utils.Error(err)
 						}
-					} else {
-						//utils.Error(fmt.Sprintf("Received value: %s is not a valid JSON: %s\n", string(keyBytes), string(item.Value)))
 					}
+				} else {
+					utils.Info(fmt.Sprintf("skipping key: %s ", item.Key))
 				}
 			}
 			index += int64(len(response.Items))
@@ -162,6 +159,7 @@ func (this *DAPoSService) peerSynchronize() {
 				utils.Error(err)
 			}
 		}
+		fmt.Printf("\nCountMap: %v\n", helper.GetCounts().ToPrettyJson())
 		utils.Info(fmt.Sprintf("synchronized %d records from peer delegate's DB", index))
 		return
 	}
