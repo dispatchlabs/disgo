@@ -1,14 +1,17 @@
 package helper
 
 import (
-	"strings"
 	"encoding/json"
+	"github.com/dispatchlabs/disgo/commons/utils"
+	"strings"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"fmt"
-	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/pkg/errors"
 )
 
+/*
+NEED TO ADDD Transaction replay for state of ledger
+ */
 var dataMap map[string]map[string]string
 var countMap map[string]int64
 
@@ -64,6 +67,10 @@ func (this GossipCount) getSum() int64 {
 	return this.GoodGossipCount + this.BadGossipCount
 }
 
+func ValidateTxSync(tx *types.Transaction) bool {
+	addToCountMap("goodTransactionCount", tx.Key(), tx.String())
+	return true
+}
 
 //order of checks matters (fall through)
 func ValidateSync(keyBytes []byte, valueBytes []byte) bool {
@@ -71,8 +78,10 @@ func ValidateSync(keyBytes []byte, valueBytes []byte) bool {
 	value := string(valueBytes)
 	if strings.HasPrefix(key, "table-account") {
 		addToCountMap("TotalAccountCount", key, value)
-		if err := json.Unmarshal(valueBytes, &types.Account{}); err == nil {
+		account := &types.Account{}
+		if err := json.Unmarshal(valueBytes, account); err == nil {
 			addToCountMap("goodAccountCount", key, value)
+			fmt.Printf("Account: %s\n\n", account.ToPrettyJson() )
 			return true
 		} else {
 			err = handleInvalidAccount(err, key, value)
@@ -81,8 +90,10 @@ func ValidateSync(keyBytes []byte, valueBytes []byte) bool {
 		}
 	} else if strings.HasPrefix(key, "table-transaction") {
 		addToCountMap("TotalTransactionCount", key, value)
-		if err := json.Unmarshal(valueBytes, &types.Transaction{}); err == nil {
+		tx := &types.Transaction{}
+		if err := json.Unmarshal(valueBytes, tx); err == nil {
 			addToCountMap("goodTransactionCount", key, value)
+			fmt.Printf("Transaction: %s\n\n", tx.ToPrettyJson() )
 			return true
 		} else {
 			err = handleInvalidTransaction(err, key, value)

@@ -40,7 +40,7 @@ import (
 
 var delegateMap = map[string]*types.Node{}
 
-// startGossiping
+// startGossiping //HTTP
 func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.Response {
 	utils.Debug("startGossiping")
 	txn := services.NewTxn(false)
@@ -82,8 +82,8 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 	rumor := types.NewRumor(types.GetKey(), types.GetAccount().Address, transaction.Hash)
 	gossip.Rumors = append(gossip.Rumors, *rumor)
 
-	this.cacheOnFirstReceive(gossip)
 	this.gossipChan <- gossip
+	this.cacheOnFirstReceive(gossip)
 
 	return types.NewResponseWithStatus(types.StatusPending, "Pending")
 }
@@ -116,7 +116,7 @@ func (this *DAPoSService) cacheOnFirstReceive(gossip *types.Gossip) {
 
 }
 
-// Temp_ProcessTransaction -
+// Temp_ProcessTransaction - REMOVE
 func (this *DAPoSService) Temp_ProcessTransaction(transaction *types.Transaction) *types.Response {
 	// go func(tx *types.Transaction) {
 
@@ -184,7 +184,7 @@ func (this *DAPoSService) synchronizeGossip(gossip *types.Gossip) (*types.Gossip
 	return synchronizedGossip, nil, !hasAll
 }
 
-// gossipWorker
+// gossipWorker //CONSENSUS
 func (this *DAPoSService) gossipWorker() {
 	var gossip *types.Gossip
 	for {

@@ -107,7 +107,7 @@ func (this *DisGoverService) Go() {
 
 	// Start update thread.
 	if this.ThisNode.Type == types.TypeSeed {
-		go this.updateWorker()
+		//go this.updateWorker()
 	}
 
 	utils.Info(fmt.Sprintf("running as %s", this.ThisNode.Type))

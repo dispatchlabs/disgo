@@ -46,7 +46,7 @@ func (this *DisGoverService) WithGrpc() *DisGoverService {
 	return this
 }
 
-// PingSeedGrpc
+// PingSeedGrpc  //receiver
 func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.PingSeed) (*proto.Update, error) {
 
 	// Is this node a seed?
@@ -140,7 +140,7 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.P
 	return &proto.Update{Authentication: convertToProtoAuthentication(authentication), Delegates: nodes}, nil
 }
 
-// peerPingSeedGrpc
+// peerPingSeedGrpc //caller
 func (this *DisGoverService) peerPingSeedGrpc() ([]*types.Node, error) {
 
 	var delegates = make([]*types.Node, 0)

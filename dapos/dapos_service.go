@@ -85,6 +85,7 @@ func (this *DAPoSService) disGoverServiceInitFinished() {
 
 	go this.gossipWorker()
 	go this.transactionWorker()
+	//No longer used.  GossipQueue is part of Gossip Worker
 	//go this.queueWorker()
 
 	utils.Events().Raise(types.Events.DAPoSServiceInitFinished)

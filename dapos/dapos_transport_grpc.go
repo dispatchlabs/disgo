@@ -30,6 +30,7 @@ import (
 	"google.golang.org/grpc"
 	"strings"
 	"github.com/dispatchlabs/disgo/commons/helper"
+	"encoding/json"
 )
 
 // TODO: Should we GZIP the response from remote call?
@@ -40,6 +41,68 @@ func (this *DAPoSService) WithGrpc() *DAPoSService {
 	return this
 }
 
+func (this *DAPoSService) SynchronizeAccountsGrpc(constext context.Context, request *proto.SynchronizeRequest) (*proto.SynchronizeAccountsResponse, error) {
+	return nil, nil;
+}
+
+var txMap map[int64][]*proto.Transaction
+
+// SyncTransactions - PROTO - Called when a peer asks to sync missed TX, usually this happens at node boot
+func (this *DAPoSService) SynchronizeTransactionsGrpc(constext context.Context, request *proto.SynchronizeRequest) (*proto.SynchronizeTransactionsResponse, error) {
+	utils.Info("synchronizing DB with a delegate...")
+	if txMap == nil {
+		txMap = map[int64][]*proto.Transaction{}
+	}
+	var page int64 = 0
+	if txMap[0] == nil {
+		err := services.GetDb().View(func(txn *badger.Txn) error {
+			opts := badger.DefaultIteratorOptions
+			opts.PrefetchSize = 100
+			it := txn.NewIterator(opts)
+			defer it.Close()
+			for it.Rewind(); it.Valid(); it.Next() {
+				if txMap[page] == nil {
+					txMap[page] = make([]*proto.Transaction, 0)
+				}
+				item := it.Item()
+				key := item.Key()
+				value, err := item.Value()
+				if err != nil {
+					return err
+				}
+				keyString := string(key)
+				if !strings.HasPrefix(keyString, "table-transaction") {
+					continue
+				}
+
+				transaction := &types.Transaction{}
+				if err := json.Unmarshal(value, transaction); err == nil {
+					utils.Error(err)
+				}
+				ptx := convertToProto(transaction)
+				txMap[page] = append(txMap[page], ptx)
+
+				if helper.ValidateTxSync(transaction) {
+					if err != nil {
+						utils.Error(err)
+					}
+				}
+				if len(txMap[page]) == 50 {
+					page++
+				}
+			}
+			return nil //no error
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+	if txMap[request.Index] == nil {
+		utils.Info("DB synchronized transactions")
+		txMap[request.Index] = make([]*proto.Transaction, 0)
+		fmt.Printf("\nCountMap: %v\n", helper.GetCounts().ToPrettyJson())
+	}
+	return &proto.SynchronizeTransactionsResponse{Transactions: txMap[request.Index]}, nil}
 
 // SynchronizeGrpc
 func (this *DAPoSService) SynchronizeGrpc(constext context.Context, request *proto.SynchronizeRequest) (*proto.SynchronizeResponse, error) {
@@ -63,10 +126,13 @@ func (this *DAPoSService) SynchronizeGrpc(constext context.Context, request *pro
 				continue
 			}
 			//fmt.Printf("Key: %s\n", keyString)
+
+			//really inefficient fix this crap
 			if i < request.Index {
 				i++
 				continue
 			}
+
 			if helper.ValidateSync(key, value) {
 				if err != nil {
 					utils.Error(err)
@@ -90,7 +156,7 @@ func (this *DAPoSService) SynchronizeGrpc(constext context.Context, request *pro
 	return &proto.SynchronizeResponse{Items: items}, nil
 }
 
-// peerDelegateExecuteGrpc
+// peerDelegateExecuteGrpc //Caller
 func (this *DAPoSService) peerSynchronize() {
 	utils.Info("synchronizing DB with peer delegate...")
 
@@ -104,6 +170,7 @@ func (this *DAPoSService) peerSynchronize() {
 		utils.Warn("unable to find a delegate to synchronize with")
 		return
 	}
+	//This isn't actually looping through all of the delegates there is a return in the loop
 	for _, delegate := range delegates {
 
 		// Is this me?
@@ -123,15 +190,18 @@ func (this *DAPoSService) peerSynchronize() {
 
 		// Synchronize
 		var index int64 = 0
+		count := 0
 		for {
 			txn := services.NewTxn(true)
 			defer txn.Discard()
-			response, err := client.SynchronizeGrpc(contextWithTimeout, &proto.SynchronizeRequest{Index: index})
+
+			//response, err := client.SynchronizeGrpc(contextWithTimeout, &proto.SynchronizeRequest{Index: index})
+			response, err := client.SynchronizeTransactionsGrpc(contextWithTimeout, &proto.SynchronizeRequest{Index: index})
 			if err != nil {
 				utils.Warn(fmt.Sprintf("unable to synchronize with delegate [host=%s, port=%d]", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), err)
 				continue
 			}
-			if len(response.Items) == 0 {
+			if len(response.Transactions) == 0 {
 				break
 			}
 			/*
@@ -140,27 +210,46 @@ func (this *DAPoSService) peerSynchronize() {
 			 * At the moment this is so much less of a concern than getting an invalid JSON
 			 * that I'm willing to let this be the case until we get the Merkle tree implemented. (B.S.)
 			 */
-			for _, item := range response.Items {
-				exists, _ := txn.Get([]byte(item.Key))
+			//for _, item := range response.Items {
+			//	exists, _ := txn.Get([]byte(item.Key))
+			//	if exists == nil {
+			//		if helper.ValidateSync([]byte(item.Key), item.Value) {
+			//			err = txn.Set([]byte(item.Key), item.Value)
+			//			if err != nil {
+			//				utils.Error(err)
+			//			}
+			//		}
+			//	} else {
+			//		utils.Info(fmt.Sprintf("skipping key: %s ", item.Key))
+			//	}
+			//}
+			//index += int64(len(response.Items))
+
+			for _, ptx := range response.Transactions {
+				count++
+				tx := convertToDomain(ptx)
+				exists, _ := txn.Get([]byte(tx.Key()))
 				if exists == nil {
-					if helper.ValidateSync([]byte(item.Key), item.Value) {
-						err = txn.Set([]byte(item.Key), item.Value)
-						if err != nil {
-							utils.Error(err)
-						}
+					err = tx.Persist(txn)
+					if err != nil {
+						utils.Error(err)
 					}
-				} else {
-					utils.Info(fmt.Sprintf("skipping key: %s ", item.Key))
+				}
+				if helper.ValidateTxSync(tx) {
+					if err != nil {
+						utils.Error(err)
+					}
 				}
 			}
-			index += int64(len(response.Items))
+			//index += int64(len(response.Transactions))
+			index++
 			err = txn.Commit(nil)
 			if err != nil {
 				utils.Error(err)
 			}
 		}
 		fmt.Printf("\nCountMap: %v\n", helper.GetCounts().ToPrettyJson())
-		utils.Info(fmt.Sprintf("synchronized %d records from peer delegate's DB", index))
+		utils.Info(fmt.Sprintf("synchronized %d records from peer delegate's DB", count))
 		return
 	}
 }
@@ -227,4 +316,42 @@ func (this *DAPoSService) peerGossipGrpc(node types.Node, gossip *types.Gossip) 
 	remoteGossip.CacheSentDelegate(services.GetCache(), gossip.Transaction.Hash, node.Address)
 
 	return remoteGossip, err
+}
+
+func convertToProto(tx *types.Transaction) *proto.Transaction {
+	return &proto.Transaction{
+		Hash:		tx.Hash,
+		Type:		int32(tx.Type),
+		From:      	tx.From,
+		To:        	tx.To,
+		Value:     	tx.Value,
+		Code:		tx.Code,
+		Abi:		tx.Abi,
+		Method:		tx.Method,
+		Params:		tx.Params,
+		Time:      	tx.Time,
+		Signature: 	tx.Signature,
+		Hertz:		tx.Hertz,
+		FromName:	tx.FromName,
+		ToName:		tx.ToName,
+	}
+}
+
+func convertToDomain(ptx *proto.Transaction) *types.Transaction {
+	return &types.Transaction{
+		Hash:      	ptx.Hash,
+		Type:		byte(ptx.Type),
+		From:      	ptx.From,
+		To:        	ptx.To,
+		Value:     	ptx.Value,
+		Code:		ptx.Code,
+		Abi:		ptx.Abi,
+		Method:		ptx.Method,
+		Params:		ptx.Params,
+		Time:      	ptx.Time,
+		Signature: 	ptx.Signature,
+		Hertz:		ptx.Hertz,
+		FromName:	ptx.FromName,
+		ToName:		ptx.ToName,
+	}
 }
