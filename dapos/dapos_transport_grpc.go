@@ -31,9 +31,16 @@ import (
 	"strings"
 	"github.com/dispatchlabs/disgo/commons/helper"
 	"encoding/json"
+	"math/big"
+	"strconv"
 )
 
 // TODO: Should we GZIP the response from remote call?
+
+var transactionMap map[int64][]*proto.Transaction
+var accountMap map[int64][]*proto.Account
+var gossipMap map[int64][]*proto.Gossip
+var refreshTimestamp = time.Now()
 
 // WithGrpc -
 func (this *DAPoSService) WithGrpc() *DAPoSService {
@@ -42,69 +49,145 @@ func (this *DAPoSService) WithGrpc() *DAPoSService {
 }
 
 func (this *DAPoSService) SynchronizeAccountsGrpc(constext context.Context, request *proto.SynchronizeRequest) (*proto.SynchronizeAccountsResponse, error) {
-	return nil, nil;
+	utils.Info("synchronizing accounts with a delegate...")
+	if transactionMap == nil {
+		loadMaps()
+	}
+	if transactionMap[request.Index] == nil {
+		utils.Info("DB synchronized transactions")
+		transactionMap[request.Index] = make([]*proto.Transaction, 0)
+		fmt.Printf("\nCountMap: %v\n", helper.GetCounts().ToPrettyJson())
+	}
+	return &proto.SynchronizeAccountsResponse{Accounts: accountMap[request.Index]}, nil
 }
-
-var txMap map[int64][]*proto.Transaction
 
 // SyncTransactions - PROTO - Called when a peer asks to sync missed TX, usually this happens at node boot
 func (this *DAPoSService) SynchronizeTransactionsGrpc(constext context.Context, request *proto.SynchronizeRequest) (*proto.SynchronizeTransactionsResponse, error) {
-	utils.Info("synchronizing DB with a delegate...")
-	if txMap == nil {
-		txMap = map[int64][]*proto.Transaction{}
+	utils.Info("synchronizing transactions with a delegate...")
+	if transactionMap == nil {
+		loadMaps()
 	}
-	var page int64 = 0
-	if txMap[0] == nil {
-		err := services.GetDb().View(func(txn *badger.Txn) error {
-			opts := badger.DefaultIteratorOptions
-			opts.PrefetchSize = 100
-			it := txn.NewIterator(opts)
-			defer it.Close()
-			for it.Rewind(); it.Valid(); it.Next() {
-				if txMap[page] == nil {
-					txMap[page] = make([]*proto.Transaction, 0)
-				}
-				item := it.Item()
-				key := item.Key()
-				value, err := item.Value()
-				if err != nil {
-					return err
-				}
-				keyString := string(key)
-				if !strings.HasPrefix(keyString, "table-transaction") {
-					continue
-				}
-
-				transaction := &types.Transaction{}
-				if err := json.Unmarshal(value, transaction); err == nil {
-					utils.Error(err)
-				}
-				ptx := convertToProto(transaction)
-				txMap[page] = append(txMap[page], ptx)
-
-				if helper.ValidateTxSync(transaction) {
-					if err != nil {
-						utils.Error(err)
-					}
-				}
-				if len(txMap[page]) == 50 {
-					page++
-				}
-			}
-			return nil //no error
-		})
-		if err != nil {
-			return nil, err
-		}
-	}
-	if txMap[request.Index] == nil {
+	if transactionMap[request.Index] == nil {
 		utils.Info("DB synchronized transactions")
-		txMap[request.Index] = make([]*proto.Transaction, 0)
+		transactionMap[request.Index] = make([]*proto.Transaction, 0)
 		fmt.Printf("\nCountMap: %v\n", helper.GetCounts().ToPrettyJson())
 	}
-	return &proto.SynchronizeTransactionsResponse{Transactions: txMap[request.Index]}, nil}
+	return &proto.SynchronizeTransactionsResponse{Transactions: transactionMap[request.Index]}, nil
+}
 
-// SynchronizeGrpc
+func (this *DAPoSService) SynchronizeGossipGrpc(constext context.Context, request *proto.SynchronizeRequest) (*proto.SynchronizeGossipResponse, error) {
+	utils.Info("synchronizing gossip with a delegate...")
+	if transactionMap == nil {
+		loadMaps()
+	}
+	if transactionMap[request.Index] == nil {
+		utils.Info("DB synchronized transactions")
+		transactionMap[request.Index] = make([]*proto.Transaction, 0)
+		fmt.Printf("\nCountMap: %v\n", helper.GetCounts().ToPrettyJson())
+	}
+	return &proto.SynchronizeGossipResponse{Gossips: gossipMap[request.Index]}, nil
+}
+
+func loadMaps() error {
+	accountMap = map[int64][]*proto.Account{}
+	transactionMap = map[int64][]*proto.Transaction{}
+	gossipMap = map[int64][]*proto.Gossip{}
+
+
+	var txPage int64 = 0
+	var acctPage int64 = 0
+	var gossipPage int64 = 0
+
+	err := services.GetDb().View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchSize = 100
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			key := item.Key()
+			value, err := item.Value()
+			if err != nil {
+				return err
+			}
+			keyString := string(key)
+			if !strings.HasPrefix(keyString, "table") {
+				continue
+			}
+			if strings.HasPrefix(keyString, "table-transaction") {
+				addTx(txPage, value)
+				if len(transactionMap[txPage]) == 50 {
+					txPage++
+				}
+			} else if strings.HasPrefix(keyString, "table-account") {
+				addAccount(acctPage, value)
+				if len(accountMap[acctPage]) == 50 {
+					acctPage++
+				}
+			} else if strings.HasPrefix(keyString, "table-gossip") {
+				addGossip(gossipPage, value)
+				if len(gossipMap[gossipPage]) == 50 {
+					gossipPage++
+				}
+			}
+		}
+		return nil //no error
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func addAccount(acctPage int64, value []byte) {
+	if accountMap[acctPage] == nil {
+		accountMap[acctPage] = make([]*proto.Account, 0)
+	}
+	account := &types.Account{}
+	if err := json.Unmarshal(value, account); err == nil {
+		utils.Error(err)
+	}
+	pacct := convertToProtoAccount(account)
+	accountMap[acctPage] = append(accountMap[acctPage], pacct)
+
+	if !helper.ValidateAccountSync(account) {
+		utils.Error("Error validating this account")
+	}
+}
+
+func addTx(txPage int64, value []byte) {
+	if transactionMap[txPage] == nil {
+		transactionMap[txPage] = make([]*proto.Transaction, 0)
+	}
+	transaction := &types.Transaction{}
+	if err := json.Unmarshal(value, transaction); err == nil {
+		utils.Error(err)
+	}
+	ptx := convertToProtoTransaction(transaction)
+	transactionMap[txPage] = append(transactionMap[txPage], ptx)
+
+	if !helper.ValidateTxSync(transaction) {
+		utils.Error("Error validating this transaction")
+	}
+}
+
+func addGossip(gossipPage int64, value []byte) {
+	if gossipMap[gossipPage] == nil {
+		gossipMap[gossipPage] = make([]*proto.Gossip, 0)
+	}
+	gossip := &types.Gossip{}
+	if err := json.Unmarshal(value, gossip); err == nil {
+		utils.Error(err)
+	}
+	pgossip := convertToProtoGossip(gossip)
+	gossipMap[gossipPage] = append(gossipMap[gossipPage], pgossip)
+
+	if !helper.ValidateGossipSync(gossip) {
+		utils.Error("Error validating this Gossip")
+	}
+}
+
+// SynchronizeGrpc -- Deprecated
 func (this *DAPoSService) SynchronizeGrpc(constext context.Context, request *proto.SynchronizeRequest) (*proto.SynchronizeResponse, error) {
 	utils.Info("synchronizing DB with a delegate...")
 	var items = make([]*proto.Item, 0)
@@ -227,7 +310,7 @@ func (this *DAPoSService) peerSynchronize() {
 
 			for _, ptx := range response.Transactions {
 				count++
-				tx := convertToDomain(ptx)
+				tx := convertToDomainTransaction(ptx)
 				exists, _ := txn.Get([]byte(tx.Key()))
 				if exists == nil {
 					err = tx.Persist(txn)
@@ -318,7 +401,37 @@ func (this *DAPoSService) peerGossipGrpc(node types.Node, gossip *types.Gossip) 
 	return remoteGossip, err
 }
 
-func convertToProto(tx *types.Transaction) *proto.Transaction {
+func convertToProtoAccount(acct *types.Account) *proto.Account {
+	return &proto.Account{
+		Address:			acct.Address,
+		Name:				acct.Name,
+		Balance:			acct.Balance.String(),
+		HertzAvailable:		acct.HertzAvailable,
+		TransactionHash:	acct.TransactionHash,
+		Created:			utils.ToMilliSeconds(acct.Created),
+		Updated:			utils.ToMilliSeconds(acct.Updated),
+		Nonce:				acct.Nonce,
+	}
+}
+
+func convertToDomainAccount(pacct *proto.Account) *types.Account {
+	bFloat, err := strconv.ParseFloat(pacct.Balance, 64)
+	if err != nil {
+		utils.Error("failed to parse balance")
+	}
+	return &types.Account{
+		Address:         pacct.Address,
+		Name:            pacct.Name,
+		Balance:         big.NewInt(int64(bFloat)),
+		HertzAvailable:  pacct.HertzAvailable,
+		TransactionHash: pacct.TransactionHash,
+		Created:         utils.ToTimeFromMilliseconds(pacct.Created),
+		Updated:         utils.ToTimeFromMilliseconds(pacct.Updated),
+		Nonce:           pacct.Nonce,
+	}
+}
+
+func convertToProtoTransaction(tx *types.Transaction) *proto.Transaction {
 	return &proto.Transaction{
 		Hash:		tx.Hash,
 		Type:		int32(tx.Type),
@@ -337,7 +450,7 @@ func convertToProto(tx *types.Transaction) *proto.Transaction {
 	}
 }
 
-func convertToDomain(ptx *proto.Transaction) *types.Transaction {
+func convertToDomainTransaction(ptx *proto.Transaction) *types.Transaction {
 	return &types.Transaction{
 		Hash:      	ptx.Hash,
 		Type:		byte(ptx.Type),
@@ -353,5 +466,47 @@ func convertToDomain(ptx *proto.Transaction) *types.Transaction {
 		Hertz:		ptx.Hertz,
 		FromName:	ptx.FromName,
 		ToName:		ptx.ToName,
+	}
+}
+
+func convertToProtoRumor(rumor *types.Rumor) *proto.Rumor {
+	return &proto.Rumor{
+		Hash: 				rumor.Hash,
+		Address:			rumor.Address,
+		TransactionHash:	rumor.TransactionHash,
+		Time:				rumor.Time,
+		Signature:			rumor.Signature,
+	}
+}
+
+func convertToDomainRumor(prumor *proto.Rumor) *types.Rumor {
+	return &types.Rumor{
+		Hash:            prumor.Hash,
+		Address:         prumor.Address,
+		TransactionHash: prumor.TransactionHash,
+		Time:            prumor.Time,
+		Signature:       prumor.Signature,
+	}
+}
+
+func convertToProtoGossip(gossip *types.Gossip) *proto.Gossip {
+	prumors := make([]*proto.Rumor, 0)
+	for _, rumor := range gossip.Rumors {
+		prumors = append(prumors, convertToProtoRumor(&rumor))
+	}
+	return &proto.Gossip{
+		TxHash:		gossip.Transaction.Hash,
+		Rumors: 	prumors,
+	}
+}
+
+func convertToDomainGossip(pgossip *proto.Gossip) *types.Gossip {
+	rumors := make([]types.Rumor, 0)
+	for _, prumor := range pgossip.Rumors {
+		rumors = append(rumors, *convertToDomainRumor(prumor))
+	}
+	return &types.Gossip{
+		Transaction: 	types.Transaction{Hash: pgossip.TxHash},
+		Rumors:			rumors,
 	}
 }

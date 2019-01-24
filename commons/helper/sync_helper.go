@@ -67,10 +67,21 @@ func (this GossipCount) getSum() int64 {
 	return this.GoodGossipCount + this.BadGossipCount
 }
 
+func ValidateAccountSync(acct *types.Account) bool {
+	addToCountMap("goodAccountCount", acct.Key(), acct.String())
+	return true
+}
+
 func ValidateTxSync(tx *types.Transaction) bool {
 	addToCountMap("goodTransactionCount", tx.Key(), tx.String())
 	return true
 }
+
+func ValidateGossipSync(gossip *types.Gossip) bool {
+	addToCountMap("TotalGossipCount", gossip.Key(), gossip.String())
+	return true
+}
+
 
 //order of checks matters (fall through)
 func ValidateSync(keyBytes []byte, valueBytes []byte) bool {

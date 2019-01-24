@@ -20,7 +20,14 @@ message Item {
 }
 
 message Account {
-    string name = 1;
+    string      address = 1;
+    string      name = 2;
+    string      balance = 3;
+   	uint64      hertzAvailable = 4;
+    string      transactionHash = 5;
+    int64       created = 6;
+    int64       updated = 7;
+    uint64      nonce = 8;
 }
 
 message Transaction {
@@ -40,6 +47,19 @@ message Transaction {
    	string   toName = 14;
 }
 
+message Rumor {
+    string  hash = 1;
+    string  address = 2;
+    string  transactionHash = 3;
+    int64   time = 4;
+    string  signature = 5;
+}
+
+message Gossip {
+    string txHash = 1;
+    repeated Rumor rumors = 2;
+}
+
 message SynchronizeRequest {
     int64 Index = 1;
 }
@@ -48,17 +68,22 @@ message SynchronizeResponse {
     repeated Item Items = 1;
 }
 
+message SynchronizeAccountsResponse {
+    repeated Account accounts = 1;
+}
+
 message SynchronizeTransactionsResponse {
     repeated Transaction transactions = 1;
 }
 
-message SynchronizeAccountsResponse {
-    repeated Account accounts = 1;
+message SynchronizeGossipResponse {
+    repeated Gossip gossips = 1;
 }
 
 service DAPoSGrpc {
     rpc SynchronizeGrpc(SynchronizeRequest) returns (SynchronizeResponse) {}
     rpc SynchronizeAccountsGrpc(SynchronizeRequest) returns (SynchronizeAccountsResponse) {}
     rpc SynchronizeTransactionsGrpc(SynchronizeRequest) returns (SynchronizeTransactionsResponse) {}
+    rpc SynchronizeGossipGrpc(SynchronizeRequest) returns (SynchronizeGossipResponse) {}
     rpc GossipGrpc(Request) returns (Response) {}
 }
