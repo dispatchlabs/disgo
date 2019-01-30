@@ -50,7 +50,8 @@ func (this *DAPoSService) WithGrpc() *DAPoSService {
 
 func (this *DAPoSService) SynchronizeAccountsGrpc(constext context.Context, request *proto.SynchronizeRequest) (*proto.SynchronizeAccountsResponse, error) {
 	utils.Info("synchronizing accounts with a delegate...")
-	if transactionMap == nil {
+
+	if transactionMap == nil { //todo add OR if timestamp is old
 		loadMaps()
 	}
 	if transactionMap[request.Index] == nil {
@@ -62,14 +63,19 @@ func (this *DAPoSService) SynchronizeAccountsGrpc(constext context.Context, requ
 }
 
 // SyncTransactions - PROTO - Called when a peer asks to sync missed TX, usually this happens at node boot
-func (this *DAPoSService) SynchronizeTransactionsGrpc(constext context.Context, request *proto.SynchronizeRequest) (*proto.SynchronizeTransactionsResponse, error) {
-	utils.Info("synchronizing transactions with a delegate...")
+func (this *DAPoSService) SynchronizeTransactionsGrpc(context context.Context, request *proto.SynchronizeRequest) (*proto.SynchronizeTransactionsResponse, error) {
+	utils.Info("synchronizing index", request.Index, " of transactions to a delegate...")
+
+
 	if transactionMap == nil {
+		utils.Info("loadingMaps")
 		loadMaps()
 	}
 	if transactionMap[request.Index] == nil {
 		utils.Info("DB synchronized transactions")
 		transactionMap[request.Index] = make([]*proto.Transaction, 0)
+		utils.Info("Is this even where CountMap is happening?")
+		utils.Info("\nCountMap: %v\n", helper.GetCounts().ToPrettyJson())
 		fmt.Printf("\nCountMap: %v\n", helper.GetCounts().ToPrettyJson())
 	}
 	return &proto.SynchronizeTransactionsResponse{Transactions: transactionMap[request.Index]}, nil
@@ -88,6 +94,10 @@ func (this *DAPoSService) SynchronizeGossipGrpc(constext context.Context, reques
 	return &proto.SynchronizeGossipResponse{Gossips: gossipMap[request.Index]}, nil
 }
 
+/*Creates 3 maps: 1) Accounts, TXs, and Gossips
+Each Map goes from an int page number to an array of *proto buff defined Bytes
+Each Map has a page count that iterates every 50 map entries
+ */
 func loadMaps() error {
 	accountMap = map[int64][]*proto.Account{}
 	transactionMap = map[int64][]*proto.Transaction{}
@@ -129,6 +139,8 @@ func loadMaps() error {
 				if len(gossipMap[gossipPage]) == 50 {
 					gossipPage++
 				}
+			} else {
+				utils.Info("other prefix", keyString)
 			}
 		}
 		return nil //no error
@@ -144,7 +156,7 @@ func addAccount(acctPage int64, value []byte) {
 		accountMap[acctPage] = make([]*proto.Account, 0)
 	}
 	account := &types.Account{}
-	if err := json.Unmarshal(value, account); err == nil {
+	if err := json.Unmarshal(value, account); err != nil {
 		utils.Error(err)
 	}
 	pacct := convertToProtoAccount(account)
@@ -155,12 +167,15 @@ func addAccount(acctPage int64, value []byte) {
 	}
 }
 
+/*Converts Transaction objects to their protobuff equivalent
+and appends them to the latest transaction page in the transaciton Map
+ */
 func addTx(txPage int64, value []byte) {
 	if transactionMap[txPage] == nil {
 		transactionMap[txPage] = make([]*proto.Transaction, 0)
 	}
 	transaction := &types.Transaction{}
-	if err := json.Unmarshal(value, transaction); err == nil {
+	if err := json.Unmarshal(value, transaction); err != nil {
 		utils.Error(err)
 	}
 	ptx := convertToProtoTransaction(transaction)
@@ -176,7 +191,7 @@ func addGossip(gossipPage int64, value []byte) {
 		gossipMap[gossipPage] = make([]*proto.Gossip, 0)
 	}
 	gossip := &types.Gossip{}
-	if err := json.Unmarshal(value, gossip); err == nil {
+	if err := json.Unmarshal(value, gossip); err != nil {
 		utils.Error(err)
 	}
 	pgossip := convertToProtoGossip(gossip)
@@ -243,6 +258,7 @@ func (this *DAPoSService) SynchronizeGrpc(constext context.Context, request *pro
 func (this *DAPoSService) peerSynchronize() {
 	utils.Info("synchronizing DB with peer delegate...")
 
+
 	// Find delegate nodes.
 	delegates, err := types.ToNodesByTypeFromCache(services.GetCache(),types.TypeDelegate)
 	if err != nil {
@@ -253,11 +269,17 @@ func (this *DAPoSService) peerSynchronize() {
 		utils.Warn("unable to find a delegate to synchronize with")
 		return
 	}
+
+	utils.Info("number of delegates is ", len(delegates))
+
 	//This isn't actually looping through all of the delegates there is a return in the loop
 	for _, delegate := range delegates {
 
+		fmt.Printf("going to try to connect to delegate %s\n", delegate.Address)
+
 		// Is this me?
 		if delegate.Address == disgover.GetDisGoverService().ThisNode.Address {
+			fmt.Println("This delegate is me")
 			continue
 		}
 		// Connect to delegate.
@@ -265,6 +287,8 @@ func (this *DAPoSService) peerSynchronize() {
 		if err != nil {
 			utils.Warn(fmt.Sprintf("unable to connect to delegate [host=%s, port=%d]", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), err)
 			continue
+		} else {
+			utils.Info("connecting to delegate %s worked", delegate.Address)
 		}
 		defer conn.Close()
 		client := proto.NewDAPoSGrpcClient(conn)
@@ -331,9 +355,13 @@ func (this *DAPoSService) peerSynchronize() {
 				utils.Error(err)
 			}
 		}
+		utils.Info("this is where the Last CountMap gets printed")
+		utils.Info("\nCountMap: %v\n", helper.GetCounts().ToPrettyJson())
 		fmt.Printf("\nCountMap: %v\n", helper.GetCounts().ToPrettyJson())
-		utils.Info(fmt.Sprintf("synchronized %d records from peer delegate's DB", count))
+		utils.Info(fmt.Sprintf("synchronized %d records from peer delegate %s's DB", count, delegate.Address))
 		return
+		//This return means that db is only synced with the first (non-self) delegate returned by the seed node
+		//That's good to know because basically the for loop is nearly pointless
 	}
 }
 

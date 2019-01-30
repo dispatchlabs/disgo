@@ -91,6 +91,8 @@ func (this *DisGoverService) Go() {
 	// Cache delegates?
 	if this.ThisNode.Type != types.TypeSeed {
 		delegates, err := this.peerPingSeedGrpc()
+		fmt.Println("list of delegates returned by seed is len:", len(delegates))
+
 		if err != nil {
 			utils.Error(err)
 			services.GetDbService().Close()

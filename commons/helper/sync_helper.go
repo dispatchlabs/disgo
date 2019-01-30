@@ -189,6 +189,6 @@ func GetCounts() *SyncStats {
 		utils.Error("unable to marshal dataMap", err)
 	}
 	utils.WriteFile(".", "badger-data.json", string(bytes))
-	fmt.Printf("DataMap: \n%s", string(bytes))
+	//fmt.Printf("DataMap: \n%s", string(bytes))
 	return stats
 }

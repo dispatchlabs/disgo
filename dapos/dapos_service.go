@@ -74,6 +74,7 @@ func (this *DAPoSService) disGoverServiceInitFinished() {
 
 	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
 		this.peerSynchronize()
+		utils.Info("this prints out after peerSynchronize is called in disGoverServiceInitFinished()")
 	}
 
 	// Create genesis account.
