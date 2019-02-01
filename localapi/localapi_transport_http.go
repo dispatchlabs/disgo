@@ -27,15 +27,14 @@ import (
 
 	"fmt"
 
+	"github.com/dispatchlabs/disgo/commons/crypto"
 	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/dispatchlabs/disgo/sdk"
-	"time"
-	"strings"
-	"encoding/base64"
 	"math/big"
-	"github.com/dispatchlabs/disgo/commons/crypto"
+	"strings"
+	"time"
 )
 
 // WithHttp -
@@ -60,13 +59,13 @@ func checkAuth(w http.ResponseWriter, r *http.Request) bool {
 	s := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
 	if len(s) != 2 { return false }
 
-	b, err := base64.StdEncoding.DecodeString(s[1])
-	if err != nil { return false }
+	//b, err := base64.StdEncoding.DecodeString(s[1])
+	//if err != nil { return false }
+	//
+	//pair := strings.SplitN(string(b), ":", 2)
+	//if len(pair) != 2 { return false }
 
-	pair := strings.SplitN(string(b), ":", 2)
-	if len(pair) != 2 { return false }
-
-	return pair[0] == types.GetConfig().LocalHttpApiUsername && pair[1] == types.GetConfig().LocalHttpApiPassword
+	return s[0] == types.GetConfig().LocalHttpApiUsername && s[1] == types.GetConfig().LocalHttpApiPassword
 }
 
 
