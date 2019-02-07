@@ -67,6 +67,7 @@ func (this GossipCount) getSum() int64 {
 	return this.GoodGossipCount + this.BadGossipCount
 }
 
+//TODO: none of these actually do any validation and always return true
 func ValidateAccountSync(acct *types.Account) bool {
 	addToCountMap("goodAccountCount", acct.Key(), acct.String())
 	return true
@@ -95,7 +96,7 @@ func ValidateSync(keyBytes []byte, valueBytes []byte) bool {
 			fmt.Printf("Account: %s\n\n", account.ToPrettyJson() )
 			return true
 		} else {
-			err = handleInvalidAccount(err, key, value)
+			err = HandleInvalidAccount(err, key, value)
 			utils.Error(err, fmt.Sprintf("Received value: %s is not a valid JSON: %s\n", key, value))
 			return false
 		}
@@ -107,7 +108,7 @@ func ValidateSync(keyBytes []byte, valueBytes []byte) bool {
 			fmt.Printf("Transaction: %s\n\n", tx.ToPrettyJson() )
 			return true
 		} else {
-			err = handleInvalidTransaction(err, key, value)
+			err = HandleInvalidTransaction(err, key, value)
 			utils.Error(err, fmt.Sprintf("Received value: %s is not a valid JSON: %s\n", key, value))
 			return false
 		}
@@ -135,7 +136,7 @@ func ValidateSync(keyBytes []byte, valueBytes []byte) bool {
 	return true
 }
 
-func handleInvalidAccount(err error, key, value string) error {
+func HandleInvalidAccount(err error, key, value string) error {
 	if strings.Contains(value, "balance") {
 		addToCountMap("badAccountCount", key, value)
 		return nil
@@ -146,7 +147,7 @@ func handleInvalidAccount(err error, key, value string) error {
 	return nil
 }
 
-func handleInvalidTransaction(err error, key, value string) error {
+func HandleInvalidTransaction(err error, key, value string) error {
 	if strings.Contains(value, "balanceOf") {
 		addToCountMap("balancOfCount", key, value)
 		return nil
@@ -172,6 +173,7 @@ func addToCountMap(typ, key, value string) {
 		dataMap[typ] = make(map[string]string)
 	}
 	dataMap[typ][key] = value
+
 }
 
 func GetCounts() *SyncStats {

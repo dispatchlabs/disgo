@@ -125,6 +125,7 @@ func loadMaps() error {
 				continue
 			}
 			if strings.HasPrefix(keyString, "table-transaction") {
+				utils.Info(keyString)
 				addTx(txPage, value)
 				if len(transactionMap[txPage]) == 50 {
 					txPage++
@@ -151,6 +152,10 @@ func loadMaps() error {
 	return nil
 }
 
+/*The following addAccount, addTx, and addGossip functions are
+called from the loadMaps() function. If the object unmarshals without error,
+it is converted to its proto version and added to its appropriate Map.
+ */
 func addAccount(acctPage int64, value []byte) {
 	if accountMap[acctPage] == nil {
 		accountMap[acctPage] = make([]*proto.Account, 0)
@@ -158,18 +163,16 @@ func addAccount(acctPage int64, value []byte) {
 	account := &types.Account{}
 	if err := json.Unmarshal(value, account); err != nil {
 		utils.Error(err)
-	}
-	pacct := convertToProtoAccount(account)
-	accountMap[acctPage] = append(accountMap[acctPage], pacct)
+	} else {
+		pacct := convertToProtoAccount(account)
+		accountMap[acctPage] = append(accountMap[acctPage], pacct)
 
-	if !helper.ValidateAccountSync(account) {
-		utils.Error("Error validating this account")
+		if !helper.ValidateAccountSync(account) {
+			utils.Error("Error validating this account")
+		}
 	}
 }
 
-/*Converts Transaction objects to their protobuff equivalent
-and appends them to the latest transaction page in the transaciton Map
- */
 func addTx(txPage int64, value []byte) {
 	if transactionMap[txPage] == nil {
 		transactionMap[txPage] = make([]*proto.Transaction, 0)
@@ -177,12 +180,14 @@ func addTx(txPage int64, value []byte) {
 	transaction := &types.Transaction{}
 	if err := json.Unmarshal(value, transaction); err != nil {
 		utils.Error(err)
-	}
-	ptx := convertToProtoTransaction(transaction)
-	transactionMap[txPage] = append(transactionMap[txPage], ptx)
+		//helper.HandleInvalidTransaction()
+	} else {
+		ptx := convertToProtoTransaction(transaction)
+		transactionMap[txPage] = append(transactionMap[txPage], ptx)
 
-	if !helper.ValidateTxSync(transaction) {
-		utils.Error("Error validating this transaction")
+		if !helper.ValidateTxSync(transaction) {
+			utils.Error("Error validating this transaction")
+		}
 	}
 }
 
@@ -193,12 +198,13 @@ func addGossip(gossipPage int64, value []byte) {
 	gossip := &types.Gossip{}
 	if err := json.Unmarshal(value, gossip); err != nil {
 		utils.Error(err)
-	}
-	pgossip := convertToProtoGossip(gossip)
-	gossipMap[gossipPage] = append(gossipMap[gossipPage], pgossip)
+	} else {
+		pgossip := convertToProtoGossip(gossip)
+		gossipMap[gossipPage] = append(gossipMap[gossipPage], pgossip)
 
-	if !helper.ValidateGossipSync(gossip) {
-		utils.Error("Error validating this Gossip")
+		if !helper.ValidateGossipSync(gossip) {
+			utils.Error("Error validating this Gossip")
+		}
 	}
 }
 
