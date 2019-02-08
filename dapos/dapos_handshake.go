@@ -362,6 +362,7 @@ func (this *DAPoSService) doWork() {
 			receipt.Cache(services.GetCache())
 			return
 		}
+		//TODO: grab the earlies gossip Rumor, not the first one in the array
 		initialRcvDuration := gossip.Rumors[0].Time - gossip.Transaction.Time
 		utils.Debug("Initial Receive Duration = ", initialRcvDuration, types.TxReceiveTimeout)
 		if initialRcvDuration >= types.TxReceiveTimeout {

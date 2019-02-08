@@ -38,7 +38,7 @@ import (
 // TODO: Should we GZIP the response from remote call?
 
 var transactionMap map[int64][]*proto.Transaction
-var accountMap map[int64][]*proto.Account
+//var accountMap map[int64][]*proto.Account
 var gossipMap map[int64][]*proto.Gossip
 var refreshTimestamp = time.Now()
 
@@ -48,19 +48,19 @@ func (this *DAPoSService) WithGrpc() *DAPoSService {
 	return this
 }
 
-func (this *DAPoSService) SynchronizeAccountsGrpc(constext context.Context, request *proto.SynchronizeRequest) (*proto.SynchronizeAccountsResponse, error) {
-	utils.Info("synchronizing accounts with a delegate...")
-
-	if transactionMap == nil { //todo add OR if timestamp is old
-		loadMaps()
-	}
-	if transactionMap[request.Index] == nil {
-		utils.Info("DB synchronized transactions")
-		transactionMap[request.Index] = make([]*proto.Transaction, 0)
-		fmt.Printf("\nCountMap: %v\n", helper.GetCounts().ToPrettyJson())
-	}
-	return &proto.SynchronizeAccountsResponse{Accounts: accountMap[request.Index]}, nil
-}
+//func (this *DAPoSService) SynchronizeAccountsGrpc(context context.Context, request *proto.SynchronizeRequest) (*proto.SynchronizeAccountsResponse, error) {
+//	utils.Info("synchronizing accounts with a delegate...")
+//
+//	if transactionMap == nil { //todo add OR if timestamp is old
+//		loadMaps()
+//	}
+//	if transactionMap[request.Index] == nil {
+//		utils.Info("DB synchronized Account")
+//		transactionMap[request.Index] = make([]*proto.Transaction, 0)
+//		fmt.Printf("\nCountMap: %v\n", helper.GetCounts().ToPrettyJson())
+//	}
+//	return &proto.SynchronizeAccountsResponse{Accounts: accountMap[request.Index]}, nil
+//}
 
 // SyncTransactions - PROTO - Called when a peer asks to sync missed TX, usually this happens at node boot
 func (this *DAPoSService) SynchronizeTransactionsGrpc(context context.Context, request *proto.SynchronizeRequest) (*proto.SynchronizeTransactionsResponse, error) {
@@ -81,14 +81,15 @@ func (this *DAPoSService) SynchronizeTransactionsGrpc(context context.Context, r
 	return &proto.SynchronizeTransactionsResponse{Transactions: transactionMap[request.Index]}, nil
 }
 
-func (this *DAPoSService) SynchronizeGossipGrpc(constext context.Context, request *proto.SynchronizeRequest) (*proto.SynchronizeGossipResponse, error) {
-	utils.Info("synchronizing gossip with a delegate...")
-	if transactionMap == nil {
+func (this *DAPoSService) SynchronizeGossipGrpc(context context.Context, request *proto.SynchronizeRequest) (*proto.SynchronizeGossipResponse, error) {
+	utils.Info("synchronizing index", request.Index, " of gossips to a delegate...")
+
+	if gossipMap == nil {
 		loadMaps()
 	}
-	if transactionMap[request.Index] == nil {
-		utils.Info("DB synchronized transactions")
-		transactionMap[request.Index] = make([]*proto.Transaction, 0)
+	if gossipMap[request.Index] == nil {
+		utils.Info("DB synchronized gossip")
+		gossipMap[request.Index] = make([]*proto.Gossip, 0)
 		fmt.Printf("\nCountMap: %v\n", helper.GetCounts().ToPrettyJson())
 	}
 	return &proto.SynchronizeGossipResponse{Gossips: gossipMap[request.Index]}, nil
@@ -99,13 +100,13 @@ Each Map goes from an int page number to an array of *proto buff defined Bytes
 Each Map has a page count that iterates every 50 map entries
  */
 func loadMaps() error {
-	accountMap = map[int64][]*proto.Account{}
+	//accountMap = map[int64][]*proto.Account{}
 	transactionMap = map[int64][]*proto.Transaction{}
 	gossipMap = map[int64][]*proto.Gossip{}
 
 
 	var txPage int64 = 0
-	var acctPage int64 = 0
+	//var acctPage int64 = 0
 	var gossipPage int64 = 0
 
 	err := services.GetDb().View(func(txn *badger.Txn) error {
@@ -130,11 +131,11 @@ func loadMaps() error {
 				if len(transactionMap[txPage]) == 50 {
 					txPage++
 				}
-			} else if strings.HasPrefix(keyString, "table-account") {
-				addAccount(acctPage, value)
-				if len(accountMap[acctPage]) == 50 {
-					acctPage++
-				}
+			//} else if strings.HasPrefix(keyString, "table-account") {
+			//	addAccount(acctPage, value)
+			//	if len(accountMap[acctPage]) == 50 {
+			//		acctPage++
+			//	}
 			} else if strings.HasPrefix(keyString, "table-gossip") {
 				addGossip(gossipPage, value)
 				if len(gossipMap[gossipPage]) == 50 {
@@ -156,22 +157,22 @@ func loadMaps() error {
 called from the loadMaps() function. If the object unmarshals without error,
 it is converted to its proto version and added to its appropriate Map.
  */
-func addAccount(acctPage int64, value []byte) {
-	if accountMap[acctPage] == nil {
-		accountMap[acctPage] = make([]*proto.Account, 0)
-	}
-	account := &types.Account{}
-	if err := json.Unmarshal(value, account); err != nil {
-		utils.Error(err)
-	} else {
-		pacct := convertToProtoAccount(account)
-		accountMap[acctPage] = append(accountMap[acctPage], pacct)
-
-		if !helper.ValidateAccountSync(account) {
-			utils.Error("Error validating this account")
-		}
-	}
-}
+//func addAccount(acctPage int64, value []byte) {
+//	if accountMap[acctPage] == nil {
+//		accountMap[acctPage] = make([]*proto.Account, 0)
+//	}
+//	account := &types.Account{}
+//	if err := json.Unmarshal(value, account); err != nil {
+//		utils.Error(err)
+//	} else {
+//		pacct := convertToProtoAccount(account)
+//		accountMap[acctPage] = append(accountMap[acctPage], pacct)
+//
+//		if !helper.ValidateAccountSync(account) {
+//			utils.Error("Error validating this account")
+//		}
+//	}
+//}
 
 func addTx(txPage int64, value []byte) {
 	if transactionMap[txPage] == nil {
@@ -302,21 +303,26 @@ func (this *DAPoSService) peerSynchronize() {
 		defer cancel()
 
 		// Synchronize
-		var index int64 = 0
+		var txIndex int64 = 0
+		var gossipIndex int64 = 0
 		count := 0
+		//This For loop indexes through the sending delegates TXs
 		for {
+			//Open up a new badger db tx
 			txn := services.NewTxn(true)
 			defer txn.Discard()
 
-			//response, err := client.SynchronizeGrpc(contextWithTimeout, &proto.SynchronizeRequest{Index: index})
-			response, err := client.SynchronizeTransactionsGrpc(contextWithTimeout, &proto.SynchronizeRequest{Index: index})
+			//Synchronizing Transactions First
+			txResponse, err := client.SynchronizeTransactionsGrpc(contextWithTimeout, &proto.SynchronizeRequest{Index: txIndex})
 			if err != nil {
 				utils.Warn(fmt.Sprintf("unable to synchronize with delegate [host=%s, port=%d]", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), err)
 				continue
 			}
-			if len(response.Transactions) == 0 {
+			if len(txResponse.Transactions) == 0 {
 				break
 			}
+
+
 			/*
 			 * Adding code to avoid issues we are having with corrupt data coming from sync
 			 * Concerned about the case where current delegate might have an old version of a key value
@@ -338,7 +344,8 @@ func (this *DAPoSService) peerSynchronize() {
 			//}
 			//index += int64(len(response.Items))
 
-			for _, ptx := range response.Transactions {
+			//Takes newly received transactions and persists them to badger
+			for _, ptx := range txResponse.Transactions {
 				count++
 				tx := convertToDomainTransaction(ptx)
 				exists, _ := txn.Get([]byte(tx.Key()))
@@ -355,16 +362,64 @@ func (this *DAPoSService) peerSynchronize() {
 				}
 			}
 			//index += int64(len(response.Transactions))
-			index++
+			txIndex++
 			err = txn.Commit(nil)
 			if err != nil {
 				utils.Error(err)
 			}
 		}
+
+		//this for loop indexes through the sending delegate's gossips
+		for {
+			//Open up a new Badger db TX
+			txn := services.NewTxn(true)
+			defer txn.Discard()
+
+			//Call the next index of gossips from the sender
+			gossipResponse, err := client.SynchronizeGossipGrpc(contextWithTimeout, &proto.SynchronizeRequest{Index: gossipIndex})
+			if err != nil {
+				utils.Warn(fmt.Sprintf("unable to synchronize with delegate [host=%s, port=%d]", delegate.GrpcEndpoint.Host, delegate.GrpcEndpoint.Port), err)
+				continue
+			}
+			if len(gossipResponse.Gossips) == 0 {
+				break
+			}
+
+			
+			//Takes newly received Gossips and Persists them to badger
+			for _, pg := range gossipResponse.Gossips {
+				count++
+				gossip := convertToDomainGossip(pg)
+				exists, _ := txn.Get([]byte(gossip.Key()))
+				if exists == nil {
+					err = gossip.Persist(txn)
+					if err != nil {
+						utils.Error(err)
+					}
+				}
+				if helper.ValidateGossipSync(gossip) {
+					if err != nil {
+						utils.Error(err)
+					}
+				}
+			}
+			//index += int64(len(response.Transactions))
+			gossipIndex++
+			err = txn.Commit(nil)
+			if err != nil {
+				utils.Error(err)
+			}
+
+		}
+
 		utils.Info("this is where the Last CountMap gets printed")
 		utils.Info("\nCountMap: %v\n", helper.GetCounts().ToPrettyJson())
 		fmt.Printf("\nCountMap: %v\n", helper.GetCounts().ToPrettyJson())
 		utils.Info(fmt.Sprintf("synchronized %d records from peer delegate %s's DB", count, delegate.Address))
+
+		//Recreate the rest of the state given the TXs
+		helper.ReplayTransactions();
+
 		return
 		//This return means that db is only synced with the first (non-self) delegate returned by the seed node
 		//That's good to know because basically the for loop is nearly pointless

@@ -2,9 +2,10 @@ package helper
 
 import (
 	"encoding/json"
+	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"strings"
-	"github.com/dispatchlabs/disgo/commons/types"
+	//"github.com/dispatchlabs/disgo/dapos"
 	"fmt"
 	"github.com/pkg/errors"
 )
@@ -68,10 +69,10 @@ func (this GossipCount) getSum() int64 {
 }
 
 //TODO: none of these actually do any validation and always return true
-func ValidateAccountSync(acct *types.Account) bool {
-	addToCountMap("goodAccountCount", acct.Key(), acct.String())
-	return true
-}
+//func ValidateAccountSync(acct *types.Account) bool {
+//	addToCountMap("goodAccountCount", acct.Key(), acct.String())
+//	return true
+//}
 
 func ValidateTxSync(tx *types.Transaction) bool {
 	addToCountMap("goodTransactionCount", tx.Key(), tx.String())
@@ -113,13 +114,13 @@ func ValidateSync(keyBytes []byte, valueBytes []byte) bool {
 			return false
 		}
 	} else if strings.HasPrefix(key, "table-gossip") {
-		//addToCountMap("TotalGossipCount", key, value)
+		addToCountMap("TotalGossipCount", key, value)
 		if err := json.Unmarshal(valueBytes, &types.Gossip{}); err == nil {
-			//addToCountMap("goodGossipCount", key, value)
+			addToCountMap("goodGossipCount", key, value)
 			return true
 		} else {
-			//addToCountMap("badGossipCount", key, value)
-			//utils.Error(err, fmt.Sprintf("Received value: %s is not a valid JSON: %s\n", key, value))
+			addToCountMap("badGossipCount", key, value)
+			utils.Error(err, fmt.Sprintf("Received value: %s is not a valid JSON: %s\n", key, value))
 			return false
 		}
 	} else if strings.HasPrefix(key, "table-rateLimit") {
@@ -193,4 +194,19 @@ func GetCounts() *SyncStats {
 	utils.WriteFile(".", "badger-data.json", string(bytes))
 	//fmt.Printf("DataMap: \n%s", string(bytes))
 	return stats
+}
+
+// Generates the full state of the ledger (accounts, receipts, rate-limiting, etc) given just TXs
+func ReplayTransactions() {
+
+	//TODO: Check to make sure there is a genesis account records
+	//err := dapos.GetDAPoSService().CreateGenesisAccount()
+	//if err != nil {
+	//	services.GetDbService().Close()
+	//	utils.Fatal("unable to create genesis account", err)
+	//}
+
+	//Make sure TXs are chronological
+
+
 }

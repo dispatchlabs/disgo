@@ -878,7 +878,7 @@ func (c *dAPoSGrpcClient) GossipGrpc(ctx context.Context, in *Request, opts ...g
 // DAPoSGrpcServer is the server API for DAPoSGrpc service.
 type DAPoSGrpcServer interface {
 	SynchronizeGrpc(context.Context, *SynchronizeRequest) (*SynchronizeResponse, error)
-	SynchronizeAccountsGrpc(context.Context, *SynchronizeRequest) (*SynchronizeAccountsResponse, error)
+	//SynchronizeAccountsGrpc(context.Context, *SynchronizeRequest) (*SynchronizeAccountsResponse, error)
 	SynchronizeTransactionsGrpc(context.Context, *SynchronizeRequest) (*SynchronizeTransactionsResponse, error)
 	SynchronizeGossipGrpc(context.Context, *SynchronizeRequest) (*SynchronizeGossipResponse, error)
 	GossipGrpc(context.Context, *Request) (*Response, error)
@@ -906,23 +906,23 @@ func _DAPoSGrpc_SynchronizeGrpc_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DAPoSGrpc_SynchronizeAccountsGrpc_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SynchronizeRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DAPoSGrpcServer).SynchronizeAccountsGrpc(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/proto.DAPoSGrpc/SynchronizeAccountsGrpc",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DAPoSGrpcServer).SynchronizeAccountsGrpc(ctx, req.(*SynchronizeRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
+//func _DAPoSGrpc_SynchronizeAccountsGrpc_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+//	in := new(SynchronizeRequest)
+//	if err := dec(in); err != nil {
+//		return nil, err
+//	}
+//	if interceptor == nil {
+//		return srv.(DAPoSGrpcServer).SynchronizeAccountsGrpc(ctx, in)
+//	}
+//	info := &grpc.UnaryServerInfo{
+//		Server:     srv,
+//		FullMethod: "/proto.DAPoSGrpc/SynchronizeAccountsGrpc",
+//	}
+//	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+//		return srv.(DAPoSGrpcServer).SynchronizeAccountsGrpc(ctx, req.(*SynchronizeRequest))
+//	}
+//	return interceptor(ctx, in, info, handler)
+//}
 
 func _DAPoSGrpc_SynchronizeTransactionsGrpc_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SynchronizeRequest)
@@ -986,10 +986,10 @@ var _DAPoSGrpc_serviceDesc = grpc.ServiceDesc{
 			MethodName: "SynchronizeGrpc",
 			Handler:    _DAPoSGrpc_SynchronizeGrpc_Handler,
 		},
-		{
-			MethodName: "SynchronizeAccountsGrpc",
-			Handler:    _DAPoSGrpc_SynchronizeAccountsGrpc_Handler,
-		},
+		//{
+		//	MethodName: "SynchronizeAccountsGrpc",
+		//	Handler:    _DAPoSGrpc_SynchronizeAccountsGrpc_Handler,
+		//},
 		{
 			MethodName: "SynchronizeTransactionsGrpc",
 			Handler:    _DAPoSGrpc_SynchronizeTransactionsGrpc_Handler,

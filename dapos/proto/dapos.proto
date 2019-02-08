@@ -68,10 +68,6 @@ message SynchronizeResponse {
     repeated Item Items = 1;
 }
 
-message SynchronizeAccountsResponse {
-    repeated Account accounts = 1;
-}
-
 message SynchronizeTransactionsResponse {
     repeated Transaction transactions = 1;
 }

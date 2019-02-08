@@ -69,7 +69,7 @@ func (this *DAPoSService) Go() {
 	)
 }
 
-// OnEvent - Event to
+// OnEvent - Event to synchronize peers
 func (this *DAPoSService) disGoverServiceInitFinished() {
 
 	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
@@ -78,7 +78,7 @@ func (this *DAPoSService) disGoverServiceInitFinished() {
 	}
 
 	// Create genesis account.
-	err := this.createGenesisAccount()
+	err := this.CreateGenesisAccount()
 	if err != nil {
 		services.GetDbService().Close()
 		utils.Fatal("unable to create genesis account", err)
@@ -93,7 +93,7 @@ func (this *DAPoSService) disGoverServiceInitFinished() {
 }
 
 // createGenesisTransactionAndAccount
-func (this *DAPoSService) createGenesisAccount() error {
+func (this *DAPoSService) CreateGenesisAccount() error {
 	txn := services.GetDb().NewTransaction(true)
 	defer txn.Discard()
 
