@@ -17,14 +17,16 @@
 package dapos
 
 import (
+	"errors"
+	"github.com/dispatchlabs/disgo/commons/helper"
+	"github.com/dispatchlabs/disgo/disgover"
 	"sync"
 
 	"github.com/dgraph-io/badger"
+	"github.com/dispatchlabs/disgo/commons/queue"
 	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
-	"github.com/dispatchlabs/disgo/disgover"
-	"github.com/dispatchlabs/disgo/commons/queue"
 )
 
 var daposServiceInstance *DAPoSService
@@ -72,22 +74,28 @@ func (this *DAPoSService) Go() {
 // OnEvent - Event to synchronize peers
 func (this *DAPoSService) disGoverServiceInitFinished() {
 
-	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
-		this.peerSynchronize()
-		utils.Info("this prints out after peerSynchronize is called in disGoverServiceInitFinished()")
-	}
-
 	// Create genesis account.
 	err := this.CreateGenesisAccount()
-	if err != nil {
+	if err == nil {
+		//created new genesis account
+		//can assume db was empty beforehand
+
+		if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
+			//peerSynchronize only if the badger db is empty
+			this.peerSynchronize()
+			utils.Info("this prints out after peerSynchronize is called in disGoverServiceInitFinished()")
+			helper.ReplayTransactions();
+
+		}
+
+
+	} else if (err != nil && err != errors.New("genesis already exists")) {
 		services.GetDbService().Close()
 		utils.Fatal("unable to create genesis account", err)
 	}
 
 	go this.gossipWorker()
 	go this.transactionWorker()
-	//No longer used.  GossipQueue is part of Gossip Worker
-	//go this.queueWorker()
 
 	utils.Events().Raise(types.Events.DAPoSServiceInitFinished)
 }
@@ -104,10 +112,14 @@ func (this *DAPoSService) CreateGenesisAccount() error {
 	_, err = types.ToAccountByAddress(txn, genesisAccount.Address)
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
+			//genesis not yet in db
 			err = genesisAccount.Set(txn, services.GetCache())
 			if err != nil {
 				return err
 			}
+		} else {
+			//genesis is already in db
+			return errors.New("genesis already exists")
 		}
 	}
 	return txn.Commit(nil)

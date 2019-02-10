@@ -385,7 +385,7 @@ func (this *DAPoSService) peerSynchronize() {
 				break
 			}
 
-			
+
 			//Takes newly received Gossips and Persists them to badger
 			for _, pg := range gossipResponse.Gossips {
 				count++
@@ -416,9 +416,6 @@ func (this *DAPoSService) peerSynchronize() {
 		utils.Info("\nCountMap: %v\n", helper.GetCounts().ToPrettyJson())
 		fmt.Printf("\nCountMap: %v\n", helper.GetCounts().ToPrettyJson())
 		utils.Info(fmt.Sprintf("synchronized %d records from peer delegate %s's DB", count, delegate.Address))
-
-		//Recreate the rest of the state given the TXs
-		helper.ReplayTransactions();
 
 		return
 		//This return means that db is only synced with the first (non-self) delegate returned by the seed node
