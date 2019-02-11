@@ -19,7 +19,6 @@ package dapos
 import (
 	"encoding/hex"
 	"fmt"
-	"log"
 	"math/big"
 	"math/rand"
 	"sort"
@@ -376,91 +375,73 @@ func (this *DAPoSService) doWork() {
 		}
 		receipt.Created = time.Now()
 		if types.GetConfig().IsBookkeeper {
-			ExecuteTransaction(&gossip.Transaction, receipt, gossip)
+			ExecuteTransaction(&gossip.Transaction, receipt, gossip, false)
 		}
 	}
 }
 
 func ReplayTransactions() {
-	//TODO: Check to make sure there is a genesis account records
-	//err := dapos.GetDAPoSService().CreateGenesisAccount()
-	//if err != nil {
-	//	services.GetDbService().Close()
-	//	utils.Fatal("unable to create genesis account", err)
-	//}
+
+
 	//Make sure TXs are chronological
-	log.Println("ReplayTransactions() in progress")
-	return
-	err := services.GetDb().View(func(txn *badger.Txn) error {
-		opts := badger.DefaultIteratorOptions
-		opts.PrefetchValues = false
-		iterator := txn.NewIterator(opts)
-		prefix := []byte(fmt.Sprintf("key-transaction-time-"))
-		timestamps := make([]string, 0)
-		//opts := badger.DefaultIteratorOptions
-		opts.PrefetchSize = 10
-		it := txn.NewIterator(opts)
-		defer it.Close()
-		//for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
-		//	item := iterator.Item()
-		//	timestamps = append(timestamps, string(item.Key()))
-		//	//err := db.Update(func(txn *badger.Txn) error {
-		//	//	// Your code here…
-		//	//	return nil
-		//	//})
-		//	//build in memory array in chronological order
-		//}
-		//iterator.Close()
+	utils.Info("ReplayTransactions() in progress")
 
-		//timestamps := make([]string, 0)
-		for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
-			item := iterator.Item()
-			timestamps = append(timestamps, string(item.Key()))
-		}
-		iterator.Close()
-		// Create a transactions collection
-		//transactions := make([]*Transaction, 0)
-		// Capture the total number of items
-		//totalCount := len(timestamps)
-		//utils.Info(fmt.Sprintf("totalCount (max) = %d", totalCount))
-		//if totalCount == 0 {
-		//	return transactions, &PagingResult{ totalCount, "" }, nil
-		//}
-		// Sort the string array in reverse; which will result in sorting by timestamp, hash - desc (eg; most recent first)
-		//TODO: Make this scalable at high numbers of TXs (Potentially use Badger streams?)
-		sort.Sort(sort.Reverse(sort.StringSlice(timestamps)))
-		// Iterate over the strings
-		//idx := 0
-		//found := false
-		//for _, key := range timestamps {
-		//	// extract the hash from the key
-		//	//k := strings.Split(key, "-")
-		//	//hash := k[4]
-		//
-		//	// If no startingHash provided, use the first value
-		//	//if startingHash == "" {
-		//	//	startingHash = hash
-		//	//}
-		//	//// If we found the startingHash, idx will contain the starting index for pagination, counting, etc.
-		//	//if startingHash == hash {
-		//	//	found = true
-		//	//	break
-		//	//}
-		//	idx++
-		//}
-		return nil
-	})
-	if err == nil {
 
+	txn := services.GetDb().NewTransaction(true)
+	defer txn.Discard()
+
+	// Iterate over all of the time keys to add them into a string array
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = false
+	iterator := txn.NewIterator(opts)
+	prefix := []byte(fmt.Sprintf("key-transaction-time-"))
+	timestamps := make([]string, 0)
+	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
+		item := iterator.Item()
+		timestamps = append(timestamps, string(item.Key()))
 	}
-	//timestamps.
-	//feed one transaction at a time to
-	//executeTransa dapos_handshake.go > executeTransaction(TX, Receipt, gossip)
-	ExecuteTransaction(TX, Receipt, gossip)
+	iterator.Close()
+
+	// Capture the total number of items
+	totalCount := len(timestamps)
+
+	if totalCount == 0 {
+		utils.Error("There are no transactions to replay")
+	}
+
+	// Sort the string array; which will result in sorting by timestamp, hash
+	//TODO: Make this scalable at high numbers of TXs (Potentially use Badger streams?)
+	sort.Sort(sort.StringSlice(timestamps))
+
+	// Iterate over the sorted array of tamestamp indexes
+	for _, key := range timestamps {
+		// extract the hash from the key
+		k := strings.Split(key, "-")
+		hash := k[4]
+
+		//Given TX hash lookup TX in badger
+		utils.Info(fmt.Sprintf("Looking up TX hash = %s", hash))
+		tx, err := types.ToTransactionByKey(txn, []byte(fmt.Sprintf("table-transaction-%s", hash)))
+		if err != nil {
+			utils.Warn(fmt.Sprintf("Could not find transaction key: table-transaction-%s", hash), err)
+		}
+
+		//Given TX hash lookup gossip in badger
+		utils.Info(fmt.Sprintf("Looking up Gossip by hash = %s", hash))
+		gossip, err := types.ToGossipByKey(txn, []byte(fmt.Sprintf("table-gossip-%s", hash)))
+		if err != nil {
+			utils.Warn(fmt.Sprintf("Could not find gossip key: table-gossip-%s", hash), err)
+		}
+
+		//Create a new Receipt to pass into Execute Transaction
+		receipt := types.NewReceipt(hash)
+
+		ExecuteTransaction(tx, receipt, gossip, true)
+	}
 }
 
 // executeTransaction
-func ExecuteTransaction(transaction *types.Transaction, receipt *types.Receipt, gossip *types.Gossip) {
+func ExecuteTransaction(transaction *types.Transaction, receipt *types.Receipt, gossip *types.Gossip, replay bool) {
 	utils.Info("executeTransaction --> ", transaction.Hash)
 	services.Lock(transaction.Hash)
 	defer services.Unlock(transaction.Hash)
@@ -468,22 +449,29 @@ func ExecuteTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	txn := services.NewTxn(true)
 	defer txn.Discard()
 
-	// Has this transaction already been processed?
-	_, err := txn.Get([]byte(transaction.Key()))
-	if err == nil {
-		utils.Info("Already executed this transaction --> ", transaction.Hash)
-		return
+	//Is this a replay of the TX?
+	if !replay {
+		// Has this transaction already been processed?
+		_, err := txn.Get([]byte(transaction.Key()))
+		if err == nil {
+			utils.Info("Already executed this transaction --> ", transaction.Hash)
+			return
+		}
 	}
+
 
 	//Get Min Hetz you will use (intrinsic hertz)
 	minHertzUsed := params.CallValueTransferGas
 
 	// Find/create fromAccount?
-	now := time.Now()
+	createTime := time.Unix(0,transaction.Time)
+	//TODO: check to make sure this time is correct
+	utils.Info(createTime)
+
 	fromAccount, err := types.ToAccountByAddress(txn, transaction.From)
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
-			fromAccount = &types.Account{Address: transaction.From, Balance: big.NewInt(0), Created: now}
+			fromAccount = &types.Account{Address: transaction.From, Balance: big.NewInt(0), Created: createTime}
 		} else {
 			utils.Error(err)
 			receipt.Status = types.StatusInternalError
@@ -501,7 +489,7 @@ func ExecuteTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		toAccount, err = types.ToAccountByAddress(txn, transaction.To)
 		if err != nil {
 			if err == badger.ErrKeyNotFound {
-				toAccount = &types.Account{Address: transaction.To, Balance: big.NewInt(0), Created: now}
+				toAccount = &types.Account{Address: transaction.To, Balance: big.NewInt(0), Created: createTime}
 				minHertzUsed += params.CallNewAccountGas
 			} else {
 				utils.Error(err)
@@ -670,11 +658,16 @@ func ExecuteTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	if err != nil {
 		utils.Error(err)
 	}
-	window := helper.AddHertz(txn, services.GetCache(), hertz)
-	rateLimit.Set(*window, txn, services.GetCache())
+
+	//If not just recreating state, Add hertz count to the rate-limiting window
+	if !replay{
+		window := helper.AddHertz(txn, services.GetCache(), hertz)
+		rateLimit.Set(*window, txn, services.GetCache())
+	}
+
 
 	if availableHertz < hertz {
-		msg := fmt.Sprintf("Account %s has a hertz balance of %d\n", fromAccount.Address, availableHertz)
+		msg := fmt.Sprintf("Account %s has an insufficient hertz balance of %d\n", fromAccount.Address, availableHertz)
 		utils.Error(msg)
 		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInsufficientHertz)
 		return
@@ -693,7 +686,7 @@ func ExecuteTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	}
 
 	// Save fromAccount.
-	fromAccount.Updated = now
+	fromAccount.Updated = createTime
 	err = fromAccount.Persist(txn)
 	if err != nil {
 		utils.Error(err)
@@ -705,7 +698,7 @@ func ExecuteTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 
 	if toAccount != nil {
 		// Save toAccount.
-		toAccount.Updated = now
+		toAccount.Updated = createTime
 		err = toAccount.Persist(txn)
 		if err != nil {
 			utils.Error(err)

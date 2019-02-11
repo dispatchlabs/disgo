@@ -12,6 +12,8 @@ var cacheLoaded bool
 
 func AddHertz(txn *badger.Txn, cache *cache.Cache, hertz uint64) *types.Window {
 	epoch := time.Unix(0, int64(types.GetConfig().RateLimits.EpochTime))
+
+	//TODO: This time.Now() could cause a consensus error. Everything should be standardized on tx.timestamp
 	minutesSinceEpoch := int64(time.Now().Sub(epoch).Minutes())
 
 	if !cacheLoaded {

@@ -183,6 +183,7 @@ func (this *Receipt) SetStatusWithNewTransaction(db *badger.DB, status string) {
 }
 
 // NewReceipt
+//TODO: set created time to always equal the creation time of the tx
 func NewReceipt(transactionHash string) *Receipt {
 	return &Receipt{TransactionHash: transactionHash, Status: StatusPending, Created: time.Now()}
 }
