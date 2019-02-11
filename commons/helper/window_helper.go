@@ -10,11 +10,11 @@ import (
 
 var cacheLoaded bool
 
-func AddHertz(txn *badger.Txn, cache *cache.Cache, hertz uint64) *types.Window {
+func AddHertz(txn *badger.Txn, cache *cache.Cache, hertz uint64, txTime time.Time) *types.Window {
 	epoch := time.Unix(0, int64(types.GetConfig().RateLimits.EpochTime))
 
-	//TODO: This time.Now() could cause a consensus error. Everything should be standardized on tx.timestamp
-	minutesSinceEpoch := int64(time.Now().Sub(epoch).Minutes())
+	//Find out which window this TX falls in given the txTime
+	minutesSinceEpoch := int64(txTime.Sub(epoch).Minutes())
 
 	if !cacheLoaded {
 		populateCache(txn, cache)

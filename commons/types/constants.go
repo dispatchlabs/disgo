@@ -23,7 +23,7 @@ import (
 
 
 const (
-	HertzMultiplier = 100000
+	HertzMultiplier = 1
 )
 //TODO: I think we need to convert these timouts and their calculations in code to nano seconds
 // Timouts -- currently calculated in milliseconds.

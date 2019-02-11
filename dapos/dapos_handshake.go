@@ -464,14 +464,13 @@ func ExecuteTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	minHertzUsed := params.CallValueTransferGas
 
 	// Find/create fromAccount?
-	createTime := time.Unix(0,transaction.Time)
-	//TODO: check to make sure this time is correct
-	utils.Info(createTime)
+	txTime := time.Unix(0,transaction.Time  * int64(time.Millisecond))
+
 
 	fromAccount, err := types.ToAccountByAddress(txn, transaction.From)
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
-			fromAccount = &types.Account{Address: transaction.From, Balance: big.NewInt(0), Created: createTime}
+			fromAccount = &types.Account{Address: transaction.From, Balance: big.NewInt(0), Created: txTime}
 		} else {
 			utils.Error(err)
 			receipt.Status = types.StatusInternalError
@@ -489,7 +488,7 @@ func ExecuteTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		toAccount, err = types.ToAccountByAddress(txn, transaction.To)
 		if err != nil {
 			if err == badger.ErrKeyNotFound {
-				toAccount = &types.Account{Address: transaction.To, Balance: big.NewInt(0), Created: createTime}
+				toAccount = &types.Account{Address: transaction.To, Balance: big.NewInt(0), Created: txTime}
 				minHertzUsed += params.CallNewAccountGas
 			} else {
 				utils.Error(err)
@@ -546,7 +545,7 @@ func ExecuteTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		if err != nil {
 			utils.Error(err)
 			receipt.Status = types.StatusInternalError
-			receipt.HumanReadableStatus = err.Error()
+			receipt.HumanReadableStatus = "Contract Execution Failed"
 			receipt.Cache(services.GetCache())
 			return
 		}
@@ -608,7 +607,7 @@ func ExecuteTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			if err != nil {
 				utils.Error(err)
 			}
-			window := helper.AddHertz(txn, services.GetCache(), hertz)
+			window := helper.AddHertz(txn, services.GetCache(), hertz, txTime)
 			rateLimit.Set(*window, txn, services.GetCache())
 
 			return
@@ -659,11 +658,8 @@ func ExecuteTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		utils.Error(err)
 	}
 
-	//If not just recreating state, Add hertz count to the rate-limiting window
-	if !replay{
-		window := helper.AddHertz(txn, services.GetCache(), hertz)
-		rateLimit.Set(*window, txn, services.GetCache())
-	}
+	window := helper.AddHertz(txn, services.GetCache(), hertz, txTime)
+	rateLimit.Set(*window, txn, services.GetCache())
 
 
 	if availableHertz < hertz {
@@ -686,7 +682,7 @@ func ExecuteTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	}
 
 	// Save fromAccount.
-	fromAccount.Updated = createTime
+	fromAccount.Updated = txTime
 	err = fromAccount.Persist(txn)
 	if err != nil {
 		utils.Error(err)
@@ -698,7 +694,7 @@ func ExecuteTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 
 	if toAccount != nil {
 		// Save toAccount.
-		toAccount.Updated = createTime
+		toAccount.Updated = txTime
 		err = toAccount.Persist(txn)
 		if err != nil {
 			utils.Error(err)
@@ -717,7 +713,7 @@ func ExecuteTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		if err != nil {
 			utils.Error(err)
 		}
-		window = helper.AddHertz(txn, services.GetCache(), hertz)
+		window := helper.AddHertz(txn, services.GetCache(), hertz, txTime)
 		rateLimitTo.Set(*window, txn, services.GetCache())
 	}
 
