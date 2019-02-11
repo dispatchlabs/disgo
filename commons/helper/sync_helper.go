@@ -12,38 +12,38 @@ import (
 
 /*
 NEED TO ADDD Transaction replay for state of ledger
- */
+*/
 var dataMap map[string]map[string]string
 var countMap map[string]int64
 
 type SyncStats struct {
-	TotalAccountCount		int64
-	AccountCount			AccountCount
-	TotalTransactionCount	int64
-	TransactionCount		TransactionCount
-	TotalGossipCount		int64
-	GossipCount				GossipCount
+	TotalAccountCount     int64
+	AccountCount          AccountCount
+	TotalTransactionCount int64
+	TransactionCount      TransactionCount
+	TotalGossipCount      int64
+	GossipCount           GossipCount
 }
 
 type AccountCount struct {
-	GoodAccountCount	int64
-	BadAccountCount		int64
-	FubarAccountCount	int64
-	SubTotal			int64
+	GoodAccountCount  int64
+	BadAccountCount   int64
+	FubarAccountCount int64
+	SubTotal          int64
 }
 
 type TransactionCount struct {
-	GoodTransactionCount		int64
-	OtherBadTransactionCount	int64
-	ContractTransferCount		int64
-	BalancOfCount				int64
-	SubTotal					int64
+	GoodTransactionCount     int64
+	OtherBadTransactionCount int64
+	ContractTransferCount    int64
+	BalancOfCount            int64
+	SubTotal                 int64
 }
 
 type GossipCount struct {
-	GoodGossipCount	int64
-	BadGossipCount	int64
-	SubTotal		int64
+	GoodGossipCount int64
+	BadGossipCount  int64
+	SubTotal        int64
 }
 
 // ToPrettyJson
@@ -84,7 +84,6 @@ func ValidateGossipSync(gossip *types.Gossip) bool {
 	return true
 }
 
-
 //order of checks matters (fall through)
 func ValidateSync(keyBytes []byte, valueBytes []byte) bool {
 	key := string(keyBytes)
@@ -94,7 +93,7 @@ func ValidateSync(keyBytes []byte, valueBytes []byte) bool {
 		account := &types.Account{}
 		if err := json.Unmarshal(valueBytes, account); err == nil {
 			addToCountMap("goodAccountCount", key, value)
-			fmt.Printf("Account: %s\n\n", account.ToPrettyJson() )
+			fmt.Printf("Account: %s\n\n", account.ToPrettyJson())
 			return true
 		} else {
 			err = HandleInvalidAccount(err, key, value)
@@ -106,7 +105,7 @@ func ValidateSync(keyBytes []byte, valueBytes []byte) bool {
 		tx := &types.Transaction{}
 		if err := json.Unmarshal(valueBytes, tx); err == nil {
 			addToCountMap("goodTransactionCount", key, value)
-			fmt.Printf("Transaction: %s\n\n", tx.ToPrettyJson() )
+			fmt.Printf("Transaction: %s\n\n", tx.ToPrettyJson())
 			return true
 		} else {
 			err = HandleInvalidTransaction(err, key, value)
@@ -143,7 +142,7 @@ func HandleInvalidAccount(err error, key, value string) error {
 		return nil
 	} else if strings.Contains(value, "Transaction") {
 		addToCountMap("fubarAccountCount", key, value)
-		return errors.New(err.Error() +  "  Invalid address transfer: ")
+		return errors.New(err.Error() + "  Invalid address transfer: ")
 	}
 	return nil
 }
@@ -154,10 +153,10 @@ func HandleInvalidTransaction(err error, key, value string) error {
 		return nil
 	} else if strings.Contains(value, "transfer") {
 		addToCountMap("transferCount", key, value)
-		return errors.New(err.Error() +  "  Invalid contract transfer: ")
+		return errors.New(err.Error() + "  Invalid contract transfer: ")
 	} else {
 		addToCountMap("otherBadTransactionCount", key, value)
-		return errors.New(err.Error() +  "  Invalid other transaction: ")
+		return errors.New(err.Error() + "  Invalid other transaction: ")
 	}
 	return nil
 }
@@ -185,7 +184,7 @@ func GetCounts() *SyncStats {
 	gc := GossipCount{countMap["goodGossipCount"], countMap["badGossipCount"], 0}
 	gc.SubTotal = gc.getSum()
 
-	stats := &SyncStats{countMap["TotalAccountCount"],ac,countMap["TotalTransactionCount"],tc,countMap["TotalGossipCount"],gc}
+	stats := &SyncStats{countMap["TotalAccountCount"], ac, countMap["TotalTransactionCount"], tc, countMap["TotalGossipCount"], gc}
 
 	bytes, err := json.MarshalIndent(dataMap, "", "  ")
 	if err != nil {
@@ -197,16 +196,3 @@ func GetCounts() *SyncStats {
 }
 
 // Generates the full state of the ledger (accounts, receipts, rate-limiting, etc) given just TXs
-func ReplayTransactions() {
-
-	//TODO: Check to make sure there is a genesis account records
-	//err := dapos.GetDAPoSService().CreateGenesisAccount()
-	//if err != nil {
-	//	services.GetDbService().Close()
-	//	utils.Fatal("unable to create genesis account", err)
-	//}
-
-	//Make sure TXs are chronological
-
-
-}

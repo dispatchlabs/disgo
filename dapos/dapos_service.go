@@ -18,7 +18,6 @@ package dapos
 
 import (
 	"errors"
-	"github.com/dispatchlabs/disgo/commons/helper"
 	"github.com/dispatchlabs/disgo/disgover"
 	"sync"
 
@@ -36,10 +35,10 @@ var daposServiceOnce sync.Once
 func GetDAPoSService() *DAPoSService {
 	daposServiceOnce.Do(func() {
 		daposServiceInstance = &DAPoSService{
-			running: false,
-			gossipChan: make(chan *types.Gossip, 1000),
-			queueChan: make(chan *types.Gossip, 1000),
-			timoutChan: make(chan bool, 1000),
+			running:     false,
+			gossipChan:  make(chan *types.Gossip, 1000),
+			queueChan:   make(chan *types.Gossip, 1000),
+			timoutChan:  make(chan bool, 1000),
 			gossipQueue: queue.NewGossipQueue(),
 		} // TODO: What should this be?
 	})
@@ -48,11 +47,11 @@ func GetDAPoSService() *DAPoSService {
 
 // DAPoSService -
 type DAPoSService struct {
-	running         bool
-	gossipChan      chan *types.Gossip
-	queueChan      	chan *types.Gossip
-	timoutChan 		chan bool
-	gossipQueue 	*queue.GossipQueue
+	running     bool
+	gossipChan  chan *types.Gossip
+	queueChan   chan *types.Gossip
+	timoutChan  chan bool
+	gossipQueue *queue.GossipQueue
 }
 
 // IsRunning -
@@ -84,12 +83,14 @@ func (this *DAPoSService) disGoverServiceInitFinished() {
 			//peerSynchronize only if the badger db is empty
 			this.peerSynchronize()
 			utils.Info("this prints out after peerSynchronize is called in disGoverServiceInitFinished()")
-			helper.ReplayTransactions();
+			//dapos.ReplayTransactions();
+			ReplayTransactions()
+
+			//ExecuteTransaction()
 
 		}
 
-
-	} else if (err != nil && err != errors.New("genesis already exists")) {
+	} else if err != nil && err != errors.New("genesis already exists") {
 		services.GetDbService().Close()
 		utils.Fatal("unable to create genesis account", err)
 	}

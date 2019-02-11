@@ -17,13 +17,17 @@
 package dapos
 
 import (
+	"encoding/hex"
 	"fmt"
-	"math/rand"
+	"log"
 	"math/big"
+	"math/rand"
+	"sort"
 	"strings"
 	"time"
-	"encoding/hex"
 
+	"bytes"
+	"encoding/base64"
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/helper"
 	"github.com/dispatchlabs/disgo/commons/services"
@@ -33,8 +37,6 @@ import (
 	"github.com/dispatchlabs/disgo/dvm"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
-	"encoding/base64"
-	"bytes"
 	"os"
 )
 
@@ -374,13 +376,91 @@ func (this *DAPoSService) doWork() {
 		}
 		receipt.Created = time.Now()
 		if types.GetConfig().IsBookkeeper {
-			executeTransaction(&gossip.Transaction, receipt, gossip)
+			ExecuteTransaction(&gossip.Transaction, receipt, gossip)
 		}
 	}
 }
 
+func ReplayTransactions() {
+	//TODO: Check to make sure there is a genesis account records
+	//err := dapos.GetDAPoSService().CreateGenesisAccount()
+	//if err != nil {
+	//	services.GetDbService().Close()
+	//	utils.Fatal("unable to create genesis account", err)
+	//}
+	//Make sure TXs are chronological
+	log.Println("ReplayTransactions() in progress")
+	return
+	err := services.GetDb().View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchValues = false
+		iterator := txn.NewIterator(opts)
+		prefix := []byte(fmt.Sprintf("key-transaction-time-"))
+		timestamps := make([]string, 0)
+		//opts := badger.DefaultIteratorOptions
+		opts.PrefetchSize = 10
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		//for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
+		//	item := iterator.Item()
+		//	timestamps = append(timestamps, string(item.Key()))
+		//	//err := db.Update(func(txn *badger.Txn) error {
+		//	//	// Your code here…
+		//	//	return nil
+		//	//})
+		//	//build in memory array in chronological order
+		//}
+		//iterator.Close()
+
+		//timestamps := make([]string, 0)
+		for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
+			item := iterator.Item()
+			timestamps = append(timestamps, string(item.Key()))
+		}
+		iterator.Close()
+		// Create a transactions collection
+		//transactions := make([]*Transaction, 0)
+		// Capture the total number of items
+		//totalCount := len(timestamps)
+		//utils.Info(fmt.Sprintf("totalCount (max) = %d", totalCount))
+		//if totalCount == 0 {
+		//	return transactions, &PagingResult{ totalCount, "" }, nil
+		//}
+		// Sort the string array in reverse; which will result in sorting by timestamp, hash - desc (eg; most recent first)
+		//TODO: Make this scalable at high numbers of TXs (Potentially use Badger streams?)
+		sort.Sort(sort.Reverse(sort.StringSlice(timestamps)))
+		// Iterate over the strings
+		//idx := 0
+		//found := false
+		//for _, key := range timestamps {
+		//	// extract the hash from the key
+		//	//k := strings.Split(key, "-")
+		//	//hash := k[4]
+		//
+		//	// If no startingHash provided, use the first value
+		//	//if startingHash == "" {
+		//	//	startingHash = hash
+		//	//}
+		//	//// If we found the startingHash, idx will contain the starting index for pagination, counting, etc.
+		//	//if startingHash == hash {
+		//	//	found = true
+		//	//	break
+		//	//}
+		//	idx++
+		//}
+		return nil
+	})
+	if err == nil {
+
+	}
+	//timestamps.
+	//feed one transaction at a time to
+	//executeTransa dapos_handshake.go > executeTransaction(TX, Receipt, gossip)
+	ExecuteTransaction(TX, Receipt, gossip)
+}
+
 // executeTransaction
-func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, gossip *types.Gossip) {
+func ExecuteTransaction(transaction *types.Transaction, receipt *types.Receipt, gossip *types.Gossip) {
 	utils.Info("executeTransaction --> ", transaction.Hash)
 	services.Lock(transaction.Hash)
 	defer services.Unlock(transaction.Hash)
@@ -536,11 +616,11 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			receipt.HumanReadableStatus = err.Error()
 			receipt.Cache(services.GetCache())
 
-			rateLimit, err := types.NewRateLimit(transaction.From, transaction.Hash,  hertz)
+			rateLimit, err := types.NewRateLimit(transaction.From, transaction.Hash, hertz)
 			if err != nil {
 				utils.Error(err)
 			}
-			window := helper.AddHertz(txn, services.GetCache(), hertz);
+			window := helper.AddHertz(txn, services.GetCache(), hertz)
 			rateLimit.Set(*window, txn, services.GetCache())
 
 			return
@@ -586,11 +666,11 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		return
 	}
 	hertz = hertz * types.HertzMultiplier
-	rateLimit, err := types.NewRateLimit(transaction.From, transaction.Hash,  hertz)
+	rateLimit, err := types.NewRateLimit(transaction.From, transaction.Hash, hertz)
 	if err != nil {
 		utils.Error(err)
 	}
-	window := helper.AddHertz(txn, services.GetCache(), hertz);
+	window := helper.AddHertz(txn, services.GetCache(), hertz)
 	rateLimit.Set(*window, txn, services.GetCache())
 
 	if availableHertz < hertz {
@@ -644,7 +724,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		if err != nil {
 			utils.Error(err)
 		}
-		window = helper.AddHertz(txn, services.GetCache(), hertz);
+		window = helper.AddHertz(txn, services.GetCache(), hertz)
 		rateLimitTo.Set(*window, txn, services.GetCache())
 	}
 
