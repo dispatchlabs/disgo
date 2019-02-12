@@ -32,3 +32,7 @@ func ToMicroSeconds(t time.Time) int64 {
 func ToMilliSeconds(t time.Time) int64 {
 	return t.UnixNano() / int64(time.Millisecond)
 }
+
+func ToTimeFromMilliseconds(ms int64) time.Time {
+	return time.Unix(0, ms * int64(time.Millisecond))
+}

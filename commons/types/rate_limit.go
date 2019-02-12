@@ -251,7 +251,7 @@ func (this TxRateLimit) string() string {
 //  Helpers
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-func CalculateLockedAmount(txn *badger.Txn, c *cache.Cache, address string) (uint64, error) {
+func  CalculateLockedAmount(txn *badger.Txn, c *cache.Cache, address string) (uint64, error) {
 	acctRateLimit, err := GetAccountRateLimit(txn, c, address)
 	if err != nil {
 		utils.Error(err)

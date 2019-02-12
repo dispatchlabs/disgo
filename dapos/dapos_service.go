@@ -17,14 +17,15 @@
 package dapos
 
 import (
+	"errors"
+	"github.com/dispatchlabs/disgo/disgover"
 	"sync"
 
 	"github.com/dgraph-io/badger"
+	"github.com/dispatchlabs/disgo/commons/queue"
 	"github.com/dispatchlabs/disgo/commons/services"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
-	"github.com/dispatchlabs/disgo/disgover"
-	"github.com/dispatchlabs/disgo/commons/queue"
 )
 
 var daposServiceInstance *DAPoSService
@@ -34,10 +35,10 @@ var daposServiceOnce sync.Once
 func GetDAPoSService() *DAPoSService {
 	daposServiceOnce.Do(func() {
 		daposServiceInstance = &DAPoSService{
-			running: false,
-			gossipChan: make(chan *types.Gossip, 1000),
-			queueChan: make(chan *types.Gossip, 1000),
-			timoutChan: make(chan bool, 1000),
+			running:     false,
+			gossipChan:  make(chan *types.Gossip, 1000),
+			queueChan:   make(chan *types.Gossip, 1000),
+			timoutChan:  make(chan bool, 1000),
 			gossipQueue: queue.NewGossipQueue(),
 		} // TODO: What should this be?
 	})
@@ -46,11 +47,11 @@ func GetDAPoSService() *DAPoSService {
 
 // DAPoSService -
 type DAPoSService struct {
-	running         bool
-	gossipChan      chan *types.Gossip
-	queueChan      	chan *types.Gossip
-	timoutChan 		chan bool
-	gossipQueue 	*queue.GossipQueue
+	running     bool
+	gossipChan  chan *types.Gossip
+	queueChan   chan *types.Gossip
+	timoutChan  chan bool
+	gossipQueue *queue.GossipQueue
 }
 
 // IsRunning -
@@ -69,29 +70,39 @@ func (this *DAPoSService) Go() {
 	)
 }
 
-// OnEvent - Event to
+// OnEvent - Event to synchronize peers
 func (this *DAPoSService) disGoverServiceInitFinished() {
 
-	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
-		this.peerSynchronize()
-	}
-
 	// Create genesis account.
-	err := this.createGenesisAccount()
-	if err != nil {
+	err := this.CreateGenesisAccount()
+	if err == nil {
+		//created new genesis account
+		//can assume db was empty beforehand
+
+		if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
+			//peerSynchronize only if the badger db is empty
+			this.peerSynchronize()
+			utils.Info("this prints out after peerSynchronize is called in disGoverServiceInitFinished()")
+			//dapos.ReplayTransactions();
+			ReplayTransactions()
+
+			//ExecuteTransaction()
+
+		}
+
+	} else if err != nil && err != errors.New("genesis already exists") {
 		services.GetDbService().Close()
 		utils.Fatal("unable to create genesis account", err)
 	}
 
 	go this.gossipWorker()
 	go this.transactionWorker()
-	//go this.queueWorker()
 
 	utils.Events().Raise(types.Events.DAPoSServiceInitFinished)
 }
 
 // createGenesisTransactionAndAccount
-func (this *DAPoSService) createGenesisAccount() error {
+func (this *DAPoSService) CreateGenesisAccount() error {
 	txn := services.GetDb().NewTransaction(true)
 	defer txn.Discard()
 
@@ -102,10 +113,14 @@ func (this *DAPoSService) createGenesisAccount() error {
 	_, err = types.ToAccountByAddress(txn, genesisAccount.Address)
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
+			//genesis not yet in db
 			err = genesisAccount.Set(txn, services.GetCache())
 			if err != nil {
 				return err
 			}
+		} else {
+			//genesis is already in db
+			return errors.New("genesis already exists")
 		}
 	}
 	return txn.Commit(nil)

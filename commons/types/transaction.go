@@ -254,6 +254,7 @@ func TransactionPaging(txn *badger.Txn, startingHash string, page, pageSize int)
 	}
 
 	// Sort the string array in reverse; which will result in sorting by timestamp, hash - desc (eg; most recent first)
+	//TODO: Make this scalable at high numbers of TXs (Potentially use Badger streams?)
 	sort.Sort(sort.Reverse(sort.StringSlice(timestamps)))
 
 	// Iterate over the strings

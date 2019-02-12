@@ -139,6 +139,7 @@ func (this *DAPoSService) GetAccount(address string) *types.Response {
 			if err == badger.ErrKeyNotFound {
 				response.Status = types.StatusNotFound
 			} else {
+				utils.Warn(err)
 				response.Status = types.StatusInternalError
 			}
 		} else {
@@ -193,6 +194,7 @@ func (this *DAPoSService) GetTransaction(hash string) *types.Response {
 					response.Status = types.StatusNotFound
 				}
 			} else {
+				utils.Error(err)
 				response.Status = types.StatusInternalError
 			}
 		} else {

@@ -17,13 +17,16 @@
 package dapos
 
 import (
+	"encoding/hex"
 	"fmt"
-	"math/rand"
 	"math/big"
+	"math/rand"
+	"sort"
 	"strings"
 	"time"
-	"encoding/hex"
 
+	"bytes"
+	"encoding/base64"
 	"github.com/dgraph-io/badger"
 	"github.com/dispatchlabs/disgo/commons/helper"
 	"github.com/dispatchlabs/disgo/commons/services"
@@ -33,14 +36,12 @@ import (
 	"github.com/dispatchlabs/disgo/dvm"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/abi"
 	"github.com/dispatchlabs/disgo/dvm/ethereum/params"
-	"encoding/base64"
-	"bytes"
 	"os"
 )
 
 var delegateMap = map[string]*types.Node{}
 
-// startGossiping
+// startGossiping //HTTP
 func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.Response {
 	utils.Debug("startGossiping")
 	txn := services.NewTxn(false)
@@ -82,8 +83,8 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 	rumor := types.NewRumor(types.GetKey(), types.GetAccount().Address, transaction.Hash)
 	gossip.Rumors = append(gossip.Rumors, *rumor)
 
-	this.cacheOnFirstReceive(gossip)
 	this.gossipChan <- gossip
+	this.cacheOnFirstReceive(gossip)
 
 	return types.NewResponseWithStatus(types.StatusPending, "Pending")
 }
@@ -116,7 +117,7 @@ func (this *DAPoSService) cacheOnFirstReceive(gossip *types.Gossip) {
 
 }
 
-// Temp_ProcessTransaction -
+// Temp_ProcessTransaction - REMOVE
 func (this *DAPoSService) Temp_ProcessTransaction(transaction *types.Transaction) *types.Response {
 	// go func(tx *types.Transaction) {
 
@@ -184,7 +185,7 @@ func (this *DAPoSService) synchronizeGossip(gossip *types.Gossip) (*types.Gossip
 	return synchronizedGossip, nil, !hasAll
 }
 
-// gossipWorker
+// gossipWorker //CONSENSUS
 func (this *DAPoSService) gossipWorker() {
 	var gossip *types.Gossip
 	for {
@@ -362,6 +363,7 @@ func (this *DAPoSService) doWork() {
 			receipt.Cache(services.GetCache())
 			return
 		}
+		//TODO: grab the earlies gossip Rumor, not the first one in the array
 		initialRcvDuration := gossip.Rumors[0].Time - gossip.Transaction.Time
 		utils.Debug("Initial Receive Duration = ", initialRcvDuration, types.TxReceiveTimeout)
 		if initialRcvDuration >= types.TxReceiveTimeout {
@@ -373,13 +375,73 @@ func (this *DAPoSService) doWork() {
 		}
 		receipt.Created = time.Now()
 		if types.GetConfig().IsBookkeeper {
-			executeTransaction(&gossip.Transaction, receipt, gossip)
+			ExecuteTransaction(&gossip.Transaction, receipt, gossip, false)
 		}
 	}
 }
 
+func ReplayTransactions() {
+
+
+	//Make sure TXs are chronological
+	utils.Info("ReplayTransactions() in progress")
+
+
+	txn := services.GetDb().NewTransaction(true)
+	defer txn.Discard()
+
+	// Iterate over all of the time keys to add them into a string array
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = false
+	iterator := txn.NewIterator(opts)
+	prefix := []byte(fmt.Sprintf("key-transaction-time-"))
+	timestamps := make([]string, 0)
+	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
+		item := iterator.Item()
+		timestamps = append(timestamps, string(item.Key()))
+	}
+	iterator.Close()
+
+	// Capture the total number of items
+	totalCount := len(timestamps)
+
+	if totalCount == 0 {
+		utils.Error("There are no transactions to replay")
+	}
+
+	// Sort the string array; which will result in sorting by timestamp, hash
+	//TODO: Make this scalable at high numbers of TXs (Potentially use Badger streams?)
+	sort.Sort(sort.StringSlice(timestamps))
+
+	// Iterate over the sorted array of tamestamp indexes
+	for _, key := range timestamps {
+		// extract the hash from the key
+		k := strings.Split(key, "-")
+		hash := k[4]
+
+		//Given TX hash lookup TX in badger
+		utils.Debug(fmt.Sprintf("Looking up TX hash = %s", hash))
+		tx, err := types.ToTransactionByKey(txn, []byte(fmt.Sprintf("table-transaction-%s", hash)))
+		if err != nil {
+			utils.Warn(fmt.Sprintf("Could not find transaction key: table-transaction-%s", hash), err)
+		}
+
+		//Given TX hash lookup gossip in badger
+		utils.Debug(fmt.Sprintf("Looking up Gossip by hash = %s", hash))
+		gossip, err := types.ToGossipByKey(txn, []byte(fmt.Sprintf("table-gossip-%s", hash)))
+		if err != nil {
+			utils.Warn(fmt.Sprintf("Could not find gossip key: table-gossip-%s", hash), err)
+		}
+
+		//Create a new Receipt to pass into Execute Transaction
+		receipt := types.NewReceipt(hash)
+
+		ExecuteTransaction(tx, receipt, gossip, true)
+	}
+}
+
 // executeTransaction
-func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, gossip *types.Gossip) {
+func ExecuteTransaction(transaction *types.Transaction, receipt *types.Receipt, gossip *types.Gossip, replay bool) {
 	utils.Info("executeTransaction --> ", transaction.Hash)
 	services.Lock(transaction.Hash)
 	defer services.Unlock(transaction.Hash)
@@ -387,22 +449,28 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	txn := services.NewTxn(true)
 	defer txn.Discard()
 
-	// Has this transaction already been processed?
-	_, err := txn.Get([]byte(transaction.Key()))
-	if err == nil {
-		utils.Info("Already executed this transaction --> ", transaction.Hash)
-		return
+	//Is this a replay of the TX?
+	if !replay {
+		// Has this transaction already been processed?
+		_, err := txn.Get([]byte(transaction.Key()))
+		if err == nil {
+			utils.Info("Already executed this transaction --> ", transaction.Hash)
+			return
+		}
 	}
+
 
 	//Get Min Hetz you will use (intrinsic hertz)
 	minHertzUsed := params.CallValueTransferGas
 
 	// Find/create fromAccount?
-	now := time.Now()
+	txTime := time.Unix(0,transaction.Time  * int64(time.Millisecond))
+
+
 	fromAccount, err := types.ToAccountByAddress(txn, transaction.From)
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
-			fromAccount = &types.Account{Address: transaction.From, Balance: big.NewInt(0), Created: now}
+			fromAccount = &types.Account{Address: transaction.From, Balance: big.NewInt(0), Created: txTime}
 		} else {
 			utils.Error(err)
 			receipt.Status = types.StatusInternalError
@@ -420,7 +488,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		toAccount, err = types.ToAccountByAddress(txn, transaction.To)
 		if err != nil {
 			if err == badger.ErrKeyNotFound {
-				toAccount = &types.Account{Address: transaction.To, Balance: big.NewInt(0), Created: now}
+				toAccount = &types.Account{Address: transaction.To, Balance: big.NewInt(0), Created: txTime}
 				minHertzUsed += params.CallNewAccountGas
 			} else {
 				utils.Error(err)
@@ -477,7 +545,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		if err != nil {
 			utils.Error(err)
 			receipt.Status = types.StatusInternalError
-			receipt.HumanReadableStatus = err.Error()
+			receipt.HumanReadableStatus = "Contract Execution Failed"
 			receipt.Cache(services.GetCache())
 			return
 		}
@@ -535,11 +603,11 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			receipt.HumanReadableStatus = err.Error()
 			receipt.Cache(services.GetCache())
 
-			rateLimit, err := types.NewRateLimit(transaction.From, transaction.Hash,  hertz)
+			rateLimit, err := types.NewRateLimit(transaction.From, transaction.Hash, hertz)
 			if err != nil {
 				utils.Error(err)
 			}
-			window := helper.AddHertz(txn, services.GetCache(), hertz);
+			window := helper.AddHertz(txn, services.GetCache(), hertz, txTime)
 			rateLimit.Set(*window, txn, services.GetCache())
 
 			return
@@ -585,15 +653,17 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		return
 	}
 	hertz = hertz * types.HertzMultiplier
-	rateLimit, err := types.NewRateLimit(transaction.From, transaction.Hash,  hertz)
+	rateLimit, err := types.NewRateLimit(transaction.From, transaction.Hash, hertz)
 	if err != nil {
 		utils.Error(err)
 	}
-	window := helper.AddHertz(txn, services.GetCache(), hertz);
+
+	window := helper.AddHertz(txn, services.GetCache(), hertz, txTime)
 	rateLimit.Set(*window, txn, services.GetCache())
 
+
 	if availableHertz < hertz {
-		msg := fmt.Sprintf("Account %s has a hertz balance of %d\n", fromAccount.Address, availableHertz)
+		msg := fmt.Sprintf("Account %s has an insufficient hertz balance of %d\n", fromAccount.Address, availableHertz)
 		utils.Error(msg)
 		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInsufficientHertz)
 		return
@@ -612,7 +682,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	}
 
 	// Save fromAccount.
-	fromAccount.Updated = now
+	fromAccount.Updated = txTime
 	err = fromAccount.Persist(txn)
 	if err != nil {
 		utils.Error(err)
@@ -624,7 +694,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 
 	if toAccount != nil {
 		// Save toAccount.
-		toAccount.Updated = now
+		toAccount.Updated = txTime
 		err = toAccount.Persist(txn)
 		if err != nil {
 			utils.Error(err)
@@ -643,7 +713,7 @@ func executeTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 		if err != nil {
 			utils.Error(err)
 		}
-		window = helper.AddHertz(txn, services.GetCache(), hertz);
+		window := helper.AddHertz(txn, services.GetCache(), hertz, txTime)
 		rateLimitTo.Set(*window, txn, services.GetCache())
 	}
 
