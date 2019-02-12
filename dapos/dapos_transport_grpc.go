@@ -66,9 +66,12 @@ func (this *DAPoSService) WithGrpc() *DAPoSService {
 func (this *DAPoSService) SynchronizeTransactionsGrpc(context context.Context, request *proto.SynchronizeRequest) (*proto.SynchronizeTransactionsResponse, error) {
 	utils.Info("synchronizing index", request.Index, " of transactions to a delegate...")
 
+	//if never loaded maps or maps is older than some time
+	t := time.Now()
+	elapsed := t.Sub(refreshTimestamp)
 
-	if transactionMap == nil {
-		utils.Info("loadingMaps")
+	if transactionMap == nil || elapsed.Minutes() > 2{
+		transactionMap = nil
 		loadMaps()
 	}
 	if transactionMap[request.Index] == nil {
@@ -84,7 +87,12 @@ func (this *DAPoSService) SynchronizeTransactionsGrpc(context context.Context, r
 func (this *DAPoSService) SynchronizeGossipGrpc(context context.Context, request *proto.SynchronizeRequest) (*proto.SynchronizeGossipResponse, error) {
 	utils.Info("synchronizing index", request.Index, " of gossips to a delegate...")
 
-	if gossipMap == nil {
+	//if never loaded maps or maps is older than some time
+	t := time.Now()
+	elapsed := t.Sub(refreshTimestamp)
+
+	if gossipMap == nil || elapsed.Minutes() > 2{
+		gossipMap = nil
 		loadMaps()
 	}
 	if gossipMap[request.Index] == nil {
@@ -108,6 +116,8 @@ func loadMaps() error {
 	var txPage int64 = 0
 	//var acctPage int64 = 0
 	var gossipPage int64 = 0
+
+	refreshTimestamp = time.Now()
 
 	err := services.GetDb().View(func(txn *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
