@@ -420,14 +420,14 @@ func ReplayTransactions() {
 		hash := k[4]
 
 		//Given TX hash lookup TX in badger
-		utils.Info(fmt.Sprintf("Looking up TX hash = %s", hash))
+		utils.Debug(fmt.Sprintf("Looking up TX hash = %s", hash))
 		tx, err := types.ToTransactionByKey(txn, []byte(fmt.Sprintf("table-transaction-%s", hash)))
 		if err != nil {
 			utils.Warn(fmt.Sprintf("Could not find transaction key: table-transaction-%s", hash), err)
 		}
 
 		//Given TX hash lookup gossip in badger
-		utils.Info(fmt.Sprintf("Looking up Gossip by hash = %s", hash))
+		utils.Debug(fmt.Sprintf("Looking up Gossip by hash = %s", hash))
 		gossip, err := types.ToGossipByKey(txn, []byte(fmt.Sprintf("table-gossip-%s", hash)))
 		if err != nil {
 			utils.Warn(fmt.Sprintf("Could not find gossip key: table-gossip-%s", hash), err)

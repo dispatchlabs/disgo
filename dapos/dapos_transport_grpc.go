@@ -348,13 +348,13 @@ func (this *DAPoSService) peerSynchronize() {
 			for _, ptx := range txResponse.Transactions {
 				count++
 				tx := convertToDomainTransaction(ptx)
-				exists, _ := txn.Get([]byte(tx.Key()))
-				if exists == nil {
+				//exists, _ := txn.Get([]byte(tx.Key()))
+				//if exists == nil {
 					err = tx.Persist(txn)
 					if err != nil {
 						utils.Error(err)
 					}
-				}
+				//}
 				if helper.ValidateTxSync(tx) {
 					if err != nil {
 						utils.Error(err)
@@ -390,13 +390,13 @@ func (this *DAPoSService) peerSynchronize() {
 			for _, pg := range gossipResponse.Gossips {
 				count++
 				gossip := convertToDomainGossip(pg)
-				exists, _ := txn.Get([]byte(gossip.Key()))
-				if exists == nil {
+				//exists, _ := txn.Get([]byte(gossip.Key()))
+				//if exists == nil {
 					err = gossip.Persist(txn)
 					if err != nil {
 						utils.Error(err)
 					}
-				}
+				//}
 				if helper.ValidateGossipSync(gossip) {
 					if err != nil {
 						utils.Error(err)
