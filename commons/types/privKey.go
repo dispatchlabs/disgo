@@ -80,6 +80,7 @@ func readKeyFile() string {
 		for {
 			pass := GetPass("enter a password to secure your key")
 			conf := GetPass("confirm password")
+      
 			if pass == conf && pass != ""{
 				createPKey(pass,fileName)
 				break

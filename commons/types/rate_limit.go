@@ -69,6 +69,7 @@ func (this *RateLimit) cache(window Window, cache *cache.Cache) {
 	if value != nil {
 		return
 	}
+
 	cache.Set(getTxRateLimitKey(this.TxRateLimit.TxHash), this.TxRateLimit, window.TTL)
 }
 

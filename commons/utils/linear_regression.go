@@ -24,6 +24,7 @@ func LinearRegression(points *[]Point) (a float64, b float64) {
 	if base == 0 {
 		return 0.0, 0.0
 	}
+
 	a = (n*sumXY - sumX*sumY) / base
 	b = (sumXX*sumY - sumXY*sumX) / base
 

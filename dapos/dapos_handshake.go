@@ -502,7 +502,8 @@ func ExecuteTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	if err != nil {
 		utils.Error(err)
 	}
-	if availableHertz < (minHertzUsed * types.HertzMultiplier) {
+
+  if availableHertz < (minHertzUsed * types.HertzMultiplier) {
 		msg := fmt.Sprintf("Account %s has a hertz balance of %d\n", fromAccount.Address, availableHertz)
 		utils.Error(msg)
 		receipt.SetStatusWithNewTransaction(services.GetDb(), types.StatusInsufficientHertz)
@@ -585,6 +586,7 @@ func ExecuteTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			return
 		}
 
+
 		dvmService := dvm.GetDVMService()
 		dvmResult, err1 := dvmService.ExecuteSmartContract(transaction)
 		if err1 != nil {
@@ -612,6 +614,11 @@ func ExecuteTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			return
 		}
 		receipt.ContractAddress = transaction.To
+
+
+		hertz = minHertzUsed + dvmResult.CumulativeHertzUsed
+
+		transaction.Abi = "" //clear out the ABI before saving to badger.  We only need it once from Deploy transaction tx.
 
 		utils.Info(fmt.Sprintf("executed contract [hash=%s, contractAddress=%s]", transaction.Hash, transaction.To))
 		break
@@ -703,6 +710,7 @@ func ExecuteTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 			receipt.Cache(services.GetCache())
 			return
 		}
+    
 		//Also lock up for the receiver
 		//This code is way down here so that the rate limiting works "after" the account is saved.  New accounts don't exist until the above persist.
 		//Take the lower value of Hertz for this transaction and the receivers balance (so we don't lock more than they have)
