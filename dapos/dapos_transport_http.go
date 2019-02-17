@@ -32,6 +32,9 @@ import (
 
 // WithHttp -
 func (this *DAPoSService) WithHttp() *DAPoSService {
+	//404 Not found handler
+	services.GetHttpRouter().NotFoundHandler = http.HandlerFunc(this.notFoundHandler)
+
 	//Accounts
 	services.GetHttpRouter().HandleFunc("/v1/accounts/{address}", this.getAccountHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/accounts", this.unsupportedFunctionHandler).Methods("GET")
@@ -134,7 +137,7 @@ func (this *DAPoSService) getAccountHandler(responseWriter http.ResponseWriter, 
 	responseWriter.Write([]byte(response.String()))
 }
 
-// getAccountHandler
+// getRateLimitWindowHandler
 func (this *DAPoSService) getRateLimitWindowHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	response := this.GetRateLimitWindow()
 	setHeaders(response, &responseWriter)
@@ -286,3 +289,23 @@ func (this *DAPoSService) getGossipHandler(responseWriter http.ResponseWriter, r
 // 	responseWriter.Write([]byte(response.String()))
 // }
 
+// notFoundHandler
+func (this *DAPoSService) notFoundHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	//response := this.GetRateLimitWindow()
+	//setHeaders(response, &responseWriter)
+	//var HTML404 = utils.GetCurrentWorkingDir() + string(os.PathSeparator) + "dapos" + string(os.PathSeparator) + "404.html"
+	//file, err := ioutil.ReadFile(HTML404)
+	//if err != nil {
+	//	utils.Error(fmt.Sprintln("unable to find 404.html"), err)
+	//	os.Exit(1)
+	//}
+	HTML404 := `<p><img style="display: block; margin-left: auto; margin-right: 
+auto;" src="https://www.dispatchlabs.io/wp-content/uploads/2018/12/Dispatch_Logo.png" alt="Dispatch Logo" width="200" 
+height="89" /></p><h2 style="text-align: center;">you got a 404</h2><p><img style="display: 
+block; margin-left: auto; margin-right: auto;" src="https://media.giphy.com/media/3oKHWqBRAndWxStj9K/
+giphy.gif" alt="disco gif" width="480" height="270" /></p><p style="text-align: center;">Have 
+you checked out the Dispatch <a href="http://api.dispatchlabs.io">API docs</a>?</p>`
+
+	responseWriter.WriteHeader(http.StatusNotFound)
+	responseWriter.Write([]byte(HTML404))
+}

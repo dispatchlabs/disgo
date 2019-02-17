@@ -46,7 +46,7 @@ func (this *DisGoverService) WithGrpc() *DisGoverService {
 	return this
 }
 
-// PingSeedGrpc
+// PingSeedGrpc  //receiver
 func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.PingSeed) (*proto.Update, error) {
 
 	// Is this node a seed?
@@ -140,7 +140,7 @@ func (this *DisGoverService) PingSeedGrpc(ctx context.Context, pingSeed *proto.P
 	return &proto.Update{Authentication: convertToProtoAuthentication(authentication), Delegates: nodes}, nil
 }
 
-// peerPingSeedGrpc
+// peerPingSeedGrpc //caller
 func (this *DisGoverService) peerPingSeedGrpc() ([]*types.Node, error) {
 
 	var delegates = make([]*types.Node, 0)
@@ -196,13 +196,13 @@ func (this *DisGoverService) peerPingSeedGrpc() ([]*types.Node, error) {
 
 // UpdateGrpc
 func (this *DisGoverService) UpdateGrpc(ctx context.Context, update *proto.Update) (*proto.Empty, error) {
-
-	// Verify seed node is authentic?
-	err := this.verifySeedNode(update.Authentication)
-	if err != nil {
-		return &proto.Empty{}, err
-	}
-
+//
+//	// Verify seed node is authentic?
+//	err := this.verifySeedNode(update.Authentication)
+//	if err != nil {
+//		return &proto.Empty{}, err
+//	}
+//
 	// Cache delegates.
 	for _, delegate := range update.Delegates {
 		convertToDomainNode(delegate).Cache(services.GetCache())

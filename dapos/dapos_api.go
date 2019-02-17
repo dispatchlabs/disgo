@@ -104,7 +104,7 @@ func (this *DAPoSService) GetReceipt(transactionHash string) *types.Response {
 	return response
 }
 
-// GetAccount
+// GetRateLimitWindow
 func (this *DAPoSService) GetRateLimitWindow() *types.Response {
 	txn := services.NewTxn(true)
 	defer txn.Discard()
@@ -139,6 +139,7 @@ func (this *DAPoSService) GetAccount(address string) *types.Response {
 			if err == badger.ErrKeyNotFound {
 				response.Status = types.StatusNotFound
 			} else {
+				utils.Warn(err)
 				response.Status = types.StatusInternalError
 			}
 		} else {
@@ -193,6 +194,7 @@ func (this *DAPoSService) GetTransaction(hash string) *types.Response {
 					response.Status = types.StatusNotFound
 				}
 			} else {
+				utils.Error(err)
 				response.Status = types.StatusInternalError
 			}
 		} else {

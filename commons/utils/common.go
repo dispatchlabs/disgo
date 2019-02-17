@@ -3,6 +3,7 @@ package utils
 import (
 	"math/rand"
 	"time"
+	"encoding/json"
 )
 
 func Random(min, max int) int {
@@ -18,4 +19,9 @@ func RandomString(length int) string {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
 	return string(b)
+}
+
+func IsJSON(bytes []byte) bool {
+	var js map[string]interface{}
+	return json.Unmarshal(bytes, &js) == nil
 }

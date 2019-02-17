@@ -78,8 +78,9 @@ func readKeyFile() string {
 	fileName := GetConfig().KeyLocation
 	if !utils.Exists(fileName) {
 		for {
-			pass := getPass("enter a password to secure your key")
-			conf := getPass("confirm password")
+			pass := GetPass("enter a password to secure your key")
+			conf := GetPass("confirm password")
+      
 			if pass == conf && pass != ""{
 				createPKey(pass,fileName)
 				break
@@ -92,7 +93,7 @@ func readKeyFile() string {
 		utils.Fatal("unable to read %s",fileName, err)
 	}
 
-	key, err := DecryptKey(bytes, getPass("enter your private key password"))
+	key, err := DecryptKey(bytes, GetPass("enter your private key password"))
 	if err != nil {
 		utils.Fatal("unable to read %s", fileName, err)
 	}
@@ -120,7 +121,7 @@ func askForConfirmation(s string) bool {
 	}
 }
 
-func getPass(s string)string{
+func GetPass(s string)string{
 	//adding the sleep because the threading for logging often makes it show up several lines up and it's confusing.
 	time.Sleep(3000)
 	fmt.Printf("%s: \n", s)

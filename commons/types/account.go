@@ -372,7 +372,7 @@ func readAccountFile(name_optional ...string) *Account {
 		}
 
 		publicKey, privateKey := crypto.GenerateKeyPair()
-		password := getPass("Make a password to secure your Private Key (DO NOT FORGET!!!)\n")
+		password := GetPass("Make a password to secure your Private Key (DO NOT FORGET!!!)\n")
 		keystore, err := CreateFromKey(hex.EncodeToString(privateKey), password)
 
 		WriteFile(keystore, fileLocation)

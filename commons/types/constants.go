@@ -22,6 +22,9 @@ import (
 )
 
 
+const (
+	HertzMultiplier = 1
+)
 //TODO: I think we need to convert these timouts and their calculations in code to nano seconds
 // Timouts -- currently calculated in milliseconds.
 const (
@@ -67,6 +70,7 @@ const (
 	TypeTransferTokens       = 0
 	TypeDeploySmartContract  = 1
 	TypeExecuteSmartContract = 2
+	TypeUpdateCode			 = 3
 )
 
 // Persistence TTLs

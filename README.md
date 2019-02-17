@@ -1,4 +1,4 @@
-<img src="https://dispatchlabs.io/wp-content/themes/ccprototypev5/images/dispatchlabs-logo.png" width="250">
+<img src="https://www.dispatchlabs.io/wp-content/uploads/2018/12/Dispatch_Logo.png" width="250">
  
 &nbsp;
 

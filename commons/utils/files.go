@@ -40,6 +40,14 @@ func GetConfigDir() string {
 	return directoryName
 }
 
+
+func GetCurrentWorkingDir() string {
+	dir, err := os.Getwd()
+	if err != nil {
+		Error(err)
+	}
+	return dir
+}
 /*
 // user, error := user.Current()
 currentDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
@@ -58,3 +66,19 @@ os.MkdirAll(configFolder, os.ModePerm)
 
 return configFolder
 */
+
+func WriteFile(dir, fileName, content string) error {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		err = os.MkdirAll(dir, 0755)
+		if err != nil {
+			panic(err)
+		}
+	}
+	file, err := os.Create(fileName)
+	if err != nil {
+		Error("Cannot create file", err)
+	}
+	fmt.Fprintf(file, content)
+	defer file.Close()
+	return nil
+}

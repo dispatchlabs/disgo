@@ -139,7 +139,6 @@ func GetAccount(delegateNode types.Node, address string) (*types.Account, error)
 	if err != nil {
 		return nil, err
 	}
-
 	return account, nil
 }
 

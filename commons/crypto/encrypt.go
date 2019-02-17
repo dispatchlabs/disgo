@@ -32,6 +32,7 @@ import (
 	"encoding/json"
 
 	"github.com/dispatchlabs/disgo/commons/math"
+	"github.com/dispatchlabs/disgo/commons/utils"
 
 	"golang.org/x/crypto/scrypt"
 )
@@ -78,6 +79,15 @@ type EncryptedKeyJSONV3 struct {
 	Crypto  cryptoJSON `json:"crypto"`
 	Id      string     `json:"id"`
 	Version int        `json:"version"`
+}
+
+func (this EncryptedKeyJSONV3) ToPrettyJson() string {
+	bytes, err := json.MarshalIndent(this, "", "  ")
+	if err != nil {
+		utils.Error("unable to marshal EncryptedKeyJSONV3", err)
+		return ""
+	}
+	return string(bytes)
 }
 
 // EncryptKey encrypts a key using the specified scrypt parameters into a json

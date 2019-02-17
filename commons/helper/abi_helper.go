@@ -58,11 +58,16 @@ func GetConvertedParams(tx *types.Transaction) ([]interface{}, error) {
 					value := []byte(str)
 
 					if err != nil{
-						//msg := fmt.Sprintf("Invalid value provided for method %s: %v", tx.Method, valErr.Error())
-						//return nil, errors.New(msg)
 						return nil, err
 					}
 					result = append(result, value)
+				} else if arg.Type.T == abi.FixedBytesTy {
+					str := params[i].(string)
+					value := []byte(str)
+					if err != nil {
+						return nil, err
+					}
+					result = appendFixedBytesArray(arg, result, value)
 				} else {
 					value, valErr := getValue(arg, params[i])
 					if valErr != nil {
@@ -237,6 +242,140 @@ func getValue(arg abi.Argument, value interface{}) (interface{}, error) {
 		return value, nil
 	}
 	return value, nil
+}
+
+func appendFixedBytesArray(arg abi.Argument, result []interface{}, value []byte) []interface{} {
+	switch arg.Type.Size {
+	case 1:
+		byte1 := new([1]byte)
+		copy(byte1[:], value)
+		result = append(result, byte1)
+	case 2:
+		byte2 := new([2]byte)
+		copy(byte2[:], value)
+		result = append(result, byte2)
+	case 3:
+		byte3 := new([3]byte)
+		copy(byte3[:], value)
+		result = append(result, byte3)
+	case 4:
+		byte4 := new([4]byte)
+		copy(byte4[:], value)
+		result = append(result, byte4)
+	case 5:
+		byte5 := new([5]byte)
+		copy(byte5[:], value)
+		result = append(result, byte5)
+	case 6:
+		byte6 := new([6]byte)
+		copy(byte6[:], value)
+		result = append(result, byte6)
+	case 7:
+		byte7 := new([7]byte)
+		copy(byte7[:], value)
+		result = append(result, byte7)
+	case 8:
+		byte8 := new([8]byte)
+		copy(byte8[:], value)
+		result = append(result, byte8)
+	case 9:
+		byte9 := new([9]byte)
+		copy(byte9[:], value)
+		result = append(result, byte9)
+	case 10:
+		byte10 := new([10]byte)
+		copy(byte10[:], value)
+		result = append(result, byte10)
+	case 11:
+		byte11 := new([11]byte)
+		copy(byte11[:], value)
+		result = append(result, byte11)
+	case 12:
+		byte12 := new([12]byte)
+		copy(byte12[:], value)
+		result = append(result, byte12)
+	case 13:
+		byte13 := new([13]byte)
+		copy(byte13[:], value)
+		result = append(result, byte13)
+	case 14:
+		byte14 := new([14]byte)
+		copy(byte14[:], value)
+		result = append(result, byte14)
+	case 15:
+		byte15 := new([15]byte)
+		copy(byte15[:], value)
+		result = append(result, byte15)
+	case 16:
+		byte16 := new([16]byte)
+		copy(byte16[:], value)
+		result = append(result, byte16)
+	case 17:
+		byte17 := new([17]byte)
+		copy(byte17[:], value)
+		result = append(result, byte17)
+	case 18:
+		byte18 := new([18]byte)
+		copy(byte18[:], value)
+		result = append(result, byte18)
+	case 19:
+		byte19 := new([19]byte)
+		copy(byte19[:], value)
+		result = append(result, byte19)
+	case 20:
+		byte20 := new([20]byte)
+		copy(byte20[:], value)
+		result = append(result, byte20)
+	case 21:
+		byte21 := new([21]byte)
+		copy(byte21[:], value)
+		result = append(result, byte21)
+	case 22:
+		byte22 := new([22]byte)
+		copy(byte22[:], value)
+		result = append(result, byte22)
+	case 23:
+		byte23 := new([23]byte)
+		copy(byte23[:], value)
+		result = append(result, byte23)
+	case 24:
+		byte24 := new([24]byte)
+		copy(byte24[:], value)
+		result = append(result, byte24)
+	case 25:
+		byte25 := new([25]byte)
+		copy(byte25[:], value)
+		result = append(result, byte25)
+	case 26:
+		byte26 := new([26]byte)
+		copy(byte26[:], value)
+		result = append(result, byte26)
+	case 27:
+		byte27 := new([27]byte)
+		copy(byte27[:], value)
+		result = append(result, byte27)
+	case 28:
+		byte28 := new([28]byte)
+		copy(byte28[:], value)
+		result = append(result, byte28)
+	case 29:
+		byte29 := new([29]byte)
+		copy(byte29[:], value)
+		result = append(result, byte29)
+	case 30:
+		byte30 := new([30]byte)
+		copy(byte30[:], value)
+		result = append(result, byte30)
+	case 31:
+		byte31 := new([31]byte)
+		copy(byte31[:], value)
+		result = append(result, byte31)
+	case 32:
+		byte32 := new([32]byte)
+		copy(byte32[:], value)
+		result = append(result, byte32)
+	}
+	return result
 }
 
 func GetABI(data string) (*abi.ABI, error) {
