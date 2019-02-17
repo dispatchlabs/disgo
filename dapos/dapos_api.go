@@ -127,28 +127,6 @@ func (this *DAPoSService) GetRateLimitWindow() *types.Response {
 }
 
 // GetAccount
-func (this *DAPoSService) GetRateLimitWindow() *types.Response {
-	txn := services.NewTxn(true)
-	defer txn.Discard()
-	response := types.NewResponse()
-	epoch := time.Unix(0, int64(types.GetConfig().RateLimits.EpochTime))
-	minutesSinceEpoch := int64(time.Now().Sub(epoch).Minutes())
-
-	window, err := types.ToWindowFromKey(txn, minutesSinceEpoch)
-	if err != nil {
-		utils.Error(err)
-	}
-	if window == nil {
-		window = types.NewWindow()
-		helper.CalcSlopeForWindow(services.GetCache(), window)
-		types.GetCurrentTTL(services.GetCache(), window)
-	}
-	response.Data = window
-	response.Status = types.StatusOk
-	return response
-}
-
-// GetAccount
 func (this *DAPoSService) GetAccount(address string) *types.Response {
 	txn := services.NewTxn(true)
 	defer txn.Discard()
