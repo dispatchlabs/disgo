@@ -50,6 +50,7 @@ func (this *DAPoSService) startGossiping(transaction *types.Transaction) *types.
 	err := transaction.Verify()
 	if err != nil {
 		utils.Info(fmt.Sprintf("invalid transaction [hash=%s]", transaction.Hash))
+		utils.Error(err)
 		return types.NewResponseWithStatus(types.StatusInvalidTransaction, err.Error())
 	}
 	elapsedMilliSeconds := utils.ToMilliSeconds(time.Now()) - transaction.Time
@@ -379,13 +380,53 @@ func (this *DAPoSService) doWork() {
 	}
 }
 
-func ReplayTransactions() {
-
-
+func SaveTxsInDbWithTimestamp() {
 	//Make sure TXs are chronological
-	utils.Info("ReplayTransactions() in progress")
+	utils.Info("SaveTxsInDbWithTimestamp() in progress")
 
+	txn := services.GetDb().NewTransaction(true)
 
+	// Iterate over all of the table-transaction keys and persist them with all their other keys
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = false
+	iterator := txn.NewIterator(opts)
+	prefix := []byte(fmt.Sprintf("table-transaction"))
+	for iterator.Seek(prefix); iterator.ValidForPrefix(prefix); iterator.Next() {
+		//for every transaction record, pull out the value
+		item := iterator.Item()
+		key  := item.Key()
+
+		//utils.Info(string(key))
+		//turn the badger storage into a TX struct
+		tx, err := types.ToTransactionByKey(txn, key)
+		if err != nil {
+			utils.Error(err)
+		}
+
+		txn2 := services.NewTxn(true)
+		defer txn2.Discard()
+		//write the tx object to db with all lookup keys
+		err = tx.Persist(txn2)
+		if err != nil {
+			utils.Error(err)
+		}
+		if helper.ValidateTxSync(tx) {
+			if err != nil {
+				utils.Error(err)
+			}
+		}
+		err = txn2.Commit(nil)
+		if err != nil {
+			utils.Error(err)
+		}
+
+	}
+	iterator.Close()
+	defer txn.Discard()
+
+}
+
+func getAllTxTimestamps() []string {
 	txn := services.GetDb().NewTransaction(true)
 	defer txn.Discard()
 
@@ -401,15 +442,33 @@ func ReplayTransactions() {
 	}
 	iterator.Close()
 
-	// Capture the total number of items
+	return timestamps
+}
+
+func ReplayTransactions() {
+	utils.Info("ReplayTransactions() in progress")
+
+	//get all the timestamps of the transactions in db
+	timestamps := getAllTxTimestamps()
 	totalCount := len(timestamps)
 
 	if totalCount == 0 {
-		utils.Error("There are no transactions to replay")
+		//transactions might not be saved with their timestamp lookup keys
+		SaveTxsInDbWithTimestamp()
+		timestamps = getAllTxTimestamps()
+		totalCount = len(timestamps)
+
+		//If there's still no tx with timestamps, there just must be no transactions
+		if totalCount == 0{
+			utils.Error("There are no transactions to replay")
+			return
+		}
 	}
 
 	// Sort the string array; which will result in sorting by timestamp, hash
-	//TODO: Make this scalable at high numbers of TXs (Potentially use Badger streams?)
+	txn := services.GetDb().NewTransaction(true)
+	defer txn.Discard()
+
 	sort.Sort(sort.StringSlice(timestamps))
 
 	// Iterate over the sorted array of tamestamp indexes
