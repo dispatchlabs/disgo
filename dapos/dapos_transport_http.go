@@ -48,6 +48,8 @@ func (this *DAPoSService) WithHttp() *DAPoSService {
 	services.GetHttpRouter().HandleFunc("/v1/transactions", this.newTransactionHandler).Methods("POST")
 	services.GetHttpRouter().HandleFunc("/v1/transactions/{hash}", this.getTransactionHandler).Methods("GET")
 	services.GetHttpRouter().HandleFunc("/v1/transactions", this.getTransactionsHandler).Methods("GET")
+	services.GetHttpRouter().HandleFunc("/v1/call", this.callTransactionHandler).Methods("GET")
+
 	//Artifacts
 	services.GetHttpRouter().HandleFunc("/v1/artifacts/{query}", this.unsupportedFunctionHandler).Methods("GET") //TODO: support pagination
 	services.GetHttpRouter().HandleFunc("/v1/artifacts/", this.unsupportedFunctionHandler).Methods("POST")
@@ -183,7 +185,7 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 		}
 	}
 
-	if transaction.Type == types.TypeExecuteSmartContract {
+	if transaction.Type == types.TypeExecuteSmartContract || transaction.Type == types.TypeReadSmartContract {
 		contractTx, err := types.ToTransactionByAddress(txn, transaction.To)
 		if err != nil {
 			utils.Error(err)
@@ -198,7 +200,15 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 			return
 		}
 	}
-	response := this.NewTransaction(transaction)
+
+	//If the TX is a read, then "call" transaction; else create NewTransaction
+
+	if transaction.Type == types.TypeReadSmartContract {
+		response := this.CallTransaction(transaction)
+	} else {
+		response := this.NewTransaction(transaction)
+	}
+
 	setHeaders(response, &responseWriter)
 	responseWriter.Write([]byte(response.String()))
 }

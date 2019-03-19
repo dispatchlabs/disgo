@@ -175,6 +175,24 @@ func (this *DAPoSService) NewTransaction(transaction *types.Transaction) *types.
 	return response
 }
 
+//CallTransaction
+func (this *DAPoSService) CallTransaction(transaction *types.Transaction) *types.Receipt {
+	receipt := new(types.Receipt)
+
+	// Delegate?
+	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
+		receipt = this.CallTransaction(transaction)
+	} else {
+		receipt = new(types.Receipt)
+		receipt.Status = types.StatusNotDelegate
+		receipt.HumanReadableStatus = types.StatusNotDelegateAsHumanReadable
+	}
+
+	utils.Debug(fmt.Sprintf("new transaction [hash=%s, status=%s]", transaction.Hash, receipt.Status))
+	return receipt
+
+}
+
 // GetTransaction
 func (this *DAPoSService) GetTransaction(hash string) *types.Response {
 	txn := services.NewTxn(false)
