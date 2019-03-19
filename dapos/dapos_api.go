@@ -181,7 +181,7 @@ func (this *DAPoSService) CallTransaction(transaction *types.Transaction) *types
 
 	// Delegate?
 	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
-		receipt = this.CallTransaction(transaction)
+		receipt = CallTransactionInDVM(transaction)
 	} else {
 		receipt = new(types.Receipt)
 		receipt.Status = types.StatusNotDelegate

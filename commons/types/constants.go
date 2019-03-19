@@ -71,6 +71,7 @@ const (
 	TypeDeploySmartContract  = 1
 	TypeExecuteSmartContract = 2
 	TypeReadSmartContract	 = 3
+	TypeUpdateCode		 	 = 4
 )
 
 // Persistence TTLs

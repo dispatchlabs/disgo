@@ -279,29 +279,31 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 		}, execError
 	}
 
-	// Commit the change
-	_, err = stateHelper.Commit() // returns `hashOfTrieRootNode` but don't use below
-	if err != nil {
-		utils.Error(err)
-		// return nil, err
+	// Commit the change (if not a read)
+	if tx.Type != commonTypes.TypeReadSmartContract {
+		_, err = stateHelper.Commit() // returns `hashOfTrieRootNode` but don't use below
+		if err != nil {
+			utils.Error(err)
+			// return nil, err
 
-		return &DVMResult{
-			From:                     crypto.GetAddressBytes(tx.From),
-			To:                       crypto.GetAddressBytes(tx.To),
-			ABI:                      tx.Abi,
-			StorageState:             stateHelper,
-			ContractAddress:          crypto.GetAddressBytes(tx.To),
-			ContractMethod:           tx.Method,
-			ContractMethodExecError:  execError,
-			ContractMethodExecResult: nil,
+			return &DVMResult{
+				From:                     crypto.GetAddressBytes(tx.From),
+				To:                       crypto.GetAddressBytes(tx.To),
+				ABI:                      tx.Abi,
+				StorageState:             stateHelper,
+				ContractAddress:          crypto.GetAddressBytes(tx.To),
+				ContractMethod:           tx.Method,
+				ContractMethodExecError:  execError,
+				ContractMethodExecResult: nil,
 
-			Divvy:  vmstatehelperimplemtations.DefaultDivvy,
-			Status: ethTypes.ReceiptStatusFailed,
-			// HertzCost:           receipt.GasUsed,
-			// CumulativeHertzUsed: receipt.CumulativeGasUsed,
-			// Bloom:               receipt.Bloom,
-			// Logs:                receipt.Logs,
-		}, execError
+				Divvy:  vmstatehelperimplemtations.DefaultDivvy,
+				Status: ethTypes.ReceiptStatusFailed,
+				// HertzCost:           receipt.GasUsed,
+				// CumulativeHertzUsed: receipt.CumulativeGasUsed,
+				// Bloom:               receipt.Bloom,
+				// Logs:                receipt.Logs,
+			}, execError
+		}
 	}
 
 	// Get info about the TX

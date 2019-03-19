@@ -820,7 +820,7 @@ func ExecuteTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 }
 
 //Call Transaction
-func CallTransaction(transaction *types.Transaction) *types.Receipt {
+func CallTransactionInDVM(transaction *types.Transaction) *types.Receipt {
 	utils.Info("callTransaction --> ", transaction.Hash)
 
 	txn := services.NewTxn(true)
