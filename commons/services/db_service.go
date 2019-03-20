@@ -100,7 +100,7 @@ func (this *DbService) openDb() {
 	for i := 0; i < 1009; i++ {
 	again:
 		utils.Info("looping garbage collection")
-		err = this.db.RunValueLogGC(0.0)
+		err = this.db.RunValueLogGC(0.01)
 		if err == nil {
 			goto again
 		} else {
