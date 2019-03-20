@@ -231,29 +231,35 @@ func DeploySmartContract(delegateNode types.Node, privateKey, from, code, abi st
 }
 
 // ExecuteSmartContractTransaction - Execute a smart contract, get the TX hash as result
-func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey, from, to, method string, params string) (string, error) {
-	// Create execute smart contract transaction.
+func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey, from, to, method string, params string) ([]byte, string, error) {
 	transaction, err := types.NewExecuteContractTransaction(privateKey, from, to, method, params, utils.ToMilliSeconds(time.Now()))
 	if err != nil {
-		return "", err
+		return nil, "", err
 	}
 
 	// Post transaction.
 	httpResponse, err := http.Post(fmt.Sprintf("http://%s:%d/v1/transactions", delegateNode.HttpEndpoint.Host, delegateNode.HttpEndpoint.Port), "application/json", bytes.NewBuffer([]byte(transaction.String())))
 	if err != nil {
-		return "", err
+		return nil, transaction.Hash, err
 	}
 	defer httpResponse.Body.Close()
 
 	// Read body.
 	body, err := ioutil.ReadAll(httpResponse.Body)
 	if err != nil {
-		return "", err
+		return nil, transaction.Hash, err
 	}
+
+	return body, transaction.Hash, nil
+}
+
+func ExecuteWriteTransaction(delegateNode types.Node, privateKey, from, to, method string, params string) (string, error) {
+
+	responseBody, hash, _ := ExecuteSmartContractTransaction(delegateNode, privateKey, from, to, method, params)
 
 	// Unmarshal response.
 	var response *types.Response
-	err = json.Unmarshal(body, &response)
+	err := json.Unmarshal(responseBody, &response)
 	if err != nil {
 		return "", err
 	}
@@ -263,7 +269,23 @@ func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey, from, 
 		return "", errors.New(fmt.Sprintf("%s: %s", response.Status, response.HumanReadableStatus))
 	}
 
-	return transaction.Hash, nil
+	return hash, nil
+}
+
+// CallTransaction
+func ExecuteReadTransaction(delegateNode types.Node, privateKey, from, to, method string, params string) (*types.Receipt, error) {
+	// Create execute read smart contract transaction.
+
+	receiptBody, _, _ := ExecuteSmartContractTransaction(delegateNode, privateKey, from, to, method, params)
+
+	// Unmarshal response.
+	var receipt *types.Receipt
+	err := json.Unmarshal(receiptBody, &receipt)
+	if err != nil {
+		return receipt, err
+	}
+
+	return receipt, nil
 }
 
 // GetTransaction
