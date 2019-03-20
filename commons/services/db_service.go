@@ -24,6 +24,7 @@ import (
 	"github.com/patrickmn/go-cache"
 	"os"
 	"sync"
+	"github.com/robfig/cron"
 )
 
 var dbServiceInstance *DbService
@@ -60,19 +61,6 @@ func (this *DbService) Close() {
 func (this *DbService) Go() {
 	this.running = true
 	utils.Events().Raise(types.Events.DbServiceInitFinished)
-
-
-	//on boot up, start running garbage collection every minute
-	//ticker := time.NewTicker(5 * time.Minute)
-	//defer ticker.Stop()
-	//for range ticker.C {
-	//again:
-	//	utils.Info("looping garbage collection")
-	//	err := this.db.RunValueLogGC(0.1)
-	//	if err == nil {
-	//		goto again
-	//	}
-	//}
 }
 
 // openDb
@@ -96,19 +84,10 @@ func (this *DbService) openDb() {
 	}
 	this.db = db
 
-	utils.Info("starting garbage collection")
-	for i := 0; i < 1009; i++ {
-	again:
-		//utils.Info("looping garbage collection")
-		err = this.db.RunValueLogGC(0.01)
-		if err == nil {
-			goto again
-		} else if err.Error() != "Value log GC attempt didn't result in any cleanup"{
-			utils.Error(err)
-		}
-}
-
-
+	//set up cron routine to collect garbage in badgerdb
+	c := cron.New()
+	c.AddFunc("@every 1m", func() {CollectGarbage()})
+	c.Start()
 }
 
 // GetCache
@@ -134,4 +113,18 @@ func Lock(key interface{}) {
 // Unlock
 func Unlock(key interface{}) {
 	GetDbService().kmutex.Unlock(key)
+}
+
+func CollectGarbage() {
+	utils.Info("starting garbage collection")
+	for i := 0; i < 2009; i++ {
+	again:
+		//utils.Info("looping garbage collection")
+		err := GetDbService().db.RunValueLogGC(0.01)
+		if err == nil {
+			goto again
+		} else if err.Error() != "Value log GC attempt didn't result in any cleanup"{
+			utils.Error(err)
+		}
+	}
 }
