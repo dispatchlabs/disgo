@@ -86,7 +86,7 @@ func (this *DbService) openDb() {
 
 	//set up cron routine to collect garbage in badgerdb
 	c := cron.New()
-	c.AddFunc("@every 1m", func() {CollectGarbage()})
+	c.AddFunc("@every 1h", func() {CollectGarbage()})
 	c.Start()
 }
 
@@ -117,7 +117,7 @@ func Unlock(key interface{}) {
 
 func CollectGarbage() {
 	utils.Info("starting garbage collection")
-	for i := 0; i < 2009; i++ {
+	for i := 0; i < 2000; i++ {
 	again:
 		//utils.Info("looping garbage collection")
 		err := GetDbService().db.RunValueLogGC(0.01)
