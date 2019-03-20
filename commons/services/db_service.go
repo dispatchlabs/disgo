@@ -17,9 +17,9 @@
 package services
 
 import (
-	"sync"
-
 	"os"
+	"sync"
+	"time"
 
 	"github.com/dgraph-io/badger"
 	badgerOptions "github.com/dgraph-io/badger/options"
@@ -62,6 +62,19 @@ func (this *DbService) Close() {
 func (this *DbService) Go() {
 	this.running = true
 	utils.Events().Raise(types.Events.DbServiceInitFinished)
+
+
+	//on boot up, start running garbage collection every minute
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+	for range ticker.C {
+	again:
+		utils.Info("looping garbage collection")
+		err := this.db.RunValueLogGC(0.1)
+		if err == nil {
+			goto again
+		}
+	}
 }
 
 // openDb
