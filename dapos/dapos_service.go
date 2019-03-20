@@ -90,7 +90,7 @@ func (this *DAPoSService) disGoverServiceInitFinished() {
 
 		}
 
-	} else if err != nil && err != errors.New("genesis already exists") {
+	} else if err != nil && err.Error() != "genesis already exists" {
 		services.GetDbService().Close()
 		utils.Fatal("unable to create genesis account", err)
 	}

@@ -17,15 +17,14 @@
 package services
 
 import (
-	"sync"
-
-	"os"
-
 	"github.com/dgraph-io/badger"
 	badgerOptions "github.com/dgraph-io/badger/options"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/patrickmn/go-cache"
+	"os"
+	"sync"
+	"github.com/robfig/cron"
 )
 
 var dbServiceInstance *DbService
@@ -84,6 +83,11 @@ func (this *DbService) openDb() {
 		utils.Fatal(err)
 	}
 	this.db = db
+
+	//set up cron routine to collect garbage in badgerdb
+	c := cron.New()
+	c.AddFunc("@every 1h", func() {CollectGarbage()})
+	c.Start()
 }
 
 // GetCache
@@ -109,4 +113,18 @@ func Lock(key interface{}) {
 // Unlock
 func Unlock(key interface{}) {
 	GetDbService().kmutex.Unlock(key)
+}
+
+func CollectGarbage() {
+	utils.Info("starting garbage collection")
+	for i := 0; i < 2000; i++ {
+	again:
+		//utils.Info("looping garbage collection")
+		err := GetDbService().db.RunValueLogGC(0.01)
+		if err == nil {
+			goto again
+		} else if err.Error() != "Value log GC attempt didn't result in any cleanup"{
+			utils.Error(err)
+		}
+	}
 }
