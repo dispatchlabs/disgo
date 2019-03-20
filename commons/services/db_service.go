@@ -17,15 +17,13 @@
 package services
 
 import (
-	"os"
-	"sync"
-	"time"
-
 	"github.com/dgraph-io/badger"
 	badgerOptions "github.com/dgraph-io/badger/options"
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/patrickmn/go-cache"
+	"os"
+	"sync"
 )
 
 var dbServiceInstance *DbService
@@ -65,16 +63,16 @@ func (this *DbService) Go() {
 
 
 	//on boot up, start running garbage collection every minute
-	ticker := time.NewTicker(5 * time.Minute)
-	defer ticker.Stop()
-	for range ticker.C {
-	again:
-		utils.Info("looping garbage collection")
-		err := this.db.RunValueLogGC(0.1)
-		if err == nil {
-			goto again
-		}
-	}
+	//ticker := time.NewTicker(5 * time.Minute)
+	//defer ticker.Stop()
+	//for range ticker.C {
+	//again:
+	//	utils.Info("looping garbage collection")
+	//	err := this.db.RunValueLogGC(0.1)
+	//	if err == nil {
+	//		goto again
+	//	}
+	//}
 }
 
 // openDb
@@ -97,6 +95,20 @@ func (this *DbService) openDb() {
 		utils.Fatal(err)
 	}
 	this.db = db
+
+	utils.Info("starting garbage collection")
+	for i := 0; i < 1009; i++ {
+	again:
+		utils.Info("looping garbage collection")
+		err = this.db.RunValueLogGC(0.0)
+		if err == nil {
+			goto again
+		} else {
+			utils.Error(err)
+		}
+}
+
+
 }
 
 // GetCache
