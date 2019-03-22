@@ -108,11 +108,16 @@ func (this *DAPoSService) CreateGenesisAccount() error {
 
 	genesisAccount, err := types.GetGenesisAccount()
 	if err != nil {
+		return err
 		utils.Error(err)
 	}
 	_, err = types.ToAccountByAddress(txn, genesisAccount.Address)
+
 	if err != nil {
+		utils.Info("badger unable to find account ", genesisAccount.Address)
 		if err == badger.ErrKeyNotFound {
+
+
 			//genesis not yet in db
 			err = genesisAccount.Set(txn, services.GetCache())
 			if err != nil {
