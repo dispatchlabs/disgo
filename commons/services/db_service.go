@@ -23,9 +23,9 @@ import (
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/patrickmn/go-cache"
+	"github.com/robfig/cron"
 	"os"
 	"sync"
-	"github.com/robfig/cron"
 )
 
 var dbServiceInstance *DbService
@@ -120,13 +120,14 @@ func Unlock(key interface{}) {
 
 func CollectGarbage() {
 	utils.Info("starting garbage collection")
-	for i := 0; i < 100; i++ {
+	var cleaned = 0
 
-	fmt.Printf("\rOn %d/100%% complete", i)
+	for i := 0; i < 100; i++ {
 	again:
-		//utils.Info("looping garbage collection")
+		fmt.Printf("\r%d log files cleaned", cleaned)
 		err := GetDbService().db.RunValueLogGC(0.01)
 		if err == nil {
+			cleaned++
 			goto again
 		} else if err.Error() != "Value log GC attempt didn't result in any cleanup"{
 			utils.Error(err)
