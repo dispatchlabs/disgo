@@ -85,6 +85,8 @@ func (this *DbService) openDb() {
 	this.db = db
 
 	//set up cron routine to collect garbage in badgerdb
+	CollectGarbage()
+
 	c := cron.New()
 	c.AddFunc("@every 1h", func() {CollectGarbage()})
 	c.Start()
