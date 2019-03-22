@@ -23,7 +23,6 @@ import (
 	"github.com/dispatchlabs/disgo/commons/types"
 	"github.com/dispatchlabs/disgo/commons/utils"
 	"github.com/patrickmn/go-cache"
-	"github.com/robfig/cron"
 	"os"
 	"sync"
 )
@@ -86,11 +85,11 @@ func (this *DbService) openDb() {
 	this.db = db
 
 	//set up cron routine to collect garbage in badgerdb
-	CollectGarbage()
-
-	c := cron.New()
-	c.AddFunc("@every 1h", func() {CollectGarbage()})
-	c.Start()
+	//CollectGarbage()
+	//
+	//c := cron.New()
+	//c.AddFunc("@every 1h", func() {CollectGarbage()})
+	//c.Start()
 }
 
 // GetCache
