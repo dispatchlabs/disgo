@@ -17,6 +17,7 @@
 package services
 
 import (
+	"fmt"
 	"github.com/dgraph-io/badger"
 	badgerOptions "github.com/dgraph-io/badger/options"
 	"github.com/dispatchlabs/disgo/commons/types"
@@ -119,7 +120,9 @@ func Unlock(key interface{}) {
 
 func CollectGarbage() {
 	utils.Info("starting garbage collection")
-	for i := 0; i < 2000; i++ {
+	for i := 0; i < 100; i++ {
+
+	fmt.Printf("\rOn %d/100%% complete", i)
 	again:
 		//utils.Info("looping garbage collection")
 		err := GetDbService().db.RunValueLogGC(0.01)
