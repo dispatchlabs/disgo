@@ -128,7 +128,7 @@ func CollectGarbage() {
 		err := GetDbService().db.RunValueLogGC(0.01)
 		if err == nil {
 			cleaned++
-			fmt.Printf("\r%d log files cleaned", cleaned)
+			fmt.Printf("%d log files cleaned", cleaned)
 			goto again
 		} else if err.Error() != "Value log GC attempt didn't result in any cleanup"{
 			utils.Error(err)
