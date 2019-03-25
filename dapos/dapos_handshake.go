@@ -870,19 +870,18 @@ func CallTransactionInDVM(transaction *types.Transaction) *types.Receipt {
 		return receipt
 	}
 	receipt.ContractAddress = transaction.To
-
-	utils.Info(receipt)
+	receipt.Status = types.StatusOk
+	receipt.TransactionHash = transaction.Hash
 
 	return receipt
-
 }
 
 //TODO: implement if useful
 //func commit(transaction *types.Transaction) {}
 // processDVMResult
 func processDVMResult(transaction *types.Transaction, dvmResult *dvm.DVMResult, receipt *types.Receipt) error {
-	utils.Info("######### DUMPING-DVMResult #########")
-	utils.Info(dvmResult)
+	//utils.Info("######### DUMPING-DVMResult #########")
+	//utils.Info(dvmResult)
 
 	if dvmResult.ContractMethodExecError != nil {
 		utils.Error(dvmResult.ContractMethodExecError)

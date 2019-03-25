@@ -231,8 +231,8 @@ func DeploySmartContract(delegateNode types.Node, privateKey, from, code, abi st
 }
 
 // ExecuteSmartContractTransaction - Execute a smart contract, get the TX hash as result
-func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey, from, to, method string, params string) ([]byte, string, error) {
-	transaction, err := types.NewExecuteContractTransaction(privateKey, from, to, method, params, utils.ToMilliSeconds(time.Now()))
+func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey, from, to, method string, params string, write bool) ([]byte, string, error) {
+	transaction, err := types.NewExecuteContractTransaction(privateKey, from, to, method, params, write, utils.ToMilliSeconds(time.Now()))
 	if err != nil {
 		return nil, "", err
 	}
@@ -255,7 +255,7 @@ func ExecuteSmartContractTransaction(delegateNode types.Node, privateKey, from, 
 
 func ExecuteWriteTransaction(delegateNode types.Node, privateKey, from, to, method string, params string) (string, error) {
 
-	responseBody, hash, _ := ExecuteSmartContractTransaction(delegateNode, privateKey, from, to, method, params)
+	responseBody, hash, _ := ExecuteSmartContractTransaction(delegateNode, privateKey, from, to, method, params, true)
 
 	// Unmarshal response.
 	var response *types.Response
@@ -276,7 +276,11 @@ func ExecuteWriteTransaction(delegateNode types.Node, privateKey, from, to, meth
 func ExecuteReadTransaction(delegateNode types.Node, privateKey, from, to, method string, params string) (*types.Receipt, error) {
 	// Create execute read smart contract transaction.
 
-	receiptBody, _, _ := ExecuteSmartContractTransaction(delegateNode, privateKey, from, to, method, params)
+	receiptBody, _, _ := ExecuteSmartContractTransaction(delegateNode, privateKey, from, to, method, params, false)
+
+
+	s := string(receiptBody[:len(receiptBody)])
+	utils.Info(s)
 
 	// Unmarshal response.
 	var receipt *types.Receipt
@@ -284,6 +288,8 @@ func ExecuteReadTransaction(delegateNode types.Node, privateKey, from, to, metho
 	if err != nil {
 		return receipt, err
 	}
+
+	utils.Info("the body returned from the api is:", receipt)
 
 	return receipt, nil
 }

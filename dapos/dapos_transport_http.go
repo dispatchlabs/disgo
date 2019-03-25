@@ -203,8 +203,7 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 	//If the TX is a read, then "call" transaction; else create NewTransaction
 	response := new(types.Response)
 	if transaction.Type == types.TypeReadSmartContract {
-		receipt := new(types.Receipt)
-		receipt = this.CallTransaction(transaction)
+		receipt := this.CallTransaction(transaction)
 		setHeaders(response, &responseWriter)
 		responseWriter.Write([]byte(receipt.String()))
 	} else {

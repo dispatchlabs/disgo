@@ -304,28 +304,51 @@ func (dvm *DVMService) ExecuteSmartContract(tx *commonTypes.Transaction) (*DVMRe
 				// Logs:                receipt.Logs,
 			}, execError
 		}
+
+		// Get info about the TX
+		bytes, _ := hex.DecodeString(tx.Hash)
+		receipt, err := dvm.getReceipt(bytes)
+		if err != nil {
+			utils.Error(err)
+		}
+
+		// Return the state of the storage and the execution result
+		return &DVMResult{
+			From:                     crypto.GetAddressBytes(tx.From),
+			To:                       crypto.GetAddressBytes(tx.To),
+			ABI:                      tx.Abi,
+			StorageState:             stateHelper,
+			ContractAddress:          crypto.GetAddressBytes(tx.To),
+			ContractMethod:           tx.Method,
+			ContractMethodExecError:  execError,
+			ContractMethodExecResult: execResult,
+
+			Divvy:               vmstatehelperimplemtations.DefaultDivvy,
+			Status:              receipt.Status,
+			HertzCost:           receipt.GasUsed,
+			CumulativeHertzUsed: receipt.CumulativeGasUsed,
+			Bloom:               receipt.Bloom,
+			Logs:                receipt.Logs,
+		}, nil
+
+	} else {
+		// return the execution results for an READ execute without the ethType Receipts
+		return &DVMResult{
+			From:                     crypto.GetAddressBytes(tx.From),
+			To:                       crypto.GetAddressBytes(tx.To),
+			ABI:                      tx.Abi,
+			StorageState:             stateHelper,
+			ContractAddress:          crypto.GetAddressBytes(tx.To),
+			ContractMethod:           tx.Method,
+			ContractMethodExecError:  execError,
+			ContractMethodExecResult: execResult,
+
+			Divvy:               vmstatehelperimplemtations.DefaultDivvy,
+			Status:              0,
+			HertzCost:           0,
+			CumulativeHertzUsed: 0,
+			Bloom:               ethTypes.Bloom{},
+			Logs:                nil,
+		}, nil
 	}
-
-	// Get info about the TX
-	bytes, _ := hex.DecodeString(tx.Hash)
-	receipt, err := dvm.getReceipt(bytes)
-
-	// Return the state of the storage and the execution result
-	return &DVMResult{
-		From:                     crypto.GetAddressBytes(tx.From),
-		To:                       crypto.GetAddressBytes(tx.To),
-		ABI:                      tx.Abi,
-		StorageState:             stateHelper,
-		ContractAddress:          crypto.GetAddressBytes(tx.To),
-		ContractMethod:           tx.Method,
-		ContractMethodExecError:  execError,
-		ContractMethodExecResult: execResult,
-
-		Divvy:               vmstatehelperimplemtations.DefaultDivvy,
-		Status:              receipt.Status,
-		HertzCost:           receipt.GasUsed,
-		CumulativeHertzUsed: receipt.CumulativeGasUsed,
-		Bloom:               receipt.Bloom,
-		Logs:                receipt.Logs,
-	}, nil
 }
