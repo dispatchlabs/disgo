@@ -611,13 +611,17 @@ func NewDeployContractTransaction(privateKey string, from string, code string, a
 }
 
 // NewExecuteContractTransaction -
-func NewExecuteContractTransaction(privateKey string, from string, to string, method string, params string, timeInMiliseconds int64) (*Transaction, error) {
+func NewExecuteContractTransaction(privateKey string, from string, to string, method string, params string, write bool, timeInMiliseconds int64) (*Transaction, error) {
 	if method == "" {
 		return nil, errors.Errorf("cannot have empty method")
 	}
 	var err error
 	transaction := &Transaction{}
-	transaction.Type = TypeExecuteSmartContract
+	if write {
+		transaction.Type = TypeExecuteSmartContract
+	} else {
+		transaction.Type = TypeReadSmartContract
+	}
 	transaction.From = from
 	transaction.To = to
 	transaction.Method = method
