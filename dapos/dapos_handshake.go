@@ -819,12 +819,69 @@ func ExecuteTransaction(transaction *types.Transaction, receipt *types.Receipt, 
 	}
 }
 
+//Call Transaction
+func CallTransactionInDVM(transaction *types.Transaction) *types.Receipt {
+	utils.Info("callTransaction --> ", transaction.Hash)
+
+	txn := services.NewTxn(true)
+	defer txn.Discard()
+
+	receipt := new(types.Receipt)
+
+	// READ PARAMS
+	contractTx, err := types.ToTransactionByAddress(txn, transaction.To)
+	if err != nil {
+		utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
+		receipt.Status = types.StatusInternalError
+		receipt.HumanReadableStatus = err.Error()
+		receipt.Cache(services.GetCache())
+		return receipt
+	}
+
+	transaction.Abi = contractTx.Abi
+	_, err = helper.GetConvertedParams(transaction)
+	if err != nil {
+		utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
+		receipt.Status = types.StatusInternalError
+		receipt.HumanReadableStatus = err.Error()
+		receipt.Cache(services.GetCache())
+		return receipt
+	}
+
+
+	//Run the TX through the dvm
+	dvmService := dvm.GetDVMService()
+	dvmResult, err1 := dvmService.ExecuteSmartContract(transaction)
+	if err1 != nil {
+		utils.Error(err, utils.GetCallStackWithFileAndLineNumber())
+	}
+
+	err = processDVMResult(transaction, dvmResult, receipt)
+	if err != nil {
+		utils.Error(err)
+
+		receipt.Status = types.StatusInternalError
+		receipt.HumanReadableStatus = err.Error()
+
+		if err != nil {
+			utils.Error(err)
+		}
+
+		return receipt
+	}
+	receipt.ContractAddress = transaction.To
+	receipt.Status = types.StatusOk
+	receipt.TransactionHash = transaction.Hash
+
+	return receipt
+}
+
 //TODO: implement if useful
 //func commit(transaction *types.Transaction) {}
 // processDVMResult
 func processDVMResult(transaction *types.Transaction, dvmResult *dvm.DVMResult, receipt *types.Receipt) error {
-	utils.Info("######### DUMPING-DVMResult #########")
-	utils.Info(dvmResult)
+	//utils.Info("######### DUMPING-DVMResult #########")
+	//utils.Info(dvmResult)
 
 	if dvmResult.ContractMethodExecError != nil {
 		utils.Error(dvmResult.ContractMethodExecError)

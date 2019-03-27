@@ -17,6 +17,7 @@
 package services
 
 import (
+	"fmt"
 	"github.com/dgraph-io/badger"
 	badgerOptions "github.com/dgraph-io/badger/options"
 	"github.com/dispatchlabs/disgo/commons/types"
@@ -24,7 +25,6 @@ import (
 	"github.com/patrickmn/go-cache"
 	"os"
 	"sync"
-	"github.com/robfig/cron"
 )
 
 var dbServiceInstance *DbService
@@ -78,6 +78,7 @@ func (this *DbService) openDb() {
 	opts.Dir = "." + string(os.PathSeparator) + "db"
 	opts.ValueDir = "." + string(os.PathSeparator) + "db"
 	opts.ValueLogLoadingMode = badgerOptions.FileIO // https://github.com/dgraph-io/badger/issues/246
+	opts.Truncate = true
 	db, err := badger.Open(opts)
 	if err != nil {
 		utils.Fatal(err)
@@ -85,9 +86,11 @@ func (this *DbService) openDb() {
 	this.db = db
 
 	//set up cron routine to collect garbage in badgerdb
-	c := cron.New()
-	c.AddFunc("@every 1h", func() {CollectGarbage()})
-	c.Start()
+	//CollectGarbage()
+	//
+	//c := cron.New()
+	//c.AddFunc("@every 1h", func() {CollectGarbage()})
+	//c.Start()
 }
 
 // GetCache
@@ -117,11 +120,15 @@ func Unlock(key interface{}) {
 
 func CollectGarbage() {
 	utils.Info("starting garbage collection")
-	for i := 0; i < 2000; i++ {
+	var cleaned = 0
+
+	for i := 0; i < 100; i++ {
 	again:
-		//utils.Info("looping garbage collection")
+		fmt.Printf("\r%d log files cleaned", cleaned)
 		err := GetDbService().db.RunValueLogGC(0.01)
 		if err == nil {
+			cleaned++
+			fmt.Printf("%d log files cleaned", cleaned)
 			goto again
 		} else if err.Error() != "Value log GC attempt didn't result in any cleanup"{
 			utils.Error(err)

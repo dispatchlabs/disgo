@@ -200,7 +200,7 @@ func (this *LocalAPIService) executeHandler(responseWriter http.ResponseWriter, 
 		return
 	}
 
-	response, err := sdk.ExecuteSmartContractTransaction(
+	response, err := sdk.ExecuteWriteTransaction(
 		*delegates[0],
 		types.GetKey(),
 		disgover.GetDisGoverService().ThisNode.Address,
