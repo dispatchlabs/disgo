@@ -108,9 +108,11 @@ func (this *DAPoSService) CreateGenesisAccount() error {
 
 	genesisAccount, err := types.GetGenesisAccount()
 	if err != nil {
+		return err
 		utils.Error(err)
 	}
 	_, err = types.ToAccountByAddress(txn, genesisAccount.Address)
+
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
 			//genesis not yet in db
@@ -118,10 +120,10 @@ func (this *DAPoSService) CreateGenesisAccount() error {
 			if err != nil {
 				return err
 			}
-		} else {
-			//genesis is already in db
-			return errors.New("genesis already exists")
+			return txn.Commit(nil)
 		}
 	}
-	return txn.Commit(nil)
+	//genesis is already in db
+	return errors.New("genesis already exists")
+
 }
