@@ -78,6 +78,7 @@ func (this *DbService) openDb() {
 	opts.Dir = "." + string(os.PathSeparator) + "db"
 	opts.ValueDir = "." + string(os.PathSeparator) + "db"
 	opts.ValueLogLoadingMode = badgerOptions.FileIO // https://github.com/dgraph-io/badger/issues/246
+	opts.Truncate = true
 	db, err := badger.Open(opts)
 	if err != nil {
 		utils.Fatal(err)
