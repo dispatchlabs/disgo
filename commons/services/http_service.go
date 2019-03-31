@@ -79,7 +79,7 @@ func (this *HttpService) Go() {
 		})
 		handler := cors.Handler(this.router)
 
-		err := http.ListenAndServe(listen, handler)
+		err := http.ListenAndServe(listen, utils.Gzip(handler))
 
 		// QUESTION: this line is never reached
 		utils.Error("unable to listen/serve HTTP [error=" + err.Error() + "]")
