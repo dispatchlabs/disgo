@@ -72,7 +72,7 @@ func (this *DAPoSService) WithHttp() *DAPoSService {
 }
 
 // TODO: Is there more generally way todo this ?
-func setHeaders(response *types.Response, responseWriter *http.ResponseWriter) {
+func setHeaders(status string, responseWriter *http.ResponseWriter) {
 	(*responseWriter).Header().Set("content-type", "application/json")
 
 	// Adjust the HTTP status reply - taken from `disgo/commons/types/constants.go`
@@ -91,16 +91,16 @@ func setHeaders(response *types.Response, responseWriter *http.ResponseWriter) {
 	// StatusInternalError                = "InternalError"
 	// StatusUnavailableFeature           = "UnavailableFeature"
 
-	if response != nil {
-		if response.Status == types.StatusOk {
+	if status != "" {
+		if status == types.StatusOk {
 			(*responseWriter).WriteHeader(http.StatusOK)
-		} else if response.Status == types.StatusNotFound {
+		} else if status == types.StatusNotFound {
 			(*responseWriter).WriteHeader(http.StatusNotFound)
-		} else if response.Status == types.StatusPending {
+		} else if status == types.StatusPending {
 			(*responseWriter).WriteHeader(http.StatusOK)
-		} else if response.Status == types.StatusInternalError {
+		} else if status == types.StatusInternalError {
 			(*responseWriter).WriteHeader(http.StatusInternalServerError)
-		} else if response.Status == types.StatusNotDelegate {
+		} else if status == types.StatusNotDelegate {
 			(*responseWriter).WriteHeader(http.StatusTeapot)
 		} else {
 			(*responseWriter).WriteHeader(http.StatusBadRequest)
@@ -110,7 +110,7 @@ func setHeaders(response *types.Response, responseWriter *http.ResponseWriter) {
 
 // getDelegatesHandler
 func (this *DAPoSService) getDelegatesHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	setHeaders(nil, &responseWriter)
+	setHeaders("", &responseWriter)
 	responseWriter.Write([]byte(this.GetDelegateNodes().String()))
 }
 
@@ -126,7 +126,7 @@ func (this *DAPoSService) getSeedAddressHandler(responseWriter http.ResponseWrit
 		response.Status = types.StatusUnavailableFeature
 		response.HumanReadableStatus = "This node is not a Seed"
 	}
-	setHeaders(response, &responseWriter)
+	setHeaders(response.Status, &responseWriter)
 	responseWriter.Write([]byte(response.String()))
 }
 
@@ -134,14 +134,14 @@ func (this *DAPoSService) getSeedAddressHandler(responseWriter http.ResponseWrit
 func (this *DAPoSService) getAccountHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
 	response := this.GetAccount(vars["address"])
-	setHeaders(response, &responseWriter)
+	setHeaders(response.Status, &responseWriter)
 	responseWriter.Write([]byte(response.String()))
 }
 
 // getRateLimitWindowHandler
 func (this *DAPoSService) getRateLimitWindowHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	response := this.GetRateLimitWindow()
-	setHeaders(response, &responseWriter)
+	setHeaders(response.Status, &responseWriter)
 	responseWriter.Write([]byte(response.String()))
 }
 
@@ -149,7 +149,7 @@ func (this *DAPoSService) getRateLimitWindowHandler(responseWriter http.Response
 func (this *DAPoSService) getTransactionHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
 	response := this.GetTransaction(vars["hash"])
-	setHeaders(response, &responseWriter)
+	setHeaders(response.Status, &responseWriter)
 	responseWriter.Write([]byte(response.String()))
 }
 
@@ -204,11 +204,11 @@ func (this *DAPoSService) newTransactionHandler(responseWriter http.ResponseWrit
 	response := new(types.Response)
 	if transaction.Type == types.TypeReadSmartContract {
 		receipt := this.CallTransaction(transaction)
-		setHeaders(response, &responseWriter)
+		setHeaders(receipt.Status, &responseWriter)
 		responseWriter.Write([]byte(receipt.String()))
 	} else {
 		response = this.NewTransaction(transaction)
-		setHeaders(response, &responseWriter)
+		setHeaders(response.Status, &responseWriter)
 		responseWriter.Write([]byte(response.String()))
 	}
 
@@ -240,21 +240,21 @@ func (this *DAPoSService) getTransactionsHandler(responseWriter http.ResponseWri
 	} else {
 		response = this.GetTransactions(pageNumber, pageLimit, startingHash)
 	}
-	setHeaders(response, &responseWriter)
+	setHeaders(response.Status, &responseWriter)
 	responseWriter.Write([]byte(response.String()))
 }
 
 // getQueueHandler
 func (this *DAPoSService) getQueueHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	response := this.DumpQueue()
-	setHeaders(response, &responseWriter)
+	setHeaders(response.Status, &responseWriter)
 	responseWriter.Write([]byte(response.String()))
 }
 
 // getArtifactHandler
 func (this *DAPoSService) unsupportedFunctionHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	response := this.ToBeSupported()
-	setHeaders(response, &responseWriter)
+	setHeaders(response.Status, &responseWriter)
 	responseWriter.Write([]byte(response.String()))
 }
 
@@ -281,7 +281,7 @@ func (this *DAPoSService) getGossipsHandler(responseWriter http.ResponseWriter, 
 		pageNumber = "1"
 	}
 	response := this.GetGossips(pageNumber)
-	setHeaders(response, &responseWriter)
+	setHeaders(response.Status, &responseWriter)
 	responseWriter.Write([]byte(response.String()))
 }
 
@@ -289,7 +289,7 @@ func (this *DAPoSService) getGossipsHandler(responseWriter http.ResponseWriter, 
 func (this *DAPoSService) getGossipHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
 	response := this.GetGossip(vars["hash"])
-	setHeaders(response, &responseWriter)
+	setHeaders(response.Status, &responseWriter)
 	responseWriter.Write([]byte(response.String()))
 }
 
