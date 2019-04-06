@@ -30,7 +30,7 @@ func init()  {
 func TestWindow(t *testing.T) {
 	txn := db.NewTransaction(true)
 	defer txn.Discard()
-	window := AddHertz(txn, c, uint64(utils.Random(0, 1000)))
+	window := AddHertz(txn, c, uint64(utils.Random(0, 1000)), time.Now())
 	fmt.Printf("%s\n", window.ToPrettyJson())
 	time.Sleep(2 * time.Second)
 	txn.Commit(nil)
