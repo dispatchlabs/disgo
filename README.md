@@ -8,7 +8,10 @@
 <a name="overview"></a>
 ### Overview
 
-Disgo is the main client / node for the Dispatch platform. It initializes all of the services. The services are from the other packages in this repository.  The approach is to have several smaller "building block" modules that are usable components of common blockchain architectures. Our intention is to facilitate a buildable blockchain so that can be used individually so that other projects don't have to start from scratch.
+Disgo (*dispatch* + *go*) is the first client implementation of the Dispatch protocol. Dispatch enables the Zero-Knowledge Analytics of distributed data without comprimising data ownership, privacy, or security.
+
+### Come talk with us!
+If you have any questions or just want to get to know us better, come say hi in our [discord channel](https://Dispatchlabs.io/discord) (https://Dispatchlabs.io/discord)
 
 ### Download
 
@@ -20,53 +23,30 @@ or
 
 If you have yet to install Go, visit our [tutorial](https://github.com/dispatchlabs/samples/tree/master/golang-setup) or download straight from the [Golang website.](https://golang.org/dl/)
 <a name="running"></a>
-### How to run the Disgo package
+### How to run a Disgo node
 
-Disgo is a full node, so you should be able to run it right out of the box:
-
-simply run the following commands in your terminal
+Disgo is a full dispatch node, and you can run it right out of the box. Simply run the following commands in your terminal:
 
 ```
 cd $GOPATH/src/github.com/dispatchlabs/disgo
+go get ./...
 go run main.go
 ```
 <a name="using"></a>
-### Dancing with Disgo
-To dance with disgo either use our [Java SDK](https://github.com/dispatchlabs/java-sdk), [mobile wallet](https://github.com/dispatchlabs/mobile-wallet), or [ScanDis](https://github.com/dispatchlabs/scandis)
+### Using the protocol (Dancing the Disgo 🕺)
+- Non-technical users of the protocol can use [the network scanner](http://scanner.dispatchlabs.io) to interact with the protocol. 
 
-<a name="wiki"></a>
-### Wiki Documentation
-For more technical details on how disgo works, please visit the [Wiki](https://github.com/dispatchlabs/disgo/wiki). 
+- Developers "dance the disgo" with our decentralized [HTTP API](https://api.dispatchlabs.io), [JavaScript SDK](https://github.com/dispatchlabs/dev-tools), or [Java SDK](https://github.com/dispatchlabs/java-sdk). 
 
- - [Development](https://github.com/dispatchlabs/disgo/wiki#development)
- - [Design Approach](https://github.com/dispatchlabs/disgo/wiki#design-approach) 
- - [Getting Started With Disgo](https://github.com/dispatchlabs/disgo/wiki#getting-started-with-disgo)
- - [Packages](https://github.com/dispatchlabs/disgo/wiki#packages)
-
-<a name="dependencies"></a>
-### Dependencies
-
-to get all the dependencies simply run `go get ./...` from disgo directory
-
-<a name="configuration"></a>
 ### Configuration
 The disgo package relies on the configuration loaded by [commons](https://github.com/dispatchlabs/disgo/tree/master/commons) 
 
-<a name="protobuf"></a>
-##### protobuf ([see common install instructions](https://github.com/dispatchlabs/disgo#-develop))
-
-<a name="tests"></a>
-### Tests
-We have multiple unit test throughout disgo, go provides a test framework that is easy to use. Simply go into any directory with a file ending in _test.go and call `go test`
-
-<a name="acknowledgments"></a>
-### Acknowledgments
-*Add lists of contributors*
-
 <a name="contributing"></a>
 ### Contributing
-*Add link to common CONRIBUTING.md file*
+*We would love your help developing the protocol!* It's a big project and we're a small team, so all contributions are encouraged. For more information on how to get a developer environment set up, please check out our [dev-tools](https://github.com/dispatchlabs/dev-tools) repo.
 
-<a name="license"></a>
+<a name="License"></a>
 ### License
-*Add License data*
+*The Disgo library is free software: you can redistribute it and/or modify it under the terms of version 3 of the GNU General Public License as published by the Free Software Foundation.*
+ 
+*The Disgo library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.*
