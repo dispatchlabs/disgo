@@ -68,6 +68,8 @@ func (this *DAPoSService) WithHttp() *DAPoSService {
 
 	services.GetHttpRouter().HandleFunc("/v1/receipts/{hash}", this.unsupportedFunctionHandler).Methods("GET")
 
+	services.GetHttpRouter().HandleFunc("/v1/stats/accounts", this.getAccountStatsHandler).Methods("GET")
+
 	return this
 }
 
@@ -300,6 +302,14 @@ func (this *DAPoSService) getGossipHandler(responseWriter http.ResponseWriter, r
 // 	setHeaders(response, &responseWriter)
 // 	responseWriter.Write([]byte(response.String()))
 // }
+
+func (this *DAPoSService) getAccountStatsHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	response := types.NewResponse()
+	response = this.GetAccountCount()
+
+	setHeaders(response, &responseWriter)
+	responseWriter.Write([]byte(response.String()))
+}
 
 // notFoundHandler
 func (this *DAPoSService) notFoundHandler(responseWriter http.ResponseWriter, request *http.Request) {

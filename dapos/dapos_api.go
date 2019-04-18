@@ -391,6 +391,34 @@ func (this *DAPoSService) GetAccounts(page, size, start string) *types.Response 
 	return response
 }
 
+// GetTransactions
+func (this *DAPoSService) GetAccountCount() *types.Response {
+	txn := services.NewTxn(true)
+	defer txn.Discard()
+	response := types.NewResponse()
+	var err error
+
+
+	// Delegate?
+	if disgover.GetDisGoverService().ThisNode.Type == types.TypeDelegate {
+
+		response.Data, err = types.AccountCount(txn)
+		if err != nil {
+			response.Status = types.StatusInternalError
+			response.HumanReadableStatus = err.Error()
+		} else {
+			response.Status = types.StatusOk
+		}
+	} else {
+		response.Status = types.StatusNotDelegate
+		response.HumanReadableStatus = types.StatusNotDelegateAsHumanReadable
+	}
+
+	utils.Info(fmt.Sprintf("GetAccountCount [status=%s]", response.Status))
+
+	return response
+}
+
 func (this *DAPoSService) GetGossips(page string) *types.Response {
 	txn := services.NewTxn(true)
 	defer txn.Discard()
