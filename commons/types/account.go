@@ -356,6 +356,24 @@ func AccountPaging(txn *badger.Txn, startingHash string, page, pageSize int) ([]
 	return Accounts, nil //TODO: return error if empty?
 }
 
+func AccountCount(txn *badger.Txn) (int, error) {
+	var iteratorCount = 0
+	var item []byte
+	prefix := []byte(fmt.Sprintf("table-account-"))
+	item = prefix
+
+	defer txn.Discard()
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = false
+	iterator := txn.NewIterator(opts)
+	defer iterator.Close()
+	for iterator.Seek(item); iterator.ValidForPrefix(prefix); iterator.Next() {
+		iteratorCount++
+	}
+	return iteratorCount, nil
+}
+
+
 // readAccountFile -
 func readAccountFile(name_optional ...string) *Account {
 	name := "account.json"
